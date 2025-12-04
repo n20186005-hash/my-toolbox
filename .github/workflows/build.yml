@@ -1,0 +1,41 @@
+name: Update Tools and Deploy
+
+# 触发条件：当你推送代码到 main 分支时
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. 下载你的代码
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. 设置 Python 环境
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    # 3. 运行你的脚本生成 JSON 和 详情页
+    - name: Run generation script
+      run: python scripts/generate.py
+
+    # 4. 把生成的文件 (tools.json, details/xxx.html) 提交回 GitHub
+    # 这一步是为了让你的仓库里也有生成后的文件
+    - name: Commit and Push changes
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+        git add tools.json details/
+        # 如果没有变化，避免报错
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update tools list" && git push)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    # Cloudflare Pages 会自动监听你的 GitHub 仓库变化并进行部署
+    # 所以只要上面 push 成功，Cloudflare 就会开始工作
