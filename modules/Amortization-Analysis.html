@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>攤提計算器模塊</title>
+    <meta name="tool-id" content="amort_calc">
+    <meta name="category" content="finance">
+    <meta name="icon" content="📊">
+    <meta name="description" content="分析贷款的分期摊提结构，计算每月还款额和总利息占比。">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .bar-container { width: 100%; height: 20px; background: #e5e7eb; border-radius: 10px; overflow: hidden; display: flex; }
+        .bar-principal { height: 100%; background: #3b82f6; }
+        .bar-interest { height: 100%; background: #f97316; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="amort_calc" 
+         data-category="finance" 
+         data-title="貸款攤提分析" 
+         data-icon="📊">
+        
+        <div class="absolute top-4 right-4">
+            <select id="ac-lang" onchange="AmortCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📊 貸款攤提分析</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="amount">貸款金額</label>
+                <input type="number" id="ac-amount" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="100000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rate">年利率 (%)</label>
+                <input type="number" id="ac-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="4.5" step="0.1">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="term">期限 (年)</label>
+                <input type="number" id="ac-term" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="30">
+            </div>
+        </div>
+
+        <button onclick="AmortCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">分析結構</button>
+
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <div class="text-xs text-gray-500" data-i18n="res_monthly">月供</div>
+                    <div id="ac-res-monthly" class="text-lg font-bold text-gray-800">--</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500" data-i18n="res_total_int">總利息</div>
+                    <div id="ac-res-interest" class="text-lg font-bold text-orange-600">--</div>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                    <span data-i18n="ratio_principal">本金佔比</span>
+                    <span data-i18n="ratio_interest">利息佔比</span>
+                </div>
+                <div class="bar-container">
+                    <div id="bar-p" class="bar-principal" style="width: 50%"></div>
+                    <div id="bar-i" class="bar-interest" style="width: 50%"></div>
+                </div>
+                <div class="flex justify-between text-xs font-bold mt-1">
+                    <span id="txt-p" class="text-blue-600">50%</span>
+                    <span id="txt-i" class="text-orange-600">50%</span>
+                </div>
+            </div>
+            
+            <p class="text-xs text-gray-400 mt-2" data-i18n="note">此圖表顯示在整個貸款週期中，您支付的總金額里本金與利息的比例。</p>
+        </div>
+    </div>
+
+    <script>
+        const AmortCalc = {
+            i18n: {
+                'zh-CN': {
+                    title: '📊 贷款摊提分析',
+                    amount: '贷款金额',
+                    rate: '年利率 (%)',
+                    term: '期限 (年)',
+                    btn_calc: '分析结构',
+                    res_monthly: '每月还款 (PI)',
+                    res_total_int: '总支付利息',
+                    ratio_principal: '本金占比 (蓝)',
+                    ratio_interest: '利息占比 (橙)',
+                    note: '此图表显示在整个贷款周期中，您支付的总金额里本金与利息的比例。'
+                },
+                'zh-TW': {
+                    title: '📊 貸款攤提分析',
+                    amount: '貸款金額',
+                    rate: '年利率 (%)',
+                    term: '期限 (年)',
+                    btn_calc: '分析結構',
+                    res_monthly: '每月還款 (PI)',
+                    res_total_int: '總支付利息',
+                    ratio_principal: '本金佔比 (藍)',
+                    ratio_interest: '利息佔比 (橙)',
+                    note: '此圖表顯示在整個貸款週期中，您支付的總金額里本金與利息的比例。'
+                },
+                'en': {
+                    title: '📊 Amortization Analysis',
+                    amount: 'Loan Amount',
+                    rate: 'Interest Rate (%)',
+                    term: 'Term (Years)',
+                    btn_calc: 'Analyze',
+                    res_monthly: 'Monthly Payment',
+                    res_total_int: 'Total Interest',
+                    ratio_principal: 'Principal (Blue)',
+                    ratio_interest: 'Interest (Orange)',
+                    note: 'Shows the ratio of Principal vs Interest over the life of the loan.'
+                },
+                'ja': {
+                    title: '📊 ローン内訳分析',
+                    amount: '借入金額',
+                    rate: '年利 (%)',
+                    term: '期間 (年)',
+                    btn_calc: '分析する',
+                    res_monthly: '月々の返済',
+                    res_total_int: '総支払利息',
+                    ratio_principal: '元金割合 (青)',
+                    ratio_interest: '利息割合 (橙)',
+                    note: '返済総額における元金と利息の割合を示します。'
+                },
+                'ru': {
+                    title: '📊 Анализ амортизации',
+                    amount: 'Сумма кредита',
+                    rate: 'Ставка (%)',
+                    term: 'Срок (лет)',
+                    btn_calc: 'Анализ',
+                    res_monthly: 'Ежемес. платеж',
+                    res_total_int: 'Общая переплата',
+                    ratio_principal: 'Долг (Синий)',
+                    ratio_interest: 'Проценты (Оранж)',
+                    note: 'Показывает соотношение основного долга и процентов за весь срок.'
+                },
+                'es': {
+                    title: '📊 Análisis de Amortización',
+                    amount: 'Monto del Préstamo',
+                    rate: 'Tasa Anual (%)',
+                    term: 'Plazo (Años)',
+                    btn_calc: 'Analizar',
+                    res_monthly: 'Pago Mensual',
+                    res_total_int: 'Interés Total',
+                    ratio_principal: 'Capital (Azul)',
+                    ratio_interest: 'Interés (Naranja)',
+                    note: 'Muestra la proporción de Capital vs Interés durante la vida del préstamo.'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('ac-lang').value;
+                const texts = AmortCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="amort_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                AmortCalc.calc(true);
+            },
+
+            calc: (isLangUpdate = false) => {
+                const p = parseFloat(document.getElementById('ac-amount').value);
+                const r_annual = parseFloat(document.getElementById('ac-rate').value);
+                const years = parseFloat(document.getElementById('ac-term').value);
+
+                const lang = document.getElementById('ac-lang').value;
+                const fmt = (num) => num.toLocaleString(lang === 'en' ? 'en-US' : 'zh-CN', { style: 'currency', currency: lang === 'en' ? 'USD' : (lang === 'ja' ? 'JPY' : 'CNY'), maximumFractionDigits: 0 });
+
+                if (!p || !r_annual || !years) return;
+
+                const r = r_annual / 100 / 12;
+                const n = years * 12;
+
+                const x = Math.pow(1 + r, n);
+                const monthly = (p * r * x) / (x - 1);
+                
+                const totalPay = monthly * n;
+                const totalInt = totalPay - p;
+
+                document.getElementById('ac-res-monthly').innerText = fmt(monthly);
+                document.getElementById('ac-res-interest').innerText = fmt(totalInt);
+
+                // Bar chart
+                const pPercent = (p / totalPay) * 100;
+                const iPercent = (totalInt / totalPay) * 100;
+
+                document.getElementById('bar-p').style.width = pPercent + "%";
+                document.getElementById('bar-i').style.width = iPercent + "%";
+                
+                document.getElementById('txt-p').innerText = pPercent.toFixed(1) + "%";
+                document.getElementById('txt-i').innerText = iPercent.toFixed(1) + "%";
+            }
+        };
+    </script>
+</body>
+</html>
