@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   update-and-deploy:
@@ -16,10 +18,25 @@ jobs:
     - name: 检出代码仓库
       uses: actions/checkout@v4
       with:
+        # 允许 Git 推送，需要 PAT_TOKEN
         token: ${{ secrets.PAT_TOKEN }}
         # 确保获取完整历史，对于后续的 Git Push 是必需的
         fetch-depth: 0 
 
+    - name: 修复Git安全目录权限
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+    - name: 设置Python运行环境
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: ''  # 禁用自动缓存检测
+
+    - name: 安装所需依赖
+      run: |
+        python -m pip install --upgrade pip
+
+    # 这是新增的诊断步骤，用于确认文件是否被正确检出
     - name: 🚨 诊断：检查 modules 文件夹中的文件数量
       run: |
         # 递归查找 modules/ 目录下的所有 .html 文件并计数
@@ -28,36 +45,21 @@ jobs:
         if [ "$FILE_COUNT" -lt 200 ]; then
           echo "⚠️ 警告：实际文件数量 ($FILE_COUNT) 小于预期 (200)。请检查 Git 提交状态。"
         fi
-
-    - name: 修复Git安全目录权限
-      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-    # 关键修复：禁用pip缓存（因为没有requirements.txt）
-    - name: 设置Python运行环境
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-        cache: ''  # 禁用自动缓存检测
-
-    - name: 安装所需依赖
-      run: |\
-        python -m pip install --upgrade pip
-
+        
     - name: 运行工具列表生成脚本
-      run: |\
+      run: |
         echo "执行生成脚本..."
+        # 检查 generate.py 是否存在于根目录
         if [ -f "generate.py" ]; then
           python generate.py || exit 1
           echo "✅ 生成脚本执行成功"
         else
-          # 注意：根据您的结构，generate.py可能在根目录或scripts/目录下。
-          # 假设它现在位于根目录，如果路径不对，请自行调整
-          echo "❌ 找不到 generate.py 文件"
+          echo "❌ 找不到 generate.py 文件。请检查路径。"
           exit 1
         fi
 
     - name: 提交并推送变更
-      run: |\
+      run: |
         git config --global user.name "GitHub Action Bot"
         git config --global user.email "action-bot@github.com"
         
