@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rounding Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="rounding_calc">
+    <meta name="category" content="math">
+    <meta name="icon" content="📐">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Rounding Calculator">
+    <meta name="description" content="Round numbers to decimal places, significant figures, or to nearest whole number.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="四舍五入计算器">
+    <meta name="lang-description-zh-CN" content="将数字四舍五入到指定位数、有效数字或最接近的整数。">
+    
+    <meta name="lang-title-zh-TW" content="四捨五入計算器">
+    <meta name="lang-description-zh-TW" content="將數字四捨五入到指定位數、有效數字或最接近的整數。">
+    
+    <meta name="lang-title-ja" content="丸め計算ツール">
+    <meta name="lang-description-ja" content="数値を指定された小数桁、有効数字、または最も近い整数に丸めます。">
+    
+    <meta name="lang-title-ru" content="Калькулятор округления">
+    <meta name="lang-description-ru" content="Округлите числа до заданного количества десятичных знаков, значащих цифр или до ближайшего целого числа.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-container { word-break: break-all; }
+        .radio-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+        .radio-item { display: flex; align-items: center; gap: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="rounding_calc" 
+         data-category="math" 
+         data-title="Rounding Calculator" 
+         data-icon="📐">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="round-lang" onchange="RoundingCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📐 Rounding Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 输入数字 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="enter_number">Enter Number</label>
+                <input type="text" id="round-number" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 123.4567 or 1.23e4">
+            </div>
+            
+            <!-- 四舍五入类型选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="round_type">Rounding Type</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" name="round-type" id="round-decimal" value="decimal" checked>
+                        <label for="round-decimal" data-i18n="decimal_places">Decimal Places</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="round-type" id="round-significant" value="significant">
+                        <label for="round-significant" data-i18n="significant_figures">Significant Figures</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="round-type" id="round-whole" value="whole">
+                        <label for="round-whole" data-i18n="whole_number">Whole Number</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 精度位数输入 -->
+            <div id="precision-container">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="precision">Precision</label>
+                <input type="number" id="round-precision" min="0" value="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                <div class="text-xs text-gray-500 mt-1" data-i18n="precision_note">Number of digits to round to (0 = whole number)</div>
+            </div>
+            
+            <!-- 四舍五入规则选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="round_rule">Rounding Rule</label>
+                <select id="round-rule" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="standard" data-i18n="standard_round">Standard (0-4 down, 5-9 up)</option>
+                    <option value="up" data-i18n="round_up">Round Up (Ceiling)</option>
+                    <option value="down" data-i18n="round_down">Round Down (Floor)</option>
+                    <option value="half_up" data-i18n="half_up">Half Up (0.5 rounds up)</option>
+                    <option value="half_down" data-i18n="half_down">Half Down (0.5 rounds down)</option>
+                </select>
+            </div>
+            
+            <!-- 计算按钮 -->
+            <button onclick="RoundingCalc.calc()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate Rounded Result</button>
+        </div>
+
+        <!-- 结果展示 -->
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="result">Result</div>
+            <div id="round-result" class="text-xl font-bold text-blue-800 min-h-[60px] result-container">--</div>
+            <div id="round-error" class="text-sm text-red-600 mt-2 hidden"></div>
+            <div id="round-details" class="text-sm text-gray-600 mt-3"></div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" data-i18n="notes_list">
+                <li>Supports both standard numbers and scientific notation (e.g. 1.23e5)</li>
+                <li>Significant figures count all non-zero digits and zeros between them</li>
+                <li>Whole number rounding ignores decimal places completely</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const RoundingCalc = {
+            i18n: {
+                'en': {
+                    title: '📐 Rounding Calculator',
+                    enter_number: 'Enter Number',
+                    round_type: 'Rounding Type',
+                    decimal_places: 'Decimal Places',
+                    significant_figures: 'Significant Figures',
+                    whole_number: 'Whole Number',
+                    precision: 'Precision',
+                    precision_note: 'Number of digits to round to (0 = whole number)',
+                    round_rule: 'Rounding Rule',
+                    standard_round: 'Standard (0-4 down, 5-9 up)',
+                    round_up: 'Round Up (Ceiling)',
+                    round_down: 'Round Down (Floor)',
+                    half_up: 'Half Up (0.5 rounds up)',
+                    half_down: 'Half Down (0.5 rounds down)',
+                    calculate: 'Calculate Rounded Result',
+                    result: 'Result',
+                    err_invalid: 'Invalid number format',
+                    err_precision: 'Precision must be a non-negative integer',
+                    notes: 'Notes:',
+                    notes_list: `
+                        <li>Supports both standard numbers and scientific notation (e.g. 1.23e5)</li>
+                        <li>Significant figures count all non-zero digits and zeros between them</li>
+                        <li>Whole number rounding ignores decimal places completely</li>
+                    `,
+                    result_details: 'Original: {original} → Rounded to {precision} {type}: {rounded}'
+                },
+                'zh-CN': {
+                    title: '📐 四舍五入计算器',
+                    enter_number: '输入数字',
+                    round_type: '四舍五入类型',
+                    decimal_places: '小数位数',
+                    significant_figures: '有效数字',
+                    whole_number: '整数',
+                    precision: '精度',
+                    precision_note: '保留的位数（0 = 保留整数）',
+                    round_rule: '舍入规则',
+                    standard_round: '标准（0-4舍去，5-9进1）',
+                    round_up: '向上取整（天花板）',
+                    round_down: '向下取整（地板）',
+                    half_up: '五入（0.5进1）',
+                    half_down: '五舍（0.5舍去）',
+                    calculate: '计算四舍五入结果',
+                    result: '结果',
+                    err_invalid: '无效的数字格式',
+                    err_precision: '精度必须是非负整数',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>支持标准数字和科学计数法（例如 1.23e5）</li>
+                        <li>有效数字包含所有非零数字和中间的零</li>
+                        <li>整数舍入完全忽略小数部分</li>
+                    `,
+                    result_details: '原始值：{original} → 保留{precision}位{type}：{rounded}'
+                },
+                'zh-TW': {
+                    title: '📐 四捨五入計算器',
+                    enter_number: '輸入數字',
+                    round_type: '四捨五入類型',
+                    decimal_places: '小數位數',
+                    significant_figures: '有效數字',
+                    whole_number: '整數',
+                    precision: '精度',
+                    precision_note: '保留的位數（0 = 保留整數）',
+                    round_rule: '捨入規則',
+                    standard_round: '標準（0-4捨去，5-9進1）',
+                    round_up: '向上取整（天花板）',
+                    round_down: '向下取整（地板）',
+                    half_up: '五入（0.5進1）',
+                    half_down: '五舍（0.5捨去）',
+                    calculate: '計算四捨五入結果',
+                    result: '結果',
+                    err_invalid: '無效的數字格式',
+                    err_precision: '精度必須是非負整數',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>支援標準數字和科學計數法（例如 1.23e5）</li>
+                        <li>有效數字包含所有非零數字和中間的零</li>
+                        <li>整數捨入完全忽略小數部分</li>
+                    `,
+                    result_details: '原始值：{original} → 保留{precision}位{type}：{rounded}'
+                },
+                'ja': {
+                    title: '📐 丸め計算ツール',
+                    enter_number: '数値を入力',
+                    round_type: '丸めタイプ',
+                    decimal_places: '小数桁',
+                    significant_figures: '有効数字',
+                    whole_number: '整数',
+                    precision: '精度',
+                    precision_note: '丸める桁数（0 = 整数に丸める）',
+                    round_rule: '丸め規則',
+                    standard_round: '標準（0-4は切り捨て、5-9は切り上げ）',
+                    round_up: '切り上げ（天井関数）',
+                    round_down: '切り下げ（床関数）',
+                    half_up: '0.5は切り上げ',
+                    half_down: '0.5は切り下げ',
+                    calculate: '丸め結果を計算',
+                    result: '結果',
+                    err_invalid: '無効な数値形式',
+                    err_precision: '精度は負でない整数でなければなりません',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>標準数値と科学表記法（例：1.23e5）の両方に対応</li>
+                        <li>有効数字には、ゼロ以外のすべての桁とその間のゼロが含まれます</li>
+                        <li>整数丸めは小数部分を完全に無視します</li>
+                    `,
+                    result_details: '元の値：{original} → {precision}桁{type}に丸める：{rounded}'
+                },
+                'ru': {
+                    title: '📐 Калькулятор округления',
+                    enter_number: 'Введите число',
+                    round_type: 'Тип округления',
+                    decimal_places: 'Десятичные знаки',
+                    significant_figures: 'Значащие цифры',
+                    whole_number: 'Целое число',
+                    precision: 'Точность',
+                    precision_note: 'Количество знаков для округления (0 = целое число)',
+                    round_rule: 'Правило округления',
+                    standard_round: 'Стандартное (0-4 вниз, 5-9 вверх)',
+                    round_up: 'Округлить вверх (потолок)',
+                    round_down: 'Округлить вниз (пол)',
+                    half_up: 'Половина вверх (0.5 округляется вверх)',
+                    half_down: 'Половина вниз (0.5 округляется вниз)',
+                    calculate: 'Рассчитать округленный результат',
+                    result: 'Результат',
+                    err_invalid: 'Неверный формат числа',
+                    err_precision: 'Точность должна быть неотрицательным целым числом',
+                    notes: 'Примечания:',
+                    notes_list: `
+                        <li>Поддерживает как стандартные числа, так и научную нотацию (например, 1.23e5)</li>
+                        <li>Значащие цифры включают все ненулевые цифры и нули между ними</li>
+                        <li>Округление до целого числа полностью игнорирует десятичные знаки</li>
+                    `,
+                    result_details: 'Исходное: {original} → Округлено до {precision} {type}: {rounded}'
+                }
+            },
+
+            // 类型名称映射（用于结果详情）
+            typeNames: {
+                'en': {
+                    'decimal': 'decimal places',
+                    'significant': 'significant figures',
+                    'whole': 'whole number'
+                },
+                'zh-CN': {
+                    'decimal': '小数',
+                    'significant': '有效数字',
+                    'whole': '整数'
+                },
+                'zh-TW': {
+                    'decimal': '小數',
+                    'significant': '有效數字',
+                    'whole': '整數'
+                },
+                'ja': {
+                    'decimal': '小数',
+                    'significant': '有効数字',
+                    'whole': '整数'
+                },
+                'ru': {
+                    'decimal': 'десятичных знаков',
+                    'significant': 'значащих цифр',
+                    'whole': 'целого числа'
+                }
+            },
+
+            init: () => {
+                // 设置默认值
+                document.getElementById('round-number').value = '123.456789';
+                
+                // 监听舍入类型变化，控制精度输入框显示
+                document.querySelectorAll('input[name="round-type"]').forEach(radio => {
+                    radio.addEventListener('change', RoundingCalc.togglePrecision);
+                });
+                RoundingCalc.togglePrecision();
+            },
+
+            // 切换精度输入框显示状态
+            togglePrecision: () => {
+                const selectedType = document.querySelector('input[name="round-type"]:checked').value;
+                const precisionContainer = document.getElementById('precision-container');
+                
+                if (selectedType === 'whole') {
+                    precisionContainer.style.display = 'none';
+                } else {
+                    precisionContainer.style.display = 'block';
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('round-lang').value;
+                const texts = RoundingCalc.i18n[lang];
+                
+                // 更新普通文本
+                document.querySelectorAll('[data-id="rounding_calc"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        if (key === 'notes_list') {
+                            el.innerHTML = texts[key];
+                        } else {
+                            el.innerText = texts[key];
+                        }
+                    }
+                });
+                
+                // 更新下拉选项
+                const ruleSelect = document.getElementById('round-rule');
+                Array.from(ruleSelect.options).forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+                
+                // 更新单选框标签
+                document.querySelectorAll('.radio-item label').forEach(label => {
+                    const key = label.getAttribute('data-i18n');
+                    if (texts[key]) label.innerText = texts[key];
+                });
+            },
+
+            showError: (message) => {
+                const resultEl = document.getElementById('round-result');
+                const errorEl = document.getElementById('round-error');
+                const detailsEl = document.getElementById('round-details');
+                
+                resultEl.innerText = '';
+                detailsEl.innerText = '';
+                errorEl.innerText = message;
+                errorEl.classList.remove('hidden');
+            },
+
+            clearError: () => {
+                const errorEl = document.getElementById('round-error');
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+            },
+
+            // 解析输入数字（支持科学计数法）
+            parseNumber: (str) => {
+                str = str.trim().replace(/,/g, '');
+                const num = parseFloat(str);
+                
+                if (isNaN(num)) return null;
+                return num;
+            },
+
+            // 四舍五入到指定位数
+            roundToDecimal: (num, precision, rule) => {
+                const factor = Math.pow(10, precision);
+                
+                switch (rule) {
+                    case 'standard':
+                        return Math.round(num * factor) / factor;
+                    case 'up':
+                        return Math.ceil(num * factor) / factor;
+                    case 'down':
+                        return Math.floor(num * factor) / factor;
+                    case 'half_up':
+                        const roundedHalfUp = num * factor;
+                        return (roundedHalfUp < 0 ? Math.floor : Math.ceil)(roundedHalfUp) / factor;
+                    case 'half_down':
+                        const roundedHalfDown = num * factor;
+                        return (roundedHalfDown < 0 ? Math.ceil : Math.floor)(roundedHalfDown) / factor;
+                    default:
+                        return Math.round(num * factor) / factor;
+                }
+            },
+
+            // 四舍五入到有效数字
+            roundToSignificant: (num, precision, rule) => {
+                if (num === 0) return 0;
+                if (precision <= 0) return 0;
+                
+                const exponent = Math.floor(Math.log10(Math.abs(num)));
+                const significand = num / Math.pow(10, exponent);
+                
+                let roundedSignificand;
+                switch (rule) {
+                    case 'standard':
+                        roundedSignificand = Math.round(significand * Math.pow(10, precision - 1)) / Math.pow(10, precision - 1);
+                        break;
+                    case 'up':
+                        roundedSignificand = Math.ceil(significand * Math.pow(10, precision - 1)) / Math.pow(10, precision - 1);
+                        break;
+                    case 'down':
+                        roundedSignificand = Math.floor(significand * Math.pow(10, precision - 1)) / Math.pow(10, precision - 1);
+                        break;
+                    case 'half_up':
+                        const halfUp = significand * Math.pow(10, precision - 1);
+                        roundedSignificand = (halfUp < 0 ? Math.floor : Math.ceil)(halfUp) / Math.pow(10, precision - 1);
+                        break;
+                    case 'half_down':
+                        const halfDown = significand * Math.pow(10, precision - 1);
+                        roundedSignificand = (halfDown < 0 ? Math.ceil : Math.floor)(halfDown) / Math.pow(10, precision - 1);
+                        break;
+                    default:
+                        roundedSignificand = Math.round(significand * Math.pow(10, precision - 1)) / Math.pow(10, precision - 1);
+                }
+                
+                // 处理有效数字进位导致的指数变化
+                if (roundedSignificand >= 10) {
+                    return roundedSignificand / 10 * Math.pow(10, exponent + 1);
+                }
+                
+                return roundedSignificand * Math.pow(10, exponent);
+            },
+
+            // 格式化数字显示（避免科学计数法）
+            formatNumber: (num) => {
+                // 对于极大/极小数字使用科学计数法，否则使用普通格式
+                if (Math.abs(num) > 1e20 || (Math.abs(num) < 1e-6 && num !== 0)) {
+                    return num.toExponential(6).replace(/\.?0+$/, '').replace(/\.$/, '');
+                }
+                
+                // 移除末尾的零和小数点
+                return num.toString().replace(/\.?0+$/, '').replace(/\.$/, '');
+            },
+
+            calc: () => {
+                const lang = document.getElementById('round-lang').value;
+                const texts = RoundingCalc.i18n[lang];
+                const resultEl = document.getElementById('round-result');
+                const detailsEl = document.getElementById('round-details');
+                
+                RoundingCalc.clearError();
+                
+                // 获取输入值
+                const numberInput = document.getElementById('round-number').value;
+                const selectedType = document.querySelector('input[name="round-type"]:checked').value;
+                const rule = document.getElementById('round-rule').value;
+                
+                // 解析数字
+                const num = RoundingCalc.parseNumber(numberInput);
+                if (num === null) {
+                    return RoundingCalc.showError(texts.err_invalid);
+                }
+                
+                // 获取精度值
+                let precision = 0;
+                if (selectedType !== 'whole') {
+                    precision = parseInt(document.getElementById('round-precision').value);
+                    if (isNaN(precision) || precision < 0) {
+                        return RoundingCalc.showError(texts.err_precision);
+                    }
+                }
+                
+                // 执行四舍五入
+                let rounded;
+                let precisionDisplay = precision;
+                let typeDisplay = RoundingCalc.typeNames[lang][selectedType];
+                
+                try {
+                    switch (selectedType) {
+                        case 'decimal':
+                            rounded = RoundingCalc.roundToDecimal(num, precision, rule);
+                            break;
+                        case 'significant':
+                            rounded = RoundingCalc.roundToSignificant(num, precision, rule);
+                            break;
+                        case 'whole':
+                            rounded = RoundingCalc.roundToDecimal(num, 0, rule);
+                            precisionDisplay = 0;
+                            typeDisplay = RoundingCalc.typeNames[lang]['whole'];
+                            break;
+                    }
+                } catch (e) {
+                    return RoundingCalc.showError(texts.err_invalid);
+                }
+                
+                // 格式化结果
+                const formattedOriginal = RoundingCalc.formatNumber(num);
+                const formattedRounded = RoundingCalc.formatNumber(rounded);
+                
+                // 显示结果
+                resultEl.innerText = formattedRounded;
+                
+                // 显示详情
+                const details = texts.result_details
+                    .replace('{original}', formattedOriginal)
+                    .replace('{precision}', precisionDisplay)
+                    .replace('{type}', typeDisplay)
+                    .replace('{rounded}', formattedRounded);
+                detailsEl.innerText = details;
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', RoundingCalc.init);
+        
+        // 自动匹配浏览器语言
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('round-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    RoundingCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

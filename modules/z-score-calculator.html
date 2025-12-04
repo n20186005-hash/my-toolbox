@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z-Score Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="zscore_calc">
+    <meta name="category" content="statistics">
+    <meta name="icon" content="📊">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Z-Score Calculator">
+    <meta name="description" content="Calculate z-score from raw score or raw score from z-score with mean and standard deviation.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="Z分数计算器">
+    <meta name="lang-description-zh-CN" content="根据原始分数、均值和标准差计算Z分数，或根据Z分数反算原始分数。">
+    
+    <meta name="lang-title-zh-TW" content="Z分數計算器">
+    <meta name="lang-description-zh-TW" content="根據原始分數、均值和標準差計算Z分數，或根據Z分數反算原始分數。">
+    
+    <meta name="lang-title-ja" content="Zスコア計算ツール">
+    <meta name="lang-description-ja" content="平均値と標準偏差からZスコアを計算する、またはZスコアから元のスコアを計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор Z-оценки">
+    <meta name="lang-description-ru" content="Рассчитайте Z-оценку из исходной оценки или исходную оценку из Z-оценки с средним значением и стандартным отклонением.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-container { word-break: break-all; }
+        .formula-box { background: #f8fafc; padding: 10px; border-radius: 6px; font-family: monospace; margin: 10px 0; }
+        .probability-box { background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="zscore_calc" 
+         data-category="statistics" 
+         data-title="Z-Score Calculator" 
+         data-icon="📊">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="zscore-lang" onchange="ZScoreCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📊 Z-Score Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 计算方向选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="calc_direction">Calculation Direction</label>
+                <div class="radio-group" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="zscore-direction" id="zscore-to-raw" value="zscore-to-raw">
+                        <label for="zscore-to-raw" data-i18n="zscore_to_raw">Z-Score → Raw Score</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="zscore-direction" id="raw-to-zscore" value="raw-to-zscore" checked>
+                        <label for="raw-to-zscore" data-i18n="raw_to_zscore">Raw Score → Z-Score</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 原始分数输入 -->
+            <div id="raw-score-container">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="raw_score">Raw Score (x)</label>
+                <input type="number" id="zscore-x" step="0.01" value="85" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- Z分数输入 -->
+            <div id="zscore-container" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="zscore">Z-Score (z)</label>
+                <input type="number" id="zscore-z" step="0.01" value="1.5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 均值输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="mean">Population Mean (μ)</label>
+                <input type="number" id="zscore-mean" step="0.01" value="75" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 标准差输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="std_dev">Standard Deviation (σ)</label>
+                <input type="number" id="zscore-std" step="0.01" min="0.01" value="6.67" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 精度选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="precision">Precision (decimal places)</label>
+                <input type="number" id="zscore-precision" min="0" max="6" value="4" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 显示概率 -->
+            <div>
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    <input type="checkbox" id="show-probability" checked class="rounded">
+                    <span data-i18n="show_probability">Show Cumulative Probability</span>
+                </label>
+            </div>
+            
+            <!-- 计算按钮 -->
+            <button onclick="ZScoreCalc.calc()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate</button>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="zscore-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="result">Result</div>
+            <div id="zscore-result" class="text-xl font-bold text-blue-800 min-h-[60px] result-container">--</div>
+            
+            <!-- 公式展示 -->
+            <div id="zscore-formula" class="formula-box mt-4"></div>
+            
+            <!-- 概率展示 -->
+            <div id="probability-container" class="probability-box hidden">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="probability">Cumulative Probability:</div>
+                <div id="probability-below" class="text-md text-gray-800 mb-1"></div>
+                <div id="probability-above" class="text-md text-gray-800"></div>
+            </div>
+        </div>
+
+        <!-- 快速示例 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="examples">Quick Examples:</p>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <div class="p-2 bg-white rounded text-center cursor-pointer hover:bg-gray-100" onclick="ZScoreCalc.loadExample('raw', 85, 75, 6.67)">Raw=85, μ=75, σ=6.67</div>
+                <div class="p-2 bg-white rounded text-center cursor-pointer hover:bg-gray-100" onclick="ZScoreCalc.loadExample('z', 1.5, 75, 6.67)">Z=1.5, μ=75, σ=6.67</div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" data-i18n="notes_list">
+                <li>Z-score formula: z = (x - μ) / σ (raw to z-score)</li>
+                <li>Raw score formula: x = μ + z × σ (z-score to raw)</li>
+                <li>Z-score represents how many standard deviations from the mean</li>
+                <li>Positive z-score: above mean, Negative z-score: below mean</li>
+                <li>Cumulative probability based on standard normal distribution (μ=0, σ=1)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const ZScoreCalc = {
+            i18n: {
+                'en': {
+                    title: '📊 Z-Score Calculator',
+                    calc_direction: 'Calculation Direction',
+                    zscore_to_raw: 'Z-Score → Raw Score',
+                    raw_to_zscore: 'Raw Score → Z-Score',
+                    raw_score: 'Raw Score (x)',
+                    zscore: 'Z-Score (z)',
+                    mean: 'Population Mean (μ)',
+                    std_dev: 'Standard Deviation (σ)',
+                    precision: 'Precision (decimal places)',
+                    show_probability: 'Show Cumulative Probability',
+                    calculate: 'Calculate',
+                    result: 'Result',
+                    formula: 'Formula:',
+                    probability: 'Cumulative Probability:',
+                    probability_below: 'Probability below z-score: {prob} ({percent}%)',
+                    probability_above: 'Probability above z-score: {prob} ({percent}%)',
+                    examples: 'Quick Examples:',
+                    notes: 'Notes:',
+                    notes_list: `
+                        <li>Z-score formula: z = (x - μ) / σ (raw to z-score)</li>
+                        <li>Raw score formula: x = μ + z × σ (z-score to raw)</li>
+                        <li>Z-score represents how many standard deviations from the mean</li>
+                        <li>Positive z-score: above mean, Negative z-score: below mean</li>
+                        <li>Cumulative probability based on standard normal distribution (μ=0, σ=1)</li>
+                    `,
+                    err_invalid_mean: 'Mean must be a valid number',
+                    err_invalid_std: 'Standard deviation must be greater than 0',
+                    err_invalid_value: 'Please enter valid numeric values',
+                    formula_raw_to_z: 'z = (x - μ) / σ = ({x} - {mean}) / {std} = {result}',
+                    formula_z_to_raw: 'x = μ + z × σ = {mean} + {z} × {std} = {result}'
+                },
+                'zh-CN': {
+                    title: '📊 Z分数计算器',
+                    calc_direction: '计算方向',
+                    zscore_to_raw: 'Z分数 → 原始分数',
+                    raw_to_zscore: '原始分数 → Z分数',
+                    raw_score: '原始分数 (x)',
+                    zscore: 'Z分数 (z)',
+                    mean: '总体均值 (μ)',
+                    std_dev: '标准差 (σ)',
+                    precision: '精度（小数位数）',
+                    show_probability: '显示累积概率',
+                    calculate: '计算',
+                    result: '结果',
+                    formula: '计算公式：',
+                    probability: '累积概率：',
+                    probability_below: '小于该Z分数的概率：{prob}（{percent}%）',
+                    probability_above: '大于该Z分数的概率：{prob}（{percent}%）',
+                    examples: '快速示例：',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>Z分数公式：z = (x - μ) / σ（原始分数转Z分数）</li>
+                        <li>原始分数公式：x = μ + z × σ（Z分数转原始分数）</li>
+                        <li>Z分数表示原始分数与均值的标准差距离</li>
+                        <li>正Z分数：高于均值，负Z分数：低于均值</li>
+                        <li>累积概率基于标准正态分布（μ=0, σ=1）计算</li>
+                    `,
+                    err_invalid_mean: '均值必须是有效数字',
+                    err_invalid_std: '标准差必须大于0',
+                    err_invalid_value: '请输入有效的数值',
+                    formula_raw_to_z: 'z = (x - μ) / σ = ({x} - {mean}) / {std} = {result}',
+                    formula_z_to_raw: 'x = μ + z × σ = {mean} + {z} × {std} = {result}'
+                },
+                'zh-TW': {
+                    title: '📊 Z分數計算器',
+                    calc_direction: '計算方向',
+                    zscore_to_raw: 'Z分數 → 原始分數',
+                    raw_to_zscore: '原始分數 → Z分數',
+                    raw_score: '原始分數 (x)',
+                    zscore: 'Z分數 (z)',
+                    mean: '總體均值 (μ)',
+                    std_dev: '標準差 (σ)',
+                    precision: '精度（小數位數）',
+                    show_probability: '顯示累積機率',
+                    calculate: '計算',
+                    result: '結果',
+                    formula: '計算公式：',
+                    probability: '累積機率：',
+                    probability_below: '小於該Z分數的機率：{prob}（{percent}%）',
+                    probability_above: '大於該Z分數的機率：{prob}（{percent}%）',
+                    examples: '快速示例：',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>Z分數公式：z = (x - μ) / σ（原始分數轉Z分數）</li>
+                        <li>原始分數公式：x = μ + z × σ（Z分數轉原始分數）</li>
+                        <li>Z分數表示原始分數與均值的標準差距離</li>
+                        <li>正Z分數：高於均值，負Z分數：低於均值</li>
+                        <li>累積機率基於標準常態分佈（μ=0, σ=1）計算</li>
+                    `,
+                    err_invalid_mean: '均值必須是有效數字',
+                    err_invalid_std: '標準差必須大於0',
+                    err_invalid_value: '請輸入有效的數值',
+                    formula_raw_to_z: 'z = (x - μ) / σ = ({x} - {mean}) / {std} = {result}',
+                    formula_z_to_raw: 'x = μ + z × σ = {mean} + {z} × {std} = {result}'
+                },
+                'ja': {
+                    title: '📊 Zスコア計算ツール',
+                    calc_direction: '計算方向',
+                    zscore_to_raw: 'Zスコア → 元のスコア',
+                    raw_to_zscore: '元のスコア → Zスコア',
+                    raw_score: '元のスコア (x)',
+                    zscore: 'Zスコア (z)',
+                    mean: '母集団の平均 (μ)',
+                    std_dev: '標準偏差 (σ)',
+                    precision: '精度（小数桁数）',
+                    show_probability: '累積確率を表示',
+                    calculate: '計算',
+                    result: '結果',
+                    formula: '計算式：',
+                    probability: '累積確率：',
+                    probability_below: 'Zスコア以下の確率：{prob}（{percent}%）',
+                    probability_above: 'Zスコア以上の確率：{prob}（{percent}%）',
+                    examples: 'クイックサンプル：',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>Zスコアの公式：z = (x - μ) / σ（元のスコアからZスコア）</li>
+                        <li>元のスコアの公式：x = μ + z × σ（Zスコアから元のスコア）</li>
+                        <li>Zスコアは、平均値からの標準偏差の数を表します</li>
+                        <li>正のZスコア：平均値より上、負のZスコア：平均値より下</li>
+                        <li>累積確率は標準正規分布（μ=0, σ=1）に基づいて計算されます</li>
+                    `,
+                    err_invalid_mean: '平均値は有効な数値でなければなりません',
+                    err_invalid_std: '標準偏差は0より大きくなければなりません',
+                    err_invalid_value: '有効な数値を入力してください',
+                    formula_raw_to_z: 'z = (x - μ) / σ = ({x} - {mean}) / {std} = {result}',
+                    formula_z_to_raw: 'x = μ + z × σ = {mean} + {z} × {std} = {result}'
+                },
+                'ru': {
+                    title: '📊 Калькулятор Z-оценки',
+                    calc_direction: 'Направление расчета',
+                    zscore_to_raw: 'Z-оценка → Исходная оценка',
+                    raw_to_zscore: 'Исходная оценка → Z-оценка',
+                    raw_score: 'Исходная оценка (x)',
+                    zscore: 'Z-оценка (z)',
+                    mean: 'Среднее значение популяции (μ)',
+                    std_dev: 'Стандартное отклонение (σ)',
+                    precision: 'Точность (десятичные знаки)',
+                    show_probability: 'Показать кумулятивную вероятность',
+                    calculate: 'Рассчитать',
+                    result: 'Результат',
+                    formula: 'Формула:',
+                    probability: 'Кумулятивная вероятность:',
+                    probability_below: 'Вероятность ниже Z-оценки: {prob} ({percent}%)',
+                    probability_above: 'Вероятность выше Z-оценки: {prob} ({percent}%)',
+                    examples: 'Быстрые примеры:',
+                    notes: 'Примечания:',
+                    notes_list: `
+                        <li>Формула Z-оценки：z = (x - μ) / σ (исходная оценка в Z-оценку)</li>
+                        <li>Формула исходной оценки：x = μ + z × σ (Z-оценка в исходную оценку)</li>
+                        <li>Z-оценка показывает, на сколько стандартных отклонений значение отклоняется от среднего</li>
+                        <li>Положительная Z-оценка：выше среднего, Отрицательная Z-оценка：ниже среднего</li>
+                        <li>Кумулятивная вероятность основана на стандартном нормальном распределении (μ=0, σ=1)</li>
+                    `,
+                    err_invalid_mean: 'Среднее значение должно быть действительным числом',
+                    err_invalid_std: 'Стандартное отклонение должно быть больше 0',
+                    err_invalid_value: 'Пожалуйста, введите действительные числовые значения',
+                    formula_raw_to_z: 'z = (x - μ) / σ = ({x} - {mean}) / {std} = {result}',
+                    formula_z_to_raw: 'x = μ + z × σ = {mean} + {z} × {std} = {result}'
+                }
+            },
+
+            init: () => {
+                // 设置默认值
+                document.getElementById('zscore-x').value = '85';
+                document.getElementById('zscore-mean').value = '75';
+                document.getElementById('zscore-std').value = '6.67';
+                document.getElementById('zscore-precision').value = '4';
+                
+                // 监听计算方向切换
+                document.querySelectorAll('input[name="zscore-direction"]').forEach(radio => {
+                    radio.addEventListener('change', ZScoreCalc.toggleInputs);
+                });
+                ZScoreCalc.toggleInputs();
+                
+                // 监听概率显示切换
+                document.getElementById('show-probability').addEventListener('change', () => {
+                    const probabilityContainer = document.getElementById('probability-container');
+                    probabilityContainer.style.display = document.getElementById('show-probability').checked ? 'block' : 'none';
+                });
+            },
+
+            toggleInputs: () => {
+                const direction = document.querySelector('input[name="zscore-direction"]:checked').value;
+                const rawContainer = document.getElementById('raw-score-container');
+                const zscoreContainer = document.getElementById('zscore-container');
+                
+                if (direction === 'raw-to-zscore') {
+                    rawContainer.classList.remove('hidden');
+                    zscoreContainer.classList.add('hidden');
+                } else {
+                    rawContainer.classList.add('hidden');
+                    zscoreContainer.classList.remove('hidden');
+                }
+                
+                // 清空错误提示
+                ZScoreCalc.clearError();
+            },
+
+            loadExample: (type, val, mean, std) => {
+                if (type === 'raw') {
+                    document.querySelector('input[name="zscore-direction"][value="raw-to-zscore"]').checked = true;
+                    document.getElementById('zscore-x').value = val;
+                } else {
+                    document.querySelector('input[name="zscore-direction"][value="zscore-to-raw"]').checked = true;
+                    document.getElementById('zscore-z').value = val;
+                }
+                document.getElementById('zscore-mean').value = mean;
+                document.getElementById('zscore-std').value = std;
+                ZScoreCalc.toggleInputs();
+                ZScoreCalc.calc();
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('zscore-lang').value;
+                const texts = ZScoreCalc.i18n[lang];
+                
+                // 更新普通文本
+                document.querySelectorAll('[data-id="zscore_calc"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        if (key === 'notes_list') {
+                            el.innerHTML = texts[key];
+                        } else {
+                            el.innerText = texts[key];
+                        }
+                    }
+                });
+                
+                // 更新单选框标签
+                document.querySelectorAll('label[for="zscore-to-raw"], label[for="raw-to-zscore"]').forEach(label => {
+                    const key = label.getAttribute('data-i18n');
+                    if (texts[key]) label.innerText = texts[key];
+                });
+            },
+
+            showError: (message) => {
+                const errorEl = document.getElementById('zscore-error');
+                errorEl.innerText = message;
+                errorEl.classList.remove('hidden');
+            },
+
+            clearError: () => {
+                const errorEl = document.getElementById('zscore-error');
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+            },
+
+            // 计算正态分布累积概率 (近似算法)
+            calculateNormalProbability: (z) => {
+                // 误差函数近似计算标准正态分布累积概率
+                const t = 1 / (1 + 0.2316419 * Math.abs(z));
+                const d = 0.3989423 * Math.exp(-z * z / 2);
+                const prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+                
+                return z > 0 ? 1 - prob : prob;
+            },
+
+            calc: () => {
+                const lang = document.getElementById('zscore-lang').value;
+                const texts = ZScoreCalc.i18n[lang];
+                const precision = parseInt(document.getElementById('zscore-precision').value) || 4;
+                
+                ZScoreCalc.clearError();
+                
+                try {
+                    // 获取输入值
+                    const mean = parseFloat(document.getElementById('zscore-mean').value);
+                    const std = parseFloat(document.getElementById('zscore-std').value);
+                    const direction = document.querySelector('input[name="zscore-direction"]:checked').value;
+                    
+                    // 验证输入
+                    if (isNaN(mean)) throw new Error(texts.err_invalid_mean);
+                    if (isNaN(std) || std <= 0) throw new Error(texts.err_invalid_std);
+                    
+                    let result, formula, zValue;
+                    
+                    if (direction === 'raw-to-zscore') {
+                        // 原始分数转Z分数
+                        const x = parseFloat(document.getElementById('zscore-x').value);
+                        if (isNaN(x)) throw new Error(texts.err_invalid_value);
+                        
+                        result = (x - mean) / std;
+                        zValue = result;
+                        
+                        // 格式化公式
+                        formula = texts.formula_raw_to_z
+                            .replace(/{x}/g, x)
+                            .replace(/{mean}/g, mean)
+                            .replace(/{std}/g, std)
+                            .replace(/{result}/g, result.toFixed(precision));
+                        
+                    } else {
+                        // Z分数转原始分数
+                        const z = parseFloat(document.getElementById('zscore-z').value);
+                        if (isNaN(z)) throw new Error(texts.err_invalid_value);
+                        
+                        result = mean + z * std;
+                        zValue = z;
+                        
+                        // 格式化公式
+                        formula = texts.formula_z_to_raw
+                            .replace(/{z}/g, z)
+                            .replace(/{mean}/g, mean)
+                            .replace(/{std}/g, std)
+                            .replace(/{result}/g, result.toFixed(precision));
+                    }
+                    
+                    // 显示结果
+                    document.getElementById('zscore-result').innerText = result.toFixed(precision);
+                    document.getElementById('zscore-formula').innerText = formula;
+                    
+                    // 计算并显示概率
+                    if (document.getElementById('show-probability').checked) {
+                        const probBelow = ZScoreCalc.calculateNormalProbability(zValue);
+                        const probAbove = 1 - probBelow;
+                        
+                        document.getElementById('probability-below').innerText = texts.probability_below
+                            .replace('{prob}', probBelow.toFixed(6))
+                            .replace('{percent}', (probBelow * 100).toFixed(4));
+                        
+                        document.getElementById('probability-above').innerText = texts.probability_above
+                            .replace('{prob}', probAbove.toFixed(6))
+                            .replace('{percent}', (probAbove * 100).toFixed(4));
+                    }
+                    
+                } catch (e) {
+                    ZScoreCalc.showError(e.message);
+                    document.getElementById('zscore-result').innerText = '--';
+                    document.getElementById('zscore-formula').innerText = '';
+                    document.getElementById('probability-below').innerText = '';
+                    document.getElementById('probability-above').innerText = '';
+                }
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', ZScoreCalc.init);
+        
+        // 自动匹配浏览器语言
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('zscore-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    ZScoreCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

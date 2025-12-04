@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Subnet Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="ip_subnet_calc">
+    <meta name="category" content="network">
+    <meta name="icon" content="🔗">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="IP Subnet Calculator">
+    <meta name="description" content="Calculate subnet information from IP address and CIDR.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="IP子网计算器">
+    <meta name="lang-description-zh-CN" content="根据IP地址和CIDR计算子网信息。">
+    
+    <meta name="lang-title-zh-TW" content="IP子網計算器">
+    <meta name="lang-description-zh-TW" content="根據IP地址和CIDR計算子網信息。">
+    
+    <meta name="lang-title-ja" content="IPサブネット計算ツール">
+    <meta name="lang-description-ja" content="IPアドレスとCIDRからサブネット情報を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор IP подсети">
+    <meta name="lang-description-ru" content="Вычислите информацию о подсети по IP-адресу и CIDR.">
+    
+    <meta name="lang-title-es" content="Calculadora de Subred IP">
+    <meta name="lang-description-es" content="Calcule información de subred desde la dirección IP y CIDR.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; }
+        .result-label { font-weight: 500; color: #555; }
+        .result-value { color: #2563eb; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="ip_subnet_calc" 
+         data-category="network" 
+         data-title="IP Subnet Calculator" 
+         data-icon="🔗">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="ip-lang" onchange="IpSubnetCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔗 IP Subnet Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="ip_address">IP Address</label>
+                <input type="text" id="ip-address" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 192.168.1.1">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="cidr">CIDR Prefix (0-32)</label>
+                <input type="number" id="cidr-prefix" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" value="24" min="0" max="32">
+            </div>
+        </div>
+
+        <button onclick="IpSubnetCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-4" data-i18n="res_label">Subnet Information</div>
+            
+            <div id="ip-result" class="space-y-2">
+                <div class="result-row">
+                    <span class="result-label" data-i18n="network_addr">Network Address:</span>
+                    <span class="result-value">--</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label" data-i18n="broadcast_addr">Broadcast Address:</span>
+                    <span class="result-value">--</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label" data-i18n="subnet_mask">Subnet Mask:</span>
+                    <span class="result-value">--</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label" data-i18n="first_host">First Host:</span>
+                    <span class="result-value">--</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label" data-i18n="last_host">Last Host:</span>
+                    <span class="result-value">--</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label" data-i18n="host_count">Total Hosts:</span>
+                    <span class="result-value">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const IpSubnetCalc = {
+            i18n: {
+                'en': {
+                    title: '🔗 IP Subnet Calculator',
+                    ip_address: 'IP Address',
+                    cidr: 'CIDR Prefix (0-32)',
+                    btn_calc: 'Calculate',
+                    res_label: 'Subnet Information',
+                    network_addr: 'Network Address:',
+                    broadcast_addr: 'Broadcast Address:',
+                    subnet_mask: 'Subnet Mask:',
+                    first_host: 'First Host:',
+                    last_host: 'Last Host:',
+                    host_count: 'Total Hosts:',
+                    err_invalid: 'Invalid IP Address or CIDR'
+                },
+                'zh-CN': {
+                    title: '🔗 IP子网计算器',
+                    ip_address: 'IP地址',
+                    cidr: 'CIDR前缀 (0-32)',
+                    btn_calc: '计算',
+                    res_label: '子网信息',
+                    network_addr: '网络地址：',
+                    broadcast_addr: '广播地址：',
+                    subnet_mask: '子网掩码：',
+                    first_host: '第一个主机：',
+                    last_host: '最后一个主机：',
+                    host_count: '总主机数：',
+                    err_invalid: '无效的IP地址或CIDR'
+                },
+                'zh-TW': {
+                    title: '🔗 IP子網計算器',
+                    ip_address: 'IP地址',
+                    cidr: 'CIDR前綴 (0-32)',
+                    btn_calc: '計算',
+                    res_label: '子網資訊',
+                    network_addr: '網路地址：',
+                    broadcast_addr: '廣播地址：',
+                    subnet_mask: '子網遮罩：',
+                    first_host: '第一個主機：',
+                    last_host: '最後一個主機：',
+                    host_count: '總主機數：',
+                    err_invalid: '無效的IP地址或CIDR'
+                },
+                'ja': {
+                    title: '🔗 IPサブネット計算ツール',
+                    ip_address: 'IPアドレス',
+                    cidr: 'CIDRプレフィックス (0-32)',
+                    btn_calc: '計算する',
+                    res_label: 'サブネット情報',
+                    network_addr: 'ネットワークアドレス：',
+                    broadcast_addr: 'ブロードキャストアドレス：',
+                    subnet_mask: 'サブネットマスク：',
+                    first_host: '最初のホスト：',
+                    last_host: '最後のホスト：',
+                    host_count: '総ホスト数：',
+                    err_invalid: '無効なIPアドレスまたはCIDR'
+                },
+                'ru': {
+                    title: '🔗 Калькулятор IP подсети',
+                    ip_address: 'IP-адрес',
+                    cidr: 'Префикс CIDR (0-32)',
+                    btn_calc: 'Рассчитать',
+                    res_label: 'Информация о подсети',
+                    network_addr: 'Сетевой адрес：',
+                    broadcast_addr: 'Браузерный адрес：',
+                    subnet_mask: 'Маска подсети：',
+                    first_host: 'Первый хост：',
+                    last_host: 'Последний хост：',
+                    host_count: 'Всего хостов：',
+                    err_invalid: 'Неверный IP-адрес или CIDR'
+                },
+                'es': {
+                    title: '🔗 Calculadora de Subred IP',
+                    ip_address: 'Dirección IP',
+                    cidr: 'Prefijo CIDR (0-32)',
+                    btn_calc: 'Calcular',
+                    res_label: 'Información de Subred',
+                    network_addr: 'Dirección de Red：',
+                    broadcast_addr: 'Dirección de Difusión：',
+                    subnet_mask: 'Máscara de Subred：',
+                    first_host: 'Primer Host：',
+                    last_host: 'Último Host：',
+                    host_count: 'Total de Hosts：',
+                    err_invalid: 'Dirección IP o CIDR inválidos'
+                }
+            },
+
+            init: () => {
+                // 初始化默认值
+                document.getElementById('ip-address').value = '192.168.1.1';
+                document.getElementById('cidr-prefix').value = 24;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('ip-lang').value;
+                const texts = IpSubnetCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="ip_subnet_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            // 验证IP地址格式
+            isValidIp: (ip) => {
+                const octets = ip.split('.');
+                if (octets.length !== 4) return false;
+                return octets.every(octet => {
+                    const num = parseInt(octet);
+                    return !isNaN(num) && num >= 0 && num <= 255 && octet === num.toString();
+                });
+            },
+
+            // 将IP地址转换为整数
+            ipToInt: (ip) => {
+                return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+            },
+
+            // 将整数转换为IP地址
+            intToIp: (int) => {
+                return [(int >>> 24) & 0xFF, (int >>> 16) & 0xFF, (int >>> 8) & 0xFF, int & 0xFF].join('.');
+            },
+
+            calc: () => {
+                const ip = document.getElementById('ip-address').value.trim();
+                const cidr = parseInt(document.getElementById('cidr-prefix').value);
+                const lang = document.getElementById('ip-lang').value;
+                const texts = IpSubnetCalc.i18n[lang];
+
+                // 验证输入
+                if (!IpSubnetCalc.isValidIp(ip) || isNaN(cidr) || cidr < 0 || cidr > 32) {
+                    const resultRows = document.querySelectorAll('#ip-result .result-value');
+                    resultRows.forEach(el => {
+                        el.innerText = texts.err_invalid;
+                        el.className = "result-value text-red-600";
+                    });
+                    return;
+                }
+
+                // 重置样式
+                const resultRows = document.querySelectorAll('#ip-result .result-value');
+                resultRows.forEach(el => {
+                    el.className = "result-value";
+                });
+
+                // 计算子网信息
+                const ipInt = IpSubnetCalc.ipToInt(ip);
+                const maskInt = (0xFFFFFFFF << (32 - cidr)) >>> 0;
+                const networkInt = ipInt & maskInt;
+                const broadcastInt = networkInt | (~maskInt >>> 0);
+                const hostCount = cidr === 32 ? 0 : (broadcastInt - networkInt - 1);
+                const firstHostInt = cidr === 32 ? networkInt : networkInt + 1;
+                const lastHostInt = cidr === 32 ? networkInt : broadcastInt - 1;
+
+                // 转换为IP格式
+                const networkAddr = IpSubnetCalc.intToIp(networkInt);
+                const broadcastAddr = IpSubnetCalc.intToIp(broadcastInt);
+                const subnetMask = IpSubnetCalc.intToIp(maskInt);
+                const firstHost = IpSubnetCalc.intToIp(firstHostInt);
+                const lastHost = IpSubnetCalc.intToIp(lastHostInt);
+
+                // 显示结果
+                const resultElements = document.querySelectorAll('#ip-result .result-value');
+                resultElements[0].innerText = networkAddr;
+                resultElements[1].innerText = broadcastAddr;
+                resultElements[2].innerText = subnetMask;
+                resultElements[3].innerText = firstHost;
+                resultElements[4].innerText = lastHost;
+                resultElements[5].innerText = hostCount.toString();
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', IpSubnetCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('ip-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    IpSubnetCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

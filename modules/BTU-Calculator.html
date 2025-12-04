@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTU Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="btu_calculator">
+    <meta name="category" content="conversion">
+    <meta name="icon" content="🔥">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="BTU Calculator">
+    <meta name="description" content="Calculate the required BTU for heating or cooling a room based on its dimensions.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="BTU计算器">
+    <meta name="lang-description-zh-CN" content="根据房间尺寸计算供暖或制冷所需的BTU。">
+    
+    <meta name="lang-title-zh-TW" content="BTU計算器">
+    <meta name="lang-description-zh-TW" content="根據房間尺寸計算供暖或製冷所需的BTU。">
+    
+    <meta name="lang-title-ja" content="BTU計算ツール">
+    <meta name="lang-description-ja" content="部屋の寸法に基づいて暖房または冷房に必要なBTUを計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор БТУ">
+    <meta name="lang-description-ru" content="Вычислите необходимое количество БТУ для обогрева или охлаждения помещения по его размерам.">
+    
+    <meta name="lang-title-es" content="Calculadora de BTU">
+    <meta name="lang-description-es" content="Calcule los BTU necesarios para calentar o enfriar una habitación según sus dimensiones.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="btu_calculator" 
+         data-category="conversion" 
+         data-title="BTU Calculator" 
+         data-icon="🔥">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="btu-lang" onchange="BTUCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔥 BTU Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Length -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="length_label">Length (ft)</label>
+                    <input type="number" id="btu-length" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 20" min="0.1" step="0.1">
+                </div>
+                <!-- Width -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="width_label">Width (ft)</label>
+                    <input type="number" id="btu-width" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 15" min="0.1" step="0.1">
+                </div>
+                <!-- Height -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_label">Height (ft)</label>
+                    <input type="number" id="btu-height" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 8" min="0.1" step="0.1">
+                </div>
+            </div>
+
+            <!-- Room Type -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="room_type_label">Room Type</label>
+                <select id="btu-room-type" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    <option value="1" data-i18n="room_standard">Standard Room</option>
+                    <option value="1.2" data-i18n="room_kitchen">Kitchen</option>
+                    <option value="0.9" data-i18n="room_bedroom">Bedroom</option>
+                    <option value="1.3" data-i18n="room_bathroom">Bathroom</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="BTUCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate BTU</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Recommended BTU:</div>
+            <div id="btu-result" class="text-3xl font-bold text-blue-800">--</div>
+            <div id="btu-details" class="text-sm text-gray-600 mt-2 h-5"></div>
+        </div>
+    </div>
+
+    <script>
+        const BTUCalc = {
+            i18n: {
+                'en': {
+                    title: '🔥 BTU Calculator',
+                    length_label: 'Length (ft)',
+                    width_label: 'Width (ft)',
+                    height_label: 'Height (ft)',
+                    room_type_label: 'Room Type',
+                    room_standard: 'Standard Room',
+                    room_kitchen: 'Kitchen',
+                    room_bedroom: 'Bedroom',
+                    room_bathroom: 'Bathroom',
+                    btn_calc: 'Calculate BTU',
+                    res_label: 'Recommended BTU:',
+                    err_invalid: 'Invalid Input',
+                    details: 'For a room of %1 sq ft with %2 ft height'
+                },
+                'zh-CN': {
+                    title: '🔥 BTU计算器',
+                    length_label: '长度 (英尺)',
+                    width_label: '宽度 (英尺)',
+                    height_label: '高度 (英尺)',
+                    room_type_label: '房间类型',
+                    room_standard: '标准房间',
+                    room_kitchen: '厨房',
+                    room_bedroom: '卧室',
+                    room_bathroom: '浴室',
+                    btn_calc: '计算BTU',
+                    res_label: '推荐BTU值：',
+                    err_invalid: '输入无效',
+                    details: '适用于面积为%1平方英尺、高度为%2英尺的房间'
+                },
+                'zh-TW': {
+                    title: '🔥 BTU計算器',
+                    length_label: '長度 (英尺)',
+                    width_label: '寬度 (英尺)',
+                    height_label: '高度 (英尺)',
+                    room_type_label: '房間類型',
+                    room_standard: '標準房間',
+                    room_kitchen: '廚房',
+                    room_bedroom: '臥室',
+                    room_bathroom: '浴室',
+                    btn_calc: '計算BTU',
+                    res_label: '推薦BTU值：',
+                    err_invalid: '輸入無效',
+                    details: '適用於面積為%1平方英尺、高度為%2英尺的房間'
+                },
+                'ja': {
+                    title: '🔥 BTU計算ツール',
+                    length_label: '長さ (フィート)',
+                    width_label: '幅 (フィート)',
+                    height_label: '高さ (フィート)',
+                    room_type_label: '部屋の種類',
+                    room_standard: '標準的な部屋',
+                    room_kitchen: 'キッチン',
+                    room_bedroom: '寝室',
+                    room_bathroom: '浴室',
+                    btn_calc: 'BTUを計算',
+                    res_label: '推奨BTU：',
+                    err_invalid: '入力が無効です',
+                    details: '%1平方フィート、高さ%2フィートの部屋に適しています'
+                },
+                'ru': {
+                    title: '🔥 Калькулятор БТУ',
+                    length_label: 'Длина (фут)',
+                    width_label: 'Ширина (фут)',
+                    height_label: 'Высота (фут)',
+                    room_type_label: 'Тип помещения',
+                    room_standard: 'Стандартная комната',
+                    room_kitchen: 'Кухня',
+                    room_bedroom: 'Спальня',
+                    room_bathroom: 'Ванная',
+                    btn_calc: 'Вычислить БТУ',
+                    res_label: 'Рекомендуемые БТУ:',
+                    err_invalid: 'Неверный ввод',
+                    details: 'Для помещения площадью %1 кв. фут и высотой %2 фут'
+                },
+                'es': {
+                    title: '🔥 Calculadora de BTU',
+                    length_label: 'Longitud (pies)',
+                    width_label: 'Ancho (pies)',
+                    height_label: 'Altura (pies)',
+                    room_type_label: 'Tipo de habitación',
+                    room_standard: 'Habitación estándar',
+                    room_kitchen: 'Cocina',
+                    room_bedroom: 'Dormitorio',
+                    room_bathroom: 'Baño',
+                    btn_calc: 'Calcular BTU',
+                    res_label: 'BTU recomendados:',
+                    err_invalid: 'Entrada inválida',
+                    details: 'Para una habitación de %1 pies cuadrados con %2 pies de altura'
+                }
+            },
+
+            init: () => {
+                // 初始化默认值
+                document.getElementById('btu-length').value = 20;
+                document.getElementById('btu-width').value = 15;
+                document.getElementById('btu-height').value = 8;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('btu-lang').value;
+                const texts = BTUCalc.i18n[lang];
+                
+                // 更新文本内容
+                document.querySelectorAll('[data-id="btu_calculator"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                
+                // 更新选项内容
+                const roomType = document.getElementById('btu-room-type');
+                Array.from(roomType.options).forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                const currentResult = document.getElementById('btu-result').innerText;
+                if (currentResult !== '--') {
+                    BTUCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const length = parseFloat(document.getElementById('btu-length').value);
+                const width = parseFloat(document.getElementById('btu-width').value);
+                const height = parseFloat(document.getElementById('btu-height').value);
+                const roomFactor = parseFloat(document.getElementById('btu-room-type').value);
+                const lang = document.getElementById('btu-lang').value;
+                const texts = BTUCalc.i18n[lang];
+
+                // 验证输入
+                if (isNaN(length) || isNaN(width) || isNaN(height) || length <= 0 || width <= 0 || height <= 0) {
+                    document.getElementById('btu-result').innerText = texts.err_invalid;
+                    document.getElementById('btu-result').className = "text-xl font-bold text-red-600";
+                    document.getElementById('btu-details').innerText = "";
+                    return;
+                }
+
+                // 计算BTU (简化公式：体积×3.5×房间系数)
+                const volume = length * width * height;
+                const sqFt = length * width;
+                const btu = Math.round(volume * 3.5 * roomFactor);
+
+                // 显示结果
+                const resultEl = document.getElementById('btu-result');
+                resultEl.className = "text-3xl font-bold text-blue-800";
+                resultEl.innerText = btu.toLocaleString() + " BTU";
+                
+                // 显示详情
+                const detailsEl = document.getElementById('btu-details');
+                detailsEl.innerText = texts.details.replace('%1', sqFt.toFixed(1)).replace('%2', height);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', BTUCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('btu-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    BTUCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

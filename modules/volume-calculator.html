@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volume Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="volume_calc">
+    <meta name="category" content="geometry">
+    <meta name="icon" content="📦">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Volume Calculator">
+    <meta name="description" content="Calculate the volume of various geometric shapes including sphere, cube, cylinder, cone, rectangular prism and more.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="体积计算器">
+    <meta name="lang-description-zh-CN" content="计算各种几何形状的体积，包括球体、立方体、圆柱体、圆锥体、长方体等。">
+    
+    <meta name="lang-title-zh-TW" content="體積計算器">
+    <meta name="lang-description-zh-TW" content="計算各種幾何形狀的體積，包括球體、立方體、圓柱體、圓錐體、長方體等。">
+    
+    <meta name="lang-title-ja" content="体積計算ツール">
+    <meta name="lang-description-ja" content="球体、立方体、円柱、円錐、直方体など、さまざまな幾何学的形状の体積を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор объёма">
+    <meta name="lang-description-ru" content="Рассчитайте объем различных геометрических фигур, включая сферу, куб, цилиндр, конус, прямоугольный призму и другие.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .result-container { word-break: break-all; }
+        .input-group { margin-bottom: 15px; }
+        .shape-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin: 15px 0; }
+        .shape-option { border: 2px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .shape-option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .shape-icon { font-size: 1.5rem; margin-bottom: 5px; }
+        .result-card { background: #e8f4f8; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+        .result-value { font-size: 1.8rem; font-weight: bold; color: #1e40af; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="volume_calc" 
+         data-category="geometry" 
+         data-title="Volume Calculator" 
+         data-icon="📦">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="volume-lang" onchange="VolumeCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📦 Volume Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 形状选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="select_shape">Select Shape</label>
+                <div class="shape-grid" id="shape-options">
+                    <div class="shape-option" data-shape="sphere" onclick="VolumeCalc.selectShape('sphere')">
+                        <div class="shape-icon">🔴</div>
+                        <div data-i18n="sphere">Sphere</div>
+                    </div>
+                    <div class="shape-option" data-shape="cube" onclick="VolumeCalc.selectShape('cube')">
+                        <div class="shape-icon">📦</div>
+                        <div data-i18n="cube">Cube</div>
+                    </div>
+                    <div class="shape-option" data-shape="cylinder" onclick="VolumeCalc.selectShape('cylinder')">
+                        <div class="shape-icon">🎯</div>
+                        <div data-i18n="cylinder">Cylinder</div>
+                    </div>
+                    <div class="shape-option" data-shape="cone" onclick="VolumeCalc.selectShape('cone')">
+                        <div class="shape-icon">🚧</div>
+                        <div data-i18n="cone">Cone</div>
+                    </div>
+                    <div class="shape-option" data-shape="rectangular" onclick="VolumeCalc.selectShape('rectangular')">
+                        <div class="shape-icon">📦</div>
+                        <div data-i18n="rectangular">Rectangular Prism</div>
+                    </div>
+                    <div class="shape-option" data-shape="pyramid" onclick="VolumeCalc.selectShape('pyramid')">
+                        <div class="shape-icon">🏛️</div>
+                        <div data-i18n="pyramid">Pyramid</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 输入参数 -->
+            <div id="shape-parameters">
+                <!-- 参数输入框将通过JS动态生成 -->
+            </div>
+            
+            <!-- 单位选择 -->
+            <div class="input-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="unit">Unit of Measurement</label>
+                <select id="volume-unit" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="m">Meters (m)</option>
+                    <option value="cm">Centimeters (cm)</option>
+                    <option value="mm">Millimeters (mm)</option>
+                    <option value="in">Inches (in)</option>
+                    <option value="ft">Feet (ft)</option>
+                </select>
+            </div>
+            
+            <!-- 精度选择 -->
+            <div class="input-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="precision">Precision (decimal places)</label>
+                <input type="number" id="volume-precision" min="0" max="6" value="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="VolumeCalc.loadSample()" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition" data-i18n="load_sample">Load Sample</button>
+                <button onclick="VolumeCalc.clearInputs()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="VolumeCalc.calculate()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate Volume</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="volume-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="volume-results" class="hidden">
+            <div class="result-card">
+                <div class="text-sm text-gray-500" data-i18n="volume_result">Volume Result</div>
+                <div class="result-value" id="volume-value">--</div>
+                <div class="text-sm text-gray-600" id="volume-formula" data-i18n="formula">Formula: </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
+                <div data-i18n="result_details">Result Details:</div>
+                <div id="result-details" class="mt-2 space-y-1"></div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" data-i18n="notes_list">
+                <li>Volume is the amount of space occupied by a three-dimensional object</li>
+                <li>Ensure all measurements use the same unit before calculation</li>
+                <li>Formulas vary by geometric shape based on their unique properties</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const VolumeCalc = {
+            selectedShape: null,
+            shapes: {
+                sphere: {
+                    params: [{name: 'radius', label: 'Radius', symbol: 'r'}],
+                    formula: 'V = (4/3)πr³',
+                    calculate: (params) => (4/3) * Math.PI * Math.pow(params.radius, 3)
+                },
+                cube: {
+                    params: [{name: 'side', label: 'Side Length', symbol: 'a'}],
+                    formula: 'V = a³',
+                    calculate: (params) => Math.pow(params.side, 3)
+                },
+                cylinder: {
+                    params: [
+                        {name: 'radius', label: 'Radius', symbol: 'r'},
+                        {name: 'height', label: 'Height', symbol: 'h'}
+                    ],
+                    formula: 'V = πr²h',
+                    calculate: (params) => Math.PI * Math.pow(params.radius, 2) * params.height
+                },
+                cone: {
+                    params: [
+                        {name: 'radius', label: 'Radius', symbol: 'r'},
+                        {name: 'height', label: 'Height', symbol: 'h'}
+                    ],
+                    formula: 'V = (1/3)πr²h',
+                    calculate: (params) => (1/3) * Math.PI * Math.pow(params.radius, 2) * params.height
+                },
+                rectangular: {
+                    params: [
+                        {name: 'length', label: 'Length', symbol: 'l'},
+                        {name: 'width', label: 'Width', symbol: 'w'},
+                        {name: 'height', label: 'Height', symbol: 'h'}
+                    ],
+                    formula: 'V = l × w × h',
+                    calculate: (params) => params.length * params.width * params.height
+                },
+                pyramid: {
+                    params: [
+                        {name: 'base_area', label: 'Base Area', symbol: 'B'},
+                        {name: 'height', label: 'Height', symbol: 'h'}
+                    ],
+                    formula: 'V = (1/3)Bh',
+                    calculate: (params) => (1/3) * params.base_area * params.height
+                }
+            },
+            
+            i18n: {
+                'en': {
+                    title: '📦 Volume Calculator',
+                    select_shape: 'Select Shape',
+                    sphere: 'Sphere',
+                    cube: 'Cube',
+                    cylinder: 'Cylinder',
+                    cone: 'Cone',
+                    rectangular: 'Rectangular Prism',
+                    pyramid: 'Pyramid',
+                    radius: 'Radius',
+                    height: 'Height',
+                    side: 'Side Length',
+                    length: 'Length',
+                    width: 'Width',
+                    base_area: 'Base Area',
+                    unit: 'Unit of Measurement',
+                    precision: 'Precision (decimal places)',
+                    load_sample: 'Load Sample',
+                    clear: 'Clear',
+                    calculate: 'Calculate Volume',
+                    volume_result: 'Volume Result',
+                    formula: 'Formula: ',
+                    result_details: 'Result Details:',
+                    notes: 'Notes:',
+                    notes_list: `
+                        <li>Volume is the amount of space occupied by a three-dimensional object</li>
+                        <li>Ensure all measurements use the same unit before calculation</li>
+                        <li>Formulas vary by geometric shape based on their unique properties</li>
+                    `,
+                    err_no_shape: 'Please select a shape first',
+                    err_invalid_value: 'Please enter valid positive numbers',
+                    unit_m: 'cubic meters (m³)',
+                    unit_cm: 'cubic centimeters (cm³)',
+                    unit_mm: 'cubic millimeters (mm³)',
+                    unit_in: 'cubic inches (in³)',
+                    unit_ft: 'cubic feet (ft³)'
+                },
+                'zh-CN': {
+                    title: '📦 体积计算器',
+                    select_shape: '选择形状',
+                    sphere: '球体',
+                    cube: '立方体',
+                    cylinder: '圆柱体',
+                    cone: '圆锥体',
+                    rectangular: '长方体',
+                    pyramid: '棱锥体',
+                    radius: '半径',
+                    height: '高度',
+                    side: '边长',
+                    length: '长度',
+                    width: '宽度',
+                    base_area: '底面积',
+                    unit: '计量单位',
+                    precision: '精度（小数位数）',
+                    load_sample: '加载示例',
+                    clear: '清除',
+                    calculate: '计算体积',
+                    volume_result: '体积结果',
+                    formula: '公式：',
+                    result_details: '结果详情：',
+                    notes: '说明：',
+                    notes_list: `
+                        <li>体积是三维物体所占空间的大小</li>
+                        <li>计算前请确保所有测量值使用相同的单位</li>
+                        <li>不同几何形状的体积公式因其独特性质而不同</li>
+                    `,
+                    err_no_shape: '请先选择一个形状',
+                    err_invalid_value: '请输入有效的正数',
+                    unit_m: '立方米 (m³)',
+                    unit_cm: '立方厘米 (cm³)',
+                    unit_mm: '立方毫米 (mm³)',
+                    unit_in: '立方英寸 (in³)',
+                    unit_ft: '立方英尺 (ft³)'
+                },
+                'zh-TW': {
+                    title: '📦 體積計算器',
+                    select_shape: '選擇形狀',
+                    sphere: '球體',
+                    cube: '立方體',
+                    cylinder: '圓柱體',
+                    cone: '圓錐體',
+                    rectangular: '長方體',
+                    pyramid: '稜錐體',
+                    radius: '半徑',
+                    height: '高度',
+                    side: '邊長',
+                    length: '長度',
+                    width: '寬度',
+                    base_area: '底面積',
+                    unit: '計量單位',
+                    precision: '精度（小數位數）',
+                    load_sample: '載入示例',
+                    clear: '清除',
+                    calculate: '計算體積',
+                    volume_result: '體積結果',
+                    formula: '公式：',
+                    result_details: '結果詳情：',
+                    notes: '說明：',
+                    notes_list: `
+                        <li>體積是三維物體所占空間的大小</li>
+                        <li>計算前請確保所有測量值使用相同的單位</li>
+                        <li>不同幾何形狀的體積公式因其獨特性質而不同</li>
+                    `,
+                    err_no_shape: '請先選擇一個形狀',
+                    err_invalid_value: '請輸入有效的正數',
+                    unit_m: '立方米 (m³)',
+                    unit_cm: '立方厘米 (cm³)',
+                    unit_mm: '立方毫米 (mm³)',
+                    unit_in: '立方英寸 (in³)',
+                    unit_ft: '立方英尺 (ft³)'
+                },
+                'ja': {
+                    title: '📦 体積計算ツール',
+                    select_shape: '形状を選択',
+                    sphere: '球体',
+                    cube: '立方体',
+                    cylinder: '円柱',
+                    cone: '円錐',
+                    rectangular: '直方体',
+                    pyramid: '角錐',
+                    radius: '半径',
+                    height: '高さ',
+                    side: '一辺の長さ',
+                    length: '長さ',
+                    width: '幅',
+                    base_area: '底面積',
+                    unit: '測定単位',
+                    precision: '精度（小数桁）',
+                    load_sample: 'サンプルを読み込む',
+                    clear: 'クリア',
+                    calculate: '体積を計算',
+                    volume_result: '体積結果',
+                    formula: '公式：',
+                    result_details: '結果の詳細：',
+                    notes: '注意事項：',
+                    notes_list: `
+                        <li>体積とは、三次元物体が占める空間の量のことです</li>
+                        <li>計算する前に、すべての測定値が同じ単位であることを確認してください</li>
+                        <li>公式は幾何学的形状によって異なり、それぞれの固有の性質に基づいています</li>
+                    `,
+                    err_no_shape: 'まず形状を選択してください',
+                    err_invalid_value: '有効な正数を入力してください',
+                    unit_m: '立方メートル (m³)',
+                    unit_cm: '立方センチメートル (cm³)',
+                    unit_mm: '立方ミリメートル (mm³)',
+                    unit_in: '立方インチ (in³)',
+                    unit_ft: '立方フィート (ft³)'
+                },
+                'ru': {
+                    title: '📦 Калькулятор объёма',
+                    select_shape: 'Выберите фигуру',
+                    sphere: 'Сфера',
+                    cube: 'Куб',
+                    cylinder: 'Цилиндр',
+                    cone: 'Конус',
+                    rectangular: 'Прямоугольный призм',
+                    pyramid: 'Пирамида',
+                    radius: 'Радиус',
+                    height: 'Высота',
+                    side: 'Длина ребра',
+                    length: 'Длина',
+                    width: 'Ширина',
+                    base_area: 'Площадь основания',
+                    unit: 'Единица измерения',
+                    precision: 'Точность (знаков после запятой)',
+                    load_sample: 'Загрузить пример',
+                    clear: 'Очистить',
+                    calculate: 'Вычислить объем',
+                    volume_result: 'Результат вычисления объёма',
+                    formula: 'Формула: ',
+                    result_details: 'Детали результата:',
+                    notes: 'Примечания:',
+                    notes_list: `
+                        <li>Объем — это количество пространства, занимаемое трехмерным объектом</li>
+                        <li>Убедитесь, что все измерения используют одинаковую единицу перед вычислением</li>
+                        <li>Формулы различаются в зависимости от геометрической формы и их уникальных свойств</li>
+                    `,
+                    err_no_shape: 'Сначала выберите фигуру',
+                    err_invalid_value: 'Введите действительные положительные числа',
+                    unit_m: 'кубические метры (м³)',
+                    unit_cm: 'кубические сантиметры (см³)',
+                    unit_mm: 'кубические миллиметры (мм³)',
+                    unit_in: 'кубические дюймы (дюйм³)',
+                    unit_ft: 'кубические футы (фт³)'
+                }
+            },
+            
+            init: function() {
+                // 默认选择球体
+                this.selectShape('sphere');
+                this.changeLang();
+            },
+            
+            selectShape: function(shape) {
+                this.selectedShape = shape;
+                
+                // 更新UI选中状态
+                document.querySelectorAll('.shape-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                document.querySelector(`.shape-option[data-shape="${shape}"]`).classList.add('selected');
+                
+                // 生成参数输入框
+                const paramsContainer = document.getElementById('shape-parameters');
+                paramsContainer.innerHTML = '';
+                
+                const shapeData = this.shapes[shape];
+                shapeData.params.forEach(param => {
+                    const inputGroup = document.createElement('div');
+                    inputGroup.className = 'input-group';
+                    inputGroup.innerHTML = `
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="${param.name}">${param.label}</label>
+                        <input type="number" id="param-${param.name}" min="0" step="any" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 5">
+                    `;
+                    paramsContainer.appendChild(inputGroup);
+                });
+                
+                // 更新多语言
+                this.changeLang();
+            },
+            
+            loadSample: function() {
+                if (!this.selectedShape) return;
+                
+                // 根据不同形状加载示例数据
+                const samples = {
+                    sphere: {radius: 5},
+                    cube: {side: 4},
+                    cylinder: {radius: 3, height: 10},
+                    cone: {radius: 2, height: 8},
+                    rectangular: {length: 5, width: 3, height: 2},
+                    pyramid: {base_area: 20, height: 6}
+                };
+                
+                const sampleData = samples[this.selectedShape];
+                Object.keys(sampleData).forEach(key => {
+                    document.getElementById(`param-${key}`).value = sampleData[key];
+                });
+            },
+            
+            clearInputs: function() {
+                document.querySelectorAll('#shape-parameters input').forEach(input => {
+                    input.value = '';
+                });
+                document.getElementById('volume-results').classList.add('hidden');
+                document.getElementById('volume-error').classList.add('hidden');
+            },
+            
+            calculate: function() {
+                const errorEl = document.getElementById('volume-error');
+                errorEl.classList.add('hidden');
+                
+                // 验证形状选择
+                if (!this.selectedShape) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_no_shape;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                
+                // 收集参数
+                const shapeData = this.shapes[this.selectedShape];
+                const params = {};
+                let isValid = true;
+                
+                shapeData.params.forEach(param => {
+                    const value = parseFloat(document.getElementById(`param-${param.name}`).value);
+                    if (isNaN(value) || value <= 0) {
+                        isValid = false;
+                    }
+                    params[param.name] = value;
+                });
+                
+                // 验证参数
+                if (!isValid) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_value;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                
+                // 计算体积
+                const volume = shapeData.calculate(params);
+                const precision = parseInt(document.getElementById('volume-precision').value) || 2;
+                const unit = document.getElementById('volume-unit').value;
+                const formattedVolume = volume.toFixed(precision);
+                
+                // 更新结果
+                const unitText = this.i18n[this.getCurrentLang()][`unit_${unit}`];
+                document.getElementById('volume-value').textContent = `${formattedVolume} ${unitText}`;
+                document.getElementById('volume-formula').innerHTML = `${this.i18n[this.getCurrentLang()].formula} ${shapeData.formula}`;
+                
+                // 更新详情
+                const detailsEl = document.getElementById('result-details');
+                detailsEl.innerHTML = '';
+                
+                Object.keys(params).forEach(key => {
+                    const paramLabel = this.i18n[this.getCurrentLang()][key];
+                    detailsEl.innerHTML += `<div>${paramLabel}: ${params[key]} ${unit}</div>`;
+                });
+                
+                document.getElementById('volume-results').classList.remove('hidden');
+            },
+            
+            getCurrentLang: function() {
+                return document.getElementById('volume-lang').value;
+            },
+            
+            changeLang: function() {
+                const lang = this.getCurrentLang();
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.innerHTML = this.i18n[lang][key];
+                    }
+                });
+            }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            VolumeCalc.init();
+        });
+    </script>
+</body>
+</html>

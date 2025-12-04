@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="area_calculator">
+    <meta name="category" content="geometry">
+    <meta name="icon" content="📐">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Area Calculator">
+    <meta name="description" content="Calculate area of various geometric shapes including circle, rectangle, triangle and more.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="面积计算器">
+    <meta name="lang-description-zh-CN" content="计算各种几何图形的面积，包括圆形、矩形、三角形等。">
+    
+    <meta name="lang-title-zh-TW" content="面積計算器">
+    <meta name="lang-description-zh-TW" content="計算各種幾何圖形的面積，包括圓形、矩形、三角形等。">
+    
+    <meta name="lang-title-ja" content="面積計算ツール">
+    <meta name="lang-description-ja" content="円、長方形、三角形など、さまざまな幾何学的形状の面積を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор площади">
+    <meta name="lang-description-ru" content="Вычисление площади различных геометрических фигур, включая круг, прямоугольник, треугольник и другие.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-container { word-break: break-all; }
+        .result-box { background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 15px 0; text-align: center; }
+        .formula-box { background: #f8fafc; padding: 10px; border-radius: 6px; font-family: monospace; margin: 10px 0; }
+        .input-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+        .input-item { flex: 1; min-width: 150px; }
+        .shape-inputs { margin: 15px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="area_calculator" 
+         data-category="geometry" 
+         data-title="Area Calculator" 
+         data-icon="📐">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="area-lang" onchange="AreaCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📐 Area Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 图形选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="shape">Select Shape</label>
+                <select id="shape-select" onchange="AreaCalc.updateInputs()" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="circle">Circle</option>
+                    <option value="rectangle" selected>Rectangle</option>
+                    <option value="triangle">Triangle</option>
+                    <option value="square">Square</option>
+                </select>
+            </div>
+            
+            <!-- 图形参数输入区域 -->
+            <div class="shape-inputs" id="shape-inputs">
+                <!-- 矩形输入 -->
+                <div id="rectangle-inputs">
+                    <div class="input-group">
+                        <div class="input-item">
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="length">Length</label>
+                            <input type="number" id="rect-length" step="0.01" min="0.01" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="input-item">
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="width">Width</label>
+                            <input type="number" id="rect-width" step="0.01" min="0.01" value="3" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 圆形输入 -->
+                <div id="circle-inputs" style="display: none;">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="radius">Radius</label>
+                    <input type="number" id="circle-radius" step="0.01" min="0.01" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- 三角形输入 -->
+                <div id="triangle-inputs" style="display: none;">
+                    <div class="input-group">
+                        <div class="input-item">
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="base">Base</label>
+                            <input type="number" id="tri-base" step="0.01" min="0.01" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="input-item">
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height">Height</label>
+                            <input type="number" id="tri-height" step="0.01" min="0.01" value="3" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 正方形输入 -->
+                <div id="square-inputs" style="display: none;">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_length">Side Length</label>
+                    <input type="number" id="square-side" step="0.01" min="0.01" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+
+            <!-- 计算按钮 -->
+            <button onclick="AreaCalc.calculate()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" data-i18n="calculate">Calculate Area</button>
+        </div>
+        
+        <!-- 结果展示区域 -->
+        <div class="result-container mt-6 pt-4 border-t">
+            <h3 class="text-lg font-semibold mb-3 text-gray-700" data-i18n="result">Results</h3>
+            <div class="result-box" id="area-result">
+                <div data-i18n="result_placeholder">Area result will be shown here</div>
+            </div>
+            
+            <div class="formula-box mt-4" id="area-formula">
+                <div data-i18n="formula_placeholder">Formula used: ...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AreaCalc = {
+            // 多语言文本映射
+            translations: {
+                en: {
+                    title: "📐 Area Calculator",
+                    shape: "Select Shape",
+                    length: "Length",
+                    width: "Width",
+                    radius: "Radius",
+                    base: "Base",
+                    height: "Height",
+                    side_length: "Side Length",
+                    calculate: "Calculate Area",
+                    result: "Results",
+                    result_placeholder: "Area result will be shown here",
+                    formula_placeholder: "Formula used: ...",
+                    area: "Area",
+                    error: "Error",
+                    invalid_input: "Please enter valid positive numbers"
+                },
+                "zh-CN": {
+                    title: "📐 面积计算器",
+                    shape: "选择图形",
+                    length: "长度",
+                    width: "宽度",
+                    radius: "半径",
+                    base: "底边长",
+                    height: "高",
+                    side_length: "边长",
+                    calculate: "计算面积",
+                    result: "结果",
+                    result_placeholder: "面积结果将显示在这里",
+                    formula_placeholder: "使用的公式: ...",
+                    area: "面积",
+                    error: "错误",
+                    invalid_input: "请输入有效的正数"
+                },
+                "zh-TW": {
+                    title: "📐 面積計算器",
+                    shape: "選擇圖形",
+                    length: "長度",
+                    width: "寬度",
+                    radius: "半徑",
+                    base: "底邊長",
+                    height: "高",
+                    side_length: "邊長",
+                    calculate: "計算面積",
+                    result: "結果",
+                    result_placeholder: "面積結果將顯示在這裡",
+                    formula_placeholder: "使用的公式: ...",
+                    area: "面積",
+                    error: "錯誤",
+                    invalid_input: "請輸入有效的正數"
+                },
+                ja: {
+                    title: "📐 面積計算ツール",
+                    shape: "図形を選択",
+                    length: "長さ",
+                    width: "幅",
+                    radius: "半径",
+                    base: "底辺",
+                    height: "高さ",
+                    side_length: "一辺の長さ",
+                    calculate: "面積を計算",
+                    result: "結果",
+                    result_placeholder: "面積の結果はここに表示されます",
+                    formula_placeholder: "使用された公式: ...",
+                    area: "面積",
+                    error: "エラー",
+                    invalid_input: "有効な正数を入力してください"
+                },
+                ru: {
+                    title: "📐 Калькулятор площади",
+                    shape: "Выберите фигуру",
+                    length: "Длина",
+                    width: "Ширина",
+                    radius: "Радиус",
+                    base: "Основание",
+                    height: "Высота",
+                    side_length: "Длина стороны",
+                    calculate: "Вычислить площадь",
+                    result: "Результаты",
+                    result_placeholder: "Результат площади будет показан здесь",
+                    formula_placeholder: "Используемая формула: ...",
+                    area: "Площадь",
+                    error: "Ошибка",
+                    invalid_input: "Введите действительные положительные числа"
+                }
+            },
+
+            // 初始化
+            init: function() {
+                this.updateInputs();
+            },
+
+            // 根据选择的图形更新输入框
+            updateInputs: function() {
+                const shape = document.getElementById('shape-select').value;
+                
+                // 隐藏所有输入区域
+                document.querySelectorAll('[id$="-inputs"]').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                // 显示选中图形的输入区域
+                document.getElementById(`${shape}-inputs`).style.display = 'block';
+                
+                // 更新语言文本
+                this.changeLang();
+            },
+
+            // 切换语言
+            changeLang: function() {
+                const lang = document.getElementById('area-lang').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.translations[lang] && this.translations[lang][key]) {
+                        el.textContent = this.translations[lang][key];
+                    }
+                });
+            },
+
+            // 计算面积
+            calculate: function() {
+                const resultEl = document.getElementById('area-result');
+                const formulaEl = document.getElementById('area-formula');
+                const lang = document.getElementById('area-lang').value;
+                const shape = document.getElementById('shape-select').value;
+                
+                let area, formula, paramsValid = true;
+                
+                // 根据图形类型计算面积
+                switch(shape) {
+                    case 'rectangle':
+                        const length = parseFloat(document.getElementById('rect-length').value);
+                        const width = parseFloat(document.getElementById('rect-width').value);
+                        
+                        if (isNaN(length) || isNaN(width) || length <= 0 || width <= 0) {
+                            paramsValid = false;
+                        } else {
+                            area = length * width;
+                            formula = `${this.translations[lang].length} × ${this.translations[lang].width} = ${length} × ${width} = ${area.toFixed(2)}`;
+                        }
+                        break;
+                        
+                    case 'circle':
+                        const radius = parseFloat(document.getElementById('circle-radius').value);
+                        
+                        if (isNaN(radius) || radius <= 0) {
+                            paramsValid = false;
+                        } else {
+                            area = Math.PI * radius * radius;
+                            formula = `π × r² = π × ${radius}² = ${area.toFixed(2)}`;
+                        }
+                        break;
+                        
+                    case 'triangle':
+                        const base = parseFloat(document.getElementById('tri-base').value);
+                        const height = parseFloat(document.getElementById('tri-height').value);
+                        
+                        if (isNaN(base) || isNaN(height) || base <= 0 || height <= 0) {
+                            paramsValid = false;
+                        } else {
+                            area = 0.5 * base * height;
+                            formula = `0.5 × ${this.translations[lang].base} × ${this.translations[lang].height} = 0.5 × ${base} × ${height} = ${area.toFixed(2)}`;
+                        }
+                        break;
+                        
+                    case 'square':
+                        const side = parseFloat(document.getElementById('square-side').value);
+                        
+                        if (isNaN(side) || side <= 0) {
+                            paramsValid = false;
+                        } else {
+                            area = side * side;
+                            formula = `${this.translations[lang].side_length}² = ${side}² = ${area.toFixed(2)}`;
+                        }
+                        break;
+                }
+                
+                // 显示结果
+                if (!paramsValid) {
+                    resultEl.innerHTML = `<span class="text-red-600">${this.translations[lang].error}: ${this.translations[lang].invalid_input}</span>`;
+                    formulaEl.textContent = '';
+                } else {
+                    resultEl.innerHTML = `<strong>${this.translations[lang].area}:</strong> ${area.toFixed(2)}`;
+                    formulaEl.textContent = formula;
+                }
+            }
+        };
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            AreaCalc.init();
+        });
+    </script>
+</body>
+</html>

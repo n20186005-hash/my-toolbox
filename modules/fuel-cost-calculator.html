@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Cost Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="fuel_cost_calc">
+    <meta name="category" content="transportation">
+    <meta name="icon" content="⛽">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Fuel Cost Calculator">
+    <meta name="description" content="Calculate the fuel cost for your trip based on distance, fuel efficiency and fuel price.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="燃油成本计算器">
+    <meta name="lang-description-zh-CN" content="根据距离、燃油效率和燃油价格计算行程的燃油成本。">
+    
+    <meta name="lang-title-zh-TW" content="燃油成本計算器">
+    <meta name="lang-description-zh-TW" content="根據距離、燃油效率和燃油價格計算行程的燃油成本。">
+    
+    <meta name="lang-title-ja" content="燃料費計算ツール">
+    <meta name="lang-description-ja" content="距離、燃費、燃料価格に基づいて旅行の燃料費を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор расходов на топливо">
+    <meta name="lang-description-ru" content="Вычислите расходы на топливо для поездки на основе расстояния, расхода топлива и цены на топливо.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="fuel_cost_calc" 
+         data-category="transportation" 
+         data-title="Fuel Cost Calculator" 
+         data-icon="⛽">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="fc-lang" onchange="FuelCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">⛽ Fuel Cost Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="distance_label">Trip Distance</label>
+                <div class="flex">
+                    <input type="number" id="fc-distance" class="flex-1 p-2 border rounded-r-none focus:ring-2 focus:ring-blue-500 outline-none" value="100" min="0.1" step="0.1">
+                    <select id="fc-distance-unit" class="border-l-0 p-2 border rounded-l-none focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+                        <option value="km">km</option>
+                        <option value="mi">mi</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="efficiency_label">Fuel Efficiency</label>
+                <div class="flex">
+                    <input type="number" id="fc-efficiency" class="flex-1 p-2 border rounded-r-none focus:ring-2 focus:ring-blue-500 outline-none" value="10" min="0.1" step="0.1">
+                    <select id="fc-efficiency-unit" class="border-l-0 p-2 border rounded-l-none focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+                        <option value="kmpl">km/l</option>
+                        <option value="mpg">mpg (US)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="price_label">Fuel Price</label>
+                <div class="flex">
+                    <input type="number" id="fc-price" class="flex-1 p-2 border rounded-r-none focus:ring-2 focus:ring-blue-500 outline-none" value="1.5" min="0.01" step="0.01">
+                    <select id="fc-price-currency" class="border-l-0 p-2 border rounded-l-none focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+                        <option value="$">$ (USD)</option>
+                        <option value="€">€ (EUR)</option>
+                        <option value="£">£ (GBP)</option>
+                        <option value="¥">¥ (JPY)</option>
+                        <option value="₽">₽ (RUB)</option>
+                        <option value="¥">¥ (CNY)</option>
+                    </select>
+                    <select id="fc-price-unit" class="border-l-0 p-2 border rounded-l-none focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+                        <option value="l">per liter</option>
+                        <option value="gal">per gallon</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="FuelCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Fuel Cost</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Total Fuel Cost</div>
+            <div id="fc-result" class="text-3xl font-bold text-blue-800">--</div>
+            <div id="fc-details" class="text-sm text-gray-600 mt-4"></div>
+        </div>
+    </div>
+
+    <script>
+        const FuelCalc = {
+            i18n: {
+                'en': {
+                    title: '⛽ Fuel Cost Calculator',
+                    distance_label: 'Trip Distance',
+                    efficiency_label: 'Fuel Efficiency',
+                    price_label: 'Fuel Price',
+                    btn_calc: 'Calculate Fuel Cost',
+                    res_label: 'Total Fuel Cost:',
+                    err_invalid: 'Invalid Input',
+                    details: 'Fuel needed: {{fuel}} {{unit}}, Cost per unit: {{price}}'
+                },
+                'zh-CN': {
+                    title: '⛽ 燃油成本计算器',
+                    distance_label: '行程距离',
+                    efficiency_label: '燃油效率',
+                    price_label: '燃油价格',
+                    btn_calc: '计算燃油成本',
+                    res_label: '总燃油成本：',
+                    err_invalid: '输入无效',
+                    details: '所需燃油：{{fuel}} {{unit}}，单位成本：{{price}}'
+                },
+                'zh-TW': {
+                    title: '⛽ 燃油成本計算器',
+                    distance_label: '行程距離',
+                    efficiency_label: '燃油效率',
+                    price_label: '燃油價格',
+                    btn_calc: '計算燃油成本',
+                    res_label: '總燃油成本：',
+                    err_invalid: '輸入無效',
+                    details: '所需燃油：{{fuel}} {{unit}}，單位成本：{{price}}'
+                },
+                'ja': {
+                    title: '⛽ 燃料費計算ツール',
+                    distance_label: '旅行距離',
+                    efficiency_label: '燃費',
+                    price_label: '燃料価格',
+                    btn_calc: '燃料費を計算',
+                    res_label: '総燃料費：',
+                    err_invalid: '無効な入力',
+                    details: '必要な燃料：{{fuel}} {{unit}}，単位価格：{{price}}'
+                },
+                'ru': {
+                    title: '⛽ Калькулятор расходов на топливо',
+                    distance_label: 'Дистанция поездки',
+                    efficiency_label: 'Расход топлива',
+                    price_label: 'Цена топлива',
+                    btn_calc: 'Вычислить расходы',
+                    res_label: 'Общие расходы на топливо：',
+                    err_invalid: 'Неверный ввод',
+                    details: 'Необходимое топливо：{{fuel}} {{unit}}，Цена за единицу：{{price}}'
+                }
+            },
+
+            init: () => {
+                // 初始化默认值已在HTML中设置
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('fc-lang').value;
+                const texts = FuelCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="fuel_cost_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                
+                // 重新计算以更新结果语言
+                const currentResult = document.getElementById('fc-result').innerText;
+                if (currentResult !== '--') {
+                    FuelCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const distance = parseFloat(document.getElementById('fc-distance').value);
+                const efficiency = parseFloat(document.getElementById('fc-efficiency').value);
+                const price = parseFloat(document.getElementById('fc-price').value);
+                const distanceUnit = document.getElementById('fc-distance-unit').value;
+                const efficiencyUnit = document.getElementById('fc-efficiency-unit').value;
+                const priceCurrency = document.getElementById('fc-price-currency').value;
+                const priceUnit = document.getElementById('fc-price-unit').value;
+                const lang = document.getElementById('fc-lang').value;
+                const texts = FuelCalc.i18n[lang];
+
+                // 验证输入
+                if (isNaN(distance) || isNaN(efficiency) || isNaN(price) || 
+                    distance <= 0 || efficiency <= 0 || price <= 0) {
+                    document.getElementById('fc-result').innerText = texts.err_invalid;
+                    document.getElementById('fc-result').className = "text-xl font-bold text-red-600";
+                    document.getElementById('fc-details').innerText = "";
+                    return;
+                }
+
+                // 统一转换为升和公里进行计算
+                let distanceKm = distance;
+                if (distanceUnit === 'mi') {
+                    distanceKm = distance * 1.60934; // 英里转公里
+                }
+
+                let efficiencyKmpl = efficiency;
+                if (efficiencyUnit === 'mpg') {
+                    efficiencyKmpl = efficiency * 0.425144; // 美制mpg转km/l
+                }
+
+                // 计算所需燃油（升）
+                const fuelLiters = distanceKm / efficiencyKmpl;
+                
+                // 转换燃油单位显示
+                let fuelDisplay, fuelUnit;
+                if (priceUnit === 'gal') {
+                    fuelDisplay = fuelLiters / 3.78541; // 升转加仑
+                    fuelUnit = 'gal';
+                } else {
+                    fuelDisplay = fuelLiters;
+                    fuelUnit = 'l';
+                }
+
+                // 计算总成本
+                let totalCost;
+                if (priceUnit === 'gal') {
+                    // 价格是每加仑，已转换为加仑计算
+                    totalCost = fuelDisplay * price;
+                } else {
+                    // 价格是每升
+                    totalCost = fuelLiters * price;
+                }
+
+                // 格式化结果
+                const formattedCost = totalCost.toFixed(2);
+                const formattedFuel = fuelDisplay.toFixed(2);
+                const formattedPrice = price.toFixed(2);
+                
+                // 构建详细信息
+                const details = texts.details
+                    .replace('{{fuel}}', formattedFuel)
+                    .replace('{{unit}}', fuelUnit)
+                    .replace('{{price}}', `${priceCurrency}${formattedPrice}`);
+
+                document.getElementById('fc-result').className = "text-3xl font-bold text-blue-800";
+                document.getElementById('fc-result').innerText = `${priceCurrency}${formattedCost}`;
+                document.getElementById('fc-details').innerText = details;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', FuelCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('fc-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    FuelCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

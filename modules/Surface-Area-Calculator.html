@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surface Area Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="surface_area_calc">
+    <meta name="category" content="math">
+    <meta name="icon" content="📏">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Surface Area Calculator">
+    <meta name="description" content="Calculate the surface area of common 3D shapes including sphere, cube, cylinder, cone, rectangular prism, and more.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="表面积计算器">
+    <meta name="lang-description-zh-CN" content="计算常见3D形状的表面积，包括球体、立方体、圆柱体、圆锥体、长方体等。">
+    
+    <meta name="lang-title-zh-TW" content="表面積計算器">
+    <meta name="lang-description-zh-TW" content="計算常見3D形狀的表面積，包括球體、立方體、圓柱體、圓錐體、長方體等。">
+    
+    <meta name="lang-title-ja" content="表面積計算ツール">
+    <meta name="lang-description-ja" content="球、立方体、シリンダー、円錐、直方体など、一般的な3D形状の表面積を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор площади поверхности">
+    <meta name="lang-description-ru" content="Рассчитайте площадь поверхности распространенных 3D фигур, включая сферу, куб, цилиндр, конус, прямоугольный призму и другие.">
+    
+    <meta name="lang-title-es" content="Calculadora de Área de Superficie">
+    <meta name="lang-description-es" content="Calcule el área de superficie de formas 3D comunes, incluyendo esfera, cubo, cilindro, cono, prisma rectangular y más.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .shape-form { display: none; }
+        .shape-form.active { display: block; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 14px; color: #374151; margin-bottom: 4px; }
+        input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; }
+        .result-box { background: #eff6ff; padding: 16px; border-radius: 6px; margin-top: 20px; }
+        .formula-box { background: #f9fafb; padding: 12px; border-radius: 4px; margin-top: 10px; font-family: monospace; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="surface_area_calc" 
+         data-category="math" 
+         data-title="Surface Area Calculator" 
+         data-icon="📏">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="sa-lang" onchange="SurfaceAreaCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📏 Surface Area Calculator</h2>
+        
+        <!-- 形状选择 -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="select_shape">Select a Shape</label>
+            <select id="shape-select" onchange="SurfaceAreaCalc.switchShape()" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="sphere" selected>Sphere</option>
+                <option value="cube">Cube</option>
+                <option value="cylinder">Cylinder</option>
+                <option value="cone">Cone</option>
+                <option value="rectangular-prism">Rectangular Prism</option>
+                <option value="triangular-prism">Triangular Prism</option>
+                <option value="pyramid">Square Pyramid</option>
+            </select>
+        </div>
+
+        <!-- 球体表单 -->
+        <div id="sphere-form" class="shape-form active">
+            <div class="input-group">
+                <label data-i18n="sphere_radius">Radius (r)</label>
+                <input type="number" id="sphere-radius" class="shape-input" min="0.01" step="0.01" value="5">
+            </div>
+        </div>
+
+        <!-- 立方体表单 -->
+        <div id="cube-form" class="shape-form">
+            <div class="input-group">
+                <label data-i18n="cube_side">Side Length (a)</label>
+                <input type="number" id="cube-side" class="shape-input" min="0.01" step="0.01" value="5">
+            </div>
+        </div>
+
+        <!-- 圆柱体表单 -->
+        <div id="cylinder-form" class="shape-form">
+            <div class="input-group">
+                <label data-i18n="cylinder_radius">Radius (r)</label>
+                <input type="number" id="cylinder-radius" class="shape-input" min="0.01" step="0.01" value="3">
+            </div>
+            <div class="input-group">
+                <label data-i18n="cylinder_height">Height (h)</label>
+                <input type="number" id="cylinder-height" class="shape-input" min="0.01" step="0.01" value="8">
+            </div>
+        </div>
+
+        <!-- 圆锥体表单 -->
+        <div id="cone-form" class="shape-form">
+            <div class="input-group">
+                <label data-i18n="cone_radius">Radius (r)</label>
+                <input type="number" id="cone-radius" class="shape-input" min="0.01" step="0.01" value="4">
+            </div>
+            <div class="input-group">
+                <label data-i18n="cone_height">Height (h)</label>
+                <input type="number" id="cone-height" class="shape-input" min="0.01" step="0.01" value="6">
+            </div>
+        </div>
+
+        <!-- 长方体表单 -->
+        <div id="rectangular-prism-form" class="shape-form">
+            <div class="input-group">
+                <label data-i18n="rp_length">Length (l)</label>
+                <input type="number" id="rp-length" class="shape-input" min="0.01" step="0.01" value="5">
+            </div>
+            <div class="input-group">
+                <label data-i18n="rp_width">Width (w)</label>
+                <input type="number" id="rp-width" class="shape-input" min="0.01" step="0.01" value="4">
+            </div>
+            <div class="input-group">
+                <label data-i18n="rp_height">Height (h)</label>
+                <input type="number" id="rp-height" class="shape-input" min="0.01" step="0.01" value="3">
+            </div>
+        </div>
+
+        <!-- 三棱柱表单 -->
+        <div id="triangular-prism-form" class="shape-form">
+            <div class="input-group">
+                <label data-i18n="tp_side1">Triangle Side 1 (a)</label>
+                <input type="number" id="tp-side1" class="shape-input" min="0.01" step="0.01" value="3">
+            </div>
+            <div class="input-group">
+                <label data-i18n="tp_side2">Triangle Side 2 (b)</label>
+                <input type="number" id="tp-side2" class="shape-input" min="0.01" step="0.01" value="4">
+            </div>
+            <div class="input-group">
+                <label data-i18n="tp_side3">Triangle Side 3 (c)</label>
+                <input type="number" id="tp-side3" class="shape-input" min="0.01" step="0.01" value="5">
+            </div>
+            <div class="input-group">
+                <label data-i18n="tp_height">Prism Height (h)</label>
+                <input type="number" id="tp-height" class="shape-input" min="0.01" step="0.01" value="10">
+            </div>
+        </div>
+
+        <!-- 四棱锥表单 -->
+        <div id="pyramid-form" class="shape-form">
+            <div class="input-group">
+                <label data-i18n="pyramid_base">Base Side (s)</label>
+                <input type="number" id="pyramid-base" class="shape-input" min="0.01" step="0.01" value="6">
+            </div>
+            <div class="input-group">
+                <label data-i18n="pyramid_height">Height (h)</label>
+                <input type="number" id="pyramid-height" class="shape-input" min="0.01" step="0.01" value="8">
+            </div>
+        </div>
+
+        <button onclick="SurfaceAreaCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Surface Area</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-3" data-i18n="result_label">Results</div>
+            
+            <div id="sa-results" class="space-y-4">
+                <div>
+                    <span data-i18n="surface_area" class="font-medium text-lg">Surface Area:</span>
+                    <span id="sa-result" class="ml-2 text-2xl font-bold text-blue-800">--</span>
+                    <span id="sa-units" class="text-sm text-gray-600">square units</span>
+                </div>
+                
+                <div class="formula-box" id="sa-formula">
+                    <span data-i18n="formula">Formula:</span> <span id="formula-text">4πr² (Sphere)</span>
+                </div>
+                
+                <div id="sa-breakdown" class="text-gray-700">
+                    <div data-i18n="calculation_breakdown">Calculation Breakdown:</div>
+                    <div id="breakdown-text" class="mt-2">--</div>
+                </div>
+            </div>
+            
+            <div id="sa-error" class="mt-4 text-red-600 hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const SurfaceAreaCalc = {
+            i18n: {
+                'en': {
+                    title: '📏 Surface Area Calculator',
+                    select_shape: 'Select a Shape',
+                    sphere_radius: 'Radius (r)',
+                    cube_side: 'Side Length (a)',
+                    cylinder_radius: 'Radius (r)',
+                    cylinder_height: 'Height (h)',
+                    cone_radius: 'Radius (r)',
+                    cone_height: 'Height (h)',
+                    rp_length: 'Length (l)',
+                    rp_width: 'Width (w)',
+                    rp_height: 'Height (h)',
+                    tp_side1: 'Triangle Side 1 (a)',
+                    tp_side2: 'Triangle Side 2 (b)',
+                    tp_side3: 'Triangle Side 3 (c)',
+                    tp_height: 'Prism Height (h)',
+                    pyramid_base: 'Base Side (s)',
+                    pyramid_height: 'Height (h)',
+                    btn_calc: 'Calculate Surface Area',
+                    result_label: 'Results',
+                    surface_area: 'Surface Area:',
+                    formula: 'Formula:',
+                    calculation_breakdown: 'Calculation Breakdown:',
+                    err_invalid_value: 'Please enter valid positive values for all dimensions',
+                    units_square: 'square units',
+                    breakdown_sphere: '4 × π × ({radius})² = {result}',
+                    breakdown_cube: '6 × ({side})² = {result}',
+                    breakdown_cylinder: '2πr(r + h) = 2 × π × {radius} × ({radius} + {height}) = {result}',
+                    breakdown_cone: 'πr(r + √(r² + h²)) = π × {radius} × ({radius} + √({radius}² + {height}²)) = {result}',
+                    breakdown_rectprism: '2(lw + lh + wh) = 2 × ({length}×{width} + {length}×{height} + {width}×{height}) = {result}',
+                    breakdown_triprism: '2×(Area of Base) + Perimeter×Height = 2×{baseArea} + ({side1}+{side2}+{side3})×{height} = {result}',
+                    breakdown_pyramid: 's² + 2s√(s²/4 + h²) = {base}² + 2×{base}×√({base}²/4 + {height}²) = {result}'
+                },
+                'zh-CN': {
+                    title: '📏 表面积计算器',
+                    select_shape: '选择形状',
+                    sphere_radius: '半径 (r)',
+                    cube_side: '边长 (a)',
+                    cylinder_radius: '半径 (r)',
+                    cylinder_height: '高度 (h)',
+                    cone_radius: '半径 (r)',
+                    cone_height: '高度 (h)',
+                    rp_length: '长度 (l)',
+                    rp_width: '宽度 (w)',
+                    rp_height: '高度 (h)',
+                    tp_side1: '三角形边长1 (a)',
+                    tp_side2: '三角形边长2 (b)',
+                    tp_side3: '三角形边长3 (c)',
+                    tp_height: '棱柱高度 (h)',
+                    pyramid_base: '底面边长 (s)',
+                    pyramid_height: '高度 (h)',
+                    btn_calc: '计算表面积',
+                    result_label: '结果',
+                    surface_area: '表面积：',
+                    formula: '公式：',
+                    calculation_breakdown: '计算过程：',
+                    err_invalid_value: '请为所有尺寸输入有效的正值',
+                    units_square: '平方单位',
+                    breakdown_sphere: '4 × π × ({radius})² = {result}',
+                    breakdown_cube: '6 × ({side})² = {result}',
+                    breakdown_cylinder: '2πr(r + h) = 2 × π × {radius} × ({radius} + {height}) = {result}',
+                    breakdown_cone: 'πr(r + √(r² + h²)) = π × {radius} × ({radius} + √({radius}² + {height}²)) = {result}',
+                    breakdown_rectprism: '2(lw + lh + wh) = 2 × ({length}×{width} + {length}×{height} + {width}×{height}) = {result}',
+                    breakdown_triprism: '2×(底面积) + 周长×高度 = 2×{baseArea} + ({side1}+{side2}+{side3})×{height} = {result}',
+                    breakdown_pyramid: 's² + 2s√(s²/4 + h²) = {base}² + 2×{base}×√({base}²/4 + {height}²) = {result}'
+                },
+                'zh-TW': {
+                    title: '📏 表面積計算器',
+                    select_shape: '選擇形狀',
+                    sphere_radius: '半徑 (r)',
+                    cube_side: '邊長 (a)',
+                    cylinder_radius: '半徑 (r)',
+                    cylinder_height: '高度 (h)',
+                    cone_radius: '半徑 (r)',
+                    cone_height: '高度 (h)',
+                    rp_length: '長度 (l)',
+                    rp_width: '寬度 (w)',
+                    rp_height: '高度 (h)',
+                    tp_side1: '三角形邊長1 (a)',
+                    tp_side2: '三角形邊長2 (b)',
+                    tp_side3: '三角形邊長3 (c)',
+                    tp_height: '稜柱高度 (h)',
+                    pyramid_base: '底面邊長 (s)',
+                    pyramid_height: '高度 (h)',
+                    btn_calc: '計算表面積',
+                    result_label: '結果',
+                    surface_area: '表面積：',
+                    formula: '公式：',
+                    calculation_breakdown: '計算過程：',
+                    err_invalid_value: '請為所有尺寸輸入有效的正值',
+                    units_square: '平方單位',
+                    breakdown_sphere: '4 × π × ({radius})² = {result}',
+                    breakdown_cube: '6 × ({side})² = {result}',
+                    breakdown_cylinder: '2πr(r + h) = 2 × π × {radius} × ({radius} + {height}) = {result}',
+                    breakdown_cone: 'πr(r + √(r² + h²)) = π × {radius} × ({radius} + √({radius}² + {height}²)) = {result}',
+                    breakdown_rectprism: '2(lw + lh + wh) = 2 × ({length}×{width} + {length}×{height} + {width}×{height}) = {result}',
+                    breakdown_triprism: '2×(底面積) + 周長×高度 = 2×{baseArea} + ({side1}+{side2}+{side3})×{height} = {result}',
+                    breakdown_pyramid: 's² + 2s√(s²/4 + h²) = {base}² + 2×{base}×√({base}²/4 + {height}²) = {result}'
+                },
+                'ja': {
+                    title: '📏 表面積計算ツール',
+                    select_shape: '形状を選択',
+                    sphere_radius: '半径 (r)',
+                    cube_side: '辺の長さ (a)',
+                    cylinder_radius: '半径 (r)',
+                    cylinder_height: '高さ (h)',
+                    cone_radius: '半径 (r)',
+                    cone_height: '高さ (h)',
+                    rp_length: '長さ (l)',
+                    rp_width: '幅 (w)',
+                    rp_height: '高さ (h)',
+                    tp_side1: '三角形の辺1 (a)',
+                    tp_side2: '三角形の辺2 (b)',
+                    tp_side3: '三角形の辺3 (c)',
+                    tp_height: '三角柱の高さ (h)',
+                    pyramid_base: '底面の辺 (s)',
+                    pyramid_height: '高さ (h)',
+                    btn_calc: '表面積を計算',
+                    result_label: '結果',
+                    surface_area: '表面積：',
+                    formula: '公式：',
+                    calculation_breakdown: '計算の詳細：',
+                    err_invalid_value: 'すべての寸法に有効な正数値を入力してください',
+                    units_square: '平方単位',
+                    breakdown_sphere: '4 × π × ({radius})² = {result}',
+                    breakdown_cube: '6 × ({side})² = {result}',
+                    breakdown_cylinder: '2πr(r + h) = 2 × π × {radius} × ({radius} + {height}) = {result}',
+                    breakdown_cone: 'πr(r + √(r² + h²)) = π × {radius} × ({radius} + √({radius}² + {height}²)) = {result}',
+                    breakdown_rectprism: '2(lw + lh + wh) = 2 × ({length}×{width} + {length}×{height} + {width}×{height}) = {result}',
+                    breakdown_triprism: '2×(底面積) + 周囲長×高さ = 2×{baseArea} + ({side1}+{side2}+{side3})×{height} = {result}',
+                    breakdown_pyramid: 's² + 2s√(s²/4 + h²) = {base}² + 2×{base}×√({base}²/4 + {height}²) = {result}'
+                },
+                'ru': {
+                    title: '📏 Калькулятор площади поверхности',
+                    select_shape: 'Выберите фигуру',
+                    sphere_radius: 'Радиус (r)',
+                    cube_side: 'Длина стороны (a)',
+                    cylinder_radius: 'Радиус (r)',
+                    cylinder_height: 'Высота (h)',
+                    cone_radius: 'Радиус (r)',
+                    cone_height: 'Высота (h)',
+                    rp_length: 'Длина (l)',
+                    rp_width: 'Ширина (w)',
+                    rp_height: 'Высота (h)',
+                    tp_side1: 'Сторона треугольника 1 (a)',
+                    tp_side2: 'Сторона треугольника 2 (b)',
+                    tp_side3: 'Сторона треугольника 3 (c)',
+                    tp_height: 'Высота призмы (h)',
+                    pyramid_base: 'Сторона основания (s)',
+                    pyramid_height: 'Высота (h)',
+                    btn_calc: 'Рассчитать площадь поверхности',
+                    result_label: 'Результаты',
+                    surface_area: 'Площадь поверхности:',
+                    formula: 'Формула:',
+                    calculation_breakdown: 'Детали расчета:',
+                    err_invalid_value: 'Введите действительные положительные значения для всех размеров',
+                    units_square: 'квадратные единицы',
+                    breakdown_sphere: '4 × π × ({radius})² = {result}',
+                    breakdown_cube: '6 × ({side})² = {result}',
+                    breakdown_cylinder: '2πr(r + h) = 2 × π × {radius} × ({radius} + {height}) = {result}',
+                    breakdown_cone: 'πr(r + √(r² + h²)) = π × {radius} × ({radius} + √({radius}² + {height}²)) = {result}',
+                    breakdown_rectprism: '2(lw + lh + wh) = 2 × ({length}×{width} + {length}×{height} + {width}×{height}) = {result}',
+                    breakdown_triprism: '2×(Площадь основания) + Периметр×Высота = 2×{baseArea} + ({side1}+{side2}+{side3})×{height} = {result}',
+                    breakdown_pyramid: 's² + 2s√(s²/4 + h²) = {base}² + 2×{base}×√({base}²/4 + {height}²) = {result}'
+                },
+                'es': {
+                    title: '📏 Calculadora de Área de Superficie',
+                    select_shape: 'Seleccione una Forma',
+                    sphere_radius: 'Radio (r)',
+                    cube_side: 'Longitud del Lado (a)',
+                    cylinder_radius: 'Radio (r)',
+                    cylinder_height: 'Altura (h)',
+                    cone_radius: 'Radio (r)',
+                    cone_height: 'Altura (h)',
+                    rp_length: 'Longitud (l)',
+                    rp_width: 'Anchura (w)',
+                    rp_height: 'Altura (h)',
+                    tp_side1: 'Lado del Triángulo 1 (a)',
+                    tp_side2: 'Lado del Triángulo 2 (b)',
+                    tp_side3: 'Lado del Triángulo 3 (c)',
+                    tp_height: 'Altura del Prisma (h)',
+                    pyramid_base: 'Lado de la Base (s)',
+                    pyramid_height: 'Altura (h)',
+                    btn_calc: 'Calcular Área de Superficie',
+                    result_label: 'Resultados',
+                    surface_area: 'Área de Superficie:',
+                    formula: 'Fórmula:',
+                    calculation_breakdown: 'Desglose del Cálculo:',
+                    err_invalid_value: 'Ingrese valores positivos válidos para todas las dimensiones',
+                    units_square: 'unidades cuadradas',
+                    breakdown_sphere: '4 × π × ({radius})² = {result}',
+                    breakdown_cube: '6 × ({side})² = {result}',
+                    breakdown_cylinder: '2πr(r + h) = 2 × π × {radius} × ({radius} + {height}) = {result}',
+                    breakdown_cone: 'πr(r + √(r² + h²)) = π × {radius} × ({radius} + √({radius}² + {height}²)) = {result}',
+                    breakdown_rectprism: '2(lw + lh + wh) = 2 × ({length}×{width} + {length}×{height} + {width}×{height}) = {result}',
+                    breakdown_triprism: '2×(Área de la Base) + Perímetro×Altura = 2×{baseArea} + ({side1}+{side2}+{side3})×{height} = {result}',
+                    breakdown_pyramid: 's² + 2s√(s²/4 + h²) = {base}² + 2×{base}×√({base}²/4 + {height}²) = {result}'
+                }
+            },
+
+            // 形状公式配置
+            shapeFormulas: {
+                'sphere': {
+                    formula: '4πr²',
+                    label: {
+                        'en': 'Sphere',
+                        'zh-CN': '球体',
+                        'zh-TW': '球體',
+                        'ja': '球',
+                        'ru': 'Сфера',
+                        'es': 'Esfera'
+                    }
+                },
+                'cube': {
+                    formula: '6a²',
+                    label: {
+                        'en': 'Cube',
+                        'zh-CN': '立方体',
+                        'zh-TW': '立方體',
+                        'ja': '立方体',
+                        'ru': 'Куб',
+                        'es': 'Cubo'
+                    }
+                },
+                'cylinder': {
+                    formula: '2πr(r + h)',
+                    label: {
+                        'en': 'Cylinder',
+                        'zh-CN': '圆柱体',
+                        'zh-TW': '圓柱體',
+                        'ja': 'シリンダー',
+                        'ru': 'Цилиндр',
+                        'es': 'Cilindro'
+                    }
+                },
+                'cone': {
+                    formula: 'πr(r + √(r² + h²))',
+                    label: {
+                        'en': 'Cone',
+                        'zh-CN': '圆锥体',
+                        'zh-TW': '圓錐體',
+                        'ja': '円錐',
+                        'ru': 'Конус',
+                        'es': 'Cono'
+                    }
+                },
+                'rectangular-prism': {
+                    formula: '2(lw + lh + wh)',
+                    label: {
+                        'en': 'Rectangular Prism',
+                        'zh-CN': '长方体',
+                        'zh-TW': '長方體',
+                        'ja': '直方体',
+                        'ru': 'Прямоугольная призма',
+                        'es': 'Prisma Rectangular'
+                    }
+                },
+                'triangular-prism': {
+                    formula: '2×(Area of Base) + Perimeter×Height',
+                    label: {
+                        'en': 'Triangular Prism',
+                        'zh-CN': '三棱柱',
+                        'zh-TW': '三稜柱',
+                        'ja': '三角柱',
+                        'ru': 'Треугольная призма',
+                        'es': 'Prisma Triangular'
+                    }
+                },
+                'pyramid': {
+                    formula: 's² + 2s√(s²/4 + h²)',
+                    label: {
+                        'en': 'Square Pyramid',
+                        'zh-CN': '四棱锥',
+                        'zh-TW': '四稜錐',
+                        'ja': '四角錐',
+                        'ru': 'Квадратная пирамида',
+                        'es': 'Pirámide Cuadrada'
+                    }
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('sa-lang').value;
+                const texts = SurfaceAreaCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="surface_area_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 更新单位文本
+                document.getElementById('sa-units').innerText = texts.units_square || 'square units';
+                
+                // 更新公式标签
+                const currentShape = document.getElementById('shape-select').value;
+                if (currentShape && SurfaceAreaCalc.shapeFormulas[currentShape]) {
+                    const formulaText = `${SurfaceAreaCalc.shapeFormulas[currentShape].formula} (${SurfaceAreaCalc.shapeFormulas[currentShape].label[lang] || SurfaceAreaCalc.shapeFormulas[currentShape].label.en})`;
+                    document.getElementById('formula-text').innerText = formulaText;
+                }
+
+                if (document.getElementById('sa-result').innerText !== '--') {
+                    SurfaceAreaCalc.calc();
+                }
+            },
+
+            switchShape: () => {
+                const shape = document.getElementById('shape-select').value;
+                const lang = document.getElementById('sa-lang').value;
+                
+                // 隐藏所有表单
+                document.querySelectorAll('.shape-form').forEach(form => {
+                    form.classList.remove('active');
+                    form.style.display = 'none';
+                });
+                
+                // 显示选中的表单
+                const activeForm = document.getElementById(`${shape}-form`);
+                if (activeForm) {
+                    activeForm.classList.add('active');
+                    activeForm.style.display = 'block';
+                }
+                
+                // 更新公式显示
+                if (SurfaceAreaCalc.shapeFormulas[shape]) {
+                    const formulaText = `${SurfaceAreaCalc.shapeFormulas[shape].formula} (${SurfaceAreaCalc.shapeFormulas[shape].label[lang] || SurfaceAreaCalc.shapeFormulas[shape].label.en})`;
+                    document.getElementById('formula-text').innerText = formulaText;
+                }
+            },
+
+            // 计算三角形面积（海伦公式）
+            calculateTriangleArea: (a, b, c) => {
+                const s = (a + b + c) / 2;
+                return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+            },
+
+            calc: () => {
+                const lang = document.getElementById('sa-lang').value;
+                const texts = SurfaceAreaCalc.i18n[lang];
+                const errorEl = document.getElementById('sa-error');
+                
+                // 重置错误状态
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+                
+                const shape = document.getElementById('shape-select').value;
+                let surfaceArea = 0;
+                let breakdown = '';
+                
+                try {
+                    switch(shape) {
+                        case 'sphere':
+                            const radius = parseFloat(document.getElementById('sphere-radius').value);
+                            if (radius <= 0) throw new Error();
+                            surfaceArea = 4 * Math.PI * Math.pow(radius, 2);
+                            breakdown = texts.breakdown_sphere
+                                .replace('{radius}', radius.toFixed(2))
+                                .replace('{result}', surfaceArea.toFixed(2));
+                            break;
+                            
+                        case 'cube':
+                            const side = parseFloat(document.getElementById('cube-side').value);
+                            if (side <= 0) throw new Error();
+                            surfaceArea = 6 * Math.pow(side, 2);
+                            breakdown = texts.breakdown_cube
+                                .replace('{side}', side.toFixed(2))
+                                .replace('{result}', surfaceArea.toFixed(2));
+                            break;
+                            
+                        case 'cylinder':
+                            const cylRadius = parseFloat(document.getElementById('cylinder-radius').value);
+                            const cylHeight = parseFloat(document.getElementById('cylinder-height').value);
+                            if (cylRadius <= 0 || cylHeight <= 0) throw new Error();
+                            surfaceArea = 2 * Math.PI * cylRadius * (cylRadius + cylHeight);
+                            breakdown = texts.breakdown_cylinder
+                                .replace('{radius}', cylRadius.toFixed(2))
+                                .replace('{height}', cylHeight.toFixed(2))
+                                .replace('{result}', surfaceArea.toFixed(2));
+                            break;
+                            
+                        case 'cone':
+                            const coneRadius = parseFloat(document.getElementById('cone-radius').value);
+                            const coneHeight = parseFloat(document.getElementById('cone-height').value);
+                            if (coneRadius <= 0 || coneHeight <= 0) throw new Error();
+                            const slantHeight = Math.sqrt(Math.pow(coneRadius, 2) + Math.pow(coneHeight, 2));
+                            surfaceArea = Math.PI * coneRadius * (coneRadius + slantHeight);
+                            breakdown = texts.breakdown_cone
+                                .replace('{radius}', coneRadius.toFixed(2))
+                                .replace('{height}', coneHeight.toFixed(2))
+                                .replace('{result}', surfaceArea.toFixed(2));
+                            break;
+                            
+                        case 'rectangular-prism':
+                            const length = parseFloat(document.getElementById('rp-length').value);
+                            const width = parseFloat(document.getElementById('rp-width').value);
+                            const height = parseFloat(document.getElementById('rp-height').value);
+                            if (length <= 0 || width <= 0 || height <= 0) throw new Error();
+                            surfaceArea = 2 * (length*width + length*height + width*height);
+                            breakdown = texts.breakdown_rectprism
+                                .replace('{length}', length.toFixed(2))
+                                .replace('{width}', width.toFixed(2))
+                                .replace('{height}', height.toFixed(2))
+                                .replace('{result}', surfaceArea.toFixed(2));
+                            break;
+                            
+                        case 'triangular-prism':
+                            const tp1 = parseFloat(document.getElementById('tp-side1').value);
+                            const tp2 = parseFloat(document.getElementById('tp-side2').value);
+                            const tp3 = parseFloat(document.getElementById('tp-side3').value);
+                            const tpHeight = parseFloat(document.getElementById('tp-height').value);
+                            if (tp1 <= 0 || tp2 <= 0 || tp3 <= 0 || tpHeight <= 0) throw new Error();
+                            const baseArea = SurfaceAreaCalc.calculateTriangleArea(tp1, tp2, tp3);
+                            const perimeter = tp1 + tp2 + tp3;
+                            surfaceArea = 2 * baseArea + perimeter * tpHeight;
+                            breakdown = texts.breakdown_triprism
+                                .replace('{baseArea}', baseArea.toFixed(2))
+                                .replace('{side1}', tp1.toFixed(2))
+                                .replace('{side2}', tp2.toFixed(2))
+                                .replace('{side3}', tp3.toFixed(2))
+                                .replace('{height}', tpHeight.toFixed(2))
+                                .replace('{result}', surfaceArea.toFixed(2));
+                            break;
+                            
+                        case 'pyramid':
+                            const pyBase = parseFloat(document.getElementById('pyramid-base').value);
+                            const pyHeight = parseFloat(document.getElementById('pyramid-height').value);
+                            if (pyBase <= 0 || pyHeight <= 0) throw new Error();
+                            const slant = Math.sqrt(Math.pow(pyBase/2, 2) + Math.pow(pyHeight, 2));
+                            surfaceArea = Math.pow(pyBase, 2) + 2 * pyBase * slant;
+                            breakdown = texts.breakdown_pyramid
+                                .replace('{base}', pyBase.toFixed(2))
+                                .replace('{height}', pyHeight.toFixed(2))
+                                .replace('{result}', surfaceArea.toFixed(2));
+                            break;
+                            
+                        default:
+                            throw new Error();
+                    }
+                    
+                    // 显示结果
+                    document.getElementById('sa-result').innerText = surfaceArea.toFixed(2);
+                    document.getElementById('breakdown-text').innerText = breakdown;
+                    
+                } catch (e) {
+                    errorEl.innerText = texts.err_invalid_value;
+                    errorEl.classList.remove('hidden');
+                    document.getElementById('sa-result').innerText = '--';
+                    document.getElementById('breakdown-text').innerText = '--';
+                }
+            }
+        };
+
+        // 页面加载初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('sa-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    SurfaceAreaCalc.changeLang();
+                }
+            }
+            
+            // 初始化形状切换
+            SurfaceAreaCalc.switchShape();
+        });
+    </script>
+
+</body>
+</html>

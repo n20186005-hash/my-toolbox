@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day Counter</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="day_counter">
+    <meta name="category" content="date_time">
+    <meta name="icon" content="📆">
+    
+    <!-- 默认英文内容 (供宿主环境读取) -->
+    <meta name="title" content="Day Counter">
+    <meta name="description" content="Calculate the number of days between two dates or add/subtract days from a date.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="日计数器">
+    <meta name="lang-description-zh-CN" content="计算两个日期之间的天数，或推算日期的加减。">
+    
+    <meta name="lang-title-zh-TW" content="日計數器">
+    <meta name="lang-description-zh-TW" content="計算兩個日期之間的天數，或推算日期的加減。">
+    
+    <meta name="lang-title-ja" content="日数計算（日付計算）">
+    <meta name="lang-description-ja" content="2つの日付の間の日数を計算したり、日付に日数を加算/減算したりします。">
+    
+    <meta name="lang-title-ru" content="Калькулятор дней">
+    <meta name="lang-description-ru" content="Рассчитайте количество дней между двумя датами или прибавьте/вычтите дни из даты.">
+    
+    <meta name="lang-title-es" content="Contador de Días">
+    <meta name="lang-description-es" content="Calcula el número de días entre dos fechas o suma/resta días a una fecha.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 模拟主程序环境样式 */
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        
+        /* 简单的 Tab 切换动画 */
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; background-color: #eff6ff; }
+    </style>
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 1：HTML 积木 (复制到 tools-wrapper) -->
+    <!-- ================================================================= -->
+    
+    <div class="tool-module active" 
+         data-id="day_counter" 
+         data-category="date_time" 
+         data-title="Day Counter" 
+         data-icon="📆">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="dc-lang" onchange="DayCounter.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800" data-i18n="title">📆 Day Counter</h2>
+
+        <!-- Tab 导航 -->
+        <div class="flex border-b border-gray-200 mb-6">
+            <button onclick="DayCounter.switchTab('duration')" id="tab-btn-duration" class="tab-btn active flex-1 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 focus:outline-none hover:text-blue-800 transition">
+                <span data-i18n="tab_duration">Duration Between</span>
+            </button>
+            <button onclick="DayCounter.switchTab('addsub')" id="tab-btn-addsub" class="tab-btn flex-1 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent focus:outline-none hover:text-gray-700 transition">
+                <span data-i18n="tab_addsub">Add/Subtract Days</span>
+            </button>
+        </div>
+        
+        <!-- 模式 1: 计算间隔天数 -->
+        <div id="tab-duration" class="tab-content active">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="start_date">Start Date</label>
+                    <input type="date" id="dc-start" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none text-gray-700">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="end_date">End Date</label>
+                    <input type="date" id="dc-end" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none text-gray-700">
+                </div>
+            </div>
+            
+            <div class="flex items-center mb-4 text-sm text-gray-600">
+                <input type="checkbox" id="dc-include-end" class="mr-2">
+                <label for="dc-include-end" data-i18n="include_end">Include end date (add 1 day)</label>
+            </div>
+
+            <button onclick="DayCounter.calcDuration()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 text-center">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="result_days">Result (Days)</div>
+                <div id="dc-res-days" class="text-3xl font-bold text-blue-800 mb-2">--</div>
+                <div id="dc-res-detail" class="text-sm text-gray-600 border-t border-blue-200 pt-2 mt-2"></div>
+            </div>
+        </div>
+
+        <!-- 模式 2: 日期加减 -->
+        <div id="tab-addsub" class="tab-content">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="start_date">Start Date</label>
+                <input type="date" id="dc-as-start" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none text-gray-700">
+            </div>
+
+            <div class="flex gap-2 mb-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="operation">Operation</label>
+                    <div class="flex bg-gray-100 rounded p-1">
+                        <label class="flex-1 text-center cursor-pointer">
+                            <input type="radio" name="dc-op" value="add" checked class="hidden peer" onchange="DayCounter.toggleOpStyle()">
+                            <span class="block py-1 rounded text-sm peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow transition" data-i18n="op_add">Add (+)</span>
+                        </label>
+                        <label class="flex-1 text-center cursor-pointer">
+                            <input type="radio" name="dc-op" value="sub" class="hidden peer" onchange="DayCounter.toggleOpStyle()">
+                            <span class="block py-1 rounded text-sm peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow transition" data-i18n="op_sub">Subtract (-)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1" data-i18n="years">Years</label>
+                    <input type="number" id="dc-add-y" class="w-full p-2 border rounded outline-none focus:ring-1 focus:ring-gray-400" placeholder="0" min="0">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1" data-i18n="months">Months</label>
+                    <input type="number" id="dc-add-m" class="w-full p-2 border rounded outline-none focus:ring-1 focus:ring-gray-400" placeholder="0" min="0">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1" data-i18n="days">Days</label>
+                    <input type="number" id="dc-add-d" class="w-full p-2 border rounded outline-none focus:ring-1 focus:ring-gray-400" placeholder="0" min="0">
+                </div>
+            </div>
+
+            <button onclick="DayCounter.calcAddSub()" id="btn-as-calc" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100 text-center">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="result_date">Result Date</div>
+                <div id="dc-res-date" class="text-2xl font-bold text-green-800">--</div>
+                <div id="dc-res-wday" class="text-sm text-gray-600 mt-1"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 1 结束 -->
+    <!-- ================================================================= -->
+
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 2：JS 积木 (复制到 script 标签中) -->
+    <!-- ================================================================= -->
+    <script>
+        const DayCounter = {
+            i18n: {
+                'en': {
+                    title: '📆 Day Counter',
+                    tab_duration: 'Duration Between',
+                    tab_addsub: 'Add / Subtract',
+                    start_date: 'Start Date',
+                    end_date: 'End Date',
+                    include_end: 'Include end date (+1 day)',
+                    btn_calc: 'Calculate',
+                    result_days: 'Days Count',
+                    result_date: 'Result Date',
+                    operation: 'Operation',
+                    op_add: 'Add (+)',
+                    op_sub: 'Subtract (-)',
+                    years: 'Years',
+                    months: 'Months',
+                    days: 'Days',
+                    detail_text: 'years, months, days', // format logic handles order
+                    err_invalid: 'Invalid Date',
+                    weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                },
+                'zh-CN': {
+                    title: '📆 日计数器',
+                    tab_duration: '计算间隔天数',
+                    tab_addsub: '日期推算 (+/-)',
+                    start_date: '开始日期',
+                    end_date: '结束日期',
+                    include_end: '包含结束日期 (+1天)',
+                    btn_calc: '计算',
+                    result_days: '相隔天数',
+                    result_date: '推算结果',
+                    operation: '操作',
+                    op_add: '加上 (+)',
+                    op_sub: '减去 (-)',
+                    years: '年',
+                    months: '月',
+                    days: '天',
+                    err_invalid: '日期无效',
+                    weekdays: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+                },
+                'zh-TW': {
+                    title: '📆 日計數器',
+                    tab_duration: '計算間隔天數',
+                    tab_addsub: '日期推算 (+/-)',
+                    start_date: '開始日期',
+                    end_date: '結束日期',
+                    include_end: '包含結束日期 (+1天)',
+                    btn_calc: '計算',
+                    result_days: '相隔天數',
+                    result_date: '推算結果',
+                    operation: '操作',
+                    op_add: '加上 (+)',
+                    op_sub: '減去 (-)',
+                    years: '年',
+                    months: '月',
+                    days: '天',
+                    err_invalid: '日期無效',
+                    weekdays: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+                },
+                'ja': {
+                    title: '📆 日数計算',
+                    tab_duration: '日数カウント',
+                    tab_addsub: '日付の加算/減算',
+                    start_date: '開始日',
+                    end_date: '終了日',
+                    include_end: '終了日を含める (+1日)',
+                    btn_calc: '計算する',
+                    result_days: '日数',
+                    result_date: '計算結果の日付',
+                    operation: '操作',
+                    op_add: '加算 (+)',
+                    op_sub: '減算 (-)',
+                    years: '年',
+                    months: 'ヶ月',
+                    days: '日',
+                    err_invalid: '無効な日付',
+                    weekdays: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日']
+                },
+                'ru': {
+                    title: '📆 Калькулятор дней',
+                    tab_duration: 'Дней между датами',
+                    tab_addsub: 'Прибавить / Вычесть',
+                    start_date: 'Начальная дата',
+                    end_date: 'Конечная дата',
+                    include_end: 'Включить конечную дату (+1 день)',
+                    btn_calc: 'Рассчитать',
+                    result_days: 'Количество дней',
+                    result_date: 'Результат',
+                    operation: 'Действие',
+                    op_add: 'Прибавить (+)',
+                    op_sub: 'Вычесть (-)',
+                    years: 'Лет',
+                    months: 'Месяцев',
+                    days: 'Дней',
+                    err_invalid: 'Неверная дата',
+                    weekdays: ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
+                },
+                'es': {
+                    title: '📆 Contador de Días',
+                    tab_duration: 'Días entre fechas',
+                    tab_addsub: 'Sumar / Restar',
+                    start_date: 'Fecha de inicio',
+                    end_date: 'Fecha final',
+                    include_end: 'Incluir fecha final (+1 día)',
+                    btn_calc: 'Calcular',
+                    result_days: 'Días totales',
+                    result_date: 'Fecha resultante',
+                    operation: 'Operación',
+                    op_add: 'Sumar (+)',
+                    op_sub: 'Restar (-)',
+                    years: 'Años',
+                    months: 'Meses',
+                    days: 'Días',
+                    err_invalid: 'Fecha inválida',
+                    weekdays: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+                }
+            },
+
+            init: () => {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('dc-start').value = today;
+                document.getElementById('dc-end').value = today;
+                document.getElementById('dc-as-start').value = today;
+            },
+
+            switchTab: (tabName) => {
+                // Hide all contents
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.tab-btn').forEach(el => {
+                    el.classList.remove('active', 'text-blue-600', 'border-blue-600', 'bg-blue-50');
+                    el.classList.add('text-gray-500', 'border-transparent');
+                });
+
+                // Show target
+                document.getElementById(`tab-${tabName}`).classList.add('active');
+                
+                // Style button
+                const btn = document.getElementById(`tab-btn-${tabName}`);
+                btn.classList.add('active', 'text-blue-600', 'border-blue-600'); // Note: bg logic handled by css class 'active' in style block roughly
+                btn.classList.remove('text-gray-500', 'border-transparent');
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('dc-lang').value;
+                const texts = DayCounter.i18n[lang];
+                
+                // Update basic texts
+                document.querySelectorAll('[data-id="day_counter"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // Trigger re-calc if results exist
+                if (document.getElementById('dc-res-days').innerText !== '--') DayCounter.calcDuration();
+                if (document.getElementById('dc-res-date').innerText !== '--') DayCounter.calcAddSub();
+            },
+
+            toggleOpStyle: () => {
+                const isAdd = document.querySelector('input[name="dc-op"]:checked').value === 'add';
+                const btn = document.getElementById('btn-as-calc');
+                
+                if (isAdd) {
+                    btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                } else {
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    btn.classList.add('bg-red-600', 'hover:bg-red-700');
+                }
+            },
+
+            calcDuration: () => {
+                const sVal = document.getElementById('dc-start').value;
+                const eVal = document.getElementById('dc-end').value;
+                const includeEnd = document.getElementById('dc-include-end').checked;
+                const lang = document.getElementById('dc-lang').value;
+                const texts = DayCounter.i18n[lang];
+
+                if (!sVal || !eVal) return;
+
+                const start = new Date(sVal);
+                const end = new Date(eVal);
+
+                // Reset hours to midnight for pure date calc
+                start.setHours(0,0,0,0);
+                end.setHours(0,0,0,0);
+
+                let diffTime = end - start;
+                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                
+                // Absolute value if user puts end date before start
+                const isNegative = diffDays < 0;
+                diffDays = Math.abs(diffDays);
+
+                if (includeEnd) diffDays += 1;
+
+                // Display Total Days
+                document.getElementById('dc-res-days').innerText = diffDays.toLocaleString();
+
+                // Calculate nice breakdown (Years/Months/Days) roughly
+                // Getting exact Y/M/D diff is complex due to varying month lengths.
+                // We will use a simplified approach: construct new date from start and add until we reach end.
+                // Or simply displaying days is often enough for "Day Counter", but let's try a simple breakdown.
+                
+                let detailText = "";
+                // Simple approximation for detail
+                const years = Math.floor(diffDays / 365);
+                const remainingDays = diffDays % 365;
+                const months = Math.floor(remainingDays / 30);
+                const days = remainingDays % 30;
+
+                if (lang === 'en' || lang === 'es' || lang === 'ru') {
+                    detailText = `~ ${years} ${texts.years}, ${months} ${texts.months}, ${days} ${texts.days}`;
+                } else {
+                    detailText = `~ ${years}${texts.years} ${months}${texts.months} ${days}${texts.days}`;
+                }
+                
+                if (isNegative && !includeEnd) {
+                    detailText += ` (${lang === 'en' ? 'Reverse order' : '日期倒置'})`;
+                }
+
+                document.getElementById('dc-res-detail').innerText = detailText;
+            },
+
+            calcAddSub: () => {
+                const sVal = document.getElementById('dc-as-start').value;
+                const op = document.querySelector('input[name="dc-op"]:checked').value;
+                const y = parseInt(document.getElementById('dc-add-y').value) || 0;
+                const m = parseInt(document.getElementById('dc-add-m').value) || 0;
+                const d = parseInt(document.getElementById('dc-add-d').value) || 0;
+                const lang = document.getElementById('dc-lang').value;
+                const texts = DayCounter.i18n[lang];
+
+                if (!sVal) return;
+
+                const date = new Date(sVal);
+                date.setHours(0,0,0,0);
+
+                const factor = op === 'add' ? 1 : -1;
+
+                // Logic: Add years, then months, then days
+                date.setFullYear(date.getFullYear() + (y * factor));
+                date.setMonth(date.getMonth() + (m * factor));
+                date.setDate(date.getDate() + (d * factor));
+
+                // Formatting
+                let dateString = '';
+                if (lang === 'en' || lang === 'es') {
+                    dateString = date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                } else if (lang === 'zh-CN' || lang === 'zh-TW' || lang === 'ja') {
+                    dateString = date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                } else if (lang === 'ru') {
+                    dateString = date.toLocaleDateString('ru-RU');
+                }
+
+                document.getElementById('dc-res-date').innerText = dateString;
+                document.getElementById('dc-res-wday').innerText = texts.weekdays[date.getDay()];
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', DayCounter.init);
+    </script>
+    
+    <!-- 宿主环境语言自适应脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) targetLang = 'ja';
+            else if (userLang.startsWith('ru')) targetLang = 'ru';
+            else if (userLang.startsWith('es')) targetLang = 'es';
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('dc-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    DayCounter.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

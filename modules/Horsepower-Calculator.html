@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horsepower Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="horsepower_calc">
+    <meta name="category" content="auto">
+    <meta name="icon" content="🚗">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Horsepower Calculator">
+    <meta name="description" content="Calculate horsepower based on torque and RPM.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="马力计算器">
+    <meta name="lang-description-zh-CN" content="根据扭矩和转速计算马力。">
+    
+    <meta name="lang-title-zh-TW" content="馬力計算器">
+    <meta name="lang-description-zh-TW" content="根據扭矩和轉速計算馬力。">
+    
+    <meta name="lang-title-ja" content="馬力計算ツール">
+    <meta name="lang-description-ja" content="トルクと回転数から馬力を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор лошадиных сил">
+    <meta name="lang-description-ru" content="Вычислите лошадиные силы по крутящему моменту и оборотам.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="horsepower_calc" 
+         data-category="auto" 
+         data-title="Horsepower Calculator" 
+         data-icon="🚗">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="hp-lang" onchange="HorsepowerCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🚗 Horsepower Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <!-- Torque -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="torque_label">Torque</label>
+                <div class="flex">
+                    <input type="number" id="hp-torque" class="w-full p-2 border rounded-r-none focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 300" min="0.1" step="0.1">
+                    <select id="hp-torque-unit" class="border-l-0 border rounded-l-none p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="lb-ft">lb-ft</option>
+                        <option value="nm">N·m</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- RPM -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rpm_label">Engine Speed (RPM)</label>
+                <input type="number" id="hp-rpm" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 5000" min="100" step="100">
+            </div>
+        </div>
+
+        <button onclick="HorsepowerCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Horsepower</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Result</div>
+            <div id="hp-result" class="text-3xl font-bold text-blue-800">--</div>
+            <div id="hp-conversion" class="text-sm text-gray-600 mt-2 h-5"></div>
+        </div>
+    </div>
+
+    <script>
+        const HorsepowerCalc = {
+            i18n: {
+                'en': {
+                    title: '🚗 Horsepower Calculator',
+                    torque_label: 'Torque',
+                    rpm_label: 'Engine Speed (RPM)',
+                    btn_calc: 'Calculate Horsepower',
+                    res_label: 'Power Output:',
+                    err_invalid: 'Invalid Input',
+                    units: {
+                        'hp': 'horsepower',
+                        'kw': 'kilowatts'
+                    }
+                },
+                'zh-CN': {
+                    title: '🚗 马力计算器',
+                    torque_label: '扭矩',
+                    rpm_label: '发动机转速 (RPM)',
+                    btn_calc: '计算马力',
+                    res_label: '功率输出：',
+                    err_invalid: '输入无效',
+                    units: {
+                        'hp': '马力',
+                        'kw': '千瓦'
+                    }
+                },
+                'zh-TW': {
+                    title: '🚗 馬力計算器',
+                    torque_label: '扭矩',
+                    rpm_label: '發動機轉速 (RPM)',
+                    btn_calc: '計算馬力',
+                    res_label: '功率輸出：',
+                    err_invalid: '輸入無效',
+                    units: {
+                        'hp': '馬力',
+                        'kw': '千瓦'
+                    }
+                },
+                'ja': {
+                    title: '🚗 馬力計算ツール',
+                    torque_label: 'トルク',
+                    rpm_label: 'エンジン回転数 (RPM)',
+                    btn_calc: '馬力を計算',
+                    res_label: '出力：',
+                    err_invalid: '無効な入力',
+                    units: {
+                        'hp': '馬力',
+                        'kw': 'キロワット'
+                    }
+                },
+                'ru': {
+                    title: '🚗 Калькулятор лошадиных сил',
+                    torque_label: 'Крутящий момент',
+                    rpm_label: 'Обороты двигателя (об/мин)',
+                    btn_calc: 'Рассчитать лошадиные силы',
+                    res_label: 'Выходная мощность：',
+                    err_invalid: 'Неверный ввод',
+                    units: {
+                        'hp': 'лошадиные силы',
+                        'kw': 'киловатты'
+                    }
+                }
+            },
+
+            init: () => {
+                // 初始化默认值
+                document.getElementById('hp-torque').value = 300;
+                document.getElementById('hp-rpm').value = 5000;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('hp-lang').value;
+                const texts = HorsepowerCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="horsepower_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                const currentResult = document.getElementById('hp-result').innerText;
+                if (currentResult !== '--') {
+                    HorsepowerCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const torque = parseFloat(document.getElementById('hp-torque').value);
+                const rpm = parseInt(document.getElementById('hp-rpm').value);
+                const torqueUnit = document.getElementById('hp-torque-unit').value;
+                const lang = document.getElementById('hp-lang').value;
+                const texts = HorsepowerCalc.i18n[lang];
+
+                if (isNaN(torque) || isNaN(rpm) || torque <= 0 || rpm <= 0) {
+                    const resultEl = document.getElementById('hp-result');
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600";
+                    document.getElementById('hp-conversion').innerText = "";
+                    return;
+                }
+
+                // 统一转换为磅-英尺进行计算
+                let torqueLbFt = torque;
+                if (torqueUnit === 'nm') {
+                    torqueLbFt = torque * 0.73756; // 牛顿米转磅英尺
+                }
+
+                // 计算马力 (马力 = 扭矩 × 转速 / 5252)
+                const horsepower = (torqueLbFt * rpm) / 5252;
+                // 转换为千瓦 (1马力 = 0.7457千瓦)
+                const kilowatts = horsepower * 0.7457;
+
+                // 显示结果
+                const resultEl = document.getElementById('hp-result');
+                resultEl.className = "text-3xl font-bold text-blue-800";
+                
+                // 根据扭矩单位选择主要显示单位
+                let mainResult, mainUnit;
+                if (torqueUnit === 'lb-ft') {
+                    mainResult = horsepower;
+                    mainUnit = 'hp';
+                } else {
+                    mainResult = kilowatts;
+                    mainUnit = 'kw';
+                }
+                
+                resultEl.innerText = mainResult.toFixed(1) + ' ' + mainUnit;
+
+                // 显示其他单位转换结果
+                const conversionEl = document.getElementById('hp-conversion');
+                if (mainUnit === 'hp') {
+                    conversionEl.innerText = `${kilowatts.toFixed(1)} kw (${texts.units['kw']})`;
+                } else {
+                    conversionEl.innerText = `${horsepower.toFixed(1)} hp (${texts.units['hp']})`;
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', HorsepowerCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('hp-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    HorsepowerCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

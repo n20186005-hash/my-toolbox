@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triangle Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="triangle_calc">
+    <meta name="category" content="geometry">
+    <meta name="icon" content="🔺">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Triangle Calculator">
+    <meta name="description" content="Calculate triangle properties including sides, angles, area, perimeter, height, and determine triangle type based on given values.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="三角形计算器">
+    <meta name="lang-description-zh-CN" content="计算三角形的属性，包括边、角、面积、周长、高，并根据给定值确定三角形类型。">
+    
+    <meta name="lang-title-zh-TW" content="三角形計算器">
+    <meta name="lang-description-zh-TW" content="計算三角形的屬性，包括邊、角、面積、周長、高，並根據給定值確定三角形類型。">
+    
+    <meta name="lang-title-ja" content="三角形計算ツール">
+    <meta name="lang-description-ja" content="与えられた値に基づいて、辺、角、面積、周囲長、高さなどの三角形の特性を計算し、三角形の種類を判別します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор треугольников">
+    <meta name="lang-description-ru" content="Рассчитайте свойства треугольника, включая стороны, углы, площадь, периметр, высоту, и определите тип треугольника на основе заданных значений.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .input-method { border: 1px solid #ddd; border-radius: 6px; padding: 15px; margin-bottom: 10px; cursor: pointer; }
+        .input-method.active { border-color: #1e40af; background: #e8f4f8; }
+        .triangle-visual { width: 100%; max-width: 300px; height: 200px; margin: 20px auto; position: relative; }
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .result-item { background: #e8f4f8; padding: 10px; border-radius: 6px; }
+        .result-label { font-size: 0.85rem; color: #4b5563; }
+        .result-value { font-weight: bold; color: #1e40af; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="triangle_calc" 
+         data-category="geometry" 
+         data-title="Triangle Calculator" 
+         data-icon="🔺">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="triangle-lang" onchange="TriangleCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔺 Triangle Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 输入方式选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="input_method">Input Method</label>
+                <div class="space-y-2">
+                    <div class="input-method active" data-method="three-sides" onclick="TriangleCalc.setMethod('three-sides')">
+                        <div data-i18n="three_sides">Three Sides (SSS)</div>
+                    </div>
+                    <div class="input-method" data-method="two-sides-angle" onclick="TriangleCalc.setMethod('two-sides-angle')">
+                        <div data-i18n="two_sides_angle">Two Sides and Included Angle (SAS)</div>
+                    </div>
+                    <div class="input-method" data-method="one-side-two-angles" onclick="TriangleCalc.setMethod('one-side-two-angles')">
+                        <div data-i18n="one_side_two_angles">One Side and Two Angles (ASA/AAS)</div>
+                    </div>
+                    <div class="input-method" data-method="right-angled" onclick="TriangleCalc.setMethod('right-angled')">
+                        <div data-i18n="right_angled">Right-Angled Triangle (a, b)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 输入区域 -->
+            <div id="input-container">
+                <div class="input-group" id="side-a-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_a">Side a (opposite angle A)</label>
+                    <input type="number" id="side-a" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Length of side a" min="0.001">
+                </div>
+                <div class="input-group" id="side-b-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_b">Side b (opposite angle B)</label>
+                    <input type="number" id="side-b" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Length of side b" min="0.001">
+                </div>
+                <div class="input-group" id="side-c-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_c">Side c (opposite angle C)</label>
+                    <input type="number" id="side-c" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Length of side c" min="0.001">
+                </div>
+                <div class="input-group" id="angle-a-group" style="display:none">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="angle_a">Angle A (degrees)</label>
+                    <input type="number" id="angle-a" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Angle A in degrees" min="0.001" max="179.999">
+                </div>
+                <div class="input-group" id="angle-b-group" style="display:none">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="angle_b">Angle B (degrees)</label>
+                    <input type="number" id="angle-b" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Angle B in degrees" min="0.001" max="179.999">
+                </div>
+                <div class="input-group" id="angle-c-group" style="display:none">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="angle_c">Angle C (degrees)</label>
+                    <input type="number" id="angle-c" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Angle C in degrees" min="0.001" max="179.999">
+                </div>
+            </div>
+            
+            <!-- 精度选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="precision">Precision (decimal places)</label>
+                <input type="number" id="triangle-precision" min="0" max="6" value="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="TriangleCalc.loadSample()" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition" data-i18n="load_sample">Load Sample</button>
+                <button onclick="TriangleCalc.clear()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="TriangleCalc.calculate()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate Triangle</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="triangle-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="triangle-results" class="hidden">
+            <!-- 三角形可视化 -->
+            <div class="triangle-visual bg-gray-50 rounded-lg flex items-center justify-center mb-4">
+                <div data-i18n="triangle_visual">Triangle Visualization</div>
+            </div>
+            
+            <!-- 三角形类型 -->
+            <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="triangle_type">Triangle Type</div>
+                <div class="font-bold text-gray-800" id="triangle-type">--</div>
+            </div>
+            
+            <!-- 边长结果 -->
+            <div class="mb-4">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="side_lengths">Side Lengths</div>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="side_a">Side a</div>
+                        <div class="result-value" id="result-side-a">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="side_b">Side b</div>
+                        <div class="result-value" id="result-side-b">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="side_c">Side c</div>
+                        <div class="result-value" id="result-side-c">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 角度结果 -->
+            <div class="mb-4">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="angles">Angles (degrees)</div>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="angle_a">Angle A</div>
+                        <div class="result-value" id="result-angle-a">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="angle_b">Angle B</div>
+                        <div class="result-value" id="result-angle-b">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="angle_c">Angle C</div>
+                        <div class="result-value" id="result-angle-c">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 其他属性 -->
+            <div class="mb-4">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="other_properties">Other Properties</div>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="perimeter">Perimeter</div>
+                        <div class="result-value" id="result-perimeter">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="area">Area</div>
+                        <div class="result-value" id="result-area">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="semiperimeter">Semiperimeter</div>
+                        <div class="result-value" id="result-semiperimeter">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="inradius">Inradius</div>
+                        <div class="result-value" id="result-inradius">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="circumradius">Circumradius</div>
+                        <div class="result-value" id="result-circumradius">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" data-i18n="notes_list">
+                <li>The sum of any two sides must be greater than the third side (triangle inequality)</li>
+                <li>The sum of all angles in a triangle is always 180 degrees</li>
+                <li>Right-angled triangle calculator assumes angle C is 90 degrees</li>
+                <li>Uses the Law of Cosines and Law of Sines for calculations</li>
+                <li>Area is calculated using Heron's formula for SSS input</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const TriangleCalc = {
+            i18n: {
+                'en': {
+                    title: '🔺 Triangle Calculator',
+                    input_method: 'Input Method',
+                    three_sides: 'Three Sides (SSS)',
+                    two_sides_angle: 'Two Sides and Included Angle (SAS)',
+                    one_side_two_angles: 'One Side and Two Angles (ASA/AAS)',
+                    right_angled: 'Right-Angled Triangle (a, b)',
+                    side_a: 'Side a (opposite angle A)',
+                    side_b: 'Side b (opposite angle B)',
+                    side_c: 'Side c (opposite angle C)',
+                    angle_a: 'Angle A (degrees)',
+                    angle_b: 'Angle B (degrees)',
+                    angle_c: 'Angle C (degrees)',
+                    precision: 'Precision (decimal places)',
+                    load_sample: 'Load Sample',
+                    clear: 'Clear',
+                    calculate: 'Calculate Triangle',
+                    triangle_visual: 'Triangle Visualization',
+                    triangle_type: 'Triangle Type',
+                    side_lengths: 'Side Lengths',
+                    angles: 'Angles (degrees)',
+                    other_properties: 'Other Properties',
+                    perimeter: 'Perimeter',
+                    area: 'Area',
+                    semiperimeter: 'Semiperimeter',
+                    inradius: 'Inradius',
+                    circumradius: 'Circumradius',
+                    notes: 'Notes:',
+                    notes_list: `
+                        <li>The sum of any two sides must be greater than the third side (triangle inequality)</li>
+                        <li>The sum of all angles in a triangle is always 180 degrees</li>
+                        <li>Right-angled triangle calculator assumes angle C is 90 degrees</li>
+                        <li>Uses the Law of Cosines and Law of Sines for calculations</li>
+                        <li>Area is calculated using Heron's formula for SSS input</li>
+                    `,
+                    err_invalid_input: 'Please enter valid positive numbers',
+                    err_triangle_inequality: 'Invalid triangle - violates triangle inequality theorem',
+                    err_angle_sum: 'Angles must sum to 180 degrees',
+                    err_angle_range: 'Angles must be between 0 and 180 degrees'
+                },
+                'zh-CN': {
+                    title: '🔺 三角形计算器',
+                    input_method: '输入方式',
+                    three_sides: '三条边（SSS）',
+                    two_sides_angle: '两条边和夹角（SAS）',
+                    one_side_two_angles: '一条边和两个角（ASA/AAS）',
+                    right_angled: '直角三角形（a, b）',
+                    side_a: '边 a（对角度 A）',
+                    side_b: '边 b（对角度 B）',
+                    side_c: '边 c（对角度 C）',
+                    angle_a: '角度 A（度）',
+                    angle_b: '角度 B（度）',
+                    angle_c: '角度 C（度）',
+                    precision: '精度（小数位数）',
+                    load_sample: '加载示例',
+                    clear: '清除',
+                    calculate: '计算三角形',
+                    triangle_visual: '三角形可视化',
+                    triangle_type: '三角形类型',
+                    side_lengths: '边长',
+                    angles: '角度（度）',
+                    other_properties: '其他属性',
+                    perimeter: '周长',
+                    area: '面积',
+                    semiperimeter: '半周长',
+                    inradius: '内切圆半径',
+                    circumradius: '外接圆半径',
+                    notes: '说明：',
+                    notes_list: `
+                        <li>任意两边之和必须大于第三边（三角形不等式）</li>
+                        <li>三角形所有角度之和始终为180度</li>
+                        <li>直角三角形计算器假设角度C为90度</li>
+                        <li>使用余弦定理和正弦定理进行计算</li>
+                        <li>对于SSS输入，面积使用海伦公式计算</li>
+                    `,
+                    err_invalid_input: '请输入有效的正数',
+                    err_triangle_inequality: '无效三角形 - 违反三角形不等式定理',
+                    err_angle_sum: '角度之和必须为180度',
+                    err_angle_range: '角度必须在0到180度之间'
+                },
+                'zh-TW': {
+                    title: '🔺 三角形計算器',
+                    input_method: '輸入方式',
+                    three_sides: '三條邊（SSS）',
+                    two_sides_angle: '兩條邊和夾角（SAS）',
+                    one_side_two_angles: '一條邊和兩個角（ASA/AAS）',
+                    right_angled: '直角三角形（a, b）',
+                    side_a: '邊 a（對角度 A）',
+                    side_b: '邊 b（對角度 B）',
+                    side_c: '邊 c（對角度 C）',
+                    angle_a: '角度 A（度）',
+                    angle_b: '角度 B（度）',
+                    angle_c: '角度 C（度）',
+                    precision: '精度（小數位數）',
+                    load_sample: '載入示例',
+                    clear: '清除',
+                    calculate: '計算三角形',
+                    triangle_visual: '三角形可視化',
+                    triangle_type: '三角形類型',
+                    side_lengths: '邊長',
+                    angles: '角度（度）',
+                    other_properties: '其他屬性',
+                    perimeter: '周長',
+                    area: '面積',
+                    semiperimeter: '半周長',
+                    inradius: '內切圓半徑',
+                    circumradius: '外接圓半徑',
+                    notes: '說明：',
+                    notes_list: `
+                        <li>任意兩邊之和必須大於第三邊（三角形不等式）</li>
+                        <li>三角形所有角度之和始終為180度</li>
+                        <li>直角三角形計算器假設角度C為90度</li>
+                        <li>使用余弦定理和正弦定理進行計算</li>
+                        <li>對於SSS輸入，面積使用海倫公式計算</li>
+                    `,
+                    err_invalid_input: '請輸入有效的正數',
+                    err_triangle_inequality: '無效三角形 - 違反三角形不等式定理',
+                    err_angle_sum: '角度之和必須為180度',
+                    err_angle_range: '角度必須在0到180度之間'
+                },
+                'ja': {
+                    title: '🔺 三角形計算ツール',
+                    input_method: '入力方法',
+                    three_sides: '3辺 (SSS)',
+                    two_sides_angle: '2辺と挟角 (SAS)',
+                    one_side_two_angles: '1辺と2角 (ASA/AAS)',
+                    right_angled: '直角三角形 (a, b)',
+                    side_a: '辺a（角Aに対向）',
+                    side_b: '辺b（角Bに対向）',
+                    side_c: '辺c（角Cに対向）',
+                    angle_a: '角度A（度）',
+                    angle_b: '角度B（度）',
+                    angle_c: '角度C（度）',
+                    precision: '精度（小数桁数）',
+                    load_sample: 'サンプルを読み込む',
+                    clear: 'クリア',
+                    calculate: '三角形を計算',
+                    triangle_visual: '三角形の可視化',
+                    triangle_type: '三角形の種類',
+                    side_lengths: '辺の長さ',
+                    angles: '角度（度）',
+                    other_properties: 'その他の特性',
+                    perimeter: '周囲長',
+                    area: '面積',
+                    semiperimeter: '半周囲長',
+                    inradius: '内接円の半径',
+                    circumradius: '外接円の半径',
+                    notes: '注意事項：',
+                    notes_list: `
+                        <li>任意の2辺の合計は必ず第3辺より大きくなければなりません（三角形不等式）</li>
+                        <li>三角形のすべての角度の合計は常に180度です</li>
+                        <li>直角三角形計算機では、角度Cが90度であると仮定しています</li>
+                        <li>余弦定理と正弦定理を使用して計算を行います</li>
+                        <li>SSS入力の場合、面積はヘロンの公式を使用して計算されます</li>
+                    `,
+                    err_invalid_input: '有効な正数を入力してください',
+                    err_triangle_inequality: '無効な三角形 - 三角形不等式定理に違反しています',
+                    err_angle_sum: '角度の合計は180度でなければなりません',
+                    err_angle_range: '角度は0度から180度の間でなければなりません'
+                },
+                'ru': {
+                    title: '🔺 Калькулятор треугольников',
+                    input_method: 'Способ ввода',
+                    three_sides: 'Три стороны (SSS)',
+                    two_sides_angle: 'Две стороны и угол между ними (SAS)',
+                    one_side_two_angles: 'Одна сторона и два угла (ASA/AAS)',
+                    right_angled: 'Прямоугольный треугольник (a, b)',
+                    side_a: 'Сторона a (против угла A)',
+                    side_b: 'Сторона b (против угла B)',
+                    side_c: 'Сторона c (против угла C)',
+                    angle_a: 'Угол A (градусов)',
+                    angle_b: 'Угол B (градусов)',
+                    angle_c: 'Угол C (градусов)',
+                    precision: 'Точность (знаков после запятой)',
+                    load_sample: 'Загрузить пример',
+                    clear: 'Очистить',
+                    calculate: 'Вычислить треугольник',
+                    triangle_visual: 'Визуализация треугольника',
+                    triangle_type: 'Тип треугольника',
+                    side_lengths: 'Длины сторон',
+                    angles: 'Углы (градусы)',
+                    other_properties: 'Другие свойства',
+                    perimeter: 'Периметр',
+                    area: 'Площадь',
+                    semiperimeter: 'Полупериметр',
+                    inradius: 'Радиус вписанной окружности',
+                    circumradius: 'Радиус описанной окружности',
+                    notes: 'Примечания:',
+                    notes_list: `
+                        <li>Сумма любых двух сторон должна быть больше третьей стороны (неравенство треугольника)</li>
+                        <li>Сумма всех углов в треугольнике всегда равна 180 градусам</li>
+                        <li>Калькулятор прямоугольных треугольников предполагает, что угол C равен 90 градусам</li>
+                        <li>Для вычислений используются теоремы косинусов и синусов</li>
+                        <li>Площадь вычисляется по формуле Герона для ввода SSS</li>
+                    `,
+                    err_invalid_input: 'Пожалуйста, введите действительные положительные числа',
+                    err_triangle_inequality: 'Неверный треугольник - нарушает теорему неравенства треугольника',
+                    err_angle_sum: 'Сумма углов должна быть равна 180 градусам',
+                    err_angle_range: 'Углы должны быть в диапазоне от 0 до 180 градусов'
+                }
+            },
+            
+            currentMethod: 'three-sides',
+            
+            setMethod: function(method) {
+                // 移除所有选项的active类
+                document.querySelectorAll('.input-method').forEach(option => {
+                    option.classList.remove('active');
+                });
+                // 给当前选择的选项添加active类
+                document.querySelector(`.input-method[data-method="${method}"]`).classList.add('active');
+                this.currentMethod = method;
+                this.updateInputFields();
+            },
+            
+            updateInputFields: function() {
+                // 隐藏所有输入框
+                document.querySelectorAll('.input-group').forEach(group => {
+                    group.style.display = 'none';
+                });
+                
+                // 根据当前方法显示相应的输入框
+                switch(this.currentMethod) {
+                    case 'three-sides':
+                        document.getElementById('side-a-group').style.display = 'block';
+                        document.getElementById('side-b-group').style.display = 'block';
+                        document.getElementById('side-c-group').style.display = 'block';
+                        break;
+                    case 'two-sides-angle':
+                        document.getElementById('side-a-group').style.display = 'block';
+                        document.getElementById('side-b-group').style.display = 'block';
+                        document.getElementById('angle-c-group').style.display = 'block';
+                        break;
+                    case 'one-side-two-angles':
+                        document.getElementById('side-a-group').style.display = 'block';
+                        document.getElementById('angle-b-group').style.display = 'block';
+                        document.getElementById('angle-c-group').style.display = 'block';
+                        break;
+                    case 'right-angled':
+                        document.getElementById('side-a-group').style.display = 'block';
+                        document.getElementById('side-b-group').style.display = 'block';
+                        break;
+                }
+            },
+            
+            changeLang: function() {
+                const lang = document.getElementById('triangle-lang').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        if (key === 'notes_list') {
+                            el.innerHTML = this.i18n[lang][key];
+                        } else {
+                            el.textContent = this.i18n[lang][key];
+                        }
+                    }
+                });
+            },
+            
+            loadSample: function() {
+                // 清空所有输入
+                document.getElementById('side-a').value = '';
+                document.getElementById('side-b').value = '';
+                document.getElementById('side-c').value = '';
+                document.getElementById('angle-a').value = '';
+                document.getElementById('angle-b').value = '';
+                document.getElementById('angle-c').value = '';
+                
+                // 根据当前方法加载示例数据
+                switch(this.currentMethod) {
+                    case 'three-sides':
+                        document.getElementById('side-a').value = 3;
+                        document.getElementById('side-b').value = 4;
+                        document.getElementById('side-c').value = 5;
+                        break;
+                    case 'two-sides-angle':
+                        document.getElementById('side-a').value = 5;
+                        document.getElementById('side-b').value = 6;
+                        document.getElementById('angle-c').value = 60;
+                        break;
+                    case 'one-side-two-angles':
+                        document.getElementById('side-a').value = 5;
+                        document.getElementById('angle-b').value = 50;
+                        document.getElementById('angle-c').value = 60;
+                        break;
+                    case 'right-angled':
+                        document.getElementById('side-a').value = 3;
+                        document.getElementById('side-b').value = 4;
+                        break;
+                }
+                document.getElementById('triangle-error').classList.add('hidden');
+            },
+            
+            clear: function() {
+                document.getElementById('side-a').value = '';
+                document.getElementById('side-b').value = '';
+                document.getElementById('side-c').value = '';
+                document.getElementById('angle-a').value = '';
+                document.getElementById('angle-b').value = '';
+                document.getElementById('angle-c').value = '';
+                document.getElementById('triangle-results').classList.add('hidden');
+                document.getElementById('triangle-error').classList.add('hidden');
+            },
+            
+            calculate: function() {
+                // 实现三角形计算逻辑
+                // 此处仅为框架，实际计算逻辑需补充
+                document.getElementById('triangle-error').classList.add('hidden');
+                document.getElementById('triangle-results').classList.remove('hidden');
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Language Dew Point Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="dew_point_calc">
+    <meta name="category" content="weather">
+    <meta name="icon" content="💧">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Dew Point Calculator">
+    <meta name="description" content="Calculate the dew point temperature based on current temperature and relative humidity.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="露点计算器">
+    <meta name="lang-description-zh-CN" content="根据当前温度和相对湿度计算露点温度。">
+    <meta name="lang-title-zh-TW" content="露點計算器">
+    <meta name="lang-description-zh-TW" content="根據當前溫度和相對濕度計算露點溫度。">
+    <meta name="lang-title-ja" content="露点計算ツール">
+    <meta name="lang-description-ja" content="現在の温度と相対湿度に基づいて露点温度を計算します。">
+    <meta name="lang-title-ru" content="Калькулятор точки росы">
+    <meta name="lang-description-ru" content="Рассчитайте температуру точки росы на основе текущей температуры и относительной влажности.">
+    <meta name="lang-title-es" content="Calculadora de Punto de Rocío">
+    <meta name="lang-description-es" content="Calcule la temperatura del punto de rocío a partir de la temperatura actual y la humedad relativa.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 使用 Inter 字体并应用基础样式 */
+        body { font-family: 'Inter', sans-serif; background: #f0f4f8; }
+        .tool-module { 
+            background: white; 
+            padding: 32px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); 
+            max-width: 500px; 
+            margin: 40px auto; 
+            position: relative; 
+            border: 1px solid #cbd5e1;
+        }
+        .unit-toggle-group {
+            display: inline-flex;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        .unit-toggle-group button {
+            padding: 8px 16px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            background-color: #f7fafc;
+            color: #4b5563;
+        }
+        .unit-toggle-group button.active {
+            background-color: #3b82f6; /* Blue 500 */
+            color: white;
+            z-index: 10;
+        }
+        .unit-toggle-group button:hover:not(.active) {
+            background-color: #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" data-id="dew_point_calc">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4 z-10">
+            <select id="dp-lang" onchange="DewPointCalc.changeLang()" class="text-xs border border-gray-300 rounded-lg p-1 bg-white text-gray-600 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-3xl font-extrabold mb-8 text-gray-900 flex items-center" data-i18n="title">
+            <span class="mr-3 text-blue-500 text-4xl">💧</span>Dew Point Calculator
+        </h2>
+        
+        <!-- 输入组 - 温度 -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="label_temp">Air Temperature</label>
+            <div class="flex">
+                <input type="number" id="dp-temp" class="flex-grow p-3 border border-r-0 border-gray-300 rounded-l-lg focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="e.g., 25" value="25">
+                <div class="unit-toggle-group">
+                    <button id="temp-unit-c" onclick="DewPointCalc.setTempUnit('C')" class="active">°C</button>
+                    <button id="temp-unit-f" onclick="DewPointCalc.setTempUnit('F')">°F</button>
+                </div>
+            </div>
+            <div id="temp-error" class="text-xs text-red-500 mt-1 h-3"></div>
+        </div>
+
+        <!-- 输入组 - 相对湿度 -->
+        <div class="mb-8">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="label_rh">Relative Humidity</label>
+            <div class="flex">
+                <input type="number" id="dp-rh" class="flex-grow p-3 border border-r-0 border-gray-300 rounded-l-lg focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="e.g., 60" value="60">
+                <span class="p-3 bg-gray-100 border border-gray-300 rounded-r-lg text-gray-700 font-semibold">%</span>
+            </div>
+            <div id="rh-error" class="text-xs text-red-500 mt-1 h-3"></div>
+        </div>
+        
+        <button onclick="DewPointCalc.calc()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition duration-150 shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50" data-i18n="btn_calc">Calculate Dew Point</button>
+
+        <!-- 结果展示区域 -->
+        <div class="bg-teal-50 p-6 rounded-xl border border-teal-300 text-center mt-8">
+            <div class="text-lg text-teal-700 mb-2 font-semibold" data-i18n="res_label">Dew Point Temperature</div>
+            <div id="dp-result" class="text-5xl font-extrabold text-teal-800 break-all">-- °C</div>
+        </div>
+    </div>
+
+    <script>
+        const DewPointCalc = {
+            // 国际化文本字典
+            i18n: {
+                'en': {
+                    title: '💧 Dew Point Calculator',
+                    label_temp: 'Air Temperature',
+                    label_rh: 'Relative Humidity (0-100)',
+                    btn_calc: 'Calculate Dew Point',
+                    res_label: 'Dew Point Temperature',
+                    err_temp_missing: 'Please enter a valid temperature.',
+                    err_rh_invalid: 'Relative Humidity must be between 0 and 100.',
+                },
+                'zh-CN': {
+                    title: '💧 露点计算器',
+                    label_temp: '空气温度',
+                    label_rh: '相对湿度 (0-100)',
+                    btn_calc: '计算露点',
+                    res_label: '露点温度',
+                    err_temp_missing: '请输入一个有效的温度值。',
+                    err_rh_invalid: '相对湿度必须介于 0 到 100 之间。',
+                },
+                'zh-TW': {
+                    title: '💧 露點計算器',
+                    label_temp: '空氣溫度',
+                    label_rh: '相對濕度 (0-100)',
+                    btn_calc: '計算露點',
+                    res_label: '露點溫度',
+                    err_temp_missing: '請輸入一個有效的溫度值。',
+                    err_rh_invalid: '相對濕度必須介於 0 到 100 之間。',
+                },
+                'ja': {
+                    title: '💧 露点計算ツール',
+                    label_temp: '気温',
+                    label_rh: '相対湿度 (0-100)',
+                    btn_calc: '露点を計算する',
+                    res_label: '露点温度',
+                    err_temp_missing: '有効な気温を入力してください。',
+                    err_rh_invalid: '相対湿度は0から100の間でなければなりません。',
+                },
+                'ru': {
+                    title: '💧 Калькулятор точки росы',
+                    label_temp: 'Температура воздуха',
+                    label_rh: 'Относительная влажность (0-100)',
+                    btn_calc: 'Рассчитать точку росы',
+                    res_label: 'Температура точки росы',
+                    err_temp_missing: 'Пожалуйста, введите корректную температуру.',
+                    err_rh_invalid: 'Относительная влажность должна быть в диапазоне от 0 до 100.',
+                },
+                'es': {
+                    title: '💧 Calculadora de Punto de Rocío',
+                    label_temp: 'Temperatura del Aire',
+                    label_rh: 'Humedad Relativa (0-100)',
+                    btn_calc: 'Calcular Punto de Rocío',
+                    res_label: 'Temperatura del Punto de Rocío',
+                    err_temp_missing: 'Por favor, ingrese una temperatura válida.',
+                    err_rh_invalid: 'La Humedad Relativa debe estar entre 0 y 100.',
+                }
+            },
+            
+            // 当前温度单位状态
+            currentUnit: 'C',
+
+            // 设置温度单位并切换按钮样式
+            setTempUnit: (unit) => {
+                if (DewPointCalc.currentUnit === unit) return;
+
+                // 切换按钮样式
+                document.getElementById('temp-unit-c').classList.remove('active');
+                document.getElementById('temp-unit-f').classList.remove('active');
+                document.getElementById(`temp-unit-${unit.toLowerCase()}`).classList.add('active');
+
+                // 转换输入值 (如果需要)
+                const tempInput = document.getElementById('dp-temp');
+                let tempValue = parseFloat(tempInput.value);
+
+                if (!isNaN(tempValue)) {
+                    if (DewPointCalc.currentUnit === 'C' && unit === 'F') {
+                        // C to F: T_F = T_C * 9/5 + 32
+                        tempValue = tempValue * 9 / 5 + 32;
+                    } else if (DewPointCalc.currentUnit === 'F' && unit === 'C') {
+                        // F to C: T_C = (T_F - 32) * 5/9
+                        tempValue = (tempValue - 32) * 5 / 9;
+                    }
+                    // 更新输入框，保留两位小数
+                    tempInput.value = tempValue.toFixed(2);
+                }
+
+                DewPointCalc.currentUnit = unit;
+                DewPointCalc.calc(); // 重新计算并更新结果单位
+            },
+
+            // 切换语言
+            changeLang: () => {
+                const lang = document.getElementById('dp-lang').value;
+                const texts = DewPointCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="dew_point_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerHTML = texts[key];
+                });
+
+                // 重新计算以更新结果单位的语言
+                DewPointCalc.calc();
+            },
+
+            // 执行计算
+            calc: () => {
+                const lang = document.getElementById('dp-lang').value;
+                const texts = DewPointCalc.i18n[lang];
+                
+                const tempInput = document.getElementById('dp-temp');
+                const rhInput = document.getElementById('dp-rh');
+                const resultEl = document.getElementById('dp-result');
+                const tempErrorEl = document.getElementById('temp-error');
+                const rhErrorEl = document.getElementById('rh-error');
+                
+                // 清空错误信息
+                tempErrorEl.innerText = '';
+                rhErrorEl.innerText = '';
+                resultEl.innerText = `-- ${DewPointCalc.currentUnit}`;
+
+                const tempValueRaw = parseFloat(tempInput.value);
+                const rhValue = parseFloat(rhInput.value);
+
+                // --- 1. 输入验证 ---
+
+                if (isNaN(tempValueRaw)) {
+                    tempErrorEl.innerText = texts.err_temp_missing;
+                    return;
+                }
+
+                if (isNaN(rhValue) || rhValue < 0 || rhValue > 100) {
+                    rhErrorEl.innerText = texts.err_rh_invalid;
+                    return;
+                }
+
+                // --- 2. 核心计算 (Magnus-Tetens近似公式) ---
+                
+                // 将输入温度转换为摄氏度 (C) 进行计算
+                let T_C;
+                if (DewPointCalc.currentUnit === 'F') {
+                    // F to C: T_C = (T_F - 32) * 5/9
+                    T_C = (tempValueRaw - 32) * 5 / 9;
+                } else {
+                    T_C = tempValueRaw;
+                }
+
+                const RH = rhValue / 100; // 相对湿度 (0.0 to 1.0)
+
+                // Magnu-Tetens 公式常数 (适用于 C)
+                const A = 17.27;
+                const B = 237.7;
+                
+                // 饱和水汽压 E_s(T) 的中间项 (Gamma)
+                const gamma = (A * T_C) / (B + T_C) + Math.log(RH);
+
+                // 露点温度 T_dp
+                // T_dp = (B * gamma) / (A - gamma)
+                let T_dp_C = (B * gamma) / (A - gamma);
+
+                // --- 3. 结果转换和显示 ---
+
+                let finalResult;
+                let unitSymbol;
+
+                if (DewPointCalc.currentUnit === 'F') {
+                    // C to F: T_F = T_C * 9/5 + 32
+                    finalResult = T_dp_C * 9 / 5 + 32;
+                    unitSymbol = '°F';
+                } else {
+                    finalResult = T_dp_C;
+                    unitSymbol = '°C';
+                }
+
+                // 结果保留两位小数
+                resultEl.innerText = `${finalResult.toFixed(2)} ${unitSymbol}`;
+            }
+        };
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 确保页面加载后，语言和初始计算是正确的
+            DewPointCalc.changeLang();
+            
+            // 尝试自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            const langSelect = document.getElementById('dp-lang');
+            if(langSelect && targetLang !== 'en') {
+                const optionExists = Array.from(langSelect.options).some(option => option.value === targetLang);
+                if (optionExists) {
+                    langSelect.value = targetLang;
+                    DewPointCalc.changeLang();
+                }
+            }
+
+            // 绑定输入事件到计算函数
+            const inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                input.addEventListener('change', DewPointCalc.calc);
+                input.addEventListener('input', DewPointCalc.calc);
+            });
+            
+            // 初始计算，显示默认值的结果
+            DewPointCalc.calc();
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factor Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="factor_calc">
+    <meta name="category" content="math">
+    <meta name="icon" content="🧮">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Factor Calculator">
+    <meta name="description" content="Find all factors, prime factors, and factor pairs of a number.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="因子计算器">
+    <meta name="lang-description-zh-CN" content="查找一个数字的所有因数、质因数和因数对。">
+    
+    <meta name="lang-title-zh-TW" content="因數計算器">
+    <meta name="lang-description-zh-TW" content="查找一個數字的所有因數、質因數和因數對。">
+    
+    <meta name="lang-title-ja" content="因数計算ツール">
+    <meta name="lang-description-ja" content="数値のすべての約数、素因数、約数のペアを見つけます。">
+    
+    <meta name="lang-title-ru" content="Калькулятор факторов">
+    <meta name="lang-description-ru" content="Найдите все делители, простые делители и пары делителей числа.">
+    
+    <meta name="lang-title-es" content="Calculadora de Factores">
+    <meta name="lang-description-es" content="Encuentra todos los factores, factores primos y pares de factores de un número.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .factor-chip { display: inline-block; background: #e2e8f0; padding: 4px 8px; border-radius: 4px; margin: 4px; }
+        .pair-chip { display: inline-block; background: #dbeafe; padding: 4px 8px; border-radius: 4px; margin: 4px; }
+        .prime-chip { display: inline-block; background: #fecdd3; padding: 4px 8px; border-radius: 4px; margin: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="factor_calc" 
+         data-category="math" 
+         data-title="Factor Calculator" 
+         data-icon="🧮">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="factor-lang" onchange="FactorCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🧮 Factor Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="number_label">Enter a positive integer</label>
+                <input type="number" id="factor-number" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 120" min="1" value="120">
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="show-prime" checked class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="show-prime" data-i18n="show_prime">Show prime factorization</label>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="show-pairs" checked class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="show-pairs" data-i18n="show_pairs">Show factor pairs</label>
+            </div>
+        </div>
+
+        <button onclick="FactorCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Factors</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-3" data-i18n="result_label">Results for <span id="factor-display-number">120</span></div>
+            
+            <div id="factor-results" class="space-y-4">
+                <div>
+                    <div data-i18n="factors_label" class="font-medium mb-2">All Factors:</div>
+                    <div id="all-factors" class="flex flex-wrap">--</div>
+                    <div class="mt-1 text-sm text-gray-500" data-i18n="factor_count">Total factors: <span id="factor-count">--</span></div>
+                </div>
+                
+                <div id="prime-container">
+                    <div data-i18n="prime_factors_label" class="font-medium mb-2">Prime Factorization:</div>
+                    <div id="prime-factors" class="text-gray-700">--</div>
+                    <div id="prime-exponential" class="mt-1 text-gray-700 italic">--</div>
+                </div>
+                
+                <div id="pairs-container">
+                    <div data-i18n="factor_pairs_label" class="font-medium mb-2">Factor Pairs (multiples to make the number):</div>
+                    <div id="factor-pairs" class="text-gray-700">--</div>
+                </div>
+                
+                <div>
+                    <div data-i18n="properties_label" class="font-medium mb-2">Number Properties:</div>
+                    <div id="number-properties" class="text-gray-700 space-y-1">
+                        <div><span data-i18n="is_prime">Prime number:</span> <span id="is-prime">--</span></div>
+                        <div><span data-i18n="is_composite">Composite number:</span> <span id="is-composite">--</span></div>
+                        <div><span data-i18n="is_perfect">Perfect number:</span> <span id="is-perfect">--</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="factor-error" class="mt-4 text-red-600 hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const FactorCalc = {
+            i18n: {
+                'en': {
+                    title: '🧮 Factor Calculator',
+                    number_label: 'Enter a positive integer',
+                    show_prime: 'Show prime factorization',
+                    show_pairs: 'Show factor pairs',
+                    btn_calc: 'Calculate Factors',
+                    result_label: 'Results for',
+                    factors_label: 'All Factors:',
+                    factor_count: 'Total factors:',
+                    prime_factors_label: 'Prime Factorization:',
+                    factor_pairs_label: 'Factor Pairs (multiples to make the number):',
+                    properties_label: 'Number Properties:',
+                    is_prime: 'Prime number:',
+                    is_composite: 'Composite number:',
+                    is_perfect: 'Perfect number:',
+                    yes: 'Yes',
+                    no: 'No',
+                    err_invalid_number: 'Please enter a valid positive integer (≥ 1)',
+                    err_prime: '1 is neither prime nor composite'
+                },
+                'zh-CN': {
+                    title: '🧮 因子计算器',
+                    number_label: '输入一个正整数',
+                    show_prime: '显示质因数分解',
+                    show_pairs: '显示因数对',
+                    btn_calc: '计算因数',
+                    result_label: '数字',
+                    factors_label: '所有因数：',
+                    factor_count: '因数总数：',
+                    prime_factors_label: '质因数分解：',
+                    factor_pairs_label: '因数对（相乘得到该数）：',
+                    properties_label: '数字属性：',
+                    is_prime: '质数：',
+                    is_composite: '合数：',
+                    is_perfect: '完全数：',
+                    yes: '是',
+                    no: '否',
+                    err_invalid_number: '请输入有效的正整数（≥ 1）',
+                    err_prime: '1既不是质数也不是合数'
+                },
+                'zh-TW': {
+                    title: '🧮 因數計算器',
+                    number_label: '輸入一個正整數',
+                    show_prime: '顯示質因數分解',
+                    show_pairs: '顯示因數對',
+                    btn_calc: '計算因數',
+                    result_label: '數字',
+                    factors_label: '所有因數：',
+                    factor_count: '因數總數：',
+                    prime_factors_label: '質因數分解：',
+                    factor_pairs_label: '因數對（相乘得到該數）：',
+                    properties_label: '數字屬性：',
+                    is_prime: '質數：',
+                    is_composite: '合數：',
+                    is_perfect: '完全數：',
+                    yes: '是',
+                    no: '否',
+                    err_invalid_number: '請輸入有效的正整數（≥ 1）',
+                    err_prime: '1既不是質數也不是合數'
+                },
+                'ja': {
+                    title: '🧮 因数計算ツール',
+                    number_label: '正の整数を入力してください',
+                    show_prime: '素因数分解を表示',
+                    show_pairs: '因数のペアを表示',
+                    btn_calc: '因数を計算',
+                    result_label: 'の結果',
+                    factors_label: 'すべての約数：',
+                    factor_count: '約数の合計：',
+                    prime_factors_label: '素因数分解：',
+                    factor_pairs_label: '因数のペア（数を作成するための倍数）：',
+                    properties_label: '数値のプロパティ：',
+                    is_prime: '素数：',
+                    is_composite: '合成数：',
+                    is_perfect: '完全数：',
+                    yes: 'はい',
+                    no: 'いいえ',
+                    err_invalid_number: '有効な正の整数（≥ 1）を入力してください',
+                    err_prime: '1は素数でも合成数でもありません'
+                },
+                'ru': {
+                    title: '🧮 Калькулятор факторов',
+                    number_label: 'Введите положительное целое число',
+                    show_prime: 'Показать простое разложение',
+                    show_pairs: 'Показать пары делителей',
+                    btn_calc: 'Вычислить делители',
+                    result_label: 'Результаты для',
+                    factors_label: 'Все делители:',
+                    factor_count: 'Общее количество делителей:',
+                    prime_factors_label: 'Простое разложение:',
+                    factor_pairs_label: 'Пары делителей (кратные, составляющие число):',
+                    properties_label: 'Свойства числа:',
+                    is_prime: 'Простое число:',
+                    is_composite: 'Составное число:',
+                    is_perfect: 'Совершенное число:',
+                    yes: 'Да',
+                    no: 'Нет',
+                    err_invalid_number: 'Введите действительное положительное целое число (≥ 1)',
+                    err_prime: '1 не является ни простым, ни составным числом'
+                },
+                'es': {
+                    title: '🧮 Calculadora de Factores',
+                    number_label: 'Ingrese un número entero positivo',
+                    show_prime: 'Mostrar factorización prima',
+                    show_pairs: 'Mostrar pares de factores',
+                    btn_calc: 'Calcular Factores',
+                    result_label: 'Resultados para',
+                    factors_label: 'Todos los Factores:',
+                    factor_count: 'Total de factores:',
+                    prime_factors_label: 'Factorización Prima:',
+                    factor_pairs_label: 'Pares de Factores (múltiplos para formar el número):',
+                    properties_label: 'Propiedades del Número:',
+                    is_prime: 'Número primo:',
+                    is_composite: 'Número compuesto:',
+                    is_perfect: 'Número perfecto:',
+                    yes: 'Sí',
+                    no: 'No',
+                    err_invalid_number: 'Ingrese un número entero positivo válido (≥ 1)',
+                    err_prime: '1 no es ni primo ni compuesto'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('factor-lang').value;
+                const texts = FactorCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="factor_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                if (document.getElementById('factor-count').innerText !== '--') {
+                    FactorCalc.calc();
+                }
+            },
+
+            // 获取数字的所有因数
+            getFactors: (num) => {
+                const factors = new Set();
+                for (let i = 1; i <= Math.sqrt(num); i++) {
+                    if (num % i === 0) {
+                        factors.add(i);
+                        factors.add(num / i);
+                    }
+                }
+                return Array.from(factors).sort((a, b) => a - b);
+            },
+
+            // 获取质因数分解
+            getPrimeFactors: (num) => {
+                const factors = [];
+                let n = num;
+                
+                // 处理2的因数
+                while (n % 2 === 0) {
+                    factors.push(2);
+                    n /= 2;
+                }
+                
+                // 处理奇数因数
+                for (let i = 3; i <= Math.sqrt(n); i += 2) {
+                    while (n % i === 0) {
+                        factors.push(i);
+                        n /= i;
+                    }
+                }
+                
+                // 如果剩余的数是质数
+                if (n > 2) {
+                    factors.push(n);
+                }
+                
+                return factors;
+            },
+
+            // 格式化质因数（指数形式）
+            formatPrimeFactors: (factors) => {
+                const counts = {};
+                factors.forEach(factor => {
+                    counts[factor] = (counts[factor] || 0) + 1;
+                });
+                
+                let exponential = '';
+                let expanded = factors.join(' × ');
+                
+                Object.entries(counts).forEach(([factor, count], index) => {
+                    if (index > 0) exponential += ' × ';
+                    if (count === 1) {
+                        exponential += factor;
+                    } else {
+                        exponential += `${factor}<sup>${count}</sup>`;
+                    }
+                });
+                
+                return { expanded, exponential };
+            },
+
+            // 获取因数对
+            getFactorPairs: (num) => {
+                const factors = FactorCalc.getFactors(num);
+                const pairs = [];
+                
+                for (const factor of factors) {
+                    const pair = num / factor;
+                    if (factor <= pair) {
+                        pairs.push([factor, pair]);
+                    }
+                }
+                
+                return pairs;
+            },
+
+            // 检查是否为完全数
+            isPerfectNumber: (num) => {
+                if (num <= 1) return false;
+                
+                const factors = FactorCalc.getFactors(num);
+                const properFactors = factors.filter(f => f !== num);
+                const sum = properFactors.reduce((a, b) => a + b, 0);
+                
+                return sum === num;
+            },
+
+            calc: () => {
+                const lang = document.getElementById('factor-lang').value;
+                const texts = FactorCalc.i18n[lang];
+                const errorEl = document.getElementById('factor-error');
+                
+                // 重置错误状态
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+                
+                // 获取输入值
+                const num = parseInt(document.getElementById('factor-number').value);
+                
+                // 验证
+                if (isNaN(num) || num < 1) {
+                    errorEl.innerText = texts.err_invalid_number;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                
+                // 更新显示的数字
+                document.getElementById('factor-display-number').innerText = num;
+                
+                // 获取所有因数
+                const allFactors = FactorCalc.getFactors(num);
+                document.getElementById('factor-count').innerText = allFactors.length;
+                
+                // 显示所有因数
+                let factorsHTML = '';
+                allFactors.forEach(factor => {
+                    factorsHTML += `<span class="factor-chip">${factor}</span>`;
+                });
+                document.getElementById('all-factors').innerHTML = factorsHTML;
+                
+                // 显示质因数分解（如果勾选）
+                const showPrime = document.getElementById('show-prime').checked;
+                document.getElementById('prime-container').style.display = showPrime ? 'block' : 'none';
+                
+                if (showPrime) {
+                    if (num === 1) {
+                        document.getElementById('prime-factors').innerText = texts.err_prime;
+                        document.getElementById('prime-exponential').innerText = '';
+                    } else {
+                        const primeFactors = FactorCalc.getPrimeFactors(num);
+                        const formatted = FactorCalc.formatPrimeFactors(primeFactors);
+                        document.getElementById('prime-factors').innerHTML = formatted.expanded;
+                        document.getElementById('prime-exponential').innerHTML = formatted.exponential;
+                    }
+                }
+                
+                // 显示因数对（如果勾选）
+                const showPairs = document.getElementById('show-pairs').checked;
+                document.getElementById('pairs-container').style.display = showPairs ? 'block' : 'none';
+                
+                if (showPairs) {
+                    const pairs = FactorCalc.getFactorPairs(num);
+                    let pairsHTML = '';
+                    pairs.forEach(([a, b], index) => {
+                        pairsHTML += `<span class="pair-chip">${a} × ${b} = ${num}</span>`;
+                    });
+                    document.getElementById('factor-pairs').innerHTML = pairsHTML;
+                }
+                
+                // 数字属性
+                let isPrime = false;
+                let isComposite = false;
+                
+                if (num === 1) {
+                    document.getElementById('is-prime').innerText = texts.err_prime;
+                    document.getElementById('is-composite').innerText = '';
+                } else {
+                    isPrime = allFactors.length === 2;
+                    isComposite = allFactors.length > 2;
+                    document.getElementById('is-prime').innerText = isPrime ? texts.yes : texts.no;
+                    document.getElementById('is-composite').innerText = isComposite ? texts.yes : texts.no;
+                }
+                
+                const isPerfect = FactorCalc.isPerfectNumber(num);
+                document.getElementById('is-perfect').innerText = isPerfect ? texts.yes : texts.no;
+            }
+        };
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('factor-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    FactorCalc.changeLang();
+                }
+            }
+            
+            // 初始计算
+            FactorCalc.calc();
+        });
+    </script>
+
+</body>
+</html>

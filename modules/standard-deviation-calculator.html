@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Standard Deviation Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="std_dev_calc">
+    <meta name="category" content="statistics">
+    <meta name="icon" content="📈">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Standard Deviation Calculator">
+    <meta name="description" content="Calculate standard deviation, variance, mean, median and other statistical measures for a given dataset.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="标准差计算器">
+    <meta name="lang-description-zh-CN" content="计算给定数据集的标准差、方差、均值、中位数和其他统计量。">
+    
+    <meta name="lang-title-zh-TW" content="標準差計算器">
+    <meta name="lang-description-zh-TW" content="計算給定數據集的標準差、方差、均值、中位數和其他統計量。">
+    
+    <meta name="lang-title-ja" content="標準偏差計算ツール">
+    <meta name="lang-description-ja" content="与えられたデータセットの標準偏差、分散、平均、中央値、その他の統計量を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор стандартного отклонения">
+    <meta name="lang-description-ru" content="Рассчитайте стандартное отклонение, дисперсию, среднее значение, медиану и другие статистические показатели для заданного набора данных.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .result-container { word-break: break-all; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: #e8f4f8; padding: 15px; border-radius: 8px; }
+        .stat-label { font-size: 0.85rem; color: #4b5563; margin-bottom: 5px; }
+        .stat-value { font-size: 1.1rem; font-weight: bold; color: #1e40af; }
+        .data-preview { background: #f8fafc; padding: 10px; border-radius: 6px; margin: 10px 0; font-family: monospace; font-size: 0.9rem; max-height: 100px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="std_dev_calc" 
+         data-category="statistics" 
+         data-title="Standard Deviation Calculator" 
+         data-icon="📈">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="stddev-lang" onchange="StdDevCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📈 Standard Deviation Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 数据输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="enter_data">Enter Dataset</label>
+                <textarea id="stddev-data" rows="4" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 1,2,3,4,5 or 1 2 3 4 5 (separate with commas or spaces)"></textarea>
+                <div class="text-xs text-gray-500 mt-1" data-i18n="data_note">Enter numbers separated by commas, spaces, newlines or tabs (minimum 2 values required)</div>
+                
+                <!-- 数据预览 -->
+                <div class="data-preview mt-2" id="data-preview">-- No data entered --</div>
+            </div>
+            
+            <!-- 数据集类型选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="data_type">Data Type</label>
+                <div class="radio-group" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="data-type" id="sample-data" value="sample" checked>
+                        <label for="sample-data" data-i18n="sample_data">Sample Data (divide by n-1)</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="data-type" id="population-data" value="population">
+                        <label for="population-data" data-i18n="population_data">Population Data (divide by n)</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 精度选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="precision">Precision (decimal places)</label>
+                <input type="number" id="stddev-precision" min="0" max="6" value="4" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="StdDevCalc.loadSampleData()" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition" data-i18n="load_sample">Load Sample Data</button>
+                <button onclick="StdDevCalc.clearData()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear_data">Clear Data</button>
+                <button onclick="StdDevCalc.calculate()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate Statistics</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="stddev-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="stddev-results" class="hidden">
+            <!-- 数据集基本信息 -->
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="data_summary">Dataset Summary</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="data_count">Number of Values (n)</div>
+                        <div class="stat-value" id="stat-count">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="data_sum">Sum</div>
+                        <div class="stat-value" id="stat-sum">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="mean">Mean</div>
+                        <div class="stat-value" id="stat-mean">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="median">Median</div>
+                        <div class="stat-value" id="stat-median">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 标准差和方差 -->
+            <div class="mb-4">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="variability_measures">Variability Measures</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="variance">Variance</div>
+                        <div class="stat-value" id="stat-variance">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="std_dev">Standard Deviation</div>
+                        <div class="stat-value" id="stat-stddev">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="range">Range</div>
+                        <div class="stat-value" id="stat-range">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="cv">Coefficient of Variation</div>
+                        <div class="stat-value" id="stat-cv">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" data-i18n="notes_list">
+                <li>Standard deviation measures the spread of data points from the mean</li>
+                <li>Sample standard deviation uses n-1 (Bessel's correction) for unbiased estimation</li>
+                <li>Population standard deviation uses n (no correction)</li>
+                <li>Higher standard deviation indicates greater spread in the data</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const StdDevCalc = {
+            i18n: {
+                'en': {
+                    title: '📈 Standard Deviation Calculator',
+                    enter_data: 'Enter Dataset',
+                    data_note: 'Enter numbers separated by commas, spaces, newlines or tabs (minimum 2 values required)',
+                    data_type: 'Data Type',
+                    sample_data: 'Sample Data (divide by n-1)',
+                    population_data: 'Population Data (divide by n)',
+                    precision: 'Precision (decimal places)',
+                    load_sample: 'Load Sample Data',
+                    clear_data: 'Clear Data',
+                    calculate: 'Calculate Statistics',
+                    data_summary: 'Dataset Summary',
+                    data_count: 'Number of Values (n)',
+                    data_sum: 'Sum',
+                    mean: 'Mean',
+                    median: 'Median',
+                    variability_measures: 'Variability Measures',
+                    variance: 'Variance',
+                    std_dev: 'Standard Deviation',
+                    range: 'Range',
+                    cv: 'Coefficient of Variation',
+                    notes: 'Notes:',
+                    notes_list: `
+                        <li>Standard deviation measures the spread of data points from the mean</li>
+                        <li>Sample standard deviation uses n-1 (Bessel's correction) for unbiased estimation</li>
+                        <li>Population standard deviation uses n (no correction)</li>
+                        <li>Higher standard deviation indicates greater spread in the data</li>
+                    `,
+                    err_no_data: 'Please enter at least 2 valid numbers',
+                    err_invalid_data: 'Dataset contains invalid values (only numbers allowed)'
+                },
+                'zh-CN': {
+                    title: '📈 标准差计算器',
+                    enter_data: '输入数据集',
+                    data_note: '输入用逗号、空格、换行或制表符分隔的数字（至少需要2个值）',
+                    data_type: '数据类型',
+                    sample_data: '样本数据（除以n-1）',
+                    population_data: '总体数据（除以n）',
+                    precision: '精度（小数位数）',
+                    load_sample: '加载样本数据',
+                    clear_data: '清除数据',
+                    calculate: '计算统计量',
+                    data_summary: '数据集摘要',
+                    data_count: '值的数量 (n)',
+                    data_sum: '总和',
+                    mean: '均值',
+                    median: '中位数',
+                    variability_measures: '离散度指标',
+                    variance: '方差',
+                    std_dev: '标准差',
+                    range: '极差',
+                    cv: '变异系数',
+                    notes: '说明：',
+                    notes_list: `
+                        <li>标准差衡量数据点与均值的离散程度</li>
+                        <li>样本标准差使用n-1（贝塞尔校正）进行无偏估计</li>
+                        <li>总体标准差使用n（无校正）</li>
+                        <li>标准差越大，表示数据的离散程度越大</li>
+                    `,
+                    err_no_data: '请输入至少2个有效的数字',
+                    err_invalid_data: '数据集中包含无效值（仅允许数字）'
+                },
+                'zh-TW': {
+                    title: '📈 標準差計算器',
+                    enter_data: '輸入數據集',
+                    data_note: '輸入用逗號、空格、換行或製表符分隔的數字（至少需要2個值）',
+                    data_type: '數據類型',
+                    sample_data: '樣本數據（除以n-1）',
+                    population_data: '總體數據（除以n）',
+                    precision: '精度（小數位數）',
+                    load_sample: '加載樣本數據',
+                    clear_data: '清除數據',
+                    calculate: '計算統計量',
+                    data_summary: '數據集摘要',
+                    data_count: '值的數量 (n)',
+                    data_sum: '總和',
+                    mean: '均值',
+                    median: '中位數',
+                    variability_measures: '離散度指標',
+                    variance: '方差',
+                    std_dev: '標準差',
+                    range: '極差',
+                    cv: '變異係數',
+                    notes: '說明：',
+                    notes_list: `
+                        <li>標準差衡量數據點與均值的離散程度</li>
+                        <li>樣本標準差使用n-1（貝塞爾校正）進行無偏估計</li>
+                        <li>總體標準差使用n（無校正）</li>
+                        <li>標準差越大，表示數據的離散程度越大</li>
+                    `,
+                    err_no_data: '請輸入至少2個有效的數字',
+                    err_invalid_data: '數據集中包含無效值（僅允許數字）'
+                },
+                'ja': {
+                    title: '📈 標準偏差計算ツール',
+                    enter_data: 'データセットを入力',
+                    data_note: 'コンマ、スペース、改行、またはタブで区切られた数値を入力してください（少なくとも2つの値が必要です）',
+                    data_type: 'データの種類',
+                    sample_data: 'サンプルデータ（n-1で除算）',
+                    population_data: '母集団データ（nで除算）',
+                    precision: '精度（小数桁数）',
+                    load_sample: 'サンプルデータを読み込む',
+                    clear_data: 'データをクリア',
+                    calculate: '統計量を計算',
+                    data_summary: 'データセットの概要',
+                    data_count: '値の数 (n)',
+                    data_sum: '合計',
+                    mean: '平均',
+                    median: '中央値',
+                    variability_measures: '変動性指標',
+                    variance: '分散',
+                    std_dev: '標準偏差',
+                    range: '範囲',
+                    cv: '変動係数',
+                    notes: '注意事項：',
+                    notes_list: `
+                        <li>標準偏差は、平均からのデータポイントの広がりを測定します</li>
+                        <li>サンプル標準偏差は、不偏推定のためにn-1（ベッセル補正）を使用します</li>
+                        <li>母集団標準偏差はnを使用します（補正なし）</li>
+                        <li>標準偏差が大きいほど、データのばらつきが大きいことを示します</li>
+                    `,
+                    err_no_data: '少なくとも2つの有効な数値を入力してください',
+                    err_invalid_data: 'データセットに無効な値が含まれています（数値のみ許可されます）'
+                },
+                'ru': {
+                    title: '📈 Калькулятор стандартного отклонения',
+                    enter_data: 'Введите набор данных',
+                    data_note: 'Введите числа, разделенные запятыми, пробелами, переводами строки или табуляцией (необходимо минимум 2 значения)',
+                    data_type: 'Тип данных',
+                    sample_data: 'Выборочные данные (деление на n-1)',
+                    population_data: 'Население данных (деление на n)',
+                    precision: 'Точность (знаков после запятой)',
+                    load_sample: 'Загрузить пример данных',
+                    clear_data: 'Очистить данные',
+                    calculate: 'Вычислить статистику',
+                    data_summary: 'Сводка набора данных',
+                    data_count: 'Количество значений (n)',
+                    data_sum: 'Сумма',
+                    mean: 'Среднее значение',
+                    median: 'Медиана',
+                    variability_measures: 'Меры изменчивости',
+                    variance: 'Дисперсия',
+                    std_dev: 'Стандартное отклонение',
+                    range: 'Диапазон',
+                    cv: 'Коэффициент вариации',
+                    notes: 'Примечания:',
+                    notes_list: `
+                        <li>Стандартное отклонение измеряет разброс данных относительно среднего значения</li>
+                        <li>Выборочное стандартное отклонение использует n-1 (исправление Бесселя) для несмещенной оценки</li>
+                        <li>Стандартное отклонение населения использует n (без исправления)</li>
+                        <li>Большее стандартное отклонение указывает на больший разброс данных</li>
+                    `,
+                    err_no_data: 'Введите хотя бы 2 действительных числа',
+                    err_invalid_data: 'Набор данных содержит недействительные значения (разрешены только числа)'
+                }
+            },
+            
+            init: function() {
+                // 监听数据输入变化，更新预览
+                document.getElementById('stddev-data').addEventListener('input', () => {
+                    this.updateDataPreview();
+                });
+                this.changeLang();
+            },
+            
+            updateDataPreview: function() {
+                const input = document.getElementById('stddev-data').value.trim();
+                const previewEl = document.getElementById('data-preview');
+                
+                if (!input) {
+                    previewEl.textContent = '-- ' + this.i18n[this.getCurrentLang()].err_no_data.split(' ')[3] + ' --';
+                    return;
+                }
+                
+                // 解析数据
+                const data = this.parseData(input);
+                if (data.length === 0) {
+                    previewEl.textContent = '-- ' + this.i18n[this.getCurrentLang()].err_invalid_data + ' --';
+                } else {
+                    previewEl.textContent = data.join(', ') + (data.length > 10 ? ' ...' : '');
+                }
+            },
+            
+            parseData: function(input) {
+                // 分割数据并转换为数字
+                const tokens = input.replace(/[\t\n]+/g, ' ').split(/[, ]+/);
+                return tokens
+                    .filter(token => token.trim() !== '')
+                    .map(token => parseFloat(token))
+                    .filter(num => !isNaN(num));
+            },
+            
+            loadSampleData: function() {
+                // 加载示例数据
+                document.getElementById('stddev-data').value = '12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42';
+                this.updateDataPreview();
+            },
+            
+            clearData: function() {
+                document.getElementById('stddev-data').value = '';
+                document.getElementById('stddev-results').classList.add('hidden');
+                document.getElementById('stddev-error').classList.add('hidden');
+                this.updateDataPreview();
+            },
+            
+            calculate: function() {
+                const input = document.getElementById('stddev-data').value.trim();
+                const errorEl = document.getElementById('stddev-error');
+                errorEl.classList.add('hidden');
+                
+                // 解析数据
+                const data = this.parseData(input);
+                
+                // 验证数据
+                if (data.length < 2) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_no_data;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                
+                // 检查是否有无效数据
+                const tokens = input.replace(/[\t\n]+/g, ' ').split(/[, ]+/).filter(t => t.trim() !== '');
+                if (data.length !== tokens.length) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_data;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                
+                // 获取数据类型和精度
+                const isSample = document.getElementById('sample-data').checked;
+                const precision = parseInt(document.getElementById('stddev-precision').value) || 4;
+                
+                // 排序数据
+                const sortedData = [...data].sort((a, b) => a - b);
+                
+                // 计算统计量
+                const count = data.length;
+                const sum = data.reduce((acc, val) => acc + val, 0);
+                const mean = sum / count;
+                const median = this.calculateMedian(sortedData);
+                const range = sortedData[sortedData.length - 1] - sortedData[0];
+                const variance = this.calculateVariance(data, mean, isSample);
+                const stdDev = Math.sqrt(variance);
+                const cv = mean !== 0 ? (stdDev / mean) * 100 : 0;
+                
+                // 格式化结果
+                const format = (num) => num.toFixed(precision);
+                
+                // 更新结果UI
+                document.getElementById('stat-count').textContent = count;
+                document.getElementById('stat-sum').textContent = format(sum);
+                document.getElementById('stat-mean').textContent = format(mean);
+                document.getElementById('stat-median').textContent = format(median);
+                document.getElementById('stat-variance').textContent = format(variance);
+                document.getElementById('stat-stddev').textContent = format(stdDev);
+                document.getElementById('stat-range').textContent = format(range);
+                document.getElementById('stat-cv').textContent = `${format(cv)}%`;
+                
+                // 显示结果
+                document.getElementById('stddev-results').classList.remove('hidden');
+            },
+            
+            calculateMedian: function(sortedData) {
+                const n = sortedData.length;
+                if (n % 2 === 1) {
+                    return sortedData[Math.floor(n / 2)];
+                } else {
+                    return (sortedData[n / 2 - 1] + sortedData[n / 2]) / 2;
+                }
+            },
+            
+            calculateVariance: function(data, mean, isSample) {
+                const squaredDiffs = data.map(x => Math.pow(x - mean, 2));
+                const sumSquaredDiffs = squaredDiffs.reduce((acc, val) => acc + val, 0);
+                const denominator = isSample ? data.length - 1 : data.length;
+                return sumSquaredDiffs / denominator;
+            },
+            
+            getCurrentLang: function() {
+                return document.getElementById('stddev-lang').value;
+            },
+            
+            changeLang: function() {
+                const lang = this.getCurrentLang();
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.innerHTML = this.i18n[lang][key];
+                    }
+                });
+                this.updateDataPreview(); // 更新预览文本
+            }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            StdDevCalc.init();
+        });
+    </script>
+</body>
+</html>

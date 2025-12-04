@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logarithm Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="log_calculator">
+    <meta name="category" content="mathematics">
+    <meta name="icon" content="🔢">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Logarithm Calculator">
+    <meta name="description" content="Calculate logarithms with custom base or common bases (base 10, natural log).">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="对数计算器">
+    <meta name="lang-description-zh-CN" content="计算自定义底数或常用底数（10为底、自然对数）的对数。">
+    
+    <meta name="lang-title-zh-TW" content="對數計算器">
+    <meta name="lang-description-zh-TW" content="計算自定義底數或常用底數（10為底、自然對數）的對數。">
+    
+    <meta name="lang-title-ja" content="対数計算ツール">
+    <meta name="lang-description-ja" content="カスタム基数または一般的な基数（基数10、自然対数）の対数を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор логарифмов">
+    <meta name="lang-description-ru" content="Вычисление логарифмов с произвольным основанием или обычными основаниями (основание 10, натуральный логарифм).">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-container { word-break: break-all; }
+        .result-box { background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 15px 0; text-align: center; }
+        .formula-box { background: #f8fafc; padding: 10px; border-radius: 6px; font-family: monospace; margin: 10px 0; }
+        .input-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+        .input-item { flex: 1; min-width: 150px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="log_calculator" 
+         data-category="mathematics" 
+         data-title="Logarithm Calculator" 
+         data-icon="🔢">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="log-lang" onchange="LogCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔢 Logarithm Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 对数类型选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="log_type">Logarithm Type</label>
+                <div class="radio-group" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="log-type" id="log-custom" value="custom" checked>
+                        <label for="log-custom" data-i18n="custom_base">Custom Base</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="log-type" id="log-10" value="10">
+                        <label for="log-10" data-i18n="base_10">Base 10 (Common Log)</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="log-type" id="log-e" value="e">
+                        <label for="log-e" data-i18n="natural_log">Natural Log (ln)</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 数值输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="number">Number (x)</label>
+                <input type="number" id="log-number" step="0.001" min="0.0001" value="100" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 底数输入 (自定义底数时显示) -->
+            <div id="base-container">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="base">Base (b)</label>
+                <input type="number" id="log-base" step="0.001" min="0.0001" value="10" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                <div class="text-xs text-gray-500 mt-1" data-i18n="base_note">Base must be positive and not equal to 1</div>
+            </div>
+
+            <!-- 计算按钮 -->
+            <button onclick="LogCalc.calculate()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" data-i18n="calculate">Calculate</button>
+        </div>
+        
+        <!-- 结果展示区域 -->
+        <div class="result-container mt-6 pt-4 border-t">
+            <h3 class="text-lg font-semibold mb-3 text-gray-700" data-i18n="result">Results</h3>
+            <div class="result-box" id="log-result">
+                <div data-i18n="result_placeholder">Logarithm result will be shown here</div>
+            </div>
+            
+            <div class="formula-box mt-4" id="log-formula">
+                <div data-i18n="formula_placeholder">Formula used: log_b(x) = y where b^y = x</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const LogCalc = {
+            // 多语言文本映射
+            translations: {
+                en: {
+                    title: "🔢 Logarithm Calculator",
+                    log_type: "Logarithm Type",
+                    custom_base: "Custom Base",
+                    base_10: "Base 10 (Common Log)",
+                    natural_log: "Natural Log (ln)",
+                    number: "Number (x)",
+                    base: "Base (b)",
+                    base_note: "Base must be positive and not equal to 1",
+                    calculate: "Calculate",
+                    result: "Results",
+                    result_placeholder: "Logarithm result will be shown here",
+                    formula_placeholder: "Formula used: log_b(x) = y where b^y = x",
+                    error: "Error",
+                    invalid_input: "Please enter valid positive numbers"
+                },
+                "zh-CN": {
+                    title: "🔢 对数计算器",
+                    log_type: "对数类型",
+                    custom_base: "自定义底数",
+                    base_10: "10为底（常用对数）",
+                    natural_log: "自然对数 (ln)",
+                    number: "数值 (x)",
+                    base: "底数 (b)",
+                    base_note: "底数必须为正数且不等于1",
+                    calculate: "计算",
+                    result: "结果",
+                    result_placeholder: "对数结果将显示在这里",
+                    formula_placeholder: "使用公式: log_b(x) = y 其中 b^y = x",
+                    error: "错误",
+                    invalid_input: "请输入有效的正数"
+                },
+                "zh-TW": {
+                    title: "🔢 對數計算器",
+                    log_type: "對數類型",
+                    custom_base: "自定義底數",
+                    base_10: "10為底（常用對數）",
+                    natural_log: "自然對數 (ln)",
+                    number: "數值 (x)",
+                    base: "底數 (b)",
+                    base_note: "底數必須為正數且不等於1",
+                    calculate: "計算",
+                    result: "結果",
+                    result_placeholder: "對數結果將顯示在這裡",
+                    formula_placeholder: "使用公式: log_b(x) = y 其中 b^y = x",
+                    error: "錯誤",
+                    invalid_input: "請輸入有效的正數"
+                },
+                ja: {
+                    title: "🔢 対数計算ツール",
+                    log_type: "対数の種類",
+                    custom_base: "カスタム基数",
+                    base_10: "基数10（常用対数）",
+                    natural_log: "自然対数 (ln)",
+                    number: "数値 (x)",
+                    base: "基数 (b)",
+                    base_note: "基数は正数で1ではない必要があります",
+                    calculate: "計算",
+                    result: "結果",
+                    result_placeholder: "対数の結果はここに表示されます",
+                    formula_placeholder: "使用された公式: log_b(x) = y（b^y = x の場合）",
+                    error: "エラー",
+                    invalid_input: "有効な正数を入力してください"
+                },
+                ru: {
+                    title: "🔢 Калькулятор логарифмов",
+                    log_type: "Тип логарифма",
+                    custom_base: "Произвольное основание",
+                    base_10: "Основание 10 (общий логарифм)",
+                    natural_log: "Натуральный логарифм (ln)",
+                    number: "Число (x)",
+                    base: "Основание (b)",
+                    base_note: "Основание должно быть положительным и не равным 1",
+                    calculate: "Вычислить",
+                    result: "Результаты",
+                    result_placeholder: "Результат логарифма будет показан здесь",
+                    formula_placeholder: "Используемая формула: log_b(x) = y, где b^y = x",
+                    error: "Ошибка",
+                    invalid_input: "Введите действительные положительные числа"
+                }
+            },
+
+            // 初始化
+            init: function() {
+                // 监听对数类型变化
+                document.querySelectorAll('input[name="log-type"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        this.updateBaseField(e.target.value);
+                    });
+                });
+            },
+
+            // 根据类型更新底数输入框显示状态
+            updateBaseField: function(type) {
+                const baseContainer = document.getElementById('base-container');
+                if (type === 'custom') {
+                    baseContainer.style.display = 'block';
+                } else {
+                    baseContainer.style.display = 'none';
+                }
+            },
+
+            // 切换语言
+            changeLang: function() {
+                const lang = document.getElementById('log-lang').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.translations[lang] && this.translations[lang][key]) {
+                        el.textContent = this.translations[lang][key];
+                    }
+                });
+            },
+
+            // 计算对数
+            calculate: function() {
+                const resultEl = document.getElementById('log-result');
+                const formulaEl = document.getElementById('log-formula');
+                const lang = document.getElementById('log-lang').value;
+                
+                // 获取输入值
+                const x = parseFloat(document.getElementById('log-number').value);
+                const logType = document.querySelector('input[name="log-type"]:checked').value;
+                let base;
+                
+                // 验证输入
+                if (isNaN(x) || x <= 0) {
+                    resultEl.innerHTML = `<span class="text-red-600">${this.translations[lang].error}: ${this.translations[lang].invalid_input}</span>`;
+                    return;
+                }
+                
+                // 确定底数
+                if (logType === 'custom') {
+                    base = parseFloat(document.getElementById('log-base').value);
+                    if (isNaN(base) || base <= 0 || base === 1) {
+                        resultEl.innerHTML = `<span class="text-red-600">${this.translations[lang].error}: ${this.translations[lang].invalid_input}</span>`;
+                        return;
+                    }
+                } else if (logType === '10') {
+                    base = 10;
+                } else { // natural log
+                    base = Math.E;
+                }
+                
+                // 计算对数
+                const result = Math.log(x) / Math.log(base);
+                
+                // 更新结果和公式
+                resultEl.innerHTML = `${this.formatResult(result)}`;
+                
+                // 更新公式显示
+                let formulaText;
+                if (logType === '10') {
+                    formulaText = `log₁₀(${x}) = ${this.formatResult(result)}`;
+                } else if (logType === 'e') {
+                    formulaText = `ln(${x}) = ${this.formatResult(result)}`;
+                } else {
+                    formulaText = `log_${base}(${x}) = ${this.formatResult(result)}`;
+                }
+                formulaEl.textContent = formulaText;
+            },
+
+            // 格式化结果
+            formatResult: function(value) {
+                return value.toFixed(6);
+            }
+        };
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            LogCalc.init();
+        });
+    </script>
+</body>
+</html>

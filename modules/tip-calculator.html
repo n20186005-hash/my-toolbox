@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tip Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="tip_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💸">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Tip Calculator">
+    <meta name="description" content="Calculate the tip for your bill based on percentage and number of people.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="小费计算器">
+    <meta name="lang-description-zh-CN" content="根据账单金额、小费比例和人数计算小费。">
+    
+    <meta name="lang-title-zh-TW" content="小費計算器">
+    <meta name="lang-description-zh-TW" content="根據帳單金額、小費比例和人數計算小費。">
+    
+    <meta name="lang-title-ja" content="チップ計算ツール">
+    <meta name="lang-description-ja" content="請求額、チップ率、人数に基づいてチップを計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор чаевых">
+    <meta name="lang-description-ru" content="Вычислите чаевые за счет на основе процента и количества людей.">
+    
+    <meta name="lang-title-es" content="Calculadora de Propinas">
+    <meta name="lang-description-es" content="Calcula la propina para tu cuenta según el porcentaje y el número de personas.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="tip_calculator" 
+         data-category="finance" 
+         data-title="Tip Calculator" 
+         data-icon="💸">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="tip-lang" onchange="TipCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💸 Tip Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <!-- Bill Amount -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="bill_label">Bill Amount</label>
+                <input type="number" id="bill-amount" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="100" min="0" step="0.01">
+            </div>
+            
+            <!-- Tip Percentage -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="tip_label">Tip Percentage</label>
+                <input type="range" id="tip-percent" min="0" max="50" value="15" 
+                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-sm text-gray-500 mt-1">
+                    <span>0%</span>
+                    <span id="tip-percent-display">15%</span>
+                    <span>50%</span>
+                </div>
+            </div>
+            
+            <!-- Number of People -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="people_label">Number of People</label>
+                <input type="number" id="people-count" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="1" min="1" value="1">
+            </div>
+        </div>
+
+        <button onclick="TipCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="tip_total">Total Tip</div>
+                <div id="tip-total" class="text-2xl font-bold text-blue-800">$0.00</div>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="total_with_tip">Total with Tip</div>
+                <div id="total-with-tip" class="text-2xl font-bold text-green-800">$0.00</div>
+            </div>
+        </div>
+        
+        <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
+            <div class="text-sm text-gray-500 mb-1" data-i18n="per_person">Per Person</div>
+            <div id="per-person" class="text-2xl font-bold text-purple-800">$0.00</div>
+        </div>
+    </div>
+
+    <script>
+        const TipCalc = {
+            i18n: {
+                'en': {
+                    title: '💸 Tip Calculator',
+                    bill_label: 'Bill Amount ($)',
+                    tip_label: 'Tip Percentage',
+                    people_label: 'Number of People',
+                    btn_calc: 'Calculate',
+                    tip_total: 'Total Tip',
+                    total_with_tip: 'Total with Tip',
+                    per_person: 'Amount per Person',
+                    err_invalid: 'Please enter valid values'
+                },
+                'zh-CN': {
+                    title: '💸 小费计算器',
+                    bill_label: '账单金额 (¥)',
+                    tip_label: '小费比例',
+                    people_label: '人数',
+                    btn_calc: '计算',
+                    tip_total: '小费总额',
+                    total_with_tip: '总金额（含小费）',
+                    per_person: '每人应付',
+                    err_invalid: '请输入有效数值'
+                },
+                'zh-TW': {
+                    title: '💸 小費計算器',
+                    bill_label: '帳單金額 (NT$)',
+                    tip_label: '小費比例',
+                    people_label: '人數',
+                    btn_calc: '計算',
+                    tip_total: '小費總額',
+                    total_with_tip: '總金額（含小費）',
+                    per_person: '每人應付',
+                    err_invalid: '請輸入有效數值'
+                },
+                'ja': {
+                    title: '💸 チップ計算ツール',
+                    bill_label: '請求額 (¥)',
+                    tip_label: 'チップ割合',
+                    people_label: '人数',
+                    btn_calc: '計算する',
+                    tip_total: 'チップ合計',
+                    total_with_tip: '合計（チップ含む）',
+                    per_person: '1人あたり',
+                    err_invalid: '有効な値を入力してください'
+                },
+                'ru': {
+                    title: '💸 Калькулятор чаевых',
+                    bill_label: 'Сумма счета (₽)',
+                    tip_label: 'Процент чаевых',
+                    people_label: 'Количество людей',
+                    btn_calc: 'Рассчитать',
+                    tip_total: 'Всего чаевых',
+                    total_with_tip: 'Итого с чаевыми',
+                    per_person: 'На человека',
+                    err_invalid: 'Введите действительные значения'
+                },
+                'es': {
+                    title: '💸 Calculadora de Propinas',
+                    bill_label: 'Monto de la cuenta (€)',
+                    tip_label: 'Porcentaje de propina',
+                    people_label: 'Número de personas',
+                    btn_calc: 'Calcular',
+                    tip_total: 'Total propina',
+                    total_with_tip: 'Total con propina',
+                    per_person: 'Por persona',
+                    err_invalid: 'Ingrese valores válidos'
+                }
+            },
+
+            init: () => {
+                // 监听滑块变化
+                document.getElementById('tip-percent').addEventListener('input', function() {
+                    document.getElementById('tip-percent-display').textContent = `${this.value}%`;
+                });
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('tip-lang').value;
+                const texts = TipCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="tip_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                TipCalc.calc();
+            },
+
+            calc: () => {
+                const amount = parseFloat(document.getElementById('bill-amount').value) || 0;
+                const tipPercent = parseInt(document.getElementById('tip-percent').value) || 0;
+                const people = parseInt(document.getElementById('people-count').value) || 1;
+                const lang = document.getElementById('tip-lang').value;
+                const texts = TipCalc.i18n[lang];
+
+                if (amount <= 0) {
+                    document.getElementById('tip-total').innerText = texts.err_invalid;
+                    document.getElementById('total-with-tip').innerText = '';
+                    document.getElementById('per-person').innerText = '';
+                    return;
+                }
+
+                // 计算
+                const tip = amount * (tipPercent / 100);
+                const total = amount + tip;
+                const perPerson = total / people;
+
+                // 设置货币符号
+                let currency = '$';
+                if (lang === 'zh-CN') currency = '¥';
+                else if (lang === 'zh-TW') currency = 'NT$';
+                else if (lang === 'ja') currency = '¥';
+                else if (lang === 'ru') currency = '₽';
+                else if (lang === 'es') currency = '€';
+
+                // 显示结果
+                document.getElementById('tip-total').innerText = `${currency}${tip.toFixed(2)}`;
+                document.getElementById('total-with-tip').innerText = `${currency}${total.toFixed(2)}`;
+                document.getElementById('per-person').innerText = `${currency}${perPerson.toFixed(2)}`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', TipCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('tip-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    TipCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

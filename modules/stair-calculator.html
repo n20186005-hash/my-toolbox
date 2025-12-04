@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stair Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="stair_calc">
+    <meta name="category" content="construction">
+    <meta name="icon" content="🔺">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Stair Calculator">
+    <meta name="description" content="Calculate stair dimensions including risers, treads and total length.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="楼梯计算器">
+    <meta name="lang-description-zh-CN" content="计算楼梯尺寸，包括踏步高度、踏步宽度和总长度。">
+    
+    <meta name="lang-title-zh-TW" content="樓梯計算器">
+    <meta name="lang-description-zh-TW" content="計算樓梯尺寸，包括踏步高度、踏步寬度和總長度。">
+    
+    <meta name="lang-title-ja" content="階段計算ツール">
+    <meta name="lang-description-ja" content="段差、踏み面、総長などの階段寸法を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор лестниц">
+    <meta name="lang-description-ru" content="Вычислите размеры лестницы, включая подступы, шаги и общую длину.">
+    
+    <meta name="lang-title-es" content="Calculadora de Escaleras">
+    <meta name="lang-description-es" content="Calcule las dimensiones de la escalera, incluyendo risers, treads y longitud total.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-item { margin: 8px 0; padding: 4px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="stair_calc" 
+         data-category="construction" 
+         data-title="Stair Calculator" 
+         data-icon="🔺">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="stair-lang" onchange="StairCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔺 Stair Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Total Rise -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rise_label">Total Rise (inches)</label>
+                    <input type="number" id="stair-rise" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="60" min="12" step="0.25">
+                </div>
+                <!-- Riser Height -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="riser_label">Riser Height (inches)</label>
+                    <input type="number" id="stair-riser" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="7.5" min="4" max="8" step="0.25">
+                </div>
+                <!-- Tread Depth -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="tread_label">Tread Depth (inches)</label>
+                    <input type="number" id="stair-tread" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="10" min="8" max="14" step="0.25">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="StairCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Stairs</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-4 text-center" data-i18n="res_label">Results</div>
+            <div id="stair-result" class="space-y-2">
+                <div class="result-item"><span data-i18n="total_risers">Total Risers:</span> <span id="total-risers" class="font-medium">--</span></div>
+                <div class="result-item"><span data-i18n="total_treads">Total Treads:</span> <span id="total-treads" class="font-medium">--</span></div>
+                <div class="result-item"><span data-i18n="stair_length">Stair Length:</span> <span id="stair-length" class="font-medium">--</span></div>
+                <div class="result-item"><span data-i18n="actual_riser">Actual Riser Height:</span> <span id="actual-riser" class="font-medium">--</span></div>
+            </div>
+            <div id="stair-error" class="text-red-600 text-center mt-4 hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const StairCalc = {
+            i18n: {
+                'en': {
+                    title: '🔺 Stair Calculator',
+                    rise_label: 'Total Rise (inches)',
+                    riser_label: 'Riser Height (inches)',
+                    tread_label: 'Tread Depth (inches)',
+                    btn_calc: 'Calculate Stairs',
+                    res_label: 'Results',
+                    total_risers: 'Total Risers:',
+                    total_treads: 'Total Treads:',
+                    stair_length: 'Stair Length (inches):',
+                    actual_riser: 'Actual Riser Height (inches):',
+                    err_invalid: 'Invalid input values',
+                    unit: 'in'
+                },
+                'zh-CN': {
+                    title: '🔺 楼梯计算器',
+                    rise_label: '总高度 (英寸)',
+                    riser_label: '踏步高度 (英寸)',
+                    tread_label: '踏步深度 (英寸)',
+                    btn_calc: '计算楼梯',
+                    res_label: '计算结果',
+                    total_risers: '总踏步数：',
+                    total_treads: '总台阶数：',
+                    stair_length: '楼梯总长度 (英寸)：',
+                    actual_riser: '实际踏步高度 (英寸)：',
+                    err_invalid: '输入值无效',
+                    unit: '英寸'
+                },
+                'zh-TW': {
+                    title: '🔺 樓梯計算器',
+                    rise_label: '總高度 (英寸)',
+                    riser_label: '踏步高度 (英寸)',
+                    tread_label: '踏步深度 (英寸)',
+                    btn_calc: '計算樓梯',
+                    res_label: '計算結果',
+                    total_risers: '總踏步數：',
+                    total_treads: '總臺階數：',
+                    stair_length: '樓梯總長度 (英寸)：',
+                    actual_riser: '實際踏步高度 (英寸)：',
+                    err_invalid: '輸入值無效',
+                    unit: '英寸'
+                },
+                'ja': {
+                    title: '🔺 階段計算ツール',
+                    rise_label: '総高さ (インチ)',
+                    riser_label: '段差高さ (インチ)',
+                    tread_label: '踏み面深さ (インチ)',
+                    btn_calc: '階段を計算',
+                    res_label: '計算結果',
+                    total_risers: '総段差数：',
+                    total_treads: '総踏み面数：',
+                    stair_length: '階段全長 (インチ)：',
+                    actual_riser: '実際の段差高さ (インチ)：',
+                    err_invalid: '入力値が無効です',
+                    unit: 'インチ'
+                },
+                'ru': {
+                    title: '🔺 Калькулятор лестниц',
+                    rise_label: 'Общий подъем (дюймы)',
+                    riser_label: 'Высота подступа (дюймы)',
+                    tread_label: 'Глубина ступени (дюймы)',
+                    btn_calc: 'Вычислить лестницу',
+                    res_label: 'Результаты',
+                    total_risers: 'Всего подступов：',
+                    total_treads: 'Всего ступеней：',
+                    stair_length: 'Длина лестницы (дюймы)：',
+                    actual_riser: 'Фактическая высота подступа (дюймы)：',
+                    err_invalid: 'Неверные входные значения',
+                    unit: 'дюймов'
+                },
+                'es': {
+                    title: '🔺 Calculadora de Escaleras',
+                    rise_label: 'Altura total (pulgadas)',
+                    riser_label: 'Altura de riser (pulgadas)',
+                    tread_label: 'Profundidad de tread (pulgadas)',
+                    btn_calc: 'Calcular Escaleras',
+                    res_label: 'Resultados',
+                    total_risers: 'Total de risers：',
+                    total_treads: 'Total de treads：',
+                    stair_length: 'Longitud de escalera (pulgadas)：',
+                    actual_riser: 'Altura real de riser (pulgadas)：',
+                    err_invalid: 'Valores de entrada inválidos',
+                    unit: 'pulg'
+                }
+            },
+
+            init: () => {
+                // 设置默认值
+                document.getElementById('stair-rise').value = 60;
+                document.getElementById('stair-riser').value = 7.5;
+                document.getElementById('stair-tread').value = 10;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('stair-lang').value;
+                const texts = StairCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="stair_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                const currentResult = document.getElementById('total-risers').innerText;
+                if (currentResult !== '--') {
+                    StairCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const totalRise = parseFloat(document.getElementById('stair-rise').value);
+                const riserHeight = parseFloat(document.getElementById('stair-riser').value);
+                const treadDepth = parseFloat(document.getElementById('stair-tread').value);
+                const lang = document.getElementById('stair-lang').value;
+                const texts = StairCalc.i18n[lang];
+
+                // 重置错误状态
+                document.getElementById('stair-error').classList.add('hidden');
+                
+                if (isNaN(totalRise) || isNaN(riserHeight) || isNaN(treadDepth) || 
+                    totalRise <= 0 || riserHeight <= 0 || treadDepth <= 0) {
+                    document.getElementById('stair-error').innerText = texts.err_invalid;
+                    document.getElementById('stair-error').classList.remove('hidden');
+                    return;
+                }
+
+                // 计算楼梯参数
+                const totalRisers = Math.ceil(totalRise / riserHeight);
+                const actualRiserHeight = (totalRise / totalRisers).toFixed(2);
+                const totalTreads = totalRisers - 1;
+                const stairLength = (totalTreads * treadDepth).toFixed(2);
+                
+                // 显示结果
+                document.getElementById('total-risers').innerText = totalRisers;
+                document.getElementById('total-treads').innerText = totalTreads;
+                document.getElementById('stair-length').innerText = `${stairLength} ${texts.unit}`;
+                document.getElementById('actual-riser').innerText = `${actualRiserHeight} ${texts.unit}`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', StairCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('stair-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    StairCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

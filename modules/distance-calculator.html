@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distance Calculator</title>
+    
+    <!-- 基础元信息 -->
+    <meta name="tool-id" content="distance_calc">
+    <meta name="category" content="math/geo">
+    <meta name="icon" content="📍">
+    
+    <!-- 默认英文元信息 -->
+    <meta name="title" content="Distance Calculator">
+    <meta name="description" content="Calculate the distance between two points in 2D or 3D space using Cartesian coordinates.">
+    
+    <!-- 多语言元信息配置 -->
+    <meta name="lang-title-zh-CN" content="距离计算器">
+    <meta name="lang-description-zh-CN" content="使用笛卡尔坐标计算二维或三维空间中两点之间的距离。">
+    
+    <meta name="lang-title-zh-TW" content="距離計算器">
+    <meta name="lang-description-zh-TW" content="使用笛卡爾坐標計算二維或三維空間中兩點之間的距離。">
+    
+    <meta name="lang-title-ja" content="距離計算ツール">
+    <meta name="lang-description-ja" content="デカルト座標を使用して2次元または3次元空間内の2点間の距離を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор расстояния">
+    <meta name="lang-description-ru" content="Рассчитайте расстояние между двумя точками в 2D или 3D пространстве с использованием декартовых координат.">
+    
+    <meta name="lang-title-es" content="Calculadora de Distancia">
+    <meta name="lang-description-es" content="Calcule la distancia entre dos puntos en el espacio 2D o 3D usando coordenadas cartesianas.">
+
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            padding: 20px; 
+            background: #f0f9ff; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+        }
+        .tool-module { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            max-width: 700px; 
+            margin: 0 auto; 
+            position: relative; 
+        }
+        .input-group { 
+            margin-bottom: 12px; 
+        }
+        label { 
+            display: block; 
+            font-size: 14px; 
+            color: #374151; 
+            margin-bottom: 4px; 
+        }
+        input { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 4px; 
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        .calc-option { 
+            padding: 8px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 4px; 
+            margin-bottom: 8px; 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .calc-option.active { 
+            background: #dbeafe; 
+            border-color: #3b82f6; 
+        }
+        .calc-option:hover {
+            background: #f3f4f6;
+        }
+        .coord-diagram {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .coord-svg {
+            max-width: 300px;
+            height: auto;
+        }
+        .formula-box { 
+            background: #f9fafb; 
+            padding: 12px; 
+            border-radius: 4px; 
+            margin-top: 10px; 
+            font-family: 'Consolas', 'Monaco', monospace; 
+            font-size: 16px; 
+            text-align: center; 
+        }
+        .error-text {
+            color: #dc2626;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+        .error-text.show {
+            display: block;
+        }
+        .distance-result {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e40af;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="tool-module active" 
+         data-id="distance_calc" 
+         data-category="math/geo" 
+         data-title="Distance Calculator" 
+         data-icon="📍">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="distance-lang" onchange="DistanceCalc.changeLang()" 
+                    class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📍 Distance Calculator</h2>
+        
+        <!-- 计算类型选择 -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="calculate_what">Calculate:</label>
+            <div>
+                <div class="calc-option active" onclick="DistanceCalc.setCalcType('2d')" id="opt-2d">
+                    <span data-i18n="calc_2d">2D Distance (x₁,y₁) to (x₂,y₂)</span>
+                </div>
+                <div class="calc-option" onclick="DistanceCalc.setCalcType('3d')" id="opt-3d">
+                    <span data-i18n="calc_3d">3D Distance (x₁,y₁,z₁) to (x₂,y₂,z₂)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2D输入表单 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" id="input-2d">
+            <div class="input-group">
+                <label data-i18n="point1_x">Point 1 (x₁)</label>
+                <input type="number" id="point1-x" step="0.01" value="1">
+            </div>
+            <div class="input-group">
+                <label data-i18n="point1_y">Point 1 (y₁)</label>
+                <input type="number" id="point1-y" step="0.01" value="2">
+            </div>
+            <div class="input-group">
+                <label data-i18n="point2_x">Point 2 (x₂)</label>
+                <input type="number" id="point2-x" step="0.01" value="4">
+            </div>
+            <div class="input-group">
+                <label data-i18n="point2_y">Point 2 (y₂)</label>
+                <input type="number" id="point2-y" step="0.01" value="6">
+            </div>
+        </div>
+
+        <!-- 3D输入表单 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 hidden" id="input-3d">
+            <div class="input-group">
+                <label data-i18n="point1_x">Point 1 (x₁)</label>
+                <input type="number" id="point1-x-3d" step="0.01" value="1">
+            </div>
+            <div class="input-group">
+                <label data-i18n="point1_y">Point 1 (y₁)</label>
+                <input type="number" id="point1-y-3d" step="0.01" value="2">
+            </div>
+            <div class="input-group">
+                <label data-i18n="point1_z">Point 1 (z₁)</label>
+                <input type="number" id="point1-z-3d" step="0.01" value="3">
+            </div>
+            <div class="input-group">
+                <label data-i18n="point2_x">Point 2 (x₂)</label>
+                <input type="number" id="point2-x-3d" step="0.01" value="4">
+            </div>
+            <div class="input-group">
+                <label data-i18n="point2_y">Point 2 (y₂)</label>
+                <input type="number" id="point2-y-3d" step="0.01" value="5">
+            </div>
+            <div class="input-group">
+                <label data-i18n="point2_z">Point 2 (z₂)</label>
+                <input type="number" id="point2-z-3d" step="0.01" value="6">
+            </div>
+        </div>
+
+        <!-- 坐标示意图 -->
+        <div class="coord-diagram" id="diagram-2d">
+            <svg class="coord-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <!-- 坐标轴 -->
+                <line x1="20" y1="180" x2="180" y2="180" stroke="#6b7280" stroke-width="1.5"/>
+                <line x1="20" y1="180" x2="20" y2="20" stroke="#6b7280" stroke-width="1.5"/>
+                
+                <!-- 刻度 -->
+                <line x1="60" y1="175" x2="60" y2="185" stroke="#6b7280" stroke-width="1"/>
+                <line x1="100" y1="175" x2="100" y2="185" stroke="#6b7280" stroke-width="1"/>
+                <line x1="140" y1="175" x2="140" y2="185" stroke="#6b7280" stroke-width="1"/>
+                <line x1="15" y1="140" x2="25" y2="140" stroke="#6b7280" stroke-width="1"/>
+                <line x1="15" y1="100" x2="25" y2="100" stroke="#6b7280" stroke-width="1"/>
+                <line x1="15" y1="60" x2="25" y2="60" stroke="#6b7280" stroke-width="1"/>
+                
+                <!-- 刻度标签 -->
+                <text x="58" y="200" font-size="12" fill="#6b7280">2</text>
+                <text x="98" y="200" font-size="12" fill="#6b7280">4</text>
+                <text x="138" y="200" font-size="12" fill="#6b7280">6</text>
+                <text x="5" y="143" font-size="12" fill="#6b7280">2</text>
+                <text x="5" y="103" font-size="12" fill="#6b7280">4</text>
+                <text x="5" y="63" font-size="12" fill="#6b7280">6</text>
+                
+                <!-- 点1 (1,2) -->
+                <circle cx="40" cy="140" r="4" fill="#ef4444"/>
+                <text x="45" y="145" font-size="14" fill="#ef4444" data-i18n="point1_label">P1 (1,2)</text>
+                
+                <!-- 点2 (4,6) -->
+                <circle cx="100" cy="60" r="4" fill="#3b82f6"/>
+                <text x="105" y="65" font-size="14" fill="#3b82f6" data-i18n="point2_label">P2 (4,6)</text>
+                
+                <!-- 距离线 -->
+                <line x1="40" y1="140" x2="100" y2="60" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4"/>
+                
+                <!-- 直角边 -->
+                <line x1="40" y1="140" x2="100" y2="140" stroke="#9ca3af" stroke-width="1"/>
+                <line x1="100" y1="60" x2="100" y2="140" stroke="#9ca3af" stroke-width="1"/>
+            </svg>
+        </div>
+
+        <div class="coord-diagram hidden" id="diagram-3d">
+            <svg class="coord-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <!-- 3D坐标轴 -->
+                <line x1="50" y1="150" x2="150" y2="150" stroke="#6b7280" stroke-width="1.5"/>
+                <line x1="50" y1="150" x2="50" y2="50" stroke="#6b7280" stroke-width="1.5"/>
+                <line x1="50" y1="150" x2="80" y2="120" stroke="#6b7280" stroke-width="1.5"/>
+                
+                <!-- 点1 (1,2,3) -->
+                <circle cx="70" cy="120" r="4" fill="#ef4444"/>
+                <text x="75" y="125" font-size="14" fill="#ef4444" data-i18n="point1_label">P1 (1,2,3)</text>
+                
+                <!-- 点2 (4,5,6) -->
+                <circle cx="110" cy="80" r="4" fill="#3b82f6"/>
+                <text x="115" y="85" font-size="14" fill="#3b82f6" data-i18n="point2_label">P2 (4,5,6)</text>
+                
+                <!-- 3D距离线 -->
+                <line x1="70" y1="120" x2="110" y2="80" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4"/>
+            </svg>
+        </div>
+
+        <!-- 计算按钮 -->
+        <button onclick="DistanceCalc.calc()" 
+                class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" 
+                data-i18n="btn_calc">Calculate</button>
+
+        <!-- 结果展示区域 -->
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-3" data-i18n="result_label">Results</div>
+            
+            <div id="distance-results" class="space-y-4">
+                <div class="distance-result" id="distance-main-result">Distance = 5.00 units</div>
+                
+                <div class="formula-box" id="distance-formula">
+                    <span data-i18n="formula_2d">d = √((x₂-x₁)² + (y₂-y₁)²)</span>
+                </div>
+                
+                <div id="distance-breakdown" class="text-gray-700">
+                    <div data-i18n="calculation_breakdown">Calculation Breakdown:</div>
+                    <div id="breakdown-text" class="mt-2">d = √((4-1)² + (6-2)²) = √(9 + 16) = √25 = 5.00</div>
+                </div>
+            </div>
+            
+            <!-- 错误提示 -->
+            <div id="distance-error" class="mt-4 error-text"></div>
+        </div>
+    </div>
+
+    <script>
+        const DistanceCalc = {
+            calcType: '2d',
+            
+            // 多语言文本配置
+            i18n: {
+                'en': {
+                    title: '📍 Distance Calculator',
+                    calculate_what: 'Calculate:',
+                    calc_2d: '2D Distance (x₁,y₁) to (x₂,y₂)',
+                    calc_3d: '3D Distance (x₁,y₁,z₁) to (x₂,y₂,z₂)',
+                    point1_x: 'Point 1 (x₁)',
+                    point1_y: 'Point 1 (y₁)',
+                    point1_z: 'Point 1 (z₁)',
+                    point2_x: 'Point 2 (x₂)',
+                    point2_y: 'Point 2 (y₂)',
+                    point2_z: 'Point 2 (z₂)',
+                    point1_label: 'P1 (1,2)',
+                    point2_label: 'P2 (4,6)',
+                    btn_calc: 'Calculate',
+                    result_label: 'Results',
+                    formula_2d: 'd = √((x₂-x₁)² + (y₂-y₁)²)',
+                    formula_3d: 'd = √((x₂-x₁)² + (y₂-y₁)² + (z₂-z₁)²)',
+                    calculation_breakdown: 'Calculation Breakdown:',
+                    err_invalid_value: 'Please enter valid numeric values for all coordinates',
+                    err_insufficient_data: 'Please fill in all coordinate fields',
+                    result_2d: 'Distance = {distance} units',
+                    result_3d: '3D Distance = {distance} units',
+                    breakdown_2d: 'd = √(({x2}-{x1})² + ({y2}-{y1})²) = √({dx2} + {dy2}) = √{sum} = {distance}',
+                    breakdown_3d: 'd = √(({x2}-{x1})² + ({y2}-{y1})² + ({z2}-{z1})²) = √({dx2} + {dy2} + {dz2}) = √{sum} = {distance}'
+                },
+                'zh-CN': {
+                    title: '📍 距离计算器',
+                    calculate_what: '计算：',
+                    calc_2d: '二维距离 (x₁,y₁) 到 (x₂,y₂)',
+                    calc_3d: '三维距离 (x₁,y₁,z₁) 到 (x₂,y₂,z₂)',
+                    point1_x: '点1 (x₁)',
+                    point1_y: '点1 (y₁)',
+                    point1_z: '点1 (z₁)',
+                    point2_x: '点2 (x₂)',
+                    point2_y: '点2 (y₂)',
+                    point2_z: '点2 (z₂)',
+                    point1_label: 'P1 (1,2)',
+                    point2_label: 'P2 (4,6)',
+                    btn_calc: '计算',
+                    result_label: '结果',
+                    formula_2d: 'd = √((x₂-x₁)² + (y₂-y₁)²)',
+                    formula_3d: 'd = √((x₂-x₁)² + (y₂-y₁)² + (z₂-z₁)²)',
+                    calculation_breakdown: '计算过程：',
+                    err_invalid_value: '请为所有坐标输入有效的数值',
+                    err_insufficient_data: '请填写所有坐标字段',
+                    result_2d: '距离 = {distance} 单位',
+                    result_3d: '三维距离 = {distance} 单位',
+                    breakdown_2d: 'd = √(({x2}-{x1})² + ({y2}-{y1})²) = √({dx2} + {dy2}) = √{sum} = {distance}',
+                    breakdown_3d: 'd = √(({x2}-{x1})² + ({y2}-{y1})² + ({z2}-{z1})²) = √({dx2} + {dy2} + {dz2}) = √{sum} = {distance}'
+                },
+                'zh-TW': {
+                    title: '📍 距離計算器',
+                    calculate_what: '計算：',
+                    calc_2d: '二維距離 (x₁,y₁) 到 (x₂,y₂)',
+                    calc_3d: '三維距離 (x₁,y₁,z₁) 到 (x₂,y₂,z₂)',
+                    point1_x: '點1 (x₁)',
+                    point1_y: '點1 (y₁)',
+                    point1_z: '點1 (z₁)',
+                    point2_x: '點2 (x₂)',
+                    point2_y: '點2 (y₂)',
+                    point2_z: '點2 (z₂)',
+                    point1_label: 'P1 (1,2)',
+                    point2_label: 'P2 (4,6)',
+                    btn_calc: '計算',
+                    result_label: '結果',
+                    formula_2d: 'd = √((x₂-x₁)² + (y₂-y₁)²)',
+                    formula_3d: 'd = √((x₂-x₁)² + (y₂-y₁)² + (z₂-z₁)²)',
+                    calculation_breakdown: '計算過程：',
+                    err_invalid_value: '請為所有坐標輸入有效的數值',
+                    err_insufficient_data: '請填寫所有坐標欄位',
+                    result_2d: '距離 = {distance} 單位',
+                    result_3d: '三維距離 = {distance} 單位',
+                    breakdown_2d: 'd = √(({x2}-{x1})² + ({y2}-{y1})²) = √({dx2} + {dy2}) = √{sum} = {distance}',
+                    breakdown_3d: 'd = √(({x2}-{x1})² + ({y2}-{y1})² + ({z2}-{z1})²) = √({dx2} + {dy2} + {dz2}) = √{sum} = {distance}'
+                },
+                'ja': {
+                    title: '📍 距離計算ツール',
+                    calculate_what: '計算対象：',
+                    calc_2d: '2次元距離 (x₁,y₁) から (x₂,y₂)',
+                    calc_3d: '3次元距離 (x₁,y₁,z₁) から (x₂,y₂,z₂)',
+                    point1_x: '点1 (x₁)',
+                    point1_y: '点1 (y₁)',
+                    point1_z: '点1 (z₁)',
+                    point2_x: '点2 (x₂)',
+                    point2_y: '点2 (y₂)',
+                    point2_z: '点2 (z₂)',
+                    point1_label: 'P1 (1,2)',
+                    point2_label: 'P2 (4,6)',
+                    btn_calc: '計算',
+                    result_label: '結果',
+                    formula_2d: 'd = √((x₂-x₁)² + (y₂-y₁)²)',
+                    formula_3d: 'd = √((x₂-x₁)² + (y₂-y₁)² + (z₂-z₁)²)',
+                    calculation_breakdown: '計算の詳細：',
+                    err_invalid_value: 'すべての座標に有効な数値を入力してください',
+                    err_insufficient_data: 'すべての座標フィールドを入力してください',
+                    result_2d: '距離 = {distance} 単位',
+                    result_3d: '3次元距離 = {distance} 単位',
+                    breakdown_2d: 'd = √(({x2}-{x1})² + ({y2}-{y1})²) = √({dx2} + {dy2}) = √{sum} = {distance}',
+                    breakdown_3d: 'd = √(({x2}-{x1})² + ({y2}-{y1})² + ({z2}-{z1})²) = √({dx2} + {dy2} + {dz2}) = √{sum} = {distance}'
+                },
+                'ru': {
+                    title: '📍 Калькулятор расстояния',
+                    calculate_what: 'Рассчитать：',
+                    calc_2d: '2D расстояние (x₁,y₁) до (x₂,y₂)',
+                    calc_3d: '3D расстояние (x₁,y₁,z₁) до (x₂,y₂,z₂)',
+                    point1_x: 'Точка 1 (x₁)',
+                    point1_y: 'Точка 1 (y₁)',
+                    point1_z: 'Точка 1 (z₁)',
+                    point2_x: 'Точка 2 (x₂)',
+                    point2_y: 'Точка 2 (y₂)',
+                    point2_z: 'Точка 2 (z₂)',
+                    point1_label: 'P1 (1,2)',
+                    point2_label: 'P2 (4,6)',
+                    btn_calc: 'Рассчитать',
+                    result_label: 'Результаты',
+                    formula_2d: 'd = √((x₂-x₁)² + (y₂-y₁)²)',
+                    formula_3d: 'd = √((x₂-x₁)² + (y₂-y₁)² + (z₂-z₁)²)',
+                    calculation_breakdown: 'Детали расчета：',
+                    err_invalid_value: 'Введите действительные числовые значения для всех координат',
+                    err_insufficient_data: 'Заполните все поля координат',
+                    result_2d: 'Расстояние = {distance} единицы',
+                    result_3d: '3D расстояние = {distance} единицы',
+                    breakdown_2d: 'd = √(({x2}-{x1})² + ({y2}-{y1})²) = √({dx2} + {dy2}) = √{sum} = {distance}',
+                    breakdown_3d: 'd = √(({x2}-{x1})² + ({y2}-{y1})² + ({z2}-{z1})²) = √({dx2} + {dy2} + {dz2}) = √{sum} = {distance}'
+                },
+                'es': {
+                    title: '📍 Calculadora de Distancia',
+                    calculate_what: 'Calcular：',
+                    calc_2d: 'Distancia 2D (x₁,y₁) a (x₂,y₂)',
+                    calc_3d: 'Distancia 3D (x₁,y₁,z₁) a (x₂,y₂,z₂)',
+                    point1_x: 'Punto 1 (x₁)',
+                    point1_y: 'Punto 1 (y₁)',
+                    point1_z: 'Punto 1 (z₁)',
+                    point2_x: 'Punto 2 (x₂)',
+                    point2_y: 'Punto 2 (y₂)',
+                    point2_z: 'Punto 2 (z₂)',
+                    point1_label: 'P1 (1,2)',
+                    point2_label: 'P2 (4,6)',
+                    btn_calc: 'Calcular',
+                    result_label: 'Resultados',
+                    formula_2d: 'd = √((x₂-x₁)² + (y₂-y₁)²)',
+                    formula_3d: 'd = √((x₂-x₁)² + (y₂-y₁)² + (z₂-z₁)²)',
+                    calculation_breakdown: 'Desglose del Cálculo：',
+                    err_invalid_value: 'Ingrese valores numéricos válidos para todas las coordenadas',
+                    err_insufficient_data: 'Complete todos los campos de coordenadas',
+                    result_2d: 'Distancia = {distance} unidades',
+                    result_3d: 'Distancia 3D = {distance} unidades',
+                    breakdown_2d: 'd = √(({x2}-{x1})² + ({y2}-{y1})²) = √({dx2} + {dy2}) = √{sum} = {distance}',
+                    breakdown_3d: 'd = √(({x2}-{x1})² + ({y2}-{y1})² + ({z2}-{z1})²) = √({dx2} + {dy2} + {dz2}) = √{sum} = {distance}'
+                }
+            },
+
+            // 切换语言
+            changeLang: () => {
+                const lang = document.getElementById('distance-lang').value;
+                const texts = DistanceCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="distance_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 更新公式显示
+                if (DistanceCalc.calcType === '2d') {
+                    document.querySelector('#distance-formula span').setAttribute('data-i18n', 'formula_2d');
+                } else {
+                    document.querySelector('#distance-formula span').setAttribute('data-i18n', 'formula_3d');
+                }
+                
+                // 重新应用文本以确保公式正确更新
+                document.querySelector('#distance-formula span').innerText = texts[`formula_${DistanceCalc.calcType}`];
+
+                // 如果已有计算结果，重新计算更新多语言文本
+                if (document.getElementById('distance-main-result').innerText) {
+                    DistanceCalc.calc();
+                }
+            },
+
+            // 设置计算类型
+            setCalcType: (type) => {
+                DistanceCalc.calcType = type;
+                
+                // 隐藏所有输入和示意图区域
+                document.getElementById('input-2d').classList.add('hidden');
+                document.getElementById('input-3d').classList.add('hidden');
+                document.getElementById('diagram-2d').classList.add('hidden');
+                document.getElementById('diagram-3d').classList.add('hidden');
+                
+                // 显示当前计算类型的区域
+                document.getElementById(`input-${type}`).classList.remove('hidden');
+                document.getElementById(`diagram-${type}`).classList.remove('hidden');
+                
+                // 更新选中状态
+                document.querySelectorAll('.calc-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                document.getElementById(`opt-${type}`).classList.add('active');
+                
+                // 更新公式和语言文本
+                const lang = document.getElementById('distance-lang').value;
+                const texts = DistanceCalc.i18n[lang];
+                document.querySelector('#distance-formula span').setAttribute('data-i18n', `formula_${type}`);
+                document.querySelector('#distance-formula span').innerText = texts[`formula_${type}`];
+                DistanceCalc.changeLang();
+            },
+
+            // 核心计算逻辑
+            calc: () => {
+                const lang = document.getElementById('distance-lang').value;
+                const texts = DistanceCalc.i18n[lang];
+                const errorEl = document.getElementById('distance-error');
+                
+                // 重置错误状态
+                errorEl.classList.remove('show');
+                errorEl.innerText = '';
+                
+                let distance = 0;
+                let resultText = '';
+                let breakdownText = '';
+                
+                try {
+                    if (DistanceCalc.calcType === '2d') {
+                        // 2D距离计算
+                        const x1 = parseFloat(document.getElementById('point1-x').value);
+                        const y1 = parseFloat(document.getElementById('point1-y').value);
+                        const x2 = parseFloat(document.getElementById('point2-x').value);
+                        const y2 = parseFloat(document.getElementById('point2-y').value);
+                        
+                        if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) throw new Error('invalid');
+                        
+                        const dx = x2 - x1;
+                        const dy = y2 - y1;
+                        const dx2 = Math.pow(dx, 2);
+                        const dy2 = Math.pow(dy, 2);
+                        const sum = dx2 + dy2;
+                        distance = Math.sqrt(sum);
+                        
+                        // 生成结果文本
+                        resultText = texts.result_2d.replace('{distance}', distance.toFixed(2));
+                        breakdownText = texts.breakdown_2d
+                            .replace('{x1}', x1)
+                            .replace('{y1}', y1)
+                            .replace('{x2}', x2)
+                            .replace('{y2}', y2)
+                            .replace('{dx2}', dx2.toFixed(2))
+                            .replace('{dy2}', dy2.toFixed(2))
+                            .replace('{sum}', sum.toFixed(2))
+                            .replace('{distance}', distance.toFixed(2));
+                    } else {
+                        // 3D距离计算
+                        const x1 = parseFloat(document.getElementById('point1-x-3d').value);
+                        const y1 = parseFloat(document.getElementById('point1-y-3d').value);
+                        const z1 = parseFloat(document.getElementById('point1-z-3d').value);
+                        const x2 = parseFloat(document.getElementById('point2-x-3d').value);
+                        const y2 = parseFloat(document.getElementById('point2-y-3d').value);
+                        const z2 = parseFloat(document.getElementById('point2-z-3d').value);
+                        
+                        if (isNaN(x1) || isNaN(y1) || isNaN(z1) || isNaN(x2) || isNaN(y2) || isNaN(z2)) throw new Error('invalid');
+                        
+                        const dx = x2 - x1;
+                        const dy = y2 - y1;
+                        const dz = z2 - z1;
+                        const dx2 = Math.pow(dx, 2);
+                        const dy2 = Math.pow(dy, 2);
+                        const dz2 = Math.pow(dz, 2);
+                        const sum = dx2 + dy2 + dz2;
+                        distance = Math.sqrt(sum);
+                        
+                        // 生成结果文本
+                        resultText = texts.result_3d.replace('{distance}', distance.toFixed(2));
+                        breakdownText = texts.breakdown_3d
+                            .replace('{x1}', x1)
+                            .replace('{y1}', y1)
+                            .replace('{z1}', z1)
+                            .replace('{x2}', x2)
+                            .replace('{y2}', y2)
+                            .replace('{z2}', z2)
+                            .replace('{dx2}', dx2.toFixed(2))
+                            .replace('{dy2}', dy2.toFixed(2))
+                            .replace('{dz2}', dz2.toFixed(2))
+                            .replace('{sum}', sum.toFixed(2))
+                            .replace('{distance}', distance.toFixed(2));
+                    }
+                    
+                    // 更新UI显示结果
+                    document.getElementById('distance-main-result').innerText = resultText;
+                    document.getElementById('breakdown-text').innerText = breakdownText;
+                    
+                } catch (e) {
+                    // 错误处理
+                    if (e.message === 'invalid') {
+                        errorEl.innerText = texts.err_invalid_value;
+                    } else {
+                        errorEl.innerText = texts.err_insufficient_data;
+                    }
+                    errorEl.classList.add('show');
+                }
+            }
+        };
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            DistanceCalc.changeLang();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Average Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="average_calc">
+    <meta name="category" content="math">
+    <meta name="icon" content="📊">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Average Calculator">
+    <meta name="description" content="Calculate the average (mean) of a set of numbers.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="平均值计算器">
+    <meta name="lang-description-zh-CN" content="计算一组数字的平均值（均值）。">
+    
+    <meta name="lang-title-zh-TW" content="平均值計算器">
+    <meta name="lang-description-zh-TW" content="計算一組數字的平均值（均值）。">
+    
+    <meta name="lang-title-ja" content="平均値計算ツール">
+    <meta name="lang-description-ja" content="数値のセットの平均値（平均）を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор среднего значения">
+    <meta name="lang-description-ru" content="Вычислите среднее значение (среднюю) набора чисел.">
+    
+    <meta name="lang-title-es" content="Calculadora de Promedio">
+    <meta name="lang-description-es" content="Calcule el promedio (media) de un conjunto de números.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .numbers-container { display: flex; flex-wrap: gap; gap: 10px; margin-bottom: 15px; }
+        .number-input { flex: 1; min-width: 60px; }
+        .stat-item { margin: 8px 0; padding: 8px; background: #f8fafc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="average_calc" 
+         data-category="math" 
+         data-title="Average Calculator" 
+         data-icon="📊">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="avg-lang" onchange="AverageCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📊 Average Calculator</h2>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="numbers_label">Enter numbers (separated by commas or spaces)</label>
+            <textarea id="avg-numbers" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" rows="3" placeholder="e.g. 1, 2, 3, 4, 5 or 1 2 3 4 5"></textarea>
+            
+            <div class="flex justify-between mt-3">
+                <button onclick="AverageCalc.addInputField()" class="bg-gray-200 text-gray-800 py-1 px-3 rounded text-sm hover:bg-gray-300 transition" data-i18n="btn_add_field">Add input field</button>
+                <button onclick="AverageCalc.clearAll()" class="bg-gray-200 text-gray-800 py-1 px-3 rounded text-sm hover:bg-gray-300 transition" data-i18n="btn_clear">Clear all</button>
+            </div>
+            
+            <div id="additional-fields" class="numbers-container mt-3">
+                <!-- 动态添加的输入框将在这里显示 -->
+            </div>
+        </div>
+
+        <button onclick="AverageCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Average</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="results_label">Results</div>
+            
+            <div id="avg-results" class="space-y-2">
+                <div class="stat-item">
+                    <span data-i18n="average_label" class="font-medium">Average:</span>
+                    <span id="avg-average" class="ml-2 text-blue-800 font-bold">--</span>
+                </div>
+                <div class="stat-item">
+                    <span data-i18n="sum_label" class="font-medium">Sum:</span>
+                    <span id="avg-sum" class="ml-2 text-blue-800">--</span>
+                </div>
+                <div class="stat-item">
+                    <span data-i18n="count_label" class="font-medium">Count:</span>
+                    <span id="avg-count" class="ml-2 text-blue-800">--</span>
+                </div>
+                <div class="stat-item">
+                    <span data-i18n="min_label" class="font-medium">Minimum:</span>
+                    <span id="avg-min" class="ml-2 text-blue-800">--</span>
+                </div>
+                <div class="stat-item">
+                    <span data-i18n="max_label" class="font-medium">Maximum:</span>
+                    <span id="avg-max" class="ml-2 text-blue-800">--</span>
+                </div>
+            </div>
+            
+            <div id="avg-error" class="mt-4 text-red-600 hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const AverageCalc = {
+            i18n: {
+                'en': {
+                    title: '📊 Average Calculator',
+                    numbers_label: 'Enter numbers (separated by commas or spaces)',
+                    btn_add_field: 'Add input field',
+                    btn_clear: 'Clear all',
+                    btn_calc: 'Calculate Average',
+                    results_label: 'Results',
+                    average_label: 'Average (Mean):',
+                    sum_label: 'Sum:',
+                    count_label: 'Count of numbers:',
+                    min_label: 'Minimum value:',
+                    max_label: 'Maximum value:',
+                    err_no_numbers: 'Please enter valid numbers',
+                    err_not_enough: 'Please enter at least one number'
+                },
+                'zh-CN': {
+                    title: '📊 平均值计算器',
+                    numbers_label: '输入数字（用逗号或空格分隔）',
+                    btn_add_field: '添加输入框',
+                    btn_clear: '全部清除',
+                    btn_calc: '计算平均值',
+                    results_label: '结果',
+                    average_label: '平均值：',
+                    sum_label: '总和：',
+                    count_label: '数字数量：',
+                    min_label: '最小值：',
+                    max_label: '最大值：',
+                    err_no_numbers: '请输入有效的数字',
+                    err_not_enough: '请至少输入一个数字'
+                },
+                'zh-TW': {
+                    title: '📊 平均值計算器',
+                    numbers_label: '輸入數字（用逗號或空格分隔）',
+                    btn_add_field: '添加輸入框',
+                    btn_clear: '全部清除',
+                    btn_calc: '計算平均值',
+                    results_label: '結果',
+                    average_label: '平均值：',
+                    sum_label: '總和：',
+                    count_label: '數字數量：',
+                    min_label: '最小值：',
+                    max_label: '最大值：',
+                    err_no_numbers: '請輸入有效的數字',
+                    err_not_enough: '請至少輸入一個數字'
+                },
+                'ja': {
+                    title: '📊 平均値計算ツール',
+                    numbers_label: '数値を入力してください（カンマまたはスペースで区切って）',
+                    btn_add_field: '入力フィールドを追加',
+                    btn_clear: 'すべて消去',
+                    btn_calc: '平均を計算',
+                    results_label: '結果',
+                    average_label: '平均値：',
+                    sum_label: '合計：',
+                    count_label: '数値の数：',
+                    min_label: '最小値：',
+                    max_label: '最大値：',
+                    err_no_numbers: '有効な数値を入力してください',
+                    err_not_enough: '少なくとも1つの数値を入力してください'
+                },
+                'ru': {
+                    title: '📊 Калькулятор среднего значения',
+                    numbers_label: 'Введите числа (разделенные запятыми или пробелами)',
+                    btn_add_field: 'Добавить поле ввода',
+                    btn_clear: 'Очистить все',
+                    btn_calc: 'Вычислить среднее',
+                    results_label: 'Результаты',
+                    average_label: 'Среднее значение:',
+                    sum_label: 'Сумма:',
+                    count_label: 'Количество чисел:',
+                    min_label: 'Минимальное значение:',
+                    max_label: 'Максимальное значение:',
+                    err_no_numbers: 'Введите действительные числа',
+                    err_not_enough: 'Введите хотя бы одно число'
+                },
+                'es': {
+                    title: '📊 Calculadora de Promedio',
+                    numbers_label: 'Ingrese números (separados por comas o espacios)',
+                    btn_add_field: 'Agregar campo de entrada',
+                    btn_clear: 'Limpiar todo',
+                    btn_calc: 'Calcular Promedio',
+                    results_label: 'Resultados',
+                    average_label: 'Promedio (Media):',
+                    sum_label: 'Suma:',
+                    count_label: 'Recuento de números:',
+                    min_label: 'Valor mínimo:',
+                    max_label: 'Valor máximo:',
+                    err_no_numbers: 'Por favor, ingrese números válidos',
+                    err_not_enough: 'Por favor, ingrese al menos un número'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('avg-lang').value;
+                const texts = AverageCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="average_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                const currentAvg = document.getElementById('avg-average').innerText;
+                if (currentAvg !== '--') {
+                    AverageCalc.calc();
+                }
+            },
+
+            addInputField: () => {
+                const container = document.getElementById('additional-fields');
+                const inputCount = container.children.length + 1;
+                
+                const inputDiv = document.createElement('div');
+                inputDiv.className = 'number-input';
+                
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none';
+                input.placeholder = `Number ${inputCount}`;
+                input.id = `avg-num-${inputCount}`;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'mt-1 text-red-500 text-xs hover:text-red-700';
+                removeBtn.innerText = '×';
+                removeBtn.onclick = () => container.removeChild(inputDiv);
+                
+                inputDiv.appendChild(input);
+                inputDiv.appendChild(removeBtn);
+                container.appendChild(inputDiv);
+            },
+
+            clearAll: () => {
+                document.getElementById('avg-numbers').value = '';
+                document.getElementById('additional-fields').innerHTML = '';
+                document.getElementById('avg-average').innerText = '--';
+                document.getElementById('avg-sum').innerText = '--';
+                document.getElementById('avg-count').innerText = '--';
+                document.getElementById('avg-min').innerText = '--';
+                document.getElementById('avg-max').innerText = '--';
+                document.getElementById('avg-error').classList.add('hidden');
+            },
+
+            calc: () => {
+                const lang = document.getElementById('avg-lang').value;
+                const texts = AverageCalc.i18n[lang];
+                const errorEl = document.getElementById('avg-error');
+                
+                // 重置错误状态
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+                
+                // 收集所有数字
+                let numbers = [];
+                
+                // 从文本区域收集数字
+                const textArea = document.getElementById('avg-numbers').value.trim();
+                if (textArea) {
+                    // 用逗号或空格分割
+                    const textNumbers = textArea.split(/[,\s]+/).map(num => parseFloat(num));
+                    numbers = numbers.concat(textNumbers.filter(num => !isNaN(num)));
+                }
+                
+                // 从额外的输入框收集数字
+                const extraInputs = document.querySelectorAll('#additional-fields input');
+                extraInputs.forEach(input => {
+                    const num = parseFloat(input.value);
+                    if (!isNaN(num)) {
+                        numbers.push(num);
+                    }
+                });
+                
+                // 验证
+                if (numbers.length === 0) {
+                    errorEl.innerText = texts.err_not_enough;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                
+                // 计算统计数据
+                const sum = numbers.reduce((acc, num) => acc + num, 0);
+                const average = sum / numbers.length;
+                const count = numbers.length;
+                const min = Math.min(...numbers);
+                const max = Math.max(...numbers);
+                
+                // 显示结果
+                document.getElementById('avg-average').innerText = average.toFixed(4);
+                document.getElementById('avg-sum').innerText = sum.toFixed(4);
+                document.getElementById('avg-count').innerText = count;
+                document.getElementById('avg-min').innerText = min;
+                document.getElementById('avg-max').innerText = max;
+            }
+        };
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('avg-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    AverageCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

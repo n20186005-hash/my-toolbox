@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pythagorean Theorem Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="pythagorean_calc">
+    <meta name="category" content="math">
+    <meta name="icon" content="📐">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Pythagorean Theorem Calculator">
+    <meta name="description" content="Calculate the length of sides of a right triangle using the Pythagorean theorem (a² + b² = c²).">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="勾股定理计算器">
+    <meta name="lang-description-zh-CN" content="使用勾股定理（a² + b² = c²）计算直角三角形的边长。">
+    
+    <meta name="lang-title-zh-TW" content="畢氏定理計算器">
+    <meta name="lang-description-zh-TW" content="使用畢氏定理（a² + b² = c²）計算直角三角形的邊長。">
+    
+    <meta name="lang-title-ja" content="ピタゴラスの定理計算ツール">
+    <meta name="lang-description-ja" content="ピタゴラスの定理（a² + b² = c²）を使用して直角三角形の辺の長さを計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор теоремы Пифагора">
+    <meta name="lang-description-ru" content="Рассчитайте длину сторон прямоугольного треугольника с использованием теоремы Пифагора (a² + b² = c²).">
+    
+    <meta name="lang-title-es" content="Calculadora del Teorema de Pitágoras">
+    <meta name="lang-description-es" content="Calcule la longitud de los lados de un triángulo rectángulo usando el teorema de Pitágoras (a² + b² = c²).">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .triangle-diagram { text-align: center; margin: 20px 0; }
+        .triangle-svg { max-width: 300px; height: auto; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 14px; color: #374151; margin-bottom: 4px; }
+        input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; }
+        .result-box { background: #eff6ff; padding: 16px; border-radius: 6px; margin-top: 20px; }
+        .formula-box { background: #f9fafb; padding: 12px; border-radius: 4px; margin-top: 10px; font-family: monospace; font-size: 16px; text-align: center; }
+        .calc-option { padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 8px; cursor: pointer; }
+        .calc-option.active { background: #dbeafe; border-color: #3b82f6; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="pythagorean_calc" 
+         data-category="math" 
+         data-title="Pythagorean Theorem Calculator" 
+         data-icon="📐">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="pt-lang" onchange="PythagoreanCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📐 Pythagorean Theorem Calculator</h2>
+        
+        <!-- 计算选项 -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="calculate_what">Calculate:</label>
+            <div>
+                <div class="calc-option active" onclick="PythagoreanCalc.setCalcType('hypotenuse')" id="opt-hypotenuse">
+                    <span data-i18n="calc_hypotenuse">Hypotenuse (c) - the longest side opposite the right angle</span>
+                </div>
+                <div class="calc-option" onclick="PythagoreanCalc.setCalcType('side-a')" id="opt-side-a">
+                    <span data-i18n="calc_side_a">Side a (one of the legs)</span>
+                </div>
+                <div class="calc-option" onclick="PythagoreanCalc.setCalcType('side-b')" id="opt-side-b">
+                    <span data-i18n="calc_side_b">Side b (one of the legs)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入表单 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="input-group">
+                <label data-i18n="side_a">Side a</label>
+                <input type="number" id="pt-side-a" min="0.01" step="0.01" value="3">
+            </div>
+            <div class="input-group">
+                <label data-i18n="side_b">Side b</label>
+                <input type="number" id="pt-side-b" min="0.01" step="0.01" value="4">
+            </div>
+            <div class="input-group md:col-span-2">
+                <label data-i18n="hypotenuse_c">Hypotenuse c</label>
+                <input type="number" id="pt-hypotenuse" min="0.01" step="0.01" value="5">
+            </div>
+        </div>
+
+        <!-- 三角形示意图 -->
+        <div class="triangle-diagram">
+            <svg class="triangle-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <!-- 直角三角形 -->
+                <path d="M 50 150 L 150 150 L 150 50 L 50 150" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                <!-- 直角标记 -->
+                <path d="M 140 150 L 150 150 L 150 140" stroke="#6b7280" stroke-width="1.5"/>
+                <!-- 标签 -->
+                <text x="100" y="165" font-size="14" fill="#1f2937" data-i18n="label_a">a = 3</text>
+                <text x="155" y="100" font-size="14" fill="#1f2937" data-i18n="label_b">b = 4</text>
+                <text x="70" y="80" font-size="14" fill="#1f2937" data-i18n="label_c">c = 5</text>
+            </svg>
+        </div>
+
+        <button onclick="PythagoreanCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-3" data-i18n="result_label">Results</div>
+            
+            <div id="pt-results" class="space-y-4">
+                <div class="text-center formula-box">
+                    <span id="pt-formula">a² + b² = c²</span>
+                </div>
+                
+                <div class="text-center">
+                    <span id="result-label" data-i18n="hypotenuse_result">Hypotenuse (c):</span>
+                    <span id="pt-result" class="ml-2 text-2xl font-bold text-blue-800">5.00</span>
+                    <span id="pt-units" class="text-sm text-gray-600">units</span>
+                </div>
+                
+                <div id="pt-breakdown" class="text-gray-700">
+                    <div data-i18n="calculation_breakdown">Calculation Breakdown:</div>
+                    <div id="breakdown-text" class="mt-2">3² + 4² = 9 + 16 = 25 = 5²</div>
+                </div>
+                
+                <div id="pt-angle-info" class="text-gray-700">
+                    <div data-i18n="angle_info">Angle Information:</div>
+                    <div class="mt-2 space-y-1">
+                        <div><span data-i18n="angle_a">Angle opposite side a:</span> <span id="angle-a">36.87°</span></div>
+                        <div><span data-i18n="angle_b">Angle opposite side b:</span> <span id="angle-b">53.13°</span></div>
+                        <div><span data-i18n="right_angle">Right angle:</span> 90°</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="pt-error" class="mt-4 text-red-600 hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const PythagoreanCalc = {
+            calcType: 'hypotenuse',
+            
+            i18n: {
+                'en': {
+                    title: '📐 Pythagorean Theorem Calculator',
+                    calculate_what: 'Calculate:',
+                    calc_hypotenuse: 'Hypotenuse (c) - the longest side opposite the right angle',
+                    calc_side_a: 'Side a (one of the legs)',
+                    calc_side_b: 'Side b (one of the legs)',
+                    side_a: 'Side a',
+                    side_b: 'Side b',
+                    hypotenuse_c: 'Hypotenuse c',
+                    label_a: 'a = 3',
+                    label_b: 'b = 4',
+                    label_c: 'c = 5',
+                    btn_calc: 'Calculate',
+                    result_label: 'Results',
+                    hypotenuse_result: 'Hypotenuse (c):',
+                    side_a_result: 'Side a:',
+                    side_b_result: 'Side b:',
+                    calculation_breakdown: 'Calculation Breakdown:',
+                    angle_info: 'Angle Information:',
+                    angle_a: 'Angle opposite side a:',
+                    angle_b: 'Angle opposite side b:',
+                    right_angle: 'Right angle:',
+                    err_invalid_value: 'Please enter valid positive values for the known sides',
+                    err_insufficient_data: 'Please enter values for at least two sides',
+                    units: 'units',
+                    breakdown_hypotenuse: '{a}² + {b}² = {a2} + {b2} = {sum} = {c}²',
+                    breakdown_side_a: '{c}² - {b}² = {c2} - {b2} = {diff} = {a}²',
+                    breakdown_side_b: '{c}² - {a}² = {c2} - {a2} = {diff} = {b}²'
+                },
+                'zh-CN': {
+                    title: '📐 勾股定理计算器',
+                    calculate_what: '计算：',
+                    calc_hypotenuse: '斜边 (c) - 直角的对边（最长边）',
+                    calc_side_a: '直角边 a',
+                    calc_side_b: '直角边 b',
+                    side_a: '直角边 a',
+                    side_b: '直角边 b',
+                    hypotenuse_c: '斜边 c',
+                    label_a: 'a = 3',
+                    label_b: 'b = 4',
+                    label_c: 'c = 5',
+                    btn_calc: '计算',
+                    result_label: '结果',
+                    hypotenuse_result: '斜边 (c)：',
+                    side_a_result: '直角边 a：',
+                    side_b_result: '直角边 b：',
+                    calculation_breakdown: '计算过程：',
+                    angle_info: '角度信息：',
+                    angle_a: '直角边a对应的角度：',
+                    angle_b: '直角边b对应的角度：',
+                    right_angle: '直角：',
+                    err_invalid_value: '请为已知边输入有效的正值',
+                    err_insufficient_data: '请至少输入两条边的数值',
+                    units: '单位',
+                    breakdown_hypotenuse: '{a}² + {b}² = {a2} + {b2} = {sum} = {c}²',
+                    breakdown_side_a: '{c}² - {b}² = {c2} - {b2} = {diff} = {a}²',
+                    breakdown_side_b: '{c}² - {a}² = {c2} - {a2} = {diff} = {b}²'
+                },
+                'zh-TW': {
+                    title: '📐 畢氏定理計算器',
+                    calculate_what: '計算：',
+                    calc_hypotenuse: '斜邊 (c) - 直角的對邊（最長邊）',
+                    calc_side_a: '直角邊 a',
+                    calc_side_b: '直角邊 b',
+                    side_a: '直角邊 a',
+                    side_b: '直角邊 b',
+                    hypotenuse_c: '斜邊 c',
+                    label_a: 'a = 3',
+                    label_b: 'b = 4',
+                    label_c: 'c = 5',
+                    btn_calc: '計算',
+                    result_label: '結果',
+                    hypotenuse_result: '斜邊 (c)：',
+                    side_a_result: '直角邊 a：',
+                    side_b_result: '直角邊 b：',
+                    calculation_breakdown: '計算過程：',
+                    angle_info: '角度資訊：',
+                    angle_a: '直角邊a對應的角度：',
+                    angle_b: '直角邊b對應的角度：',
+                    right_angle: '直角：',
+                    err_invalid_value: '請為已知邊輸入有效的正值',
+                    err_insufficient_data: '請至少輸入兩條邊的數值',
+                    units: '單位',
+                    breakdown_hypotenuse: '{a}² + {b}² = {a2} + {b2} = {sum} = {c}²',
+                    breakdown_side_a: '{c}² - {b}² = {c2} - {b2} = {diff} = {a}²',
+                    breakdown_side_b: '{c}² - {a}² = {c2} - {a2} = {diff} = {b}²'
+                },
+                'ja': {
+                    title: '📐 ピタゴラスの定理計算ツール',
+                    calculate_what: '計算対象：',
+                    calc_hypotenuse: '斜辺 (c) - 直角の向かい側の最も長い辺',
+                    calc_side_a: '辺 a（直角辺の一方）',
+                    calc_side_b: '辺 b（直角辺の一方）',
+                    side_a: '辺 a',
+                    side_b: '辺 b',
+                    hypotenuse_c: '斜辺 c',
+                    label_a: 'a = 3',
+                    label_b: 'b = 4',
+                    label_c: 'c = 5',
+                    btn_calc: '計算',
+                    result_label: '結果',
+                    hypotenuse_result: '斜辺 (c)：',
+                    side_a_result: '辺 a：',
+                    side_b_result: '辺 b：',
+                    calculation_breakdown: '計算の詳細：',
+                    angle_info: '角度情報：',
+                    angle_a: '辺aに対する角度：',
+                    angle_b: '辺bに対する角度：',
+                    right_angle: '直角：',
+                    err_invalid_value: '既知の辺に有効な正数値を入力してください',
+                    err_insufficient_data: '少なくとも2辺の値を入力してください',
+                    units: '単位',
+                    breakdown_hypotenuse: '{a}² + {b}² = {a2} + {b2} = {sum} = {c}²',
+                    breakdown_side_a: '{c}² - {b}² = {c2} - {b2} = {diff} = {a}²',
+                    breakdown_side_b: '{c}² - {a}² = {c2} - {a2} = {diff} = {b}²'
+                },
+                'ru': {
+                    title: '📐 Калькулятор теоремы Пифагора',
+                    calculate_what: 'Рассчитать：',
+                    calc_hypotenuse: 'Гипотенуза (c) - самая длинная сторона, противолежащая прямому углу',
+                    calc_side_a: 'Сторона a (одно из катетов)',
+                    calc_side_b: 'Сторона b (одно из катетов)',
+                    side_a: 'Сторона a',
+                    side_b: 'Сторона b',
+                    hypotenuse_c: 'Гипотенуза c',
+                    label_a: 'a = 3',
+                    label_b: 'b = 4',
+                    label_c: 'c = 5',
+                    btn_calc: 'Рассчитать',
+                    result_label: 'Результаты',
+                    hypotenuse_result: 'Гипотенуза (c)：',
+                    side_a_result: 'Сторона a：',
+                    side_b_result: 'Сторона b：',
+                    calculation_breakdown: 'Детали расчета：',
+                    angle_info: 'Информация об углах：',
+                    angle_a: 'Угол противолежащий стороне a：',
+                    angle_b: 'Угол противолежащий стороне b：',
+                    right_angle: 'Прямой угол：',
+                    err_invalid_value: 'Введите действительные положительные значения для известных сторон',
+                    err_insufficient_data: 'Введите значения хотя бы для двух сторон',
+                    units: 'единицы',
+                    breakdown_hypotenuse: '{a}² + {b}² = {a2} + {b2} = {sum} = {c}²',
+                    breakdown_side_a: '{c}² - {b}² = {c2} - {b2} = {diff} = {a}²',
+                    breakdown_side_b: '{c}² - {a}² = {c2} - {a2} = {diff} = {b}²'
+                },
+                'es': {
+                    title: '📐 Calculadora del Teorema de Pitágoras',
+                    calculate_what: 'Calcular：',
+                    calc_hypotenuse: 'Hipotenusa (c) - el lado más largo opuesto al ángulo recto',
+                    calc_side_a: 'Lado a (uno de los catetos)',
+                    calc_side_b: 'Lado b (uno de los catetos)',
+                    side_a: 'Lado a',
+                    side_b: 'Lado b',
+                    hypotenuse_c: 'Hipotenusa c',
+                    label_a: 'a = 3',
+                    label_b: 'b = 4',
+                    label_c: 'c = 5',
+                    btn_calc: 'Calcular',
+                    result_label: 'Resultados',
+                    hypotenuse_result: 'Hipotenusa (c)：',
+                    side_a_result: 'Lado a：',
+                    side_b_result: 'Lado b：',
+                    calculation_breakdown: 'Desglose del Cálculo：',
+                    angle_info: 'Información de Ángulos：',
+                    angle_a: 'Ángulo opuesto al lado a：',
+                    angle_b: 'Ángulo opuesto al lado b：',
+                    right_angle: 'Ángulo recto：',
+                    err_invalid_value: 'Ingrese valores positivos válidos para los lados conocidos',
+                    err_insufficient_data: 'Ingrese valores para al menos dos lados',
+                    units: 'unidades',
+                    breakdown_hypotenuse: '{a}² + {b}² = {a2} + {b2} = {sum} = {c}²',
+                    breakdown_side_a: '{c}² - {b}² = {c2} - {b2} = {diff} = {a}²',
+                    breakdown_side_b: '{c}² - {a}² = {c2} - {a2} = {diff} = {b}²'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('pt-lang').value;
+                const texts = PythagoreanCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="pythagorean_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        el.innerText = texts[key];
+                    }
+                });
+
+                // 更新单位文本
+                document.getElementById('pt-units').innerText = texts.units || 'units';
+                
+                // 更新结果标签
+                if (PythagoreanCalc.calcType === 'hypotenuse') {
+                    document.getElementById('result-label').innerText = texts.hypotenuse_result;
+                } else if (PythagoreanCalc.calcType === 'side-a') {
+                    document.getElementById('result-label').innerText = texts.side_a_result;
+                } else {
+                    document.getElementById('result-label').innerText = texts.side_b_result;
+                }
+
+                // 重新计算以更新所有动态内容
+                PythagoreanCalc.calc();
+            },
+
+            setCalcType: (type) => {
+                PythagoreanCalc.calcType = type;
+                
+                // 更新选中状态
+                document.querySelectorAll('.calc-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                document.getElementById(`opt-${type}`).classList.add('active');
+                
+                // 更新结果标签
+                const lang = document.getElementById('pt-lang').value;
+                const texts = PythagoreanCalc.i18n[lang];
+                if (type === 'hypotenuse') {
+                    document.getElementById('result-label').innerText = texts.hypotenuse_result;
+                } else if (type === 'side-a') {
+                    document.getElementById('result-label').innerText = texts.side_a_result;
+                } else {
+                    document.getElementById('result-label').innerText = texts.side_b_result;
+                }
+            },
+
+            // 更新三角形示意图标签
+            updateDiagramLabels: (a, b, c) => {
+                const lang = document.getElementById('pt-lang').value;
+                document.querySelector('[data-i18n="label_a"]').innerText = `a = ${a.toFixed(1)}`;
+                document.querySelector('[data-i18n="label_b"]').innerText = `b = ${b.toFixed(1)}`;
+                document.querySelector('[data-i18n="label_c"]').innerText = `c = ${c.toFixed(1)}`;
+            },
+
+            calc: () => {
+                const lang = document.getElementById('pt-lang').value;
+                const texts = PythagoreanCalc.i18n[lang];
+                const errorEl = document.getElementById('pt-error');
+                
+                // 重置错误状态
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+                
+                let a, b, c;
+                let result = 0;
+                let breakdown = '';
+                
+                try {
+                    switch(PythagoreanCalc.calcType) {
+                        case 'hypotenuse':
+                            // 计算斜边
+                            a = parseFloat(document.getElementById('pt-side-a').value);
+                            b = parseFloat(document.getElementById('pt-side-b').value);
+                            
+                            if (a <= 0 || b <= 0) throw new Error('invalid');
+                            
+                            c = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
+                            result = c;
+                            
+                            // 更新输入框值
+                            document.getElementById('pt-hypotenuse').value = c.toFixed(2);
+                            
+                            // 计算过程
+                            breakdown = texts.breakdown_hypotenuse
+                                .replace('{a}', a.toFixed(2))
+                                .replace('{b}', b.toFixed(2))
+                                .replace('{a2}', Math.pow(a, 2).toFixed(2))
+                                .replace('{b2}', Math.pow(b, 2).toFixed(2))
+                                .replace('{sum}', (Math.pow(a, 2) + Math.pow(b, 2)).toFixed(2))
+                                .replace('{c}', c.toFixed(2));
+                            break;
+                            
+                        case 'side-a':
+                            // 计算直角边a
+                            b = parseFloat(document.getElementById('pt-side-b').value);
+                            c = parseFloat(document.getElementById('pt-hypotenuse').value);
+                            
+                            if (b <= 0 || c <= 0 || b >= c) throw new Error('invalid');
+                            
+                            a = Math.sqrt(Math.pow(c, 2) - Math.pow(b, 2));
+                            result = a;
+                            
+                            // 更新输入框值
+                            document.getElementById('pt-side-a').value = a.toFixed(2);
+                            
+                            // 计算过程
+                            breakdown = texts.breakdown_side_a
+                                .replace('{c}', c.toFixed(2))
+                                .replace('{b}', b.toFixed(2))
+                                .replace('{c2}', Math.pow(c, 2).toFixed(2))
+                                .replace('{b2}', Math.pow(b, 2).toFixed(2))
+                                .replace('{diff}', (Math.pow(c, 2) - Math.pow(b, 2)).toFixed(2))
+                                .replace('{a}', a.toFixed(2));
+                            break;
+                            
+                        case 'side-b':
+                            // 计算直角边b
+                            a = parseFloat(document.getElementById('pt-side-a').value);
+                            c = parseFloat(document.getElementById('pt-hypotenuse').value);
+                            
+                            if (a <= 0 || c <= 0 || a >= c) throw new Error('invalid');
+                            
+                            b = Math.sqrt(Math.pow(c, 2) - Math.pow(a, 2));
+                            result = b;
+                            
+                            // 更新输入框值
+                            document.getElementById('pt-side-b').value = b.toFixed(2);
+                            
+                            // 计算过程
+                            breakdown = texts.breakdown_side_b
+                                .replace('{c}', c.toFixed(2))
+                                .replace('{a}', a.toFixed(2))
+                                .replace('{c2}', Math.pow(c, 2).toFixed(2))
+                                .replace('{a2}', Math.pow(a, 2).toFixed(2))
+                                .replace('{diff}', (Math.pow(c, 2) - Math.pow(a, 2)).toFixed(2))
+                                .replace('{b}', b.toFixed(2));
+                            break;
+                    }
+                    
+                    // 确保a、b、c都有值
+                    a = a || parseFloat(document.getElementById('pt-side-a').value);
+                    b = b || parseFloat(document.getElementById('pt-side-b').value);
+                    c = c || parseFloat(document.getElementById('pt-hypotenuse').value);
+                    
+                    // 计算角度
+                    const angleA = (Math.atan(a / b) * 180 / Math.PI).toFixed(2);
+                    const angleB = (Math.atan(b / a) * 180 / Math.PI).toFixed(2);
+                    
+                    // 更新显示
+                    document.getElementById('pt-result').innerText = result.toFixed(2);
+                    document.getElementById('breakdown-text').innerText = breakdown;
+                    document.getElementById('angle-a').innerText = `${angleA}°`;
+                    document.getElementById('angle-b').innerText = `${angleB}°`;
+                    
+                    // 更新示意图
+                    PythagoreanCalc.updateDiagramLabels(a, b, c);
+                    
+                } catch (e) {
+                    if (e.message === 'invalid') {
+                        errorEl.innerText = texts.err_invalid_value;
+                    } else {
+                        errorEl.innerText = texts.err_insufficient_data;
+                    }
+                    errorEl.classList.remove('hidden');
+                }
+            }
+        };
+        
+        // 页面加载时初始化语言
+        document.addEventListener('DOMContentLoaded', () => {
+            PythagoreanCalc.changeLang();
+        });
+    </script>
+</body>
+</html>

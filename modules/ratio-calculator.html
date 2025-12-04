@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ratio Calculator</title>
+    
+    <!-- 基础元信息 -->
+    <meta name="tool-id" content="ratio_calc">
+    <meta name="category" content="math">
+    <meta name="icon" content="📊">
+    
+    <!-- 默认英文元信息 -->
+    <meta name="title" content="Ratio Calculator">
+    <meta name="description" content="Calculate and simplify ratios, solve ratio problems, and find equivalent ratios.">
+    
+    <!-- 多语言元信息配置 -->
+    <meta name="lang-title-zh-CN" content="比率计算器">
+    <meta name="lang-description-zh-CN" content="计算和简化比率，解决比率问题，查找等效比率。">
+    
+    <meta name="lang-title-zh-TW" content="比率計算器">
+    <meta name="lang-description-zh-TW" content="計算和簡化比率，解決比率問題，查找等效比率。">
+    
+    <meta name="lang-title-ja" content="比率計算ツール">
+    <meta name="lang-description-ja" content="比率の計算と簡略化、比率の問題解決、同等の比率の検索を行います。">
+    
+    <meta name="lang-title-ru" content="Калькулятор пропорций">
+    <meta name="lang-description-ru" content="Рассчитывайте и упрощайте пропорции, решайте задачи с пропорциями и находите эквивалентные пропорции.">
+    
+    <meta name="lang-title-es" content="Calculadora de Proporciones">
+    <meta name="lang-description-es" content="Calcular y simplificar proporciones, resolver problemas de proporciones y encontrar proporciones equivalentes.">
+
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            padding: 20px; 
+            background: #f0f9ff; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+        }
+        .tool-module { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            max-width: 700px; 
+            margin: 0 auto; 
+            position: relative; 
+        }
+        .input-group { 
+            margin-bottom: 12px; 
+        }
+        label { 
+            display: block; 
+            font-size: 14px; 
+            color: #374151; 
+            margin-bottom: 4px; 
+        }
+        input { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 4px; 
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        .calc-option { 
+            padding: 8px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 4px; 
+            margin-bottom: 8px; 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .calc-option.active { 
+            background: #dbeafe; 
+            border-color: #3b82f6; 
+        }
+        .calc-option:hover {
+            background: #f3f4f6;
+        }
+        .result-box {
+            background: #eff6ff;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .formula-box { 
+            background: #f9fafb; 
+            padding: 12px; 
+            border-radius: 4px; 
+            margin-top: 10px; 
+            font-family: 'Consolas', 'Monaco', monospace; 
+            font-size: 16px; 
+            text-align: center; 
+        }
+        .error-text {
+            color: #dc2626;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+        .error-text.show {
+            display: block;
+        }
+        .ratio-display {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e40af;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="tool-module active" 
+         data-id="ratio_calc" 
+         data-category="math" 
+         data-title="Ratio Calculator" 
+         data-icon="📊">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="ratio-lang" onchange="RatioCalc.changeLang()" 
+                    class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📊 Ratio Calculator</h2>
+        
+        <!-- 计算类型选择 -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="calculate_what">Calculate:</label>
+            <div>
+                <div class="calc-option active" onclick="RatioCalc.setCalcType('simplify')" id="opt-simplify">
+                    <span data-i18n="calc_simplify">Simplify a Ratio</span>
+                </div>
+                <div class="calc-option" onclick="RatioCalc.setCalcType('equivalent')" id="opt-equivalent">
+                    <span data-i18n="calc_equivalent">Find Equivalent Ratios</span>
+                </div>
+                <div class="calc-option" onclick="RatioCalc.setCalcType('solve')" id="opt-solve">
+                    <span data-i18n="calc_solve">Solve Ratio Problems (a:b = c:x)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入表单 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" id="input-simplify">
+            <div class="input-group">
+                <label data-i18n="ratio_part1">Ratio Part 1 (a)</label>
+                <input type="number" id="ratio-a" min="1" step="1" value="12">
+            </div>
+            <div class="input-group">
+                <label data-i18n="ratio_part2">Ratio Part 2 (b)</label>
+                <input type="number" id="ratio-b" min="1" step="1" value="18">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 hidden" id="input-equivalent">
+            <div class="input-group">
+                <label data-i18n="original_ratio_a">Original Ratio (a)</label>
+                <input type="number" id="eq-ratio-a" min="1" step="1" value="2">
+            </div>
+            <div class="input-group">
+                <label data-i18n="original_ratio_b">Original Ratio (b)</label>
+                <input type="number" id="eq-ratio-b" min="1" step="1" value="3">
+            </div>
+            <div class="input-group">
+                <label data-i18n="multiplier">Multiplier</label>
+                <input type="number" id="eq-multiplier" min="1" step="1" value="4">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 hidden" id="input-solve">
+            <div class="input-group">
+                <label data-i18n="ratio_1a">a</label>
+                <input type="number" id="solve-a" min="1" step="1" value="3">
+            </div>
+            <div class="input-group">
+                <label data-i18n="ratio_1b">b</label>
+                <input type="number" id="solve-b" min="1" step="1" value="4">
+            </div>
+            <div class="input-group">
+                <label data-i18n="ratio_2a">c</label>
+                <input type="number" id="solve-c" min="1" step="1" value="6">
+            </div>
+            <div class="input-group">
+                <label data-i18n="unknown_x">x (unknown)</label>
+                <input type="text" id="solve-x" value="?" readonly class="bg-gray-100">
+            </div>
+        </div>
+
+        <!-- 计算按钮 -->
+        <button onclick="RatioCalc.calc()" 
+                class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" 
+                data-i18n="btn_calc">Calculate</button>
+
+        <!-- 结果展示区域 -->
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-3" data-i18n="result_label">Results</div>
+            
+            <div id="ratio-results" class="space-y-4">
+                <div class="ratio-display" id="ratio-main-result">12:18 = 2:3</div>
+                
+                <div id="ratio-breakdown" class="text-gray-700">
+                    <div data-i18n="calculation_breakdown">Calculation Breakdown:</div>
+                    <div id="breakdown-text" class="mt-2">GCD of 12 and 18 is 6. Divide both parts by 6: 12÷6 = 2, 18÷6 = 3</div>
+                </div>
+                
+                <div id="ratio-additional" class="text-gray-700">
+                    <div data-i18n="additional_info">Additional Information:</div>
+                    <div id="additional-text" class="mt-2">Decimal value: 0.6667 | Fraction: 2/3</div>
+                </div>
+            </div>
+            
+            <!-- 错误提示 -->
+            <div id="ratio-error" class="mt-4 error-text"></div>
+        </div>
+    </div>
+
+    <script>
+        const RatioCalc = {
+            calcType: 'simplify',
+            
+            // 多语言文本配置
+            i18n: {
+                'en': {
+                    title: '📊 Ratio Calculator',
+                    calculate_what: 'Calculate:',
+                    calc_simplify: 'Simplify a Ratio',
+                    calc_equivalent: 'Find Equivalent Ratios',
+                    calc_solve: 'Solve Ratio Problems (a:b = c:x)',
+                    ratio_part1: 'Ratio Part 1 (a)',
+                    ratio_part2: 'Ratio Part 2 (b)',
+                    original_ratio_a: 'Original Ratio (a)',
+                    original_ratio_b: 'Original Ratio (b)',
+                    multiplier: 'Multiplier',
+                    ratio_1a: 'a',
+                    ratio_1b: 'b',
+                    ratio_2a: 'c',
+                    unknown_x: 'x (unknown)',
+                    btn_calc: 'Calculate',
+                    result_label: 'Results',
+                    calculation_breakdown: 'Calculation Breakdown:',
+                    additional_info: 'Additional Information:',
+                    err_invalid_value: 'Please enter valid positive integer values',
+                    err_insufficient_data: 'Please fill in all required fields',
+                    simplify_result: '{a}:{b} = {simplifiedA}:{simplifiedB}',
+                    simplify_breakdown: 'GCD of {a} and {b} is {gcd}. Divide both parts by {gcd}: {a}÷{gcd} = {simplifiedA}, {b}÷{gcd} = {simplifiedB}',
+                    simplify_additional: 'Decimal value: {decimal} | Fraction: {fraction}',
+                    equivalent_result: '{a}:{b} × {multiplier} = {newA}:{newB}',
+                    equivalent_breakdown: 'Multiply both parts of the ratio {a}:{b} by {multiplier}: {a}×{multiplier} = {newA}, {b}×{multiplier} = {newB}',
+                    equivalent_additional: 'Original decimal: {origDecimal} | New decimal: {newDecimal}',
+                    solve_result: '{a}:{b} = {c}:{x} (x = {xValue})',
+                    solve_breakdown: 'Cross multiplication: {a} × {x} = {b} × {c} → {x} = ({b} × {c}) ÷ {a} = {xValue}',
+                    solve_additional: 'Verification: {a}/{b} = {c}/{xValue} = {decimal}'
+                },
+                'zh-CN': {
+                    title: '📊 比率计算器',
+                    calculate_what: '计算：',
+                    calc_simplify: '简化比率',
+                    calc_equivalent: '查找等效比率',
+                    calc_solve: '解决比率问题 (a:b = c:x)',
+                    ratio_part1: '比率部分1 (a)',
+                    ratio_part2: '比率部分2 (b)',
+                    original_ratio_a: '原始比率 (a)',
+                    original_ratio_b: '原始比率 (b)',
+                    multiplier: '乘数',
+                    ratio_1a: 'a',
+                    ratio_1b: 'b',
+                    ratio_2a: 'c',
+                    unknown_x: 'x (未知)',
+                    btn_calc: '计算',
+                    result_label: '结果',
+                    calculation_breakdown: '计算过程：',
+                    additional_info: '附加信息：',
+                    err_invalid_value: '请输入有效的正整数值',
+                    err_insufficient_data: '请填写所有必填字段',
+                    simplify_result: '{a}:{b} = {simplifiedA}:{simplifiedB}',
+                    simplify_breakdown: '{a}和{b}的最大公约数是{gcd}。将两部分都除以{gcd}：{a}÷{gcd} = {simplifiedA}，{b}÷{gcd} = {simplifiedB}',
+                    simplify_additional: '小数值：{decimal} | 分数：{fraction}',
+                    equivalent_result: '{a}:{b} × {multiplier} = {newA}:{newB}',
+                    equivalent_breakdown: '将比率{a}:{b}的两部分都乘以{multiplier}：{a}×{multiplier} = {newA}，{b}×{multiplier} = {newB}',
+                    equivalent_additional: '原始小数：{origDecimal} | 新小数：{newDecimal}',
+                    solve_result: '{a}:{b} = {c}:{x} (x = {xValue})',
+                    solve_breakdown: '交叉相乘：{a} × {x} = {b} × {c} → {x} = ({b} × {c}) ÷ {a} = {xValue}',
+                    solve_additional: '验证：{a}/{b} = {c}/{xValue} = {decimal}'
+                },
+                'zh-TW': {
+                    title: '📊 比率計算器',
+                    calculate_what: '計算：',
+                    calc_simplify: '簡化比率',
+                    calc_equivalent: '查找等效比率',
+                    calc_equivalent: '尋找等效比率',
+                    calc_solve: '解決比率問題 (a:b = c:x)',
+                    ratio_part1: '比率部分1 (a)',
+                    ratio_part2: '比率部分2 (b)',
+                    original_ratio_a: '原始比率 (a)',
+                    original_ratio_b: '原始比率 (b)',
+                    multiplier: '乘數',
+                    ratio_1a: 'a',
+                    ratio_1b: 'b',
+                    ratio_2a: 'c',
+                    unknown_x: 'x (未知)',
+                    btn_calc: '計算',
+                    result_label: '結果',
+                    calculation_breakdown: '計算過程：',
+                    additional_info: '附加資訊：',
+                    err_invalid_value: '請輸入有效的正整數值',
+                    err_insufficient_data: '請填寫所有必填欄位',
+                    simplify_result: '{a}:{b} = {simplifiedA}:{simplifiedB}',
+                    simplify_breakdown: '{a}和{b}的最大公因數是{gcd}。將兩部分都除以{gcd}：{a}÷{gcd} = {simplifiedA}，{b}÷{gcd} = {simplifiedB}',
+                    simplify_additional: '小數值：{decimal} | 分數：{fraction}',
+                    equivalent_result: '{a}:{b} × {multiplier} = {newA}:{newB}',
+                    equivalent_breakdown: '將比率{a}:{b}的兩部分都乘以{multiplier}：{a}×{multiplier} = {newA}，{b}×{multiplier} = {newB}',
+                    equivalent_additional: '原始小數：{origDecimal} | 新小數：{newDecimal}',
+                    solve_result: '{a}:{b} = {c}:{x} (x = {xValue})',
+                    solve_breakdown: '交叉相乘：{a} × {x} = {b} × {c} → {x} = ({b} × {c}) ÷ {a} = {xValue}',
+                    solve_additional: '驗證：{a}/{b} = {c}/{xValue} = {decimal}'
+                },
+                'ja': {
+                    title: '📊 比率計算ツール',
+                    calculate_what: '計算対象：',
+                    calc_simplify: '比率の簡略化',
+                    calc_equivalent: '同等の比率を見つける',
+                    calc_solve: '比率の問題を解く (a:b = c:x)',
+                    ratio_part1: '比率の第1部 (a)',
+                    ratio_part2: '比率の第2部 (b)',
+                    original_ratio_a: '元の比率 (a)',
+                    original_ratio_b: '元の比率 (b)',
+                    multiplier: '乗数',
+                    ratio_1a: 'a',
+                    ratio_1b: 'b',
+                    ratio_2a: 'c',
+                    unknown_x: 'x（未知）',
+                    btn_calc: '計算',
+                    result_label: '結果',
+                    calculation_breakdown: '計算の詳細：',
+                    additional_info: '追加情報：',
+                    err_invalid_value: '有効な正の整数値を入力してください',
+                    err_insufficient_data: 'すべての必須フィールドを入力してください',
+                    simplify_result: '{a}:{b} = {simplifiedA}:{simplifiedB}',
+                    simplify_breakdown: '{a}と{b}の最大公約数は{gcd}です。両方を{gcd}で割る：{a}÷{gcd} = {simplifiedA}、{b}÷{gcd} = {simplifiedB}',
+                    simplify_additional: '小数値：{decimal} | 分数：{fraction}',
+                    equivalent_result: '{a}:{b} × {multiplier} = {newA}:{newB}',
+                    equivalent_breakdown: '比率{a}:{b}の両方を{multiplier}で掛ける：{a}×{multiplier} = {newA}、{b}×{multiplier} = {newB}',
+                    equivalent_additional: '元の小数：{origDecimal} | 新しい小数：{newDecimal}',
+                    solve_result: '{a}:{b} = {c}:{x} (x = {xValue})',
+                    solve_breakdown: '交差乗算：{a} × {x} = {b} × {c} → {x} = ({b} × {c}) ÷ {a} = {xValue}',
+                    solve_additional: '検証：{a}/{b} = {c}/{xValue} = {decimal}'
+                },
+                'ru': {
+                    title: '📊 Калькулятор пропорций',
+                    calculate_what: 'Рассчитать：',
+                    calc_simplify: 'Упрощение пропорции',
+                    calc_equivalent: 'Поиск эквивалентных пропорций',
+                    calc_solve: 'Решение задач с пропорциями (a:b = c:x)',
+                    ratio_part1: 'Часть пропорции 1 (a)',
+                    ratio_part2: 'Часть пропорции 2 (b)',
+                    original_ratio_a: 'Исходная пропорция (a)',
+                    original_ratio_b: 'Исходная пропорция (b)',
+                    multiplier: 'Множитель',
+                    ratio_1a: 'a',
+                    ratio_1b: 'b',
+                    ratio_2a: 'c',
+                    unknown_x: 'x (неизвестное)',
+                    btn_calc: 'Рассчитать',
+                    result_label: 'Результаты',
+                    calculation_breakdown: 'Детали расчета：',
+                    additional_info: 'Дополнительная информация：',
+                    err_invalid_value: 'Введите действительные положительные целые значения',
+                    err_insufficient_data: 'Заполните все обязательные поля',
+                    simplify_result: '{a}:{b} = {simplifiedA}:{simplifiedB}',
+                    simplify_breakdown: 'Наибольший общий делитель {a} и {b} равен {gcd}。Разделите обе части на {gcd}：{a}÷{gcd} = {simplifiedA}，{b}÷{gcd} = {simplifiedB}',
+                    simplify_additional: 'Десятичное значение：{decimal} | Дробь：{fraction}',
+                    equivalent_result: '{a}:{b} × {multiplier} = {newA}:{newB}',
+                    equivalent_breakdown: 'Умножьте обе части пропорции {a}:{b} на {multiplier}：{a}×{multiplier} = {newA}，{b}×{multiplier} = {newB}',
+                    equivalent_additional: 'Исходное десятичное：{origDecimal} | Новое десятичное：{newDecimal}',
+                    solve_result: '{a}:{b} = {c}:{x} (x = {xValue})',
+                    solve_breakdown: 'Крестное умножение：{a} × {x} = {b} × {c} → {x} = ({b} × {c}) ÷ {a} = {xValue}',
+                    solve_additional: 'Проверка：{a}/{b} = {c}/{xValue} = {decimal}'
+                },
+                'es': {
+                    title: '📊 Calculadora de Proporciones',
+                    calculate_what: 'Calcular：',
+                    calc_simplify: 'Simplificar una Proporción',
+                    calc_equivalent: 'Encontrar Proporciones Equivalentes',
+                    calc_solve: 'Resolver Problemas de Proporciones (a:b = c:x)',
+                    ratio_part1: 'Parte de la Proporción 1 (a)',
+                    ratio_part2: 'Parte de la Proporción 2 (b)',
+                    original_ratio_a: 'Proporción Original (a)',
+                    original_ratio_b: 'Proporción Original (b)',
+                    multiplier: 'Multiplicador',
+                    ratio_1a: 'a',
+                    ratio_1b: 'b',
+                    ratio_2a: 'c',
+                    unknown_x: 'x (desconocido)',
+                    btn_calc: 'Calcular',
+                    result_label: 'Resultados',
+                    calculation_breakdown: 'Desglose del Cálculo：',
+                    additional_info: 'Información Adicional：',
+                    err_invalid_value: 'Ingrese valores enteros positivos válidos',
+                    err_insufficient_data: 'Complete todos los campos requeridos',
+                    simplify_result: '{a}:{b} = {simplifiedA}:{simplifiedB}',
+                    simplify_breakdown: 'El MCD de {a} y {b} es {gcd}。Divida ambas partes por {gcd}：{a}÷{gcd} = {simplifiedA}，{b}÷{gcd} = {simplifiedB}',
+                    simplify_additional: 'Valor decimal：{decimal} | Fracción：{fraction}',
+                    equivalent_result: '{a}:{b} × {multiplier} = {newA}:{newB}',
+                    equivalent_breakdown: 'Multiplique ambas partes de la proporción {a}:{b} por {multiplier}：{a}×{multiplier} = {newA}，{b}×{multiplier} = {newB}',
+                    equivalent_additional: 'Decimal original：{origDecimal} | Nuevo decimal：{newDecimal}',
+                    solve_result: '{a}:{b} = {c}:{x} (x = {xValue})',
+                    solve_breakdown: 'Multiplicación cruzada：{a} × {x} = {b} × {c} → {x} = ({b} × {c}) ÷ {a} = {xValue}',
+                    solve_additional: 'Verificación：{a}/{b} = {c}/{xValue} = {decimal}'
+                }
+            },
+
+            // 切换语言
+            changeLang: () => {
+                const lang = document.getElementById('ratio-lang').value;
+                const texts = RatioCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="ratio_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 如果已有计算结果，重新计算更新多语言文本
+                if (document.getElementById('ratio-main-result').innerText !== '12:18 = 2:3') {
+                    RatioCalc.calc();
+                }
+            },
+
+            // 设置计算类型
+            setCalcType: (type) => {
+                RatioCalc.calcType = type;
+                
+                // 隐藏所有输入区域
+                document.getElementById('input-simplify').classList.add('hidden');
+                document.getElementById('input-equivalent').classList.add('hidden');
+                document.getElementById('input-solve').classList.add('hidden');
+                
+                // 显示当前计算类型的输入区域
+                document.getElementById(`input-${type}`).classList.remove('hidden');
+                
+                // 更新选中状态
+                document.querySelectorAll('.calc-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                document.getElementById(`opt-${type}`).classList.add('active');
+                
+                // 更新语言文本
+                RatioCalc.changeLang();
+            },
+
+            // 计算最大公约数
+            gcd: (a, b) => {
+                if (b === 0) return a;
+                return RatioCalc.gcd(b, a % b);
+            },
+
+            // 核心计算逻辑
+            calc: () => {
+                const lang = document.getElementById('ratio-lang').value;
+                const texts = RatioCalc.i18n[lang];
+                const errorEl = document.getElementById('ratio-error');
+                
+                // 重置错误状态
+                errorEl.classList.remove('show');
+                errorEl.innerText = '';
+                
+                let resultText = '';
+                let breakdownText = '';
+                let additionalText = '';
+                
+                try {
+                    switch(RatioCalc.calcType) {
+                        case 'simplify':
+                            // 简化比率
+                            const a = parseInt(document.getElementById('ratio-a').value);
+                            const b = parseInt(document.getElementById('ratio-b').value);
+                            
+                            if (isNaN(a) || isNaN(b) || a <= 0 || b <= 0) throw new Error('invalid');
+                            
+                            const gcdValue = RatioCalc.gcd(a, b);
+                            const simplifiedA = a / gcdValue;
+                            const simplifiedB = b / gcdValue;
+                            const decimal = (simplifiedA / simplifiedB).toFixed(4);
+                            const fraction = `${simplifiedA}/${simplifiedB}`;
+                            
+                            // 生成结果文本
+                            resultText = texts.simplify_result
+                                .replace('{a}', a)
+                                .replace('{b}', b)
+                                .replace('{simplifiedA}', simplifiedA)
+                                .replace('{simplifiedB}', simplifiedB);
+                            
+                            breakdownText = texts.simplify_breakdown
+                                .replace('{a}', a)
+                                .replace('{b}', b)
+                                .replace('{gcd}', gcdValue)
+                                .replace('{simplifiedA}', simplifiedA)
+                                .replace('{simplifiedB}', simplifiedB);
+                            
+                            additionalText = texts.simplify_additional
+                                .replace('{decimal}', decimal)
+                                .replace('{fraction}', fraction);
+                            break;
+                            
+                        case 'equivalent':
+                            // 等效比率
+                            const eqA = parseInt(document.getElementById('eq-ratio-a').value);
+                            const eqB = parseInt(document.getElementById('eq-ratio-b').value);
+                            const multiplier = parseInt(document.getElementById('eq-multiplier').value);
+                            
+                            if (isNaN(eqA) || isNaN(eqB) || isNaN(multiplier) || eqA <= 0 || eqB <= 0 || multiplier <= 0) throw new Error('invalid');
+                            
+                            const newA = eqA * multiplier;
+                            const newB = eqB * multiplier;
+                            const origDecimal = (eqA / eqB).toFixed(4);
+                            const newDecimal = (newA / newB).toFixed(4);
+                            
+                            resultText = texts.equivalent_result
+                                .replace('{a}', eqA)
+                                .replace('{b}', eqB)
+                                .replace('{multiplier}', multiplier)
+                                .replace('{newA}', newA)
+                                .replace('{newB}', newB);
+                            
+                            breakdownText = texts.equivalent_breakdown
+                                .replace('{a}', eqA)
+                                .replace('{b}', eqB)
+                                .replace('{multiplier}', multiplier)
+                                .replace('{newA}', newA)
+                                .replace('{newB}', newB);
+                            
+                            additionalText = texts.equivalent_additional
+                                .replace('{origDecimal}', origDecimal)
+                                .replace('{newDecimal}', newDecimal);
+                            break;
+                            
+                        case 'solve':
+                            // 解比率问题
+                            const solveA = parseInt(document.getElementById('solve-a').value);
+                            const solveB = parseInt(document.getElementById('solve-b').value);
+                            const solveC = parseInt(document.getElementById('solve-c').value);
+                            
+                            if (isNaN(solveA) || isNaN(solveB) || isNaN(solveC) || solveA <= 0 || solveB <= 0 || solveC <= 0) throw new Error('invalid');
+                            
+                            const xValue = (solveB * solveC) / solveA;
+                            const solveDecimal = (solveA / solveB).toFixed(4);
+                            
+                            resultText = texts.solve_result
+                                .replace('{a}', solveA)
+                                .replace('{b}', solveB)
+                                .replace('{c}', solveC)
+                                .replace('{xValue}', xValue.toFixed(2));
+                            
+                            breakdownText = texts.solve_breakdown
+                                .replace('{a}', solveA)
+                                .replace('{b}', solveB)
+                                .replace('{c}', solveC)
+                                .replace('{xValue}', xValue.toFixed(2));
+                            
+                            additionalText = texts.solve_additional
+                                .replace('{a}', solveA)
+                                .replace('{b}', solveB)
+                                .replace('{c}', solveC)
+                                .replace('{xValue}', xValue.toFixed(2))
+                                .replace('{decimal}', solveDecimal);
+                            
+                            // 更新未知值显示
+                            document.getElementById('solve-x').value = xValue.toFixed(2);
+                            break;
+                    }
+                    
+                    // 更新显示结果
+                    document.getElementById('ratio-main-result').innerText = resultText;
+                    document.getElementById('breakdown-text').innerText = breakdownText;
+                    document.getElementById('additional-text').innerText = additionalText;
+                    
+                } catch (e) {
+                    if (e.message === 'invalid') {
+                        errorEl.innerText = texts.err_invalid_value;
+                    } else {
+                        errorEl.innerText = texts.err_insufficient_data;
+                    }
+                    errorEl.classList.add('show');
+                }
+            }
+        };
+
+        // 页面加载初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 显示默认计算类型的输入区域
+            document.getElementById('input-simplify').classList.remove('hidden');
+            
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en';
+            
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                document.getElementById('ratio-lang').value = targetLang;
+                RatioCalc.changeLang();
+            }
+        });
+    </script>
+</body>
+</html>
