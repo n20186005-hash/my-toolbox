@@ -12,16 +12,35 @@ OUTPUT_JSON = 'tools.json'
 Path(DETAILS_DIR).mkdir(exist_ok=True)
 
 tools_list = []
-
-print("-" * 50)
-print(f"开始扫描 {MODULES_DIR} 目录...")
-print("-" * 50)
-
-# 使用 pathlib.Path.glob() 进行更健壮的文件遍历
 modules_path = Path(MODULES_DIR)
-for filepath in modules_path.glob("*.html"):
-    # filename 是带扩展名的文件名，如 'tool1.html'
-    filename = filepath.name 
+
+print("-" * 50)
+print(f"--- 工具列表生成诊断开始 ---")
+print("-" * 50)
+
+# 【诊断步骤 1：检查模块目录是否存在】
+if not modules_path.is_dir():
+    print(f"❌ 致命错误：找不到模块目录 '{MODULES_DIR}'。脚本中止。")
+    exit(1)
+
+# 【诊断步骤 2：报告模块目录下的总条目数】
+try:
+    total_entries = len(list(modules_path.iterdir()))
+    print(f"🔍 '{MODULES_DIR}' 根目录下总条目数（文件/文件夹）：{total_entries}")
+except Exception as e:
+    print(f"⚠️ 无法统计目录条目数: {e}")
+
+
+print(f"开始递归扫描 {MODULES_DIR} 目录及其子目录...")
+# rglob("**/*.html") 会查找 modules/ 下所有目录中的所有 .html 文件
+html_files_found = list(modules_path.rglob("*.html"))
+print(f"✅ 递归扫描发现的 .html 文件总数：{len(html_files_found)}")
+print("-" * 50)
+
+# 使用 pathlib.Path.rglob() 进行递归文件遍历
+for filepath in html_files_found:
+    # 路径相对 modules 目录，例如： 'finance/Car-Loan-Calculator.html' 或 'Car-Loan-Calculator.html'
+    relative_module_path = filepath.relative_to(modules_path).as_posix()
     
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -29,16 +48,16 @@ for filepath in modules_path.glob("*.html"):
             
             # 使用正则提取元数据
             def get_meta(name):
-                # 兼容双引号和单引号
                 match = re.search(r'<meta\s+name=[\"\']' + name + r'[\"\']\s+content=[\"\'](.*?)[\"\']', content, re.IGNORECASE)
                 return match.group(1) if match else ""
 
             def get_title():
                 match = re.search(r'<title>(.*?)</title>', content, re.IGNORECASE)
-                return match.group(1) if match else filename
+                return match.group(1) if match else filepath.name
 
             # 提取数据
-            t_id = get_meta('tool-id') or filepath.stem # 使用 stem 获取不带扩展名的文件名作为默认 ID
+            # 使用 stem 获取不带扩展名的文件名作为默认 ID
+            t_id = get_meta('tool-id') or filepath.stem 
             t_cat = get_meta('category') or 'other'
             t_icon = get_meta('icon') or '🔧'
             t_desc = get_meta('description') or '暂无描述'
@@ -49,7 +68,8 @@ for filepath in modules_path.glob("*.html"):
                 "title": t_title,
                 "icon": t_icon,
                 "category": t_cat,
-                "file": filename,
+                # 存储相对于项目根目录的完整路径，例如: "modules/finance/tool.html"
+                "file": filepath.as_posix(), 
                 "desc": t_desc,
                 "detail_page": f"details/{t_id}.html"
             }
@@ -84,7 +104,8 @@ for filepath in modules_path.glob("*.html"):
                     </div>
 
                     <div class="mt-8">
-                        <a href="../{MODULES_DIR}/{filename}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                        <!-- 链接使用完整的相对路径 -->
+                        <a href="../{filepath.as_posix()}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
                             Launch Tool
                         </a>
                     </div>
@@ -98,7 +119,7 @@ for filepath in modules_path.glob("*.html"):
                 df.write(detail_html)
                 
     except Exception as e:
-        print(f"处理文件 {filename} 时发生错误: {e}")
+        print(f"处理文件 {relative_module_path} 时发生错误: {e}")
         continue
 
 
@@ -110,9 +131,8 @@ print("-" * 50)
 # 写入 tools.json
 try:
     with open(OUTPUT_JSON, 'w', encoding='utf-8') as f:
-        # 确保写入的是完整的 tools_list
         json.dump(tools_list, f, indent=4, ensure_ascii=False)
-    print(f"成功将 {len(tools_list)} 个工具写入 {OUTPUT_JSON}。")
+    print(f"✅ 成功将 {len(tools_list)} 个工具写入 {OUTPUT_JSON}。")
 
 except Exception as e:
-    print(f"写入 {OUTPUT_JSON} 文件时发生错误: {e}")
+    print(f"❌ 写入 {OUTPUT_JSON} 文件时发生错误: {e}")
