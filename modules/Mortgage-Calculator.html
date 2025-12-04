@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>房貸計算器模塊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 模擬主程式環境樣式 */
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 區域 1：HTML 積木 (複製到 tools-wrapper) -->
+    <!-- ================================================================= -->
+    
+    <div class="tool-module active" 
+         data-id="mortgage_calc" 
+         data-category="finance" 
+         data-title="房貸計算器" 
+         data-icon="🏠">
+        
+        <!-- 語言選擇器 (右上角) -->
+        <div class="absolute top-4 right-4">
+            <select id="mc-lang" onchange="MortgageCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🏠 房貸計算器</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <!-- 還款方式 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="method_label">還款方式</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="mc-type" value="interest" checked class="text-blue-600 focus:ring-blue-500" onchange="MortgageCalc.calc()">
+                        <span class="ml-2 text-sm" data-i18n="method_interest">等額本息</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="mc-type" value="principal" class="text-blue-600 focus:ring-blue-500" onchange="MortgageCalc.calc()">
+                        <span class="ml-2 text-sm" data-i18n="method_principal">等額本金</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="amount_label">貸款金額 (元)</label>
+                    <input type="number" id="mc-amount" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="1000000">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rate_label">年利率 (%)</label>
+                    <input type="number" id="mc-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="3.5" step="0.01">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="years_label">貸款期限 (年)</label>
+                    <input type="number" id="mc-years" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="30">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="MortgageCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">計算月供</button>
+
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600" id="mc-monthly-label" data-i18n="res_monthly">每月還款</span>
+                <div class="text-right">
+                    <div id="mc-monthly" class="text-2xl font-bold text-blue-700">--</div>
+                    <div id="mc-monthly-note" class="text-xs text-gray-500 hidden"></div>
+                </div>
+            </div>
+            <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-gray-500" data-i18n="res_interest">支付利息總額</span>
+                <span id="mc-total-interest" class="font-semibold text-gray-700">--</span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+                <span class="text-gray-500" data-i18n="res_total">還款總額</span>
+                <span id="mc-total-payment" class="font-semibold text-gray-700">--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 區域 1 結束 -->
+    <!-- ================================================================= -->
+
+
+    <!-- ================================================================= -->
+    <!-- 🔴 區域 2：JS 積木 (複製到 script 標籤中) -->
+    <!-- ================================================================= -->
+    <script>
+        const MortgageCalc = {
+            // 1. 多語言配置
+            i18n: {
+                'zh-CN': {
+                    title: '🏠 房贷计算器',
+                    method_label: '还款方式',
+                    method_interest: '等额本息 (每月固定)',
+                    method_principal: '等额本金 (首月最多)',
+                    amount_label: '贷款金额 (元)',
+                    rate_label: '年利率 (%)',
+                    years_label: '贷款期限 (年)',
+                    btn_calc: '计算月供',
+                    res_monthly: '每月还款',
+                    res_first_month: '首月还款',
+                    res_interest: '支付利息总额',
+                    res_total: '还款总额',
+                    note_decrease: '每月递减'
+                },
+                'zh-TW': {
+                    title: '🏠 房貸計算器',
+                    method_label: '還款方式',
+                    method_interest: '等額本息 (每月固定)',
+                    method_principal: '等額本金 (首月最多)',
+                    amount_label: '貸款金額 (元)',
+                    rate_label: '年利率 (%)',
+                    years_label: '貸款期限 (年)',
+                    btn_calc: '計算月供',
+                    res_monthly: '每月還款',
+                    res_first_month: '首月還款',
+                    res_interest: '支付利息總額',
+                    res_total: '還款總額',
+                    note_decrease: '每月遞減'
+                },
+                'en': {
+                    title: '🏠 Mortgage Calculator',
+                    method_label: 'Repayment Type',
+                    method_interest: 'Equal Interest (Fixed)',
+                    method_principal: 'Equal Principal (Decreasing)',
+                    amount_label: 'Loan Amount',
+                    rate_label: 'Annual Rate (%)',
+                    years_label: 'Term (Years)',
+                    btn_calc: 'Calculate',
+                    res_monthly: 'Monthly Pay',
+                    res_first_month: 'First Month Pay',
+                    res_interest: 'Total Interest',
+                    res_total: 'Total Payment',
+                    note_decrease: 'Decr. by'
+                },
+                'ja': {
+                    title: '🏠 住宅ローン計算',
+                    method_label: '返済方法',
+                    method_interest: '元利均等 (毎月固定)',
+                    method_principal: '元金均等 (初回最大)',
+                    amount_label: '借入金額 (円)',
+                    rate_label: '年利 (%)',
+                    years_label: '返済期間 (年)',
+                    btn_calc: '計算する',
+                    res_monthly: '毎月の返済額',
+                    res_first_month: '初回返済額',
+                    res_interest: '総支払利息',
+                    res_total: '総返済額',
+                    note_decrease: '毎月減少額'
+                },
+                'ru': {
+                    title: '🏠 Ипотечный калькулятор',
+                    method_label: 'Тип платежа',
+                    method_interest: 'Аннуитетный (Равный)',
+                    method_principal: 'Дифференцированный (Убывающий)',
+                    amount_label: 'Сумма кредита',
+                    rate_label: 'Годовая ставка (%)',
+                    years_label: 'Срок (лет)',
+                    btn_calc: 'Рассчитать',
+                    res_monthly: 'Ежемесячный платеж',
+                    res_first_month: 'Первый платеж',
+                    res_interest: 'Общая переплата',
+                    res_total: 'Общая выплата',
+                    note_decrease: 'Уменьшение на'
+                },
+                'es': {
+                    title: '🏠 Calculadora de Hipoteca',
+                    method_label: 'Tipo de Pago',
+                    method_interest: 'Interés Igual (Fijo)',
+                    method_principal: 'Capital Igual (Decreciente)',
+                    amount_label: 'Monto del Préstamo',
+                    rate_label: 'Tasa Anual (%)',
+                    years_label: 'Plazo (Años)',
+                    btn_calc: 'Calcular',
+                    res_monthly: 'Pago Mensual',
+                    res_first_month: 'Primer Pago',
+                    res_interest: 'Interés Total',
+                    res_total: 'Pago Total',
+                    note_decrease: 'Dism. por'
+                }
+            },
+
+            // 2. 切換語言
+            changeLang: () => {
+                const lang = document.getElementById('mc-lang').value;
+                const texts = MortgageCalc.i18n[lang];
+                
+                // 更新靜態文本
+                const elements = document.querySelectorAll('[data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新計算以更新動態文本（如“首月還款”標籤）
+                MortgageCalc.calc(true); 
+            },
+
+            // 3. 計算邏輯
+            calc: (isLangUpdate = false) => {
+                // 獲取輸入
+                const p = parseFloat(document.getElementById('mc-amount').value); // 本金
+                const r_annual = parseFloat(document.getElementById('mc-rate').value); // 年利率
+                const years = parseFloat(document.getElementById('mc-years').value); // 年限
+                
+                // 獲取還款方式
+                const typeRadios = document.getElementsByName('mc-type');
+                let type = 'interest';
+                for(let radio of typeRadios) { if(radio.checked) type = radio.value; }
+
+                // 獲取當前語言包
+                const lang = document.getElementById('mc-lang').value;
+                const t = MortgageCalc.i18n[lang];
+
+                // 格式化貨幣
+                const fmt = (num) => num.toLocaleString(lang === 'en' ? 'en-US' : 'zh-CN', { style: 'currency', currency: lang === 'en' ? 'USD' : (lang === 'ja' ? 'JPY' : 'CNY') });
+
+                // 如果沒有輸入值，僅更新標籤並返回（用於語言切換時）
+                if (!p || !r_annual || !years) {
+                    if (isLangUpdate) {
+                         document.getElementById('mc-monthly-label').innerText = (type === 'principal') ? t.res_first_month : t.res_monthly;
+                    }
+                    // 如果不是靜默更新且輸入為空，提示用戶
+                    if (!isLangUpdate && (document.getElementById('mc-amount').value || document.getElementById('mc-rate').value)) {
+                        // 只有當用戶嘗試計算時才彈窗
+                    }
+                    return;
+                }
+
+                const r = r_annual / 100 / 12; // 月利率
+                const n = years * 12; // 總月數
+
+                let monthlyDisplay = "";
+                let totalInterest = 0;
+                let totalPayment = 0;
+                let noteText = "";
+
+                if (type === 'interest') {
+                    // === 等額本息 ===
+                    // 公式: M = P * [r(1+r)^n] / [(1+r)^n - 1]
+                    const x = Math.pow(1 + r, n);
+                    const monthly = (p * r * x) / (x - 1);
+                    
+                    totalPayment = monthly * n;
+                    totalInterest = totalPayment - p;
+                    monthlyDisplay = fmt(monthly);
+                    
+                    document.getElementById('mc-monthly-label').innerText = t.res_monthly;
+                } else {
+                    // === 等額本金 ===
+                    // 每月本金
+                    const monthlyPrincipal = p / n;
+                    // 首月月供 = 每月本金 + (剩餘本金 * 月利率)
+                    const firstMonth = monthlyPrincipal + (p * r);
+                    // 每月遞減金額 = 每月本金 * 月利率
+                    const decrease = monthlyPrincipal * r;
+                    
+                    // 總利息 = (n+1) * P * r / 2
+                    totalInterest = (n + 1) * p * r / 2;
+                    totalPayment = p + totalInterest;
+
+                    monthlyDisplay = fmt(firstMonth);
+                    noteText = `${t.note_decrease} ${fmt(decrease)}`;
+                    
+                    document.getElementById('mc-monthly-label').innerText = t.res_first_month;
+                }
+
+                // 更新界面
+                document.getElementById('mc-monthly').innerText = monthlyDisplay;
+                document.getElementById('mc-total-interest').innerText = fmt(totalInterest);
+                document.getElementById('mc-total-payment').innerText = fmt(totalPayment);
+                
+                const noteEl = document.getElementById('mc-monthly-note');
+                if (noteText) {
+                    noteEl.innerText = noteText;
+                    noteEl.classList.remove('hidden');
+                } else {
+                    noteEl.classList.add('hidden');
+                }
+            }
+        };
+    </script>
+    <!-- ================================================================= -->
+    <!-- 🔴 區域 2 結束 -->
+    <!-- ================================================================= -->
+
+</body>
+</html>

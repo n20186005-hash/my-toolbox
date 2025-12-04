@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pregnancy Calculator Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #fdf2f8; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="pregnancy_calc" 
+         data-category="health" 
+         data-title="Pregnancy Calculator" 
+         data-icon="👶">
+        
+        <div class="absolute top-4 right-4">
+            <select id="prc-lang" onchange="PregnancyCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">👶 Pregnancy Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <!-- Method Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="calc_method">Calculation Method</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="prc-method" value="lmp" checked class="text-pink-600 focus:ring-pink-500" onchange="PregnancyCalc.uiUpdate()">
+                        <span class="ml-2 text-sm" data-i18n="method_lmp">Last Period (LMP)</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="prc-method" value="conception" class="text-pink-600 focus:ring-pink-500" onchange="PregnancyCalc.uiUpdate()">
+                        <span class="ml-2 text-sm" data-i18n="method_conception">Conception Date</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Date Input -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" id="prc-date-label" data-i18n="date_lmp">First Day of Last Period</label>
+                <input type="date" id="prc-date" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none">
+            </div>
+
+            <!-- Cycle Length (Only for LMP) -->
+            <div id="prc-cycle-box">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="cycle_len">Cycle Length (days)</label>
+                <input type="number" id="prc-cycle" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" value="28" placeholder="28">
+            </div>
+        </div>
+
+        <button onclick="PregnancyCalc.calc()" class="w-full bg-pink-500 text-white py-2 rounded font-bold hover:bg-pink-600 transition mb-6" data-i18n="btn_calc">Calculate Due Date</button>
+
+        <div class="bg-pink-50 p-4 rounded-lg border border-pink-100 text-center">
+            <div class="text-gray-600 text-sm mb-1" data-i18n="res_due">Estimated Due Date</div>
+            <div id="prc-result-date" class="text-3xl font-bold text-pink-600 mb-2">--</div>
+            
+            <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-pink-200">
+                <div>
+                    <div class="text-xs text-gray-500" data-i18n="res_weeks">Current Status</div>
+                    <div id="prc-result-weeks" class="font-semibold text-gray-800">--</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500" data-i18n="res_left">Days Left</div>
+                    <div id="prc-result-left" class="font-semibold text-gray-800">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PregnancyCalc = {
+            i18n: {
+                'en': {
+                    title: '👶 Pregnancy Calculator',
+                    calc_method: 'Calculation Method',
+                    method_lmp: 'Last Period (LMP)',
+                    method_conception: 'Conception Date',
+                    date_lmp: 'First Day of Last Period',
+                    date_conception: 'Date of Conception',
+                    cycle_len: 'Cycle Length (days)',
+                    btn_calc: 'Calculate Due Date',
+                    res_due: 'Estimated Due Date',
+                    res_weeks: 'Current Status',
+                    res_left: 'Days Left',
+                    status_format: '{w} weeks {d} days'
+                },
+                'zh-CN': {
+                    title: '👶 预产期计算器',
+                    calc_method: '计算方式',
+                    method_lmp: '最后一次月经 (LMP)',
+                    method_conception: '受孕日期',
+                    date_lmp: '末次月经第一天',
+                    date_conception: '受孕日期',
+                    cycle_len: '月经周期 (天)',
+                    btn_calc: '计算预产期',
+                    res_due: '预计预产期',
+                    res_weeks: '当前孕周',
+                    res_left: '距离预产期',
+                    status_format: '{w} 周 {d} 天'
+                },
+                'zh-TW': {
+                    title: '👶 預產期計算器',
+                    calc_method: '計算方式',
+                    method_lmp: '最後一次月經 (LMP)',
+                    method_conception: '受孕日期',
+                    date_lmp: '末次月經第一天',
+                    date_conception: '受孕日期',
+                    cycle_len: '月經週期 (天)',
+                    btn_calc: '計算預產期',
+                    res_due: '預計預產期',
+                    res_weeks: '當前孕週',
+                    res_left: '距離預產期',
+                    status_format: '{w} 週 {d} 天'
+                },
+                'ja': {
+                    title: '👶 出産予定日計算',
+                    calc_method: '計算方法',
+                    method_lmp: '最終月経開始日',
+                    method_conception: '受精日',
+                    date_lmp: '最終月経開始日',
+                    date_conception: '受精日',
+                    cycle_len: '月経周期 (日)',
+                    btn_calc: '計算する',
+                    res_due: '出産予定日',
+                    res_weeks: '現在の妊娠週数',
+                    res_left: '出産まであと',
+                    status_format: '{w} 週 {d} 日'
+                },
+                'ru': {
+                    title: '👶 Калькулятор беременности',
+                    calc_method: 'Метод расчета',
+                    method_lmp: 'Посл. менструация',
+                    method_conception: 'Дата зачатия',
+                    date_lmp: 'Первый день посл. мес.',
+                    date_conception: 'Дата зачатия',
+                    cycle_len: 'Длительность цикла',
+                    btn_calc: 'Рассчитать',
+                    res_due: 'Дата родов',
+                    res_weeks: 'Срок',
+                    res_left: 'Осталось дней',
+                    status_format: '{w} нед. {d} дн.'
+                },
+                'es': {
+                    title: '👶 Calculadora de Embarazo',
+                    calc_method: 'Método',
+                    method_lmp: 'Último Período (LMP)',
+                    method_conception: 'Fecha Concepción',
+                    date_lmp: 'Primer día último período',
+                    date_conception: 'Fecha de Concepción',
+                    cycle_len: 'Duración del Ciclo',
+                    btn_calc: 'Calcular',
+                    res_due: 'Fecha Probable de Parto',
+                    res_weeks: 'Estado Actual',
+                    res_left: 'Días Restantes',
+                    status_format: '{w} sem {d} días'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('prc-lang').value;
+                const texts = PregnancyCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="pregnancy_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                PregnancyCalc.uiUpdate(); // Re-update labels based on radio selection
+                PregnancyCalc.calc(true);
+            },
+
+            uiUpdate: () => {
+                const lang = document.getElementById('prc-lang').value;
+                const texts = PregnancyCalc.i18n[lang];
+                const method = document.querySelector('input[name="prc-method"]:checked').value;
+                
+                if (method === 'lmp') {
+                    document.getElementById('prc-date-label').innerText = texts.date_lmp;
+                    document.getElementById('prc-cycle-box').style.display = 'block';
+                } else {
+                    document.getElementById('prc-date-label').innerText = texts.date_conception;
+                    document.getElementById('prc-cycle-box').style.display = 'none';
+                }
+            },
+
+            calc: (isLangUpdate = false) => {
+                const dateStr = document.getElementById('prc-date').value;
+                if (!dateStr) return;
+
+                const inputDate = new Date(dateStr);
+                const method = document.querySelector('input[name="prc-method"]:checked').value;
+                const cycle = parseInt(document.getElementById('prc-cycle').value) || 28;
+                
+                let dueDate = new Date();
+
+                // Logic: 
+                // LMP: Due Date = LMP + 280 days + (Cycle - 28)
+                // Conception: Due Date = Conception + 266 days
+                
+                if (method === 'lmp') {
+                    dueDate.setTime(inputDate.getTime() + (280 * 24 * 60 * 60 * 1000));
+                    if (cycle !== 28) {
+                        const diff = cycle - 28;
+                        dueDate.setTime(dueDate.getTime() + (diff * 24 * 60 * 60 * 1000));
+                    }
+                } else {
+                    dueDate.setTime(inputDate.getTime() + (266 * 24 * 60 * 60 * 1000));
+                }
+
+                // Calculate current weeks
+                // Conception date is approx DueDate - 266
+                const estConception = new Date(dueDate.getTime() - (266 * 24 * 60 * 60 * 1000));
+                const today = new Date();
+                
+                // Pregnancy starts 2 weeks before conception (gestational age)
+                const gestationalStart = new Date(estConception.getTime() - (14 * 24 * 60 * 60 * 1000));
+                
+                const diffTime = Math.abs(today - gestationalStart);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                // If today is before start, it's 0
+                let totalDaysGone = (today < gestationalStart) ? 0 : diffDays;
+                
+                // If already born (today > due date)? Keep logic simple for now
+                if (today > dueDate) totalDaysGone = 280; 
+
+                const weeks = Math.floor(totalDaysGone / 7);
+                const days = totalDaysGone % 7;
+
+                const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+
+                // Formatting
+                const lang = document.getElementById('prc-lang').value;
+                const texts = PregnancyCalc.i18n[lang];
+                
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('prc-result-date').innerText = dueDate.toLocaleDateString(lang === 'zh-CN' ? 'zh-CN' : (lang === 'en' ? 'en-US' : lang), options);
+                
+                document.getElementById('prc-result-weeks').innerText = texts.status_format.replace('{w}', weeks).replace('{d}', days);
+                document.getElementById('prc-result-left').innerText = (daysLeft > 0 ? daysLeft : 0);
+            }
+        };
+        
+        // Init logic
+        document.getElementById('prc-date').valueAsDate = new Date();
+    </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>通脹計算器模塊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 區域 1：HTML 積木 -->
+    <!-- ================================================================= -->
+    
+    <div class="tool-module active" 
+         data-id="inflation_calc" 
+         data-category="finance" 
+         data-title="通貨膨脹計算器" 
+         data-icon="📈">
+        
+        <div class="absolute top-4 right-4">
+            <select id="ic-lang" onchange="InflationCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📈 通貨膨脹計算器</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="amount">當前金額</label>
+                <input type="number" id="ic-amount" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="100">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rate">平均通脹率 (%)</label>
+                    <input type="number" id="ic-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="3.0" step="0.1">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="years">年數</label>
+                    <input type="number" id="ic-years" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="10">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="InflationCalc.calc()" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700 transition mb-6" data-i18n="btn_calc">計算未來價值</button>
+
+        <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600" data-i18n="res_future">未來等值金額</span>
+                <div class="text-right">
+                    <div id="ic-result-val" class="text-2xl font-bold text-red-700">--</div>
+                </div>
+            </div>
+            <div class="mt-2 text-xs text-gray-500 border-t border-red-100 pt-2">
+                <span data-i18n="note_desc">此計算顯示當前金額在通脹影響下，未來需要多少金額才能擁有相同的購買力。</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 區域 2：JS 積木 -->
+    <!-- ================================================================= -->
+    <script>
+        const InflationCalc = {
+            i18n: {
+                'zh-CN': {
+                    title: '📈 通货膨胀计算器',
+                    amount: '当前金额',
+                    rate: '平均通胀率 (%)',
+                    years: '年数',
+                    btn_calc: '计算未来价值',
+                    res_future: '未来等值金额',
+                    note_desc: '此计算显示当前金额在通胀影响下，未来需要多少金额才能拥有相同的购买力。'
+                },
+                'zh-TW': {
+                    title: '📈 通貨膨脹計算器',
+                    amount: '當前金額',
+                    rate: '平均通脹率 (%)',
+                    years: '年數',
+                    btn_calc: '計算未來價值',
+                    res_future: '未來等值金額',
+                    note_desc: '此計算顯示當前金額在通脹影響下，未來需要多少金額才能擁有相同的購買力。'
+                },
+                'en': {
+                    title: '📈 Inflation Calculator',
+                    amount: 'Current Amount',
+                    rate: 'Inflation Rate (%)',
+                    years: 'Years',
+                    btn_calc: 'Calculate Value',
+                    res_future: 'Future Value',
+                    note_desc: 'Shows how much money you need in the future to equal the purchasing power of the current amount.'
+                },
+                'ja': {
+                    title: '📈 インフレ計算',
+                    amount: '現在の金額',
+                    rate: 'インフレ率 (%)',
+                    years: '年数',
+                    btn_calc: '計算する',
+                    res_future: '将来の価値',
+                    note_desc: '現在の金額と同じ購買力を維持するために、将来必要な金額を示します。'
+                },
+                'ru': {
+                    title: '📈 Калькулятор инфляции',
+                    amount: 'Текущая сумма',
+                    rate: 'Инфляция (%)',
+                    years: 'Лет',
+                    btn_calc: 'Рассчитать',
+                    res_future: 'Будущая стоимость',
+                    note_desc: 'Показывает, какая сумма понадобится в будущем, чтобы иметь ту же покупательную способность.'
+                },
+                'es': {
+                    title: '📈 Calculadora de Inflación',
+                    amount: 'Monto Actual',
+                    rate: 'Tasa de Inflación (%)',
+                    years: 'Años',
+                    btn_calc: 'Calcular Valor',
+                    res_future: 'Valor Futuro',
+                    note_desc: 'Muestra cuánto dinero necesitará en el futuro para igualar el poder adquisitivo actual.'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('ic-lang').value;
+                const texts = InflationCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="inflation_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                InflationCalc.calc(true);
+            },
+
+            calc: (isLangUpdate = false) => {
+                const amount = parseFloat(document.getElementById('ic-amount').value);
+                const rate = parseFloat(document.getElementById('ic-rate').value);
+                const years = parseFloat(document.getElementById('ic-years').value);
+
+                const lang = document.getElementById('ic-lang').value;
+                const fmt = (num) => num.toLocaleString(lang === 'en' ? 'en-US' : 'zh-CN', { style: 'currency', currency: lang === 'en' ? 'USD' : (lang === 'ja' ? 'JPY' : 'CNY') });
+
+                if (isNaN(amount) || isNaN(rate) || isNaN(years)) {
+                    return;
+                }
+
+                // FV = PV * (1 + r)^n
+                const futureValue = amount * Math.pow(1 + (rate / 100), years);
+
+                document.getElementById('ic-result-val').innerText = fmt(futureValue);
+            }
+        };
+    </script>
+</body>
+</html>

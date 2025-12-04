@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lean Body Mass Calculator Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #eff6ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="lbm_calc" 
+         data-category="health" 
+         data-title="Lean Body Mass Calculator" 
+         data-icon="💪">
+        
+        <div class="absolute top-4 right-4">
+            <select id="lb-lang" onchange="LBMCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💪 Lean Body Mass</h2>
+
+        <div class="flex justify-center mb-4 bg-gray-100 p-1 rounded-lg w-max mx-auto">
+            <button class="px-3 py-1 text-sm rounded-md bg-white shadow text-blue-600 font-medium transition" id="lb-btn-metric" onclick="LBMCalc.setUnit('metric')">Metric</button>
+            <button class="px-3 py-1 text-sm rounded-md text-gray-500 hover:text-blue-600 transition" id="lb-btn-imperial" onclick="LBMCalc.setUnit('imperial')">US Units</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1" data-i18n="lbl_gender">Gender</label>
+                <select id="lb-gender" class="w-full p-2 border rounded bg-white text-sm" onchange="LBMCalc.calc()">
+                    <option value="m" data-i18n="g_male">Male</option>
+                    <option value="f" data-i18n="g_female">Female</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1" id="lbl-weight">Weight (kg)</label>
+                <input type="number" id="lb-weight" class="w-full p-2 border rounded focus:ring-1 focus:ring-blue-500 outline-none" placeholder="70" oninput="LBMCalc.calc()">
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-xs text-gray-500 mb-1" id="lbl-height">Height (cm)</label>
+            <div class="flex gap-2">
+                <input type="number" id="lb-height" class="w-full p-2 border rounded focus:ring-1 focus:ring-blue-500 outline-none" placeholder="175" oninput="LBMCalc.calc()">
+                <input type="number" id="lb-height-ft" class="hidden w-1/2 p-2 border rounded focus:ring-1 focus:ring-blue-500 outline-none" placeholder="ft" oninput="LBMCalc.calc()">
+                <input type="number" id="lb-height-in" class="hidden w-1/2 p-2 border rounded focus:ring-1 focus:ring-blue-500 outline-none" placeholder="in" oninput="LBMCalc.calc()">
+            </div>
+        </div>
+
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 text-center">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <span class="text-xs text-gray-500 uppercase block mb-1" data-i18n="res_lbm">Lean Mass</span>
+                    <div id="lb-res-lbm" class="text-2xl font-bold text-blue-800">--</div>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500 uppercase block mb-1" data-i18n="res_fat">Body Fat</span>
+                    <div id="lb-res-fat" class="text-2xl font-bold text-orange-600">--%</div>
+                </div>
+            </div>
+            <div class="mt-2 text-xs text-gray-400" data-i18n="note">Based on Boer Formula (Standard).</div>
+        </div>
+    </div>
+
+    <script>
+        const LBMCalc = {
+            unit: 'metric',
+            i18n: {
+                'en': {
+                    title: '💪 Lean Body Mass',
+                    lbl_gender: 'Gender', g_male: 'Male', g_female: 'Female',
+                    res_lbm: 'Lean Body Mass', res_fat: 'Est. Body Fat',
+                    note: 'Based on Boer Formula (Standard).',
+                    u_kg: 'kg', u_lbs: 'lbs'
+                },
+                'zh-CN': {
+                    title: '💪 去脂体重计算器',
+                    lbl_gender: '性别', g_male: '男性', g_female: '女性',
+                    res_lbm: '去脂体重 (瘦体重)', res_fat: '估算体脂率',
+                    note: '基于 Boer 公式计算。',
+                    u_kg: '千克', u_lbs: '磅'
+                },
+                'zh-TW': {
+                    title: '💪 去脂體重計算器',
+                    lbl_gender: '性別', g_male: '男性', g_female: '女性',
+                    res_lbm: '去脂體重 (瘦體重)', res_fat: '估算體脂率',
+                    note: '基於 Boer 公式計算。',
+                    u_kg: '公斤', u_lbs: '磅'
+                },
+                'ja': {
+                    title: '💪 除脂肪体重 (LBM)',
+                    lbl_gender: '性別', g_male: '男性', g_female: '女性',
+                    res_lbm: '除脂肪体重', res_fat: '推定体脂肪率',
+                    note: 'Boer式に基づきます。',
+                    u_kg: 'kg', u_lbs: 'lbs'
+                },
+                'ru': {
+                    title: '💪 Сухая масса тела',
+                    lbl_gender: 'Пол', g_male: 'Мужской', g_female: 'Женский',
+                    res_lbm: 'Сухая масса', res_fat: 'Жир тела',
+                    note: 'Формула Боера.',
+                    u_kg: 'кг', u_lbs: 'фунт'
+                },
+                'es': {
+                    title: '💪 Masa Corporal Magra',
+                    lbl_gender: 'Género', g_male: 'Hombre', g_female: 'Mujer',
+                    res_lbm: 'Masa Magra', res_fat: 'Grasa Corporal',
+                    note: 'Basado en la fórmula de Boer.',
+                    u_kg: 'kg', u_lbs: 'lbs'
+                }
+            },
+
+            setUnit: (u) => {
+                LBMCalc.unit = u;
+                const isM = u === 'metric';
+                const s = (id, txt) => document.getElementById(id).innerText = txt;
+                
+                s('lbl-height', isM ? 'Height (cm)' : 'Height (ft/in)');
+                s('lbl-weight', isM ? 'Weight (kg)' : 'Weight (lbs)');
+                
+                const btnM = document.getElementById('lb-btn-metric');
+                const btnI = document.getElementById('lb-btn-imperial');
+                
+                btnM.className = isM ? "px-3 py-1 text-sm rounded-md bg-white shadow text-blue-600 font-medium transition" : "px-3 py-1 text-sm rounded-md text-gray-500 hover:text-blue-600 transition";
+                btnI.className = !isM ? "px-3 py-1 text-sm rounded-md bg-white shadow text-blue-600 font-medium transition" : "px-3 py-1 text-sm rounded-md text-gray-500 hover:text-blue-600 transition";
+
+                if (isM) {
+                    document.getElementById('lb-height').classList.remove('hidden');
+                    document.getElementById('lb-height-ft').classList.add('hidden');
+                    document.getElementById('lb-height-in').classList.add('hidden');
+                } else {
+                    document.getElementById('lb-height').classList.add('hidden');
+                    document.getElementById('lb-height-ft').classList.remove('hidden');
+                    document.getElementById('lb-height-in').classList.remove('hidden');
+                }
+                LBMCalc.calc();
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('lb-lang').value;
+                const texts = LBMCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="lbm_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                LBMCalc.calc();
+            },
+
+            calc: () => {
+                const gender = document.getElementById('lb-gender').value;
+                let wKg = 0;
+                let hCm = 0;
+
+                if (LBMCalc.unit === 'metric') {
+                    wKg = parseFloat(document.getElementById('lb-weight').value);
+                    hCm = parseFloat(document.getElementById('lb-height').value);
+                } else {
+                    const wLb = parseFloat(document.getElementById('lb-weight').value);
+                    wKg = wLb * 0.453592;
+                    
+                    const ft = parseFloat(document.getElementById('lb-height-ft').value) || 0;
+                    const inc = parseFloat(document.getElementById('lb-height-in').value) || 0;
+                    if (ft || inc) hCm = (ft * 30.48) + (inc * 2.54);
+                }
+
+                if (!wKg || !hCm) return;
+
+                // Boer Formula
+                // Male: 0.407 * W + 0.267 * H - 19.2
+                // Female: 0.252 * W + 0.473 * H - 48.3
+                let lbm = 0;
+                if (gender === 'm') {
+                    lbm = (0.407 * wKg) + (0.267 * hCm) - 19.2;
+                } else {
+                    lbm = (0.252 * wKg) + (0.473 * hCm) - 48.3;
+                }
+
+                if (lbm > wKg) lbm = wKg; // Cannot exceed total weight
+
+                const bodyFat = ((wKg - lbm) / wKg) * 100;
+
+                const lang = document.getElementById('lb-lang').value;
+                const unitTxt = LBMCalc.i18n[lang][LBMCalc.unit === 'metric' ? 'u_kg' : 'u_lbs'];
+                
+                // Convert LBM back to display unit
+                let lbmDisplay = lbm;
+                if (LBMCalc.unit === 'imperial') lbmDisplay *= 2.20462;
+
+                document.getElementById('lb-res-lbm').innerText = `${lbmDisplay.toFixed(1)} ${unitTxt}`;
+                document.getElementById('lb-res-fat').innerText = `${bodyFat.toFixed(1)}%`;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Basic Calculator Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f3f4f6; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .calc-btn { 
+            @apply h-14 text-xl font-medium rounded-lg transition active:scale-95 select-none cursor-pointer flex items-center justify-center;
+            background-color: #f9fafb; color: #1f2937; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .calc-btn:hover { background-color: #f3f4f6; }
+        .calc-btn.op { background-color: #e0e7ff; color: #4338ca; }
+        .calc-btn.op:hover { background-color: #c7d2fe; }
+        .calc-btn.eq { background-color: #4f46e5; color: white; }
+        .calc-btn.eq:hover { background-color: #4338ca; }
+        .calc-btn.ac { background-color: #fee2e2; color: #dc2626; }
+        .calc-btn.ac:hover { background-color: #fecaca; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="basic_calc" 
+         data-category="tools" 
+         data-title="Standard Calculator" 
+         data-icon="🧮">
+        
+        <div class="absolute top-4 right-4">
+            <select id="bc-lang" onchange="BasicCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🧮 Standard Calculator</h2>
+
+        <!-- Display -->
+        <div class="bg-gray-800 rounded-xl p-4 mb-4 text-right shadow-inner">
+            <div id="bc-history" class="text-gray-400 text-sm h-6 overflow-hidden font-mono mb-1"></div>
+            <div id="bc-display" class="text-white text-4xl font-mono overflow-x-auto whitespace-nowrap scrollbar-hide">0</div>
+        </div>
+
+        <!-- Keypad -->
+        <div class="grid grid-cols-4 gap-3">
+            <button class="calc-btn ac" onclick="BasicCalc.clearAll()">AC</button>
+            <button class="calc-btn" onclick="BasicCalc.del()">⌫</button>
+            <button class="calc-btn" onclick="BasicCalc.op('%')">%</button>
+            <button class="calc-btn op" onclick="BasicCalc.op('/')">÷</button>
+
+            <button class="calc-btn" onclick="BasicCalc.num('7')">7</button>
+            <button class="calc-btn" onclick="BasicCalc.num('8')">8</button>
+            <button class="calc-btn" onclick="BasicCalc.num('9')">9</button>
+            <button class="calc-btn op" onclick="BasicCalc.op('*')">×</button>
+
+            <button class="calc-btn" onclick="BasicCalc.num('4')">4</button>
+            <button class="calc-btn" onclick="BasicCalc.num('5')">5</button>
+            <button class="calc-btn" onclick="BasicCalc.num('6')">6</button>
+            <button class="calc-btn op" onclick="BasicCalc.op('-')">−</button>
+
+            <button class="calc-btn" onclick="BasicCalc.num('1')">1</button>
+            <button class="calc-btn" onclick="BasicCalc.num('2')">2</button>
+            <button class="calc-btn" onclick="BasicCalc.num('3')">3</button>
+            <button class="calc-btn op" onclick="BasicCalc.op('+')">+</button>
+
+            <button class="calc-btn col-span-2" onclick="BasicCalc.num('0')">0</button>
+            <button class="calc-btn" onclick="BasicCalc.num('.')">.</button>
+            <button class="calc-btn eq" onclick="BasicCalc.calc()">=</button>
+        </div>
+    </div>
+
+    <script>
+        const BasicCalc = {
+            current: '0',
+            prev: '',
+            op: null,
+            resetNext: false,
+
+            i18n: {
+                'en': { title: '🧮 Standard Calculator' },
+                'zh-CN': { title: '🧮 标准计算器' },
+                'zh-TW': { title: '🧮 標準計算器' },
+                'ja': { title: '🧮 電卓' },
+                'ru': { title: '🧮 Калькулятор' },
+                'es': { title: '🧮 Calculadora' }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('bc-lang').value;
+                const texts = BasicCalc.i18n[lang];
+                document.querySelector('[data-id="basic_calc"] [data-i18n="title"]').innerText = texts.title;
+            },
+
+            updateUI: () => {
+                document.getElementById('bc-display').innerText = BasicCalc.current;
+                let hist = BasicCalc.prev;
+                if (BasicCalc.op) {
+                    let opSymbol = BasicCalc.op;
+                    if (opSymbol === '/') opSymbol = '÷';
+                    if (opSymbol === '*') opSymbol = '×';
+                    hist += ` ${opSymbol}`;
+                }
+                document.getElementById('bc-history').innerText = hist;
+            },
+
+            num: (n) => {
+                if (BasicCalc.resetNext) {
+                    BasicCalc.current = '0';
+                    BasicCalc.resetNext = false;
+                }
+                if (n === '.' && BasicCalc.current.includes('.')) return;
+                if (BasicCalc.current === '0' && n !== '.') {
+                    BasicCalc.current = n;
+                } else {
+                    BasicCalc.current += n;
+                }
+                BasicCalc.updateUI();
+            },
+
+            op: (operator) => {
+                if (BasicCalc.current === '') return;
+                if (BasicCalc.prev !== '') {
+                    BasicCalc.calc();
+                }
+                BasicCalc.op = operator;
+                BasicCalc.prev = BasicCalc.current;
+                BasicCalc.resetNext = true;
+                BasicCalc.updateUI();
+            },
+
+            del: () => {
+                if (BasicCalc.resetNext) return;
+                BasicCalc.current = BasicCalc.current.slice(0, -1);
+                if (BasicCalc.current === '') BasicCalc.current = '0';
+                BasicCalc.updateUI();
+            },
+
+            clearAll: () => {
+                BasicCalc.current = '0';
+                BasicCalc.prev = '';
+                BasicCalc.op = null;
+                BasicCalc.resetNext = false;
+                BasicCalc.updateUI();
+            },
+
+            calc: () => {
+                if (!BasicCalc.op || !BasicCalc.prev) return;
+                let res;
+                const p = parseFloat(BasicCalc.prev);
+                const c = parseFloat(BasicCalc.current);
+
+                switch (BasicCalc.op) {
+                    case '+': res = p + c; break;
+                    case '-': res = p - c; break;
+                    case '*': res = p * c; break;
+                    case '/': res = p / c; break;
+                    case '%': res = p % c; break;
+                }
+
+                // Format result to avoid overflow and float errors
+                let resStr = parseFloat(res.toPrecision(10)).toString();
+                if (resStr.length > 12) resStr = res.toExponential(6);
+
+                BasicCalc.current = resStr;
+                BasicCalc.op = null;
+                BasicCalc.prev = '';
+                BasicCalc.resetNext = true;
+                BasicCalc.updateUI();
+            }
+        };
+    </script>
+</body>
+</html>

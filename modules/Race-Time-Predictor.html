@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Race Time Predictor Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdfa; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .res-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0fdfa; }
+        .res-row:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="race_pred" 
+         data-category="health" 
+         data-title="Race Time Predictor" 
+         data-icon="🏃">
+        
+        <div class="absolute top-4 right-4">
+            <select id="rp-lang" onchange="RacePred.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🏃 Race Time Predictor</h2>
+        
+        <p class="text-sm text-gray-500 mb-4" data-i18n="desc">Predict your finish time for any distance based on a recent race performance.</p>
+
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_recent_dist">Recent Race Distance</label>
+                <select id="rp-dist-input" class="w-full p-2 border rounded focus:ring-2 focus:ring-teal-500 bg-white">
+                    <option value="5" data-i18n="opt_5k">5 km</option>
+                    <option value="10" selected data-i18n="opt_10k">10 km</option>
+                    <option value="21.0975" data-i18n="opt_half">Half Marathon</option>
+                    <option value="42.195" data-i18n="opt_full">Marathon</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_recent_time">Recent Race Time (h:m:s)</label>
+                <div class="flex gap-2">
+                    <input type="number" id="rp-h" class="w-1/3 p-2 border rounded focus:ring-2 focus:ring-teal-500 outline-none" placeholder="0">
+                    <input type="number" id="rp-m" class="w-1/3 p-2 border rounded focus:ring-2 focus:ring-teal-500 outline-none" placeholder="50">
+                    <input type="number" id="rp-s" class="w-1/3 p-2 border rounded focus:ring-2 focus:ring-teal-500 outline-none" placeholder="00">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="RacePred.calc()" class="w-full bg-teal-600 text-white py-2 rounded font-bold hover:bg-teal-700 transition mb-6" data-i18n="btn_predict">Predict Times</button>
+
+        <div class="bg-teal-50 p-4 rounded-lg border border-teal-100 hidden" id="rp-results">
+            <h3 class="font-bold text-gray-700 mb-2 text-sm uppercase" data-i18n="header_predictions">Predicted Finish Times</h3>
+            <div class="space-y-1">
+                <div class="res-row">
+                    <span class="text-gray-600 font-medium" data-i18n="res_5k">5 km</span>
+                    <span id="pred-5k" class="font-bold text-teal-800">--</span>
+                </div>
+                <div class="res-row">
+                    <span class="text-gray-600 font-medium" data-i18n="res_10k">10 km</span>
+                    <span id="pred-10k" class="font-bold text-teal-800">--</span>
+                </div>
+                <div class="res-row">
+                    <span class="text-gray-600 font-medium" data-i18n="res_half">Half Marathon</span>
+                    <span id="pred-half" class="font-bold text-teal-800">--</span>
+                </div>
+                <div class="res-row">
+                    <span class="text-gray-600 font-medium" data-i18n="res_full">Marathon</span>
+                    <span id="pred-full" class="font-bold text-teal-800">--</span>
+                </div>
+            </div>
+             <p class="text-xs text-gray-400 mt-3 pt-2 border-t border-teal-200">Based on Pete Riegel's formula.</p>
+        </div>
+    </div>
+
+    <script>
+        const RacePred = {
+            i18n: {
+                'en': {
+                    title: '🏃 Race Time Predictor',
+                    desc: 'Predict your finish time for any distance based on a recent race performance.',
+                    lbl_recent_dist: 'Recent Race Distance',
+                    lbl_recent_time: 'Recent Race Time (h:m:s)',
+                    opt_5k: '5 km',
+                    opt_10k: '10 km',
+                    opt_half: 'Half Marathon',
+                    opt_full: 'Marathon',
+                    btn_predict: 'Predict Times',
+                    header_predictions: 'Predicted Finish Times',
+                    res_5k: '5 km',
+                    res_10k: '10 km',
+                    res_half: 'Half Marathon',
+                    res_full: 'Marathon'
+                },
+                'zh-CN': {
+                    title: '🏃 完赛时间预测',
+                    desc: '根据您最近的比赛成绩，预测其他距离的完赛时间。',
+                    lbl_recent_dist: '最近比赛距离',
+                    lbl_recent_time: '最近比赛成绩 (时:分:秒)',
+                    opt_5k: '5 公里',
+                    opt_10k: '10 公里',
+                    opt_half: '半程马拉松',
+                    opt_full: '全程马拉松',
+                    btn_predict: '预测时间',
+                    header_predictions: '预测完赛时间',
+                    res_5k: '5 公里',
+                    res_10k: '10 公里',
+                    res_half: '半程马拉松',
+                    res_full: '全程马拉松'
+                },
+                'zh-TW': {
+                    title: '🏃 完賽時間預測',
+                    desc: '根據您最近的比賽成績，預測其他距離的完賽時間。',
+                    lbl_recent_dist: '最近比賽距離',
+                    lbl_recent_time: '最近比賽成績 (時:分:秒)',
+                    opt_5k: '5 公里',
+                    opt_10k: '10 公里',
+                    opt_half: '半程馬拉松',
+                    opt_full: '全程馬拉松',
+                    btn_predict: '預測時間',
+                    header_predictions: '預測完賽時間',
+                    res_5k: '5 公里',
+                    res_10k: '10 公里',
+                    res_half: '半程馬拉松',
+                    res_full: '全程馬拉松'
+                },
+                'ja': {
+                    title: '🏃 マラソンタイム予測',
+                    desc: '最近のレース結果に基づいて、他の距離のタイムを予測します。',
+                    lbl_recent_dist: '最近のレース距離',
+                    lbl_recent_time: 'タイム (時:分:秒)',
+                    opt_5k: '5 km',
+                    opt_10k: '10 km',
+                    opt_half: 'ハーフマラソン',
+                    opt_full: 'フルマラソン',
+                    btn_predict: '予測する',
+                    header_predictions: '予測タイム',
+                    res_5k: '5 km',
+                    res_10k: '10 km',
+                    res_half: 'ハーフマラソン',
+                    res_full: 'フルマラソン'
+                },
+                'ru': {
+                    title: '🏃 Прогноз результата',
+                    desc: 'Прогноз времени финиша на основе недавнего забега.',
+                    lbl_recent_dist: 'Дистанция забега',
+                    lbl_recent_time: 'Время (ч:м:с)',
+                    opt_5k: '5 км',
+                    opt_10k: '10 км',
+                    opt_half: 'Полумарафон',
+                    opt_full: 'Марафон',
+                    btn_predict: 'Рассчитать',
+                    header_predictions: 'Прогноз времени',
+                    res_5k: '5 км',
+                    res_10k: '10 км',
+                    res_half: 'Полумарафон',
+                    res_full: 'Марафон'
+                },
+                'es': {
+                    title: '🏃 Predictor de Carreras',
+                    desc: 'Predice tu tiempo de finalización basado en una carrera reciente.',
+                    lbl_recent_dist: 'Distancia Reciente',
+                    lbl_recent_time: 'Tiempo Reciente (h:m:s)',
+                    opt_5k: '5 km',
+                    opt_10k: '10 km',
+                    opt_half: 'Medio Maratón',
+                    opt_full: 'Maratón',
+                    btn_predict: 'Predecir Tiempos',
+                    header_predictions: 'Tiempos Predichos',
+                    res_5k: '5 km',
+                    res_10k: '10 km',
+                    res_half: 'Medio Maratón',
+                    res_full: 'Maratón'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('rp-lang').value;
+                const texts = RacePred.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="race_pred"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                
+                const opts = document.querySelectorAll('#rp-dist-input option');
+                opts.forEach(op => {
+                    const key = op.getAttribute('data-i18n');
+                    if(texts[key]) op.text = texts[key];
+                });
+                RacePred.calc(true);
+            },
+
+            fmtTime: (secs) => {
+                const h = Math.floor(secs / 3600);
+                const m = Math.floor((secs % 3600) / 60);
+                const s = Math.floor(secs % 60);
+                const pad = (n) => n < 10 ? '0'+n : n;
+                return `${h}:${pad(m)}:${pad(s)}`;
+            },
+
+            calc: (isLangUpdate = false) => {
+                const dist1 = parseFloat(document.getElementById('rp-dist-input').value);
+                const h = parseFloat(document.getElementById('rp-h').value) || 0;
+                const m = parseFloat(document.getElementById('rp-m').value) || 0;
+                const s = parseFloat(document.getElementById('rp-s').value) || 0;
+                const time1 = (h * 3600) + (m * 60) + s;
+
+                if (time1 === 0) return;
+
+                // Riegel Formula: T2 = T1 * (D2 / D1) ^ 1.06
+                const predict = (d2) => {
+                    const t2 = time1 * Math.pow((d2 / dist1), 1.06);
+                    return RacePred.fmtTime(t2);
+                };
+
+                document.getElementById('pred-5k').innerText = predict(5);
+                document.getElementById('pred-10k').innerText = predict(10);
+                document.getElementById('pred-half').innerText = predict(21.0975);
+                document.getElementById('pred-full').innerText = predict(42.195);
+
+                document.getElementById('rp-results').classList.remove('hidden');
+            }
+        };
+    </script>
+</body>
+</html>

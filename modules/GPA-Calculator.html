@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GPA Calculator Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #fffbe6; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .course-row { transition: background 0.2s; }
+        .course-row:hover { background: #fafafa; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="gpa_calc" 
+         data-category="education" 
+         data-title="GPA Calculator" 
+         data-icon="🎓">
+        
+        <div class="absolute top-4 right-4">
+            <select id="gc-lang" onchange="GPACalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🎓 GPA Calculator</h2>
+
+        <!-- Header -->
+        <div class="grid grid-cols-12 gap-2 mb-2 text-sm font-bold text-gray-600 px-2">
+            <div class="col-span-5" data-i18n="col_course">Course (Optional)</div>
+            <div class="col-span-3 text-center" data-i18n="col_grade">Grade</div>
+            <div class="col-span-3 text-center" data-i18n="col_credit">Credits</div>
+            <div class="col-span-1"></div>
+        </div>
+
+        <!-- Rows Container -->
+        <div id="gc-rows" class="space-y-2 mb-4">
+            <!-- Dynamic rows will be here -->
+        </div>
+
+        <div class="flex gap-2 mb-6">
+            <button onclick="GPACalc.addRow()" class="px-3 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 text-sm font-medium transition" data-i18n="btn_add">+ Add Course</button>
+            <button onclick="GPACalc.calc()" class="flex-1 bg-yellow-600 text-white py-1 rounded font-bold hover:bg-yellow-700 transition" data-i18n="btn_calc">Calculate GPA</button>
+        </div>
+
+        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 flex justify-between items-center">
+            <div>
+                <span class="text-gray-500 text-sm block" data-i18n="res_gpa">Cumulative GPA</span>
+                <div id="gc-result" class="text-3xl font-bold text-yellow-800">--</div>
+            </div>
+            <div class="text-right text-xs text-gray-500">
+                <div class="mb-1"><span data-i18n="lbl_total_credits">Total Credits:</span> <span id="gc-total-credits" class="font-bold">0</span></div>
+                <div class="text-gray-400">Scale: 4.0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GPACalc = {
+            i18n: {
+                'en': {
+                    title: '🎓 GPA Calculator',
+                    col_course: 'Course Name',
+                    col_grade: 'Grade',
+                    col_credit: 'Credits',
+                    btn_add: '+ Add Course',
+                    btn_calc: 'Calculate GPA',
+                    res_gpa: 'Cumulative GPA',
+                    lbl_total_credits: 'Total Credits:'
+                },
+                'zh-CN': {
+                    title: '🎓 GPA 计算器',
+                    col_course: '课程名称',
+                    col_grade: '成绩',
+                    col_credit: '学分',
+                    btn_add: '+ 添加课程',
+                    btn_calc: '计算 GPA',
+                    res_gpa: '平均绩点 (GPA)',
+                    lbl_total_credits: '总学分:'
+                },
+                'zh-TW': {
+                    title: '🎓 GPA 計算器',
+                    col_course: '課程名稱',
+                    col_grade: '成績',
+                    col_credit: '學分',
+                    btn_add: '+ 添加課程',
+                    btn_calc: '計算 GPA',
+                    res_gpa: '平均績點 (GPA)',
+                    lbl_total_credits: '總學分:'
+                },
+                'ja': {
+                    title: '🎓 GPA 計算',
+                    col_course: '科目名',
+                    col_grade: '成績',
+                    col_credit: '単位',
+                    btn_add: '+ 科目を追加',
+                    btn_calc: '計算する',
+                    res_gpa: 'GPA',
+                    lbl_total_credits: '総単位数:'
+                },
+                'ru': {
+                    title: '🎓 Калькулятор GPA',
+                    col_course: 'Курс',
+                    col_grade: 'Оценка',
+                    col_credit: 'Кредиты',
+                    btn_add: '+ Добавить',
+                    btn_calc: 'Рассчитать',
+                    res_gpa: 'Средний балл',
+                    lbl_total_credits: 'Всего кредитов:'
+                },
+                'es': {
+                    title: '🎓 Calculadora GPA',
+                    col_course: 'Materia',
+                    col_grade: 'Nota',
+                    col_credit: 'Créditos',
+                    btn_add: '+ Añadir',
+                    btn_calc: 'Calcular',
+                    res_gpa: 'Promedio GPA',
+                    lbl_total_credits: 'Total Créditos:'
+                }
+            },
+
+            grades: [
+                { l: 'A', v: 4.0 }, { l: 'A-', v: 3.7 },
+                { l: 'B+', v: 3.3 }, { l: 'B', v: 3.0 }, { l: 'B-', v: 2.7 },
+                { l: 'C+', v: 2.3 }, { l: 'C', v: 2.0 }, { l: 'C-', v: 1.7 },
+                { l: 'D+', v: 1.3 }, { l: 'D', v: 1.0 }, { l: 'F', v: 0.0 }
+            ],
+
+            init: () => {
+                // Add initial 4 rows
+                for(let i=0; i<4; i++) GPACalc.addRow();
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('gc-lang').value;
+                const texts = GPACalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="gpa_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            addRow: () => {
+                const container = document.getElementById('gc-rows');
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-12 gap-2 items-center course-row p-1 rounded';
+                
+                let opts = '';
+                GPACalc.grades.forEach(g => {
+                    opts += `<option value="${g.v}">${g.l}</option>`;
+                });
+
+                row.innerHTML = `
+                    <div class="col-span-5">
+                        <input type="text" class="w-full p-1 border rounded text-sm focus:ring-1 focus:ring-yellow-500 outline-none" placeholder="Math 101">
+                    </div>
+                    <div class="col-span-3">
+                        <select class="gc-grade w-full p-1 border rounded text-sm bg-white focus:ring-1 focus:ring-yellow-500">
+                            <option value="">--</option>
+                            ${opts}
+                        </select>
+                    </div>
+                    <div class="col-span-3">
+                        <input type="number" class="gc-credit w-full p-1 border rounded text-sm text-center focus:ring-1 focus:ring-yellow-500 outline-none" placeholder="3">
+                    </div>
+                    <div class="col-span-1 text-center">
+                        <button onclick="this.parentElement.parentElement.remove()" class="text-red-400 hover:text-red-600 font-bold px-1">×</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            },
+
+            calc: () => {
+                const gradeEls = document.querySelectorAll('.gc-grade');
+                const creditEls = document.querySelectorAll('.gc-credit');
+                
+                let totalPoints = 0;
+                let totalCredits = 0;
+
+                gradeEls.forEach((el, idx) => {
+                    const gVal = parseFloat(el.value);
+                    const cVal = parseFloat(creditEls[idx].value);
+
+                    if (!isNaN(gVal) && !isNaN(cVal)) {
+                        totalPoints += (gVal * cVal);
+                        totalCredits += cVal;
+                    }
+                });
+
+                document.getElementById('gc-total-credits').innerText = totalCredits;
+                
+                let gpa = 0;
+                if (totalCredits > 0) {
+                    gpa = totalPoints / totalCredits;
+                }
+                
+                document.getElementById('gc-result').innerText = gpa.toFixed(2);
+            }
+        };
+
+        GPACalc.init();
+    </script>
+</body>
+</html>

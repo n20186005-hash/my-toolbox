@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fraction Calculator Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #fffbe6; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .frac-input { text-align: center; }
+        .frac-line { border-top: 2px solid #333; margin: 4px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="frac_calc" 
+         data-category="math" 
+         data-title="Fraction Calculator" 
+         data-icon="⅗">
+        
+        <div class="absolute top-4 right-4">
+            <select id="fc-lang" onchange="FracCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">⅗ Fraction Calculator</h2>
+
+        <div class="flex items-center justify-center gap-2 mb-6 flex-wrap">
+            
+            <!-- Fraction 1 -->
+            <div class="flex items-center gap-1">
+                <input type="number" id="f1-w" class="w-12 p-2 border rounded text-center" placeholder="1">
+                <div class="flex flex-col w-12 gap-1">
+                    <input type="number" id="f1-n" class="p-1 border rounded text-center h-8 text-sm" placeholder="1">
+                    <div class="border-b-2 border-gray-400"></div>
+                    <input type="number" id="f1-d" class="p-1 border rounded text-center h-8 text-sm" placeholder="2">
+                </div>
+            </div>
+
+            <!-- Operator -->
+            <select id="fc-op" class="p-2 border rounded bg-white font-bold mx-2">
+                <option value="+">+</option>
+                <option value="-">-</option>
+                <option value="*">×</option>
+                <option value="/">÷</option>
+            </select>
+
+            <!-- Fraction 2 -->
+            <div class="flex items-center gap-1">
+                <input type="number" id="f2-w" class="w-12 p-2 border rounded text-center" placeholder="">
+                <div class="flex flex-col w-12 gap-1">
+                    <input type="number" id="f2-n" class="p-1 border rounded text-center h-8 text-sm" placeholder="1">
+                    <div class="border-b-2 border-gray-400"></div>
+                    <input type="number" id="f2-d" class="p-1 border rounded text-center h-8 text-sm" placeholder="4">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="FracCalc.calc()" class="w-full bg-yellow-600 text-white py-2 rounded font-bold hover:bg-yellow-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 text-center hidden" id="fc-result-box">
+            <span class="text-gray-500 text-sm block mb-2" data-i18n="res_label">Result</span>
+            
+            <div class="flex justify-center items-center gap-4 text-xl font-bold text-gray-800">
+                <!-- Mixed Result -->
+                <div class="flex items-center gap-1">
+                    <span id="res-w"></span>
+                    <div class="flex flex-col items-center">
+                        <span id="res-n" class="border-b-2 border-black px-1"></span>
+                        <span id="res-d" class="px-1"></span>
+                    </div>
+                </div>
+                
+                <span class="text-gray-400">=</span>
+                <span id="res-dec" class="text-yellow-700"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FracCalc = {
+            i18n: {
+                'en': { title: '⅗ Fraction Calculator', btn_calc: 'Calculate', res_label: 'Result' },
+                'zh-CN': { title: '⅗ 分数计算器', btn_calc: '计算', res_label: '结果' },
+                'zh-TW': { title: '⅗ 分數計算器', btn_calc: '計算', res_label: '結果' },
+                'ja': { title: '⅗ 分数計算', btn_calc: '計算する', res_label: '結果' },
+                'ru': { title: '⅗ Калькулятор дробей', btn_calc: 'Рассчитать', res_label: 'Результат' },
+                'es': { title: '⅗ Calculadora de Fracciones', btn_calc: 'Calcular', res_label: 'Resultado' }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('fc-lang').value;
+                const texts = FracCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="frac_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            gcd: (a, b) => {
+                return b ? FracCalc.gcd(b, a % b) : a;
+            },
+
+            calc: () => {
+                // Inputs
+                const getVal = (id) => parseInt(document.getElementById(id).value) || 0;
+                
+                const w1 = getVal('f1-w');
+                const n1 = getVal('f1-n');
+                let d1 = parseInt(document.getElementById('f1-d').value); // d cannot be 0 check
+                if (isNaN(d1) || d1 === 0) d1 = 1;
+
+                const w2 = getVal('f2-w');
+                const n2 = getVal('f2-n');
+                let d2 = parseInt(document.getElementById('f2-d').value);
+                if (isNaN(d2) || d2 === 0) d2 = 1;
+
+                const op = document.getElementById('fc-op').value;
+
+                // Convert to Improper Fractions
+                // (w * d + n) / d
+                const num1 = (w1 * d1) + n1;
+                const num2 = (w2 * d2) + n2;
+
+                let resNum = 0;
+                let resDen = 0;
+
+                if (op === '+') {
+                    resNum = (num1 * d2) + (num2 * d1);
+                    resDen = d1 * d2;
+                } else if (op === '-') {
+                    resNum = (num1 * d2) - (num2 * d1);
+                    resDen = d1 * d2;
+                } else if (op === '*') {
+                    resNum = num1 * num2;
+                    resDen = d1 * d2;
+                } else if (op === '/') {
+                    resNum = num1 * d2;
+                    resDen = d1 * num2;
+                }
+
+                if (resDen === 0) {
+                    alert("Division by zero");
+                    return;
+                }
+
+                // Simplify
+                const common = Math.abs(FracCalc.gcd(resNum, resDen));
+                resNum /= common;
+                resDen /= common;
+
+                // Handle negative denominator
+                if (resDen < 0) {
+                    resNum = -resNum;
+                    resDen = -resDen;
+                }
+
+                // Decimal
+                const decimal = resNum / resDen;
+
+                // Convert back to Mixed
+                const mixW = Math.trunc(resNum / resDen);
+                const mixN = Math.abs(resNum % resDen);
+                const mixD = resDen;
+
+                // Display
+                const box = document.getElementById('fc-result-box');
+                box.classList.remove('hidden');
+
+                if (mixN === 0) {
+                    // Whole number result
+                    document.getElementById('res-w').innerText = mixW;
+                    document.getElementById('res-n').innerText = '';
+                    document.getElementById('res-n').classList.remove('border-b-2');
+                    document.getElementById('res-d').innerText = '';
+                } else {
+                    document.getElementById('res-w').innerText = mixW !== 0 ? mixW : '';
+                    document.getElementById('res-n').innerText = mixN;
+                    document.getElementById('res-n').classList.add('border-b-2');
+                    document.getElementById('res-d').innerText = mixD;
+                }
+
+                document.getElementById('res-dec').innerText = parseFloat(decimal.toFixed(4));
+            }
+        };
+    </script>
+</body>
+</html>

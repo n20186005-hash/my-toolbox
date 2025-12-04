@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Percentage Calculator Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #eef2ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .tab-btn { padding: 8px 16px; font-size: 0.9em; border-radius: 20px; color: #666; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .tab-btn.active { background-color: #6366f1; color: white; border-color: #6366f1; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="percent_calc" 
+         data-category="math" 
+         data-title="Percentage Calculator" 
+         data-icon="％">
+        
+        <div class="absolute top-4 right-4">
+            <select id="pc-lang" onchange="PercCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">％ Percentage Calculator</h2>
+
+        <div class="flex justify-center gap-2 mb-6">
+            <button class="tab-btn active" onclick="PercCalc.setMode(1)" data-i18n="tab_val">Value</button>
+            <button class="tab-btn" onclick="PercCalc.setMode(2)" data-i18n="tab_pct">Percentage</button>
+            <button class="tab-btn" onclick="PercCalc.setMode(3)" data-i18n="tab_diff">Change</button>
+        </div>
+
+        <!-- Mode 1: What is X% of Y? -->
+        <div id="mode-1" class="mode-box">
+            <div class="flex items-center gap-2 mb-4 text-lg justify-center flex-wrap">
+                <span data-i18n="txt_what_is">What is</span>
+                <input type="number" id="m1-x" class="w-20 p-1 border rounded text-center focus:ring-2 focus:ring-indigo-500" placeholder="20">
+                <span>%</span>
+                <span data-i18n="txt_of">of</span>
+                <input type="number" id="m1-y" class="w-24 p-1 border rounded text-center focus:ring-2 focus:ring-indigo-500" placeholder="150">
+                <span>?</span>
+            </div>
+        </div>
+
+        <!-- Mode 2: X is what % of Y? -->
+        <div id="mode-2" class="mode-box hidden">
+            <div class="flex items-center gap-2 mb-4 text-lg justify-center flex-wrap">
+                <input type="number" id="m2-x" class="w-20 p-1 border rounded text-center focus:ring-2 focus:ring-indigo-500" placeholder="30">
+                <span data-i18n="txt_is_what">is what % of</span>
+                <input type="number" id="m2-y" class="w-24 p-1 border rounded text-center focus:ring-2 focus:ring-indigo-500" placeholder="150">
+                <span>?</span>
+            </div>
+        </div>
+
+        <!-- Mode 3: Change from X to Y -->
+        <div id="mode-3" class="mode-box hidden">
+             <div class="flex items-center gap-2 mb-4 text-lg justify-center flex-wrap">
+                <span data-i18n="txt_from">From</span>
+                <input type="number" id="m3-x" class="w-24 p-1 border rounded text-center focus:ring-2 focus:ring-indigo-500" placeholder="100">
+                <span data-i18n="txt_to">to</span>
+                <input type="number" id="m3-y" class="w-24 p-1 border rounded text-center focus:ring-2 focus:ring-indigo-500" placeholder="125">
+                <span>?</span>
+            </div>
+        </div>
+
+        <button onclick="PercCalc.calc()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 text-center">
+            <span class="text-gray-500 text-sm" data-i18n="res_result">Result</span>
+            <div id="pc-result" class="text-3xl font-bold text-indigo-700 mt-1">--</div>
+            <div id="pc-desc" class="text-sm text-gray-500 mt-1"></div>
+        </div>
+    </div>
+
+    <script>
+        const PercCalc = {
+            mode: 1,
+            i18n: {
+                'en': {
+                    title: '％ Percentage Calculator',
+                    tab_val: 'Value', tab_pct: 'Percentage', tab_diff: 'Change',
+                    txt_what_is: 'What is', txt_of: 'of',
+                    txt_is_what: 'is what % of',
+                    txt_from: 'From', txt_to: 'to',
+                    btn_calc: 'Calculate', res_result: 'Result',
+                    desc_inc: 'Increase', desc_dec: 'Decrease'
+                },
+                'zh-CN': {
+                    title: '％ 百分比计算器',
+                    tab_val: '数值', tab_pct: '占比', tab_diff: '变化率',
+                    txt_what_is: '', txt_of: '的', // "20% of 150" -> "150 的 20%" structure differs, simplified via UI
+                    txt_is_what: '是', // X is what % of Y -> X 是 Y 的多少 %
+                    txt_from: '从', txt_to: '变成',
+                    btn_calc: '计算', res_result: '计算结果',
+                    desc_inc: '增加', desc_dec: '减少'
+                },
+                'zh-TW': {
+                    title: '％ 百分比計算器',
+                    tab_val: '數值', tab_pct: '佔比', tab_diff: '變化率',
+                    txt_what_is: '', txt_of: '的',
+                    txt_is_what: '是',
+                    txt_from: '從', txt_to: '變成',
+                    btn_calc: '計算', res_result: '計算結果',
+                    desc_inc: '增加', desc_dec: '減少'
+                },
+                'ja': {
+                    title: '％ パーセント計算',
+                    tab_val: '値', tab_pct: '割合', tab_diff: '変化率',
+                    txt_what_is: '', txt_of: 'の',
+                    txt_is_what: 'は', // X is what % of Y -> X は Y の何％？
+                    txt_from: '', txt_to: 'から',
+                    btn_calc: '計算する', res_result: '結果',
+                    desc_inc: '増加', desc_dec: '減少'
+                },
+                'ru': {
+                    title: '％ Калькулятор процентов',
+                    tab_val: 'Число', tab_pct: 'Процент', tab_diff: 'Изменение',
+                    txt_what_is: 'Сколько будет', txt_of: 'от',
+                    txt_is_what: 'составляет какой % от',
+                    txt_from: 'От', txt_to: 'до',
+                    btn_calc: 'Рассчитать', res_result: 'Результат',
+                    desc_inc: 'Рост', desc_dec: 'Снижение'
+                },
+                'es': {
+                    title: '％ Calculadora de Porcentajes',
+                    tab_val: 'Valor', tab_pct: 'Porcentaje', tab_diff: 'Cambio',
+                    txt_what_is: '¿Cuánto es el', txt_of: 'de',
+                    txt_is_what: 'es qué % de',
+                    txt_from: 'De', txt_to: 'a',
+                    btn_calc: 'Calcular', res_result: 'Resultado',
+                    desc_inc: 'Aumento', desc_dec: 'Disminución'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('pc-lang').value;
+                const texts = PercCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="percent_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(texts[key]) el.innerText = texts[key];
+                });
+
+                // Adjust logic for UI structure differences if needed (simplified for this demo)
+                // e.g. Asian languages put percentage after number usually.
+                // kept simple inputs.
+            },
+
+            setMode: (m) => {
+                PercCalc.mode = m;
+                document.querySelectorAll('.tab-btn').forEach((b, i) => {
+                    if (i + 1 === m) b.classList.add('active');
+                    else b.classList.remove('active');
+                });
+                document.querySelectorAll('.mode-box').forEach(b => b.classList.add('hidden'));
+                document.getElementById('mode-' + m).classList.remove('hidden');
+                document.getElementById('pc-result').innerText = '--';
+                document.getElementById('pc-desc').innerText = '';
+            },
+
+            calc: () => {
+                const m = PercCalc.mode;
+                let res = 0;
+                let desc = "";
+                const lang = document.getElementById('pc-lang').value;
+                const t = PercCalc.i18n[lang];
+
+                if (m === 1) {
+                    // What is X% of Y?
+                    const x = parseFloat(document.getElementById('m1-x').value);
+                    const y = parseFloat(document.getElementById('m1-y').value);
+                    if (!isNaN(x) && !isNaN(y)) res = y * (x / 100);
+                    
+                } else if (m === 2) {
+                    // X is what % of Y?
+                    const x = parseFloat(document.getElementById('m2-x').value);
+                    const y = parseFloat(document.getElementById('m2-y').value);
+                    if (!isNaN(x) && !isNaN(y) && y !== 0) res = (x / y) * 100;
+
+                } else if (m === 3) {
+                    // Change from X to Y
+                    const x = parseFloat(document.getElementById('m3-x').value);
+                    const y = parseFloat(document.getElementById('m3-y').value);
+                    if (!isNaN(x) && !isNaN(y) && x !== 0) {
+                        res = ((y - x) / Math.abs(x)) * 100;
+                        if (res > 0) desc = `(${t.desc_inc})`;
+                        else if (res < 0) desc = `(${t.desc_dec})`;
+                    }
+                }
+
+                if (m === 2 || m === 3) {
+                    document.getElementById('pc-result').innerText = res.toFixed(2) + "%";
+                } else {
+                    document.getElementById('pc-result').innerText = parseFloat(res.toFixed(4));
+                }
+                
+                document.getElementById('pc-desc').innerText = desc;
+            }
+        };
+    </script>
+</body>
+</html>
