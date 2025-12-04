@@ -17,16 +17,21 @@ jobs:
     steps:
     # 1. 拉取仓库代码
     - name: 检出代码仓库
-     - uses: actions/checkout@v4  # 确保是最新版本
-  with:
-    token: ${{ secrets.GITHUB_TOKEN }}  # 或自定义的ACCESS_TOKEN
+      uses: actions/checkout@v4  # 确保是最新版本
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}  # 使用GitHub自动生成的令牌
+        fetch-depth: 0  # 拉取完整提交历史，避免rebase冲突
+
+    # 修复Git安全目录权限
+    - name: 修复Git安全目录权限
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
     # 2. 配置Python环境
     - name: 设置Python运行环境
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'  # 指定具体版本，提高稳定性
-        cache: ''  # 禁用自动依赖检测，解决无requirements.txt时的报错
+        cache: 'pip'  # 启用pip缓存，加速依赖安装（无requirements.txt也不会报错）
 
     # 3. 安装依赖包
     - name: 安装所需依赖
@@ -61,7 +66,7 @@ jobs:
         
         # 添加需要跟踪的文件
         echo "添加生成的文件..."
-        git add tools.json details/
+        git add tools.json details/ || echo "⚠️ 目标文件不存在，跳过添加"
         
         # 检查是否有变更
         if git diff --quiet && git diff --staged --quiet; then
@@ -70,10 +75,10 @@ jobs:
           echo "提交变更..."
           git commit -m "🔄 自动更新工具列表 [GitHub Action]"
           echo "推送变更到仓库..."
+          # 使用PAT_TOKEN推送，避免权限问题
           git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git main
           echo "📤 变更推送成功"
         fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       continue-on-error: false
-
