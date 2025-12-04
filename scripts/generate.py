@@ -1,6 +1,7 @@
 import os
 import json
 import re
+from pathlib import Path
 
 # 配置路径
 MODULES_DIR = 'modules'
@@ -8,8 +9,7 @@ DETAILS_DIR = 'details'
 OUTPUT_JSON = 'tools.json'
 
 # 确保详情目录存在
-if not os.path.exists(DETAILS_DIR):
-    os.makedirs(DETAILS_DIR)
+Path(DETAILS_DIR).mkdir(exist_ok=True)
 
 tools_list = []
 
@@ -17,15 +17,17 @@ print("-" * 50)
 print(f"开始扫描 {MODULES_DIR} 目录...")
 print("-" * 50)
 
-# 遍历 modules 目录
-for filename in os.listdir(MODULES_DIR):
-    if filename.endswith(".html"):
-        filepath = os.path.join(MODULES_DIR, filename)
-        
+# 使用 pathlib.Path.glob() 进行更健壮的文件遍历
+modules_path = Path(MODULES_DIR)
+for filepath in modules_path.glob("*.html"):
+    # filename 是带扩展名的文件名，如 'tool1.html'
+    filename = filepath.name 
+    
+    try:
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
             
-            # 使用正则提取元数据 (比BeautifulSoup更轻量，不需要安装依赖)
+            # 使用正则提取元数据
             def get_meta(name):
                 # 兼容双引号和单引号
                 match = re.search(r'<meta\s+name=[\"\']' + name + r'[\"\']\s+content=[\"\'](.*?)[\"\']', content, re.IGNORECASE)
@@ -36,7 +38,7 @@ for filename in os.listdir(MODULES_DIR):
                 return match.group(1) if match else filename
 
             # 提取数据
-            t_id = get_meta('tool-id') or filename.replace('.html', '')
+            t_id = get_meta('tool-id') or filepath.stem # 使用 stem 获取不带扩展名的文件名作为默认 ID
             t_cat = get_meta('category') or 'other'
             t_icon = get_meta('icon') or '🔧'
             t_desc = get_meta('description') or '暂无描述'
@@ -54,7 +56,7 @@ for filename in os.listdir(MODULES_DIR):
             
             tools_list.append(tool)
             
-            # --- 生成工具详情页 HTML (不包含任何功能限制) ---
+            # --- 生成工具详情页 HTML ---
             detail_html = f"""
             <!DOCTYPE html>
             <html lang="en">
@@ -92,19 +94,25 @@ for filename in os.listdir(MODULES_DIR):
             """
             
             # 写入详情页文件
-            with open(os.path.join(DETAILS_DIR, f"{t_id}.html"), 'w', encoding='utf-8') as df:
+            with open(Path(DETAILS_DIR) / f"{t_id}.html", 'w', encoding='utf-8') as df:
                 df.write(detail_html)
+                
+    except Exception as e:
+        print(f"处理文件 {filename} 时发生错误: {e}")
+        continue
+
 
 print("-" * 50)
-print(f"扫描完成。发现 {len(tools_list)} 个工具。")
+print(f"扫描完成。最终发现并处理了 {len(tools_list)} 个工具。")
 print("-" * 50)
 
-# ！！重要检查！！：如果在这里发现列表被切片（例如 tools_list = tools_list[:100]），请删除该行代码。
-# 确保写入 JSON 的是完整的 tools_list。
 
 # 写入 tools.json
-with open(OUTPUT_JSON, 'w', encoding='utf-8') as f:
-    # 确保写入的是完整的 tools_list
-    json.dump(tools_list, f, indent=4, ensure_ascii=False)
+try:
+    with open(OUTPUT_JSON, 'w', encoding='utf-8') as f:
+        # 确保写入的是完整的 tools_list
+        json.dump(tools_list, f, indent=4, ensure_ascii=False)
+    print(f"成功将 {len(tools_list)} 个工具写入 {OUTPUT_JSON}。")
 
-print(f"成功将 {len(tools_list)} 个工具写入 {OUTPUT_JSON}。")
+except Exception as e:
+    print(f"写入 {OUTPUT_JSON} 文件时发生错误: {e}")
