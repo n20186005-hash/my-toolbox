@@ -1,19 +1,24 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>攤提計算器模塊</title>
+    <title>Amortization Analysis Module</title>
     <meta name="tool-id" content="amort_calc">
     <meta name="category" content="finance">
     <meta name="icon" content="📊">
     <meta name="description" content="分析贷款的分期摊提结构，计算每月还款额和总利息占比。">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
-        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        body { padding: 20px; background: #f0f9ff; font-family: 'Inter', sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto; position: relative; border: 1px solid #bfdbfe; }
+        
         .bar-container { width: 100%; height: 20px; background: #e5e7eb; border-radius: 10px; overflow: hidden; display: flex; }
-        .bar-principal { height: 100%; background: #3b82f6; }
-        .bar-interest { height: 100%; background: #f97316; }
+        .bar-principal { height: 100%; background: #3b82f6; transition: width 0.5s; }
+        .bar-interest { height: 100%; background: #f97316; transition: width 0.5s; }
+        
+        .result-box { padding: 12px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; }
+        .result-label { font-size: 0.875rem; color: #6b7280; }
+        .result-value { font-size: 1.5rem; font-weight: 700; color: #1d4ed8; }
     </style>
 </head>
 <body>
@@ -21,191 +26,260 @@
     <div class="tool-module active" 
          data-id="amort_calc" 
          data-category="finance" 
-         data-title="貸款攤提分析" 
+         data-title="Amortization Analysis" 
          data-icon="📊">
         
         <div class="absolute top-4 right-4">
-            <select id="ac-lang" onchange="AmortCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
-                <option value="zh-CN">簡體中文</option>
-                <option value="zh-TW">繁體中文</option>
-                <option value="en">English</option>
-                <option value="ja">日本語</option>
-                <option value="ru">Русский</option>
-                <option value="es">Español</option>
+            <select id="ac-lang" onchange="AmortCalc.changeLang(this.value)" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none focus:ring-blue-300 focus:border-blue-300 transition">
+                <option value="en">🇺🇸 English</option>
+                <option value="zh-CN">🇨🇳 简体中文</option>
+                <option value="zh-TW">🇭🇰 繁體中文</option>
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="ru">🇷🇺 Русский</option>
             </select>
         </div>
 
-        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📊 貸款攤提分析</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6" data-i18n="title">Amortization Analysis</h1>
+
+        <div class="space-y-4 mb-6">
+            <!-- Principal -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="amount">貸款金額</label>
-                <input type="number" id="ac-amount" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="100000">
+                <label for="ac-principal" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_principal">Principal Amount ($)</label>
+                <input type="number" id="ac-principal" value="100000" min="0" step="1000" oninput="AmortCalc.calculate()" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition">
             </div>
+            
+            <!-- Rate -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rate">年利率 (%)</label>
-                <input type="number" id="ac-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="4.5" step="0.1">
+                <label for="ac-rate" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_rate">Annual Interest Rate (%)</label>
+                <input type="number" id="ac-rate" value="5" min="0" step="0.1" oninput="AmortCalc.calculate()" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition">
             </div>
+
+            <!-- Term -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="term">期限 (年)</label>
-                <input type="number" id="ac-term" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="30">
+                <label for="ac-term" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_term">Loan Term (Years)</label>
+                <input type="number" id="ac-term" value="30" min="1" max="60" step="1" oninput="AmortCalc.calculate()" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition">
             </div>
         </div>
 
-        <button onclick="AmortCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">分析結構</button>
+        <div id="ac-result-box" class="mt-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4" data-i18n="result_title">Analysis Results</h2>
 
-        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                    <div class="text-xs text-gray-500" data-i18n="res_monthly">月供</div>
-                    <div id="ac-res-monthly" class="text-lg font-bold text-gray-800">--</div>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <!-- Monthly Payment -->
+                <div class="result-box">
+                    <div class="result-label" data-i18n="res_monthly">Monthly Payment</div>
+                    <div class="result-value" id="ac-res-monthly">$536</div>
                 </div>
-                <div>
-                    <div class="text-xs text-gray-500" data-i18n="res_total_int">總利息</div>
-                    <div id="ac-res-interest" class="text-lg font-bold text-orange-600">--</div>
+
+                <!-- Total Interest -->
+                <div class="result-box">
+                    <div class="result-label" data-i18n="res_interest">Total Interest Paid</div>
+                    <div class="result-value" id="ac-res-interest">$93,126</div>
                 </div>
             </div>
 
-            <div class="mb-2">
-                <div class="flex justify-between text-xs text-gray-600 mb-1">
-                    <span data-i18n="ratio_principal">本金佔比</span>
-                    <span data-i18n="ratio_interest">利息佔比</span>
+            <h3 class="text-lg font-bold text-gray-800 mb-3" data-i18n="res_total_breakdown">Total Payment Breakdown</h3>
+
+            <div class="bar-container mb-2">
+                <div id="bar-p" class="bar-principal flex items-center justify-end text-white pr-2 text-xs font-semibold" style="width: 52%;">
+                    <span id="txt-p">52%</span>
                 </div>
-                <div class="bar-container">
-                    <div id="bar-p" class="bar-principal" style="width: 50%"></div>
-                    <div id="bar-i" class="bar-interest" style="width: 50%"></div>
-                </div>
-                <div class="flex justify-between text-xs font-bold mt-1">
-                    <span id="txt-p" class="text-blue-600">50%</span>
-                    <span id="txt-i" class="text-orange-600">50%</span>
+                <div id="bar-i" class="bar-interest flex items-center justify-start text-white pl-2 text-xs font-semibold" style="width: 48%;">
+                    <span id="txt-i">48%</span>
                 </div>
             </div>
             
-            <p class="text-xs text-gray-400 mt-2" data-i18n="note">此圖表顯示在整個貸款週期中，您支付的總金額里本金與利息的比例。</p>
+            <div class="flex justify-between text-sm text-gray-600">
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-3 h-3 bg-blue-500 rounded-full"></span>
+                    <span data-i18n="breakdown_principal">Principal</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-3 h-3 bg-orange-500 rounded-full"></span>
+                    <span data-i18n="breakdown_interest">Interest</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        const translations = {
+            "en": {
+                title: "Amortization Analysis",
+                label_principal: "Principal Amount ($)",
+                label_rate: "Annual Interest Rate (%)",
+                label_term: "Loan Term (Years)",
+                result_title: "Analysis Results",
+                res_monthly: "Monthly Payment",
+                res_interest: "Total Interest Paid",
+                res_total_breakdown: "Total Payment Breakdown",
+                breakdown_principal: "Principal",
+                breakdown_interest: "Interest",
+                currency_code: "USD",
+                currency_symbol: "$",
+                err_input: "Please enter valid Principal, Rate, and Term."
+            },
+            "zh-CN": {
+                title: "分期摊还分析",
+                label_principal: "本金金额 (￥)",
+                label_rate: "年利率 (%)",
+                label_term: "贷款期限 (年)",
+                result_title: "分析结果",
+                res_monthly: "每月还款额",
+                res_interest: "总利息支出",
+                res_total_breakdown: "总支出构成",
+                breakdown_principal: "本金",
+                breakdown_interest: "利息",
+                currency_code: "CNY",
+                currency_symbol: "￥",
+                err_input: "请输入有效的本金、利率和期限。"
+            },
+            "zh-TW": {
+                title: "攤還分析",
+                label_principal: "本金金額 (NT$)",
+                label_rate: "年利率 (%)",
+                label_term: "貸款期限 (年)",
+                result_title: "分析結果",
+                res_monthly: "每月還款額",
+                res_interest: "總利息支出",
+                res_total_breakdown: "總支出構成",
+                breakdown_principal: "本金",
+                breakdown_interest: "利息",
+                currency_code: "TWD",
+                currency_symbol: "NT$",
+                err_input: "請輸入有效的本金、利率和期限。"
+            },
+            "ja": {
+                title: "償却分析",
+                label_principal: "元金 (¥)",
+                label_rate: "年利 (%)",
+                label_term: "ローン期間 (年)",
+                result_title: "分析結果",
+                res_monthly: "月々の返済額",
+                res_interest: "総支払利息",
+                res_total_breakdown: "総支払いの内訳",
+                breakdown_principal: "元金",
+                breakdown_interest: "利息",
+                currency_code: "JPY",
+                currency_symbol: "¥",
+                err_input: "有効な元金、利率、期間を入力してください。"
+            },
+            "ru": {
+                title: "Анализ амортизации",
+                label_principal: "Сумма кредита (₽)",
+                label_rate: "Годовая процентная ставка (%)",
+                label_term: "Срок кредита (лет)",
+                result_title: "Результаты анализа",
+                res_monthly: "Ежемесячный платеж",
+                res_interest: "Общая сумма процентов",
+                res_total_breakdown: "Общая структура платежей",
+                breakdown_principal: "Основной долг",
+                breakdown_interest: "Проценты",
+                currency_code: "RUB",
+                currency_symbol: "₽",
+                err_input: "Пожалуйста, введите действительную сумму, ставку и срок."
+            }
+        };
+
         const AmortCalc = {
-            i18n: {
-                'zh-CN': {
-                    title: '📊 贷款摊提分析',
-                    amount: '贷款金额',
-                    rate: '年利率 (%)',
-                    term: '期限 (年)',
-                    btn_calc: '分析结构',
-                    res_monthly: '每月还款 (PI)',
-                    res_total_int: '总支付利息',
-                    ratio_principal: '本金占比 (蓝)',
-                    ratio_interest: '利息占比 (橙)',
-                    note: '此图表显示在整个贷款周期中，您支付的总金额里本金与利息的比例。'
-                },
-                'zh-TW': {
-                    title: '📊 貸款攤提分析',
-                    amount: '貸款金額',
-                    rate: '年利率 (%)',
-                    term: '期限 (年)',
-                    btn_calc: '分析結構',
-                    res_monthly: '每月還款 (PI)',
-                    res_total_int: '總支付利息',
-                    ratio_principal: '本金佔比 (藍)',
-                    ratio_interest: '利息佔比 (橙)',
-                    note: '此圖表顯示在整個貸款週期中，您支付的總金額里本金與利息的比例。'
-                },
-                'en': {
-                    title: '📊 Amortization Analysis',
-                    amount: 'Loan Amount',
-                    rate: 'Interest Rate (%)',
-                    term: 'Term (Years)',
-                    btn_calc: 'Analyze',
-                    res_monthly: 'Monthly Payment',
-                    res_total_int: 'Total Interest',
-                    ratio_principal: 'Principal (Blue)',
-                    ratio_interest: 'Interest (Orange)',
-                    note: 'Shows the ratio of Principal vs Interest over the life of the loan.'
-                },
-                'ja': {
-                    title: '📊 ローン内訳分析',
-                    amount: '借入金額',
-                    rate: '年利 (%)',
-                    term: '期間 (年)',
-                    btn_calc: '分析する',
-                    res_monthly: '月々の返済',
-                    res_total_int: '総支払利息',
-                    ratio_principal: '元金割合 (青)',
-                    ratio_interest: '利息割合 (橙)',
-                    note: '返済総額における元金と利息の割合を示します。'
-                },
-                'ru': {
-                    title: '📊 Анализ амортизации',
-                    amount: 'Сумма кредита',
-                    rate: 'Ставка (%)',
-                    term: 'Срок (лет)',
-                    btn_calc: 'Анализ',
-                    res_monthly: 'Ежемес. платеж',
-                    res_total_int: 'Общая переплата',
-                    ratio_principal: 'Долг (Синий)',
-                    ratio_interest: 'Проценты (Оранж)',
-                    note: 'Показывает соотношение основного долга и процентов за весь срок.'
-                },
-                'es': {
-                    title: '📊 Análisis de Amortización',
-                    amount: 'Monto del Préstamo',
-                    rate: 'Tasa Anual (%)',
-                    term: 'Plazo (Años)',
-                    btn_calc: 'Analizar',
-                    res_monthly: 'Pago Mensual',
-                    res_total_int: 'Interés Total',
-                    ratio_principal: 'Capital (Azul)',
-                    ratio_interest: 'Interés (Naranja)',
-                    note: 'Muestra la proporción de Capital vs Interés durante la vida del préstamo.'
-                }
+            currentLang: localStorage.getItem('app_lang') || 'en',
+
+            init: () => {
+                document.getElementById('ac-lang').value = AmortCalc.currentLang;
+                AmortCalc.applyLanguage(AmortCalc.currentLang);
+                AmortCalc.calculate(); // Calculate with default values
             },
 
-            changeLang: () => {
-                const lang = document.getElementById('ac-lang').value;
-                const texts = AmortCalc.i18n[lang];
-                const elements = document.querySelectorAll('[data-id="amort_calc"] [data-i18n]');
-                elements.forEach(el => {
+            changeLang: (lang) => {
+                AmortCalc.currentLang = lang;
+                localStorage.setItem('app_lang', lang);
+                AmortCalc.applyLanguage(lang);
+                AmortCalc.calculate(); // Recalculate to update currency format
+            },
+
+            applyLanguage: (lang) => {
+                const t = translations[lang] || translations['en'];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
-                    if (texts[key]) el.innerText = texts[key];
+                    if (t[key]) {
+                        el.textContent = t[key];
+                    }
                 });
-                AmortCalc.calc(true);
+                // Update currency symbols in labels
+                document.getElementById('ac-principal').previousElementSibling.textContent = t.label_principal;
             },
 
-            calc: (isLangUpdate = false) => {
-                const p = parseFloat(document.getElementById('ac-amount').value);
+            // Formatter handles currency localization
+            fmt: (num) => {
+                const t = translations[AmortCalc.currentLang] || translations['en'];
+                // Use Intl.NumberFormat for robust currency display
+                const locale = AmortCalc.currentLang === 'zh-CN' ? 'zh-CN' : 
+                               AmortCalc.currentLang === 'zh-TW' ? 'zh-TW' : 
+                               AmortCalc.currentLang === 'ja' ? 'ja-JP' : 
+                               AmortCalc.currentLang === 'ru' ? 'ru-RU' : 'en-US';
+                
+                return new Intl.NumberFormat(locale, {
+                    style: 'currency',
+                    currency: t.currency_code,
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(num);
+            },
+
+            calculate: () => {
+                const t = translations[AmortCalc.currentLang] || translations['en'];
+                
+                // Inputs
+                const p = parseFloat(document.getElementById('ac-principal').value);
                 const r_annual = parseFloat(document.getElementById('ac-rate').value);
                 const years = parseFloat(document.getElementById('ac-term').value);
 
-                const lang = document.getElementById('ac-lang').value;
-                const fmt = (num) => num.toLocaleString(lang === 'en' ? 'en-US' : 'zh-CN', { style: 'currency', currency: lang === 'en' ? 'USD' : (lang === 'ja' ? 'JPY' : 'CNY'), maximumFractionDigits: 0 });
+                if (isNaN(p) || isNaN(r_annual) || isNaN(years) || p <= 0 || r_annual < 0 || years <= 0) {
+                    // console.error(t.err_input); // Use console log for errors instead of alert
+                    document.getElementById('ac-res-monthly').innerText = t.currency_symbol + "0";
+                    document.getElementById('ac-res-interest').innerText = t.currency_symbol + "0";
+                    document.getElementById('bar-p').style.width = "0%";
+                    document.getElementById('bar-i').style.width = "0%";
+                    document.getElementById('txt-p').innerText = "0%";
+                    document.getElementById('txt-i').innerText = "0%";
+                    return; 
+                }
 
-                if (!p || !r_annual || !years) return;
-
-                const r = r_annual / 100 / 12;
-                const n = years * 12;
-
-                const x = Math.pow(1 + r, n);
-                const monthly = (p * r * x) / (x - 1);
+                const r = r_annual / 100 / 12; // Monthly rate
+                const n = years * 12; // Total payments (months)
                 
-                const totalPay = monthly * n;
-                const totalInt = totalPay - p;
+                let monthly, totalPay, totalInt;
 
-                document.getElementById('ac-res-monthly').innerText = fmt(monthly);
-                document.getElementById('ac-res-interest').innerText = fmt(totalInt);
+                if (r === 0) {
+                    // Zero interest
+                    monthly = p / n;
+                    totalPay = p;
+                    totalInt = 0;
+                } else {
+                    // Standard Amortization formula
+                    const x = Math.pow(1 + r, n);
+                    monthly = (p * r * x) / (x - 1);
+                    totalPay = monthly * n;
+                    totalInt = totalPay - p;
+                }
+
+                // Display Results
+                document.getElementById('ac-res-monthly').innerText = AmortCalc.fmt(monthly);
+                document.getElementById('ac-res-interest').innerText = AmortCalc.fmt(totalInt);
 
                 // Bar chart
                 const pPercent = (p / totalPay) * 100;
                 const iPercent = (totalInt / totalPay) * 100;
 
-                document.getElementById('bar-p').style.width = pPercent + "%";
-                document.getElementById('bar-i').style.width = iPercent + "%";
+                document.getElementById('bar-p').style.width = pPercent.toFixed(0) + "%";
+                document.getElementById('bar-i').style.width = iPercent.toFixed(0) + "%";
                 
-                document.getElementById('txt-p').innerText = pPercent.toFixed(1) + "%";
-                document.getElementById('txt-i').innerText = iPercent.toFixed(1) + "%";
+                document.getElementById('txt-p').innerText = pPercent.toFixed(0) + "%";
+                document.getElementById('txt-i').innerText = iPercent.toFixed(0) + "%";
             }
         };
+
+        window.addEventListener('DOMContentLoaded', AmortCalc.init);
     </script>
 </body>
 </html>
