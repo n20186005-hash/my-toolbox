@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day of the Week Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="day_of_week_calc">
+    <meta name="category" content="date_time">
+    <meta name="icon" content="📅">
+    
+    <!-- 默认英文内容 (供宿主环境读取) -->
+    <meta name="title" content="Day of the Week Calculator">
+    <meta name="description" content="Find out the day of the week for any given date.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="星期计算器">
+    <meta name="lang-description-zh-CN" content="计算指定日期是星期几。">
+    
+    <meta name="lang-title-zh-TW" content="星期計算器">
+    <meta name="lang-description-zh-TW" content="計算指定日期是星期幾。">
+    
+    <meta name="lang-title-ja" content="曜日計算ツール">
+    <meta name="lang-description-ja" content="指定した日付の曜日を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор дней недели">
+    <meta name="lang-description-ru" content="Определите день недели для любой даты.">
+    
+    <meta name="lang-title-es" content="Calculadora del Día de la Semana">
+    <meta name="lang-description-es" content="Averigua el día de la semana para cualquier fecha.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 模拟主程序环境样式 */
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 1：HTML 积木 (复制到 tools-wrapper) -->
+    <!-- ================================================================= -->
+    
+    <div class="tool-module active" 
+         data-id="day_of_week_calc" 
+         data-category="date_time" 
+         data-title="Day of the Week Calculator" 
+         data-icon="📅">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="dw-lang" onchange="DayCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📅 Day of the Week Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Month -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="month_label">Month</label>
+                    <select id="dw-month" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                    </select>
+                </div>
+                <!-- Day -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="day_label">Day</label>
+                    <input type="number" id="dw-day" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="1-31" min="1" max="31">
+                </div>
+                <!-- Year -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="year_label">Year</label>
+                    <input type="number" id="dw-year" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="2025" min="1">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="DayCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Result</div>
+            <div id="dw-result" class="text-3xl font-bold text-blue-800">--</div>
+            <div id="dw-full-date" class="text-sm text-gray-600 mt-2 h-5"></div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 1 结束 -->
+    <!-- ================================================================= -->
+
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 2：JS 积木 (复制到 script 标签中) -->
+    <!-- ================================================================= -->
+    <script>
+        const DayCalc = {
+            i18n: {
+                'en': {
+                    title: '📅 Day of the Week Calculator',
+                    month_label: 'Month',
+                    day_label: 'Day',
+                    year_label: 'Year',
+                    btn_calc: 'Calculate',
+                    res_label: 'The day is:',
+                    err_invalid: 'Invalid Date',
+                    days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                },
+                'zh-CN': {
+                    title: '📅 星期计算器',
+                    month_label: '月份',
+                    day_label: '日期',
+                    year_label: '年份',
+                    btn_calc: '计算',
+                    res_label: '这天是：',
+                    err_invalid: '日期无效',
+                    days: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+                },
+                'zh-TW': {
+                    title: '📅 星期計算器',
+                    month_label: '月份',
+                    day_label: '日期',
+                    year_label: '年份',
+                    btn_calc: '計算',
+                    res_label: '這天是：',
+                    err_invalid: '日期無效',
+                    days: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+                },
+                'ja': {
+                    title: '📅 曜日計算ツール',
+                    month_label: '月',
+                    day_label: '日',
+                    year_label: '年',
+                    btn_calc: '計算する',
+                    res_label: '曜日は：',
+                    err_invalid: '無効な日付',
+                    days: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日']
+                },
+                'ru': {
+                    title: '📅 Калькулятор дней недели',
+                    month_label: 'Месяц',
+                    day_label: 'День',
+                    year_label: 'Год',
+                    btn_calc: 'Рассчитать',
+                    res_label: 'День недели:',
+                    err_invalid: 'Неверная дата',
+                    days: ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
+                },
+                'es': {
+                    title: '📅 Calculadora del Día',
+                    month_label: 'Mes',
+                    day_label: 'Día',
+                    year_label: 'Año',
+                    btn_calc: 'Calcular',
+                    res_label: 'El día es:',
+                    err_invalid: 'Fecha Inválida',
+                    days: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+                }
+            },
+
+            // 初始化默认日期
+            init: () => {
+                const today = new Date();
+                document.getElementById('dw-month').value = today.getMonth() + 1;
+                document.getElementById('dw-day').value = today.getDate();
+                document.getElementById('dw-year').value = today.getFullYear();
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('dw-lang').value;
+                const texts = DayCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="day_of_week_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言，如果已经有结果的话
+                const currentResult = document.getElementById('dw-result').innerText;
+                if (currentResult !== '--') {
+                    DayCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const year = parseInt(document.getElementById('dw-year').value);
+                const month = parseInt(document.getElementById('dw-month').value);
+                const day = parseInt(document.getElementById('dw-day').value);
+                const lang = document.getElementById('dw-lang').value;
+                const texts = DayCalc.i18n[lang];
+
+                if (!year || !month || !day) {
+                    return;
+                }
+
+                // 日期验证逻辑
+                // JavaScript Date 对象会自动纠正日期（例如 2月30日会变成3月2日），
+                // 所以我们需要手动检查输入的日期是否和生成的日期对象的各个部分一致。
+                const dateObj = new Date(year, month - 1, day);
+                
+                const isValidDate = (dateObj.getFullYear() === year) && 
+                                    (dateObj.getMonth() === month - 1) && 
+                                    (dateObj.getDate() === day);
+
+                const resultEl = document.getElementById('dw-result');
+                const fullDateEl = document.getElementById('dw-full-date');
+
+                if (!isValidDate) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600";
+                    fullDateEl.innerText = "";
+                    return;
+                }
+
+                // 获取星期几 (0-6)
+                const dayIndex = dateObj.getDay();
+                
+                // 显示结果
+                resultEl.className = "text-3xl font-bold text-blue-800";
+                resultEl.innerText = texts.days[dayIndex];
+                
+                // 格式化完整日期显示 (根据语言习惯)
+                let dateString = '';
+                if (lang === 'en' || lang === 'es') {
+                    dateString = `${month}/${day}/${year}`;
+                } else if (lang === 'zh-CN' || lang === 'zh-TW' || lang === 'ja') {
+                    dateString = `${year}/${month}/${day}`;
+                } else if (lang === 'ru') {
+                    dateString = `${day}.${month}.${year}`;
+                }
+                fullDateEl.innerText = dateString;
+            }
+        };
+
+        // 页面加载时初始化日期
+        document.addEventListener('DOMContentLoaded', DayCalc.init);
+    </script>
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 2 结束 -->
+    <!-- ================================================================= -->
+
+    <!-- 宿主环境语言自适应脚本 (Optional) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 尝试自动匹配浏览器语言，如果没有对应语言则保持默认(English)
+            const userLang = navigator.language || navigator.userLanguage;
+            // 简单的映射逻辑
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            // 如果不是英文，则切换
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('dw-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    DayCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
