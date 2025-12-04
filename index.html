@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Toolbox Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .tool-card { transition: all 0.2s; }
+        .tool-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        /* Modal Animation */
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow: hidden; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <aside class="w-full md:w-64 bg-white border-r border-gray-200 flex flex-col h-auto md:h-full z-20 shadow-sm flex-shrink-0">
+        <div class="p-4 border-b border-gray-100 cursor-pointer" onclick="App.goHome()">
+            <div class="font-bold text-xl flex items-center gap-2 text-primary-600">
+                <span>🧰</span> <span data-i18n="appTitle">Toolbox Pro</span>
+            </div>
+            <div class="text-xs text-gray-400 mt-1">
+                <span data-i18n="collected">Collected</span> 
+                <span id="tool-count">0</span> 
+                <span data-i18n="toolsUnit">tools</span>
+            </div>
+        </div>
+        
+        <div class="p-3 space-y-2">
+            <input type="text" id="search-input" placeholder="Search..." class="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm focus:outline-none focus:border-primary-500 transition">
+            
+            <select id="lang-select" onchange="App.setLanguage(this.value)" class="w-full p-1.5 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600 focus:outline-none">
+                <option value="en">🇺🇸 English</option>
+                <option value="zh">🇨🇳 简体中文</option>
+                <option value="tw">🇭🇰 繁體中文</option>
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="ru">🇷🇺 Русский</option>
+            </select>
+        </div>
+
+        <div class="flex overflow-x-auto md:hidden gap-1 p-2 text-sm border-b border-gray-100 scrollbar-hide" id="mobile-category-nav">
+            </div>
+
+        <div id="menu-container" class="flex-1 overflow-y-auto p-2 space-y-1 hidden md:block">
+            </div>
+
+        <div class="p-3 border-t border-gray-100 bg-gray-50 hidden md:block">
+            <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 justify-center">
+                <a href="#" onclick="App.openModal('about')" class="hover:text-primary-600" data-i18n="footerAbout">About</a>
+                <a href="#" onclick="App.openModal('contact')" class="hover:text-primary-600" data-i18n="footerContact">Contact</a>
+                <a href="#" onclick="App.openModal('terms')" class="hover:text-primary-600" data-i18n="footerTerms">Terms</a>
+                <a href="#" onclick="App.openModal('privacy')" class="hover:text-primary-600" data-i18n="footerPrivacy">Privacy</a>
+                <a href="#" onclick="App.openModal('disclaimer')" class="hover:text-primary-600" data-i18n="footerDisclaimer">Disclaimer</a>
+            </div>
+            <div class="text-[10px] text-center text-gray-400 mt-2">
+                &copy; 2024 Toolbox Pro
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full relative w-full">
+        <header class="bg-white border-b border-gray-200 p-3 shadow-sm flex justify-between items-center md:hidden flex-shrink-0">
+            <span class="font-bold text-gray-700 truncate" id="header-title" data-i18n="home">Home</span>
+            <button onclick="App.goHome()" class="text-primary-600 text-sm font-bold" data-i18n="backHome">Back</button>
+        </header>
+
+        <div id="dashboard-view" class="flex-1 overflow-y-auto p-4 md:p-8">
+            <div class="max-w-6xl mx-auto">
+                <div class="mb-8">
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2" data-i18n="welcomeTitle">Welcome</h1>
+                    <p class="text-gray-500" data-i18n="welcomeDesc">Please select a tool to start.</p>
+                </div>
+
+                <div class="hidden md:flex flex-wrap gap-2 mb-6" id="desktop-category-nav">
+                    </div>
+
+                <div id="cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    </div>
+            </div>
+            
+             <div class="mt-10 py-6 border-t border-gray-100 text-center md:hidden">
+                <div class="flex flex-wrap gap-3 justify-center text-xs text-gray-500">
+                    <a href="#" onclick="App.openModal('about')" data-i18n="footerAbout">About</a>
+                    <a href="#" onclick="App.openModal('terms')" data-i18n="footerTerms">Terms</a>
+                    <a href="#" onclick="App.openModal('privacy')" data-i18n="footerPrivacy">Privacy</a>
+                </div>
+                <div class="text-[10px] text-gray-400 mt-2">&copy; 2024 Toolbox Pro</div>
+            </div>
+        </div>
+
+        <div id="tool-view" class="flex-1 hidden bg-white md:p-4">
+            <iframe id="tool-frame" src="" class="w-full h-full rounded-xl shadow-sm bg-gray-50"></iframe>
+        </div>
+    </main>
+
+    <div id="info-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="App.closeModal()"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto max-h-[80vh]">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <p class="text-lg font-bold" id="modal-title">Title</p>
+                    <div class="modal-close cursor-pointer z-50" onclick="App.closeModal()">
+                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                            <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="my-5 text-sm text-gray-600 whitespace-pre-line" id="modal-body">
+                    Content goes here...
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button onclick="App.closeModal()" class="px-4 py-2 bg-primary-500 p-3 rounded-lg text-white hover:bg-primary-400 transition" data-i18n="close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =================================================================
+        // 🌍 多语言配置 / i18n Config
+        // =================================================================
+        const translations = {
+            en: {
+                appTitle: "Toolbox Pro",
+                collected: "Collected",
+                toolsUnit: "tools",
+                searchPlaceholder: "Search tools...",
+                home: "Home",
+                backHome: "Back",
+                welcomeTitle: "Welcome",
+                welcomeDesc: "Select a tool from the sidebar or dashboard to get started.",
+                openTool: "Open",
+                notFound: "No tools found matching your search.",
+                close: "Close",
+                // Categories
+                cat_all: "All Tools",
+                cat_health: "Health",
+                cat_finance: "Finance",
+                cat_math: "Math",
+                cat_tools: "Utilities",
+                cat_dev: "Developer",
+                cat_date: "Date",
+                cat_life: "Lifestyle",
+                cat_time: "Time",
+                cat_education: "Education",
+                cat_work: "Work",
+                cat_internet: "Internet",
+                cat_security: "Security",
+                cat_game: "Games",
+                // Footer
+                footerAbout: "About Us",
+                footerContact: "Contact",
+                footerTerms: "Terms",
+                footerPrivacy: "Privacy",
+                footerDisclaimer: "Disclaimer"
+            },
+            zh: {
+                appTitle: "全能工具箱 Pro",
+                collected: "已收录",
+                toolsUnit: "款工具",
+                searchPlaceholder: "搜索工具...",
+                home: "首页",
+                backHome: "返回列表",
+                welcomeTitle: "欢迎使用",
+                welcomeDesc: "请从侧边栏或下方选择一个工具开始使用。",
+                openTool: "打开工具",
+                notFound: "未找到相关工具。",
+                close: "关闭",
+                // Categories
+                cat_all: "全部工具",
+                cat_health: "健康医疗",
+                cat_finance: "金融理财",
+                cat_math: "数学几何",
+                cat_tools: "实用工具",
+                cat_dev: "开发工具",
+                cat_date: "日期相关",
+                cat_life: "生活趣味",
+                cat_time: "时间管理",
+                cat_education: "教育学习",
+                cat_work: "职场工作",
+                cat_internet: "网络工具",
+                cat_security: "密码安全",
+                cat_game: "休闲游戏",
+                // Footer
+                footerAbout: "关于我们",
+                footerContact: "联系我们",
+                footerTerms: "使用条款",
+                footerPrivacy: "隐私政策",
+                footerDisclaimer: "免责申明"
+            },
+            tw: {
+                appTitle: "全能工具箱 Pro",
+                collected: "已收錄",
+                toolsUnit: "款工具",
+                searchPlaceholder: "搜尋工具...",
+                home: "首頁",
+                backHome: "返回列表",
+                welcomeTitle: "歡迎使用",
+                welcomeDesc: "請從側邊欄或下方選擇一個工具開始使用。",
+                openTool: "打開工具",
+                notFound: "未找到相關工具。",
+                close: "關閉",
+                cat_all: "全部工具",
+                cat_health: "健康醫療",
+                cat_finance: "金融理財",
+                cat_math: "數學幾何",
+                cat_tools: "實用工具",
+                cat_dev: "開發工具",
+                cat_date: "日期相關",
+                cat_life: "生活趣味",
+                cat_time: "時間管理",
+                cat_education: "教育學習",
+                cat_work: "職場工作",
+                cat_internet: "網絡工具",
+                cat_security: "密碼安全",
+                cat_game: "休閒遊戲",
+                footerAbout: "關於我們",
+                footerContact: "聯繫我們",
+                footerTerms: "使用條款",
+                footerPrivacy: "隱私政策",
+                footerDisclaimer: "免責聲明"
+            },
+            ja: {
+                appTitle: "ツールボックス Pro",
+                collected: "収録数",
+                toolsUnit: "ツール",
+                searchPlaceholder: "ツールを検索...",
+                home: "ホーム",
+                backHome: "戻る",
+                welcomeTitle: "ようこそ",
+                welcomeDesc: "サイドバーまたは下からツールを選択してください。",
+                openTool: "開く",
+                notFound: "ツールが見つかりません。",
+                close: "閉じる",
+                cat_all: "すべて",
+                cat_health: "健康",
+                cat_finance: "金融",
+                cat_math: "数学",
+                cat_tools: "ユーティリティ",
+                cat_dev: "開発",
+                cat_date: "日付",
+                cat_life: "生活",
+                cat_time: "時間",
+                cat_education: "教育",
+                cat_work: "仕事",
+                cat_internet: "インターネット",
+                cat_security: "セキュリティ",
+                cat_game: "ゲーム",
+                footerAbout: "私たちについて",
+                footerContact: "お問い合わせ",
+                footerTerms: "利用規約",
+                footerPrivacy: "プライバシー",
+                footerDisclaimer: "免責事項"
+            },
+            ru: {
+                appTitle: "Тулбокс Pro",
+                collected: "Собрано",
+                toolsUnit: "инструментов",
+                searchPlaceholder: "Поиск...",
+                home: "Главная",
+                backHome: "Назад",
+                welcomeTitle: "Добро пожаловать",
+                welcomeDesc: "Выберите инструмент для начала работы.",
+                openTool: "Открыть",
+                notFound: "Инструменты не найдены.",
+                close: "Закрыть",
+                cat_all: "Все",
+                cat_health: "Здоровье",
+                cat_finance: "Финансы",
+                cat_math: "Математика",
+                cat_tools: "Утилиты",
+                cat_dev: "Разработка",
+                cat_date: "Дата",
+                cat_life: "Стиль жизни",
+                cat_time: "Время",
+                cat_education: "Образование",
+                cat_work: "Работа",
+                cat_internet: "Интернет",
+                cat_security: "Безопасность",
+                cat_game: "Игры",
+                footerAbout: "О нас",
+                footerContact: "Контакты",
+                footerTerms: "Условия",
+                footerPrivacy: "Конфиденциальность",
+                footerDisclaimer: "Отказ от ответственности"
+            }
+        };
+
+        // 法律/信息页面内容模板 (这里使用简单的占位符，实际使用时可替换为真实文案)
+        const legalContent = {
+            about: {
+                en: "We provide free, high-quality online tools for everyone. Our mission is to make calculations and conversions simple.",
+                zh: "我们致力于为所有人提供免费、高质量的在线工具。我们的使命是让计算和转换变得简单。",
+                ja: "私たちは、誰にでも無料で高品質なオンラインツールを提供します。",
+                tw: "我們致力於為所有人提供免費、高質量的在線工具。",
+                ru: "Мы предоставляем бесплатные и качественные онлайн-инструменты."
+            },
+            contact: {
+                en: "Email us at: n20186005@gmail.com",
+                zh: "联系邮箱: n20186005@gmail.com",
+                ja: "メール: n20186005@gmail.com",
+                tw: "聯繫郵箱: n20186005@gmail.com",
+                ru: "Email: n20186005@gmail.com"
+            },
+            terms: {
+                en: "By using this website, you agree to allow us to process your data for calculation purposes only.",
+                zh: "使用本网站即表示您同意我们仅出于计算目的处理您的数据。",
+                ja: "当サイトを使用することで、計算目的でのみデータを使用することに同意したものとみなされます。",
+                tw: "使用本網站即表示您同意我們僅出於計算目的處理您的數據。",
+                ru: "Используя этот сайт, вы соглашаетесь с нашими условиями."
+            },
+            privacy: {
+                en: "We do not store your personal input data. All calculations are performed in your browser.",
+                zh: "我们不会存储您的个人输入数据。所有计算均在您的浏览器中执行。",
+                ja: "個人データを保存しません。すべての計算はブラウザ内で実行されます。",
+                tw: "我們不會存儲您的個人輸入數據。所有計算均在您的瀏覽器中執行。",
+                ru: "Мы не храним ваши личные данные."
+            },
+            disclaimer: {
+                en: "Tools are for informational purposes only. Do not rely on them for medical or financial advice.",
+                zh: "工具仅供参考。请勿依赖它们获取医疗或财务建议。",
+                ja: "ツールは情報提供のみを目的としています。",
+                tw: "工具僅供參考。請勿依賴它們獲取醫療或財務建議。",
+                ru: "Инструменты предназначены только для информационных целей."
+            }
+        };
+
+        // =================================================================
+        // ⚙️ 工具数据配置
+        // =================================================================
+        const toolsConfig = [
+            { id: '401k_calc', title: '401K Calculator', icon: '📈', category: 'finance', file: '401K-Calculator.html', desc: 'Calculate your retirement savings growth.' },
+            { id: 'age_calc', title: 'Age Calculator', icon: '🎂', category: 'date', file: 'Age-Calculator.html', desc: 'Calculate age in years, months, and days.' },
+            { id: 'age_zod', title: 'Age & Zodiac Calculator', icon: '🎂', category: 'life', file: 'Age-Zodiac-Sign-Calculator.html', desc: 'Find your age and zodiac sign.' },
+            { id: 'amort_calc', title: 'Amortization Analysis', icon: '📊', category: 'finance', file: 'Amortization-Analysis.html', desc: 'Analyze loan amortization schedules.' },
+            { id: 'anorexic_calc', title: 'Anorexic BMI Calculator', icon: '🦴', category: 'health', file: 'anorexic-bmi-calculator.html', desc: 'Assess the severity of underweight based on BMI (WHO Standards).' },
+            { id: 'area_calc', title: 'Area Calculator', icon: '📐', category: 'math', file: 'Area-Calculator.html', desc: 'Calculate area of various geometric shapes.' },
+            { id: 'cvr_calc', title: 'Auto Loan Comparison', icon: '🚗', category: 'finance', file: 'Auto-Loan-Comparison.html', desc: 'Compare taking a Cash Back Rebate vs. a Low Interest Rate promotion.' },
+            { id: 'bac_calc', title: 'BAC Calculator', icon: '🍺', category: 'health', file: 'bac-calculator.html', desc: 'Estimate Blood Alcohol Content (Widmark Formula).' },
+            { id: 'deposit_calc', title: 'Bank Deposit Calculator', icon: '🏦', category: 'finance', file: 'Bank-Deposit-Calculator.html', desc: 'Calculate interest on bank deposits.' },
+            { id: 'bmi_calc', title: 'BMI Calculator', icon: '📏', category: 'health', file: 'BMI-Calculator.html', desc: 'Calculate Body Mass Index.' },
+            { id: 'bmr_calc', title: 'BMR Calculator', icon: '⚡', category: 'health', file: 'BMR-Calculator.html', desc: 'Basal Metabolic Rate: calories needed for basic functions.' },
+            { id: 'bf_calc', title: 'Body Fat Calculator', icon: '⚖️', category: 'health', file: 'Body-Fat-Calculator.html', desc: 'Estimate body fat percentage.' },
+            { id: 'bsa_calc', title: 'Body Surface Area', icon: '📏', category: 'health', file: 'body-surface-area-calculator.html', desc: 'Calculate total surface area of the body.' },
+            { id: 'calorie_calc', title: 'Calorie Calculator', icon: '🔥', category: 'health', file: 'Calorie-Calculator.html', desc: 'Estimate daily calorie needs.' },
+            { id: 'cad_mortgage', title: 'Canadian Mortgage', icon: '🍁', category: 'finance', file: 'Canadian-Mortgage.html', desc: 'Compounded semi-annually (Canadian Standard).' },
+            { id: 'auto_loan', title: 'Car Loan Calculator', icon: '🚗', category: 'finance', file: 'Car-Loan-Calculator.html', desc: 'Calculate car loan payments.' },
+            { id: 'carb_calc', title: 'Carbohydrate Calculator', icon: '🍞', category: 'health', file: 'carbohydrate-calculator.html', desc: 'Estimate daily carbohydrate needs.' },
+            { id: 'cd_calc', title: 'CD Calculator', icon: '🏦', category: 'finance', file: 'CD-Calculator.html', desc: 'Certificate of Deposit growth calculator.' },
+            { id: 'rmb_conv', title: 'Chinese Capital Number', icon: '💴', category: 'finance', file: 'Chinese-Capital-Number.html', desc: 'Convert numbers to Chinese financial capital characters.' },
+            { id: 'college_calc', title: 'College Cost Calculator', icon: '🎓', category: 'finance', file: 'College-Cost-Calculator.html', desc: 'Estimate the cost of college education.' },
+            { id: 'comm_calc', title: 'Commission Calculator', icon: '🤝', category: 'finance', file: 'Commission-Calculator.html', desc: 'Calculate sales commission.' },
+            { id: 'compound_calc', title: 'Compound Interest', icon: '📈', category: 'finance', file: 'Compound-Interest.html', desc: 'Calculate compound interest growth.' },
+            { id: 'gpa_comp_calc', title: 'Comprehensive GPA', icon: '🎓', category: 'education', file: 'Comprehensive-GPA-Calculator.html', desc: 'Calculate cumulative GPA.' },
+            { id: 'conception_calc', title: 'Conception Calculator', icon: '👶', category: 'health', file: 'Conception-Calculator.html', desc: 'Find out when you likely conceived.' },
+            { id: 'cone_calc', title: 'Cone Calculator', icon: '🍦', category: 'math', file: 'Cone-Calculator.html', desc: 'Calculate volume and surface area of a cone.' },
+            { id: 'cube_calc', title: 'Cube Calculator', icon: '🧊', category: 'math', file: 'Cube-Calculator.html', desc: 'Calculate volume and surface area of a cube.' },
+            { id: 'cylinder_calc', title: 'Cylinder Calculator', icon: '🛢️', category: 'math', file: 'Cylinder-Calculator.html', desc: 'Calculate volume and surface area of a cylinder.' },
+            { id: 'date_calc', title: 'Date Calculator', icon: '📅', category: 'date', file: 'Date-Calculator.html', desc: 'Add or subtract days from a date.' },
+            { id: 'countdown_calc', title: 'Date Countdown', icon: '⏳', category: 'time', file: 'Date-Countdown.html', desc: 'Countdown to a specific date.' },
+            { id: 'date_upper', title: 'Date to Chinese Uppercase', icon: '📅', category: 'tools', file: 'Date-to-Chinese-Uppercase.html', desc: 'Convert dates to formal Chinese format.' },
+            { id: 'doy_calc', title: 'Day of Year Calculator', icon: '📅', category: 'date', file: 'Day-of-Year-Calculator.html', desc: 'Find the day number of the year.' },
+            { id: 'days_calc', title: 'Days Between Dates', icon: '🗓️', category: 'date', file: 'Days-Between-Dates.html', desc: 'Calculate days between two dates.' },
+            { id: 'dti_calc', title: 'Debt-to-Income Ratio', icon: '⚖️', category: 'finance', file: 'Debt-to-Income-Ratio.html', desc: 'Calculate DTI ratio for loans.' },
+            { id: 'depr_calc', title: 'Depreciation Calculator', icon: '📉', category: 'finance', file: 'Depreciation-Calculator.html', desc: 'Calculate asset depreciation.' },
+            { id: 'clock_sw', title: 'Clock & Stopwatch', icon: '⏱️', category: 'time', file: 'Digital-Clock-Stopwatch.html', desc: 'Digital clock and stopwatch tool.' },
+            { id: 'disc_calc', title: 'Discount Calculator', icon: '🏷️', category: 'finance', file: 'Discount-Calculator.html', desc: 'Calculate sale price after discount.' },
+            { id: 'energy_conv', title: 'Energy Converter', icon: '🔥', category: 'tools', file: 'Energy-Converter.html', desc: 'Convert between energy units.' },
+            { id: 'exam_count', title: 'Exam Countdown', icon: '🎓', category: 'education', file: 'Exam-Countdown.html', desc: 'Countdown to your exams.' },
+            { id: 'fat_calc', title: 'Fat Intake Calculator', icon: '🥑', category: 'health', file: 'fat-intake-calculator.html', desc: 'Estimate daily fat intake needs.' },
+            { id: 'fg_calc', title: 'Final Grade Calculator', icon: '📝', category: 'education', file: 'Final-Grade-Calculator.html', desc: 'Calculate needed final exam score.' },
+            { id: 'frac_calc', title: 'Fraction Calculator', icon: '⅗', category: 'math', file: 'Fraction-Calculator.html', desc: 'Add, subtract, multiply, divide fractions.' },
+            { id: 'frustum_calc', title: 'Frustum Calculator', icon: '🧊', category: 'math', file: 'Frustum-Calculator.html', desc: 'Rectangular Frustum (Truncated Pyramid).' },
+            { id: 'loan_calc', title: 'General Loan Calculator', icon: '💸', category: 'finance', file: 'General-Loan-Calculator.html', desc: 'General loan payment calculator.' },
+            { id: 'gfr_calc', title: 'GFR Calculator', icon: '🩺', category: 'health', file: 'gfr-calculator.html', desc: 'Uses CKD-EPI (2021) Creatinine Equation.' },
+            { id: 'gpa_calc', title: 'GPA Calculator', icon: '🎓', category: 'education', file: 'GPA-Calculator.html', desc: 'Calculate Grade Point Average.' },
+            { id: 'hex_prism', title: 'Hexagonal Prism', icon: '🧊', category: 'math', file: 'Hexagonal-Prism-Calculator.html', desc: 'Calculate volume/area of hexagonal prism.' },
+            { id: 'hours_calc', title: 'Hours Calculator', icon: '⏱️', category: 'work', file: 'Hours-Calculator.html', desc: 'Calculate duration between two times.' },
+            { id: 'ideal_weight', title: 'Ideal Weight Calculator', icon: '⚖️', category: 'health', file: 'ideal-weight-calculator.html', desc: 'Find your ideal body weight.' },
+            { id: 'inflation_calc', title: 'Inflation Calculator', icon: '📈', category: 'finance', file: 'Inflation-Calculator.html', desc: 'Calculate future value based on inflation.' },
+            { id: 'finance_calc', title: 'Investment Calculator', icon: '💰', category: 'finance', file: 'Investment-Calculator.html', desc: 'Calculate investment ROI.' },
+            { id: 'subnet_calc', title: 'IP Subnet Calculator', icon: '🌐', category: 'internet', file: 'IP-Subnet-Calculator IP.html', desc: 'Calculate IP subnets.' },
+            { id: 'lbm_calc', title: 'Lean Body Mass', icon: '💪', category: 'health', file: 'lean-body-mass-calculator.html', desc: 'Calculate lean body mass.' },
+            { id: 'len_conv', title: 'Length Converter', icon: '📏', category: 'tools', file: 'Length-Converter.html', desc: 'Convert between length units.' },
+            { id: 'love_calc', title: 'Love Compatibility', icon: '💘', category: 'life', file: 'Love-Marriage-Calculator.html', desc: 'Enter names to check compatibility.' },
+            { id: 'macro_calc', title: 'Macro Calculator', icon: '🥗', category: 'health', file: 'macro-calculator.html', desc: 'Calculate macronutrient needs.' },
+            { id: 'uk_mortgage', title: 'UK Mortgage Calculator', icon: '🏠', category: 'finance', file: 'mortgage-calculator-uk.html', desc: 'Mortgage calculator for UK market.' },
+            { id: 'mortgage_calc', title: 'Mortgage Calculator', icon: '🏠', category: 'finance', file: 'Mortgage-Calculator.html', desc: 'Calculate monthly mortgage payments.' },
+            { id: 'base_conv', title: 'Number Base Converter', icon: '01', category: 'dev', file: 'Number-Base-Converter.html', desc: 'Convert binary, decimal, hex, etc.' },
+            { id: 'overweight_calc', title: 'Overweight Calculator', icon: '⚖️', category: 'health', file: 'overweight-calculator.html', desc: 'Check if weight is within healthy range.' },
+            { id: 'ovul_calc', title: 'Ovulation Calculator', icon: '🌸', category: 'health', file: 'Ovulation-Calculator.html', desc: 'Estimate ovulation dates.' },
+            { id: 'pace_calc', title: 'Pace Calculator', icon: '⏱️', category: 'health', file: 'Pace-Calculator.html', desc: 'Calculate running pace.' },
+            { id: 'pwd_gen', title: 'Password Generator', icon: '🔑', category: 'security', file: 'Password-Generator.html', desc: 'Generate strong passwords.' },
+            { id: 'payment_calc', title: 'Payment Calculator', icon: '💳', category: 'finance', file: 'Payment-Calculator.html', desc: 'Calculate monthly payments for loans.' },
+            { id: 'percent_calc', title: 'Percentage Calculator', icon: '％', category: 'math', file: 'Percentage-Calculator.html', desc: 'Calculate percentages.' },
+            { id: 'pers_loan', title: 'Personal Loan', icon: '💳', category: 'finance', file: 'Personal-Loan-Calculator.html', desc: 'Calculate personal loan repayments.' },
+            { id: 'power_conv', title: 'Power Converter', icon: '⚡', category: 'tools', file: 'Power-Converter.html', desc: 'Convert power units.' },
+            { id: 'pregnancy_calc', title: 'Pregnancy Calculator', icon: '👶', category: 'health', file: 'Pregnancy-Calculator.html', desc: 'Estimate due date.' },
+            { id: 'preg_timeline', title: 'Pregnancy Timeline', icon: '📅', category: 'health', file: 'Pregnancy-Timeline.html', desc: 'View pregnancy milestones.' },
+            { id: 'preg_weight', title: 'Pregnancy Weight Gain', icon: '🤰', category: 'health', file: 'pregnancy-weight-gain-calculator.html', desc: 'Track pregnancy weight gain.' },
+            { id: 'pres_conv', title: 'Pressure Converter', icon: '🌪️', category: 'tools', file: 'Pressure-Converter.html', desc: 'Convert pressure units.' },
+            { id: 'prot_calc', title: 'Protein Calculator', icon: '🥩', category: 'health', file: 'protein-calculator.html', desc: 'Estimate daily protein needs.' },
+            { id: 'race_pred', title: 'Race Time Predictor', icon: '🏃', category: 'health', file: 'Race-Time-Predictor.html', desc: 'Predict race finish times.' },
+            { id: 'rng_calc', title: 'Random Number Gen', icon: '🎲', category: 'math', file: 'Random-Number-Generator.html', desc: 'Generate random numbers.' },
+            { id: 'cuboid_calc', title: 'Rectangular Prism', icon: '📦', category: 'math', file: 'Rectangular-Prism-Calculator.html', desc: 'Calculate volume/area of cuboid.' },
+            { id: 'rvb_calc', title: 'Rent vs. Buy', icon: '🏠', category: 'finance', file: 'Rent-vs-Buy-Calculator.html', desc: 'Compare renting vs buying a home.' },
+            { id: 'retirement_calc', title: 'Retirement Calculator', icon: '🌴', category: 'finance', file: 'Retirement-Calculato.html', desc: 'Plan for retirement savings.' },
+            { id: 'ring_calc', title: 'Ring Size Converter', icon: '💍', category: 'tools', file: 'Ring-Size-Converter.html', desc: 'Convert ring sizes.' },
+            { id: 'root_calc', title: 'Square Root Calculator', icon: '√', category: 'math', file: 'Root-Calculator.html', desc: 'Calculate square roots.' },
+            { id: 'roth_calc', title: 'Roth IRA Calculator', icon: '📈', category: 'finance', file: 'Roth-IRA-Calculator.html', desc: 'Calculate Roth IRA growth.' },
+            { id: 'salary_conv', title: 'Salary Converter', icon: '💵', category: 'finance', file: 'Salary-Converter.html', desc: 'Convert hourly/monthly/yearly salary.' },
+            { id: 'salary_tax', title: 'Salary Tax Estimator', icon: '💵', category: 'finance', file: 'Salary-Tax-stimator.html', desc: 'Estimate take-home pay.' },
+            { id: 'tax_calc', title: 'Sales Tax/VAT Calc', icon: '🧾', category: 'finance', file: 'Sales-Tax-VAT-Calculator.html', desc: 'Calculate Sales Tax and VAT.' },
+            { id: 'sci_calc', title: 'Scientific Calculator', icon: '🧮', category: 'math', file: 'Scientific-Calculator.html', desc: 'Advanced scientific calculator.' },
+            { id: 'shopping_calc', title: 'Shopping Calculator', icon: '🛍️', category: 'finance', file: 'Shopping-Calculator.html', desc: 'Calculate final price with tax and discount.' },
+            { id: 'speed_conv', title: 'Speed Converter', icon: '🚀', category: 'tools', file: 'Speed-Converter.html', desc: 'Convert speed units.' },
+            { id: 'sphere_calc', title: 'Sphere Calculator', icon: '⚽', category: 'math', file: 'Sphere-Calculator.html', desc: 'Calculate volume and surface area of sphere.' },
+            { id: 'basic_calc', title: 'Standard Calculator', icon: '🧮', category: 'tools', file: 'Standard-Calculator.html', desc: 'Basic calculator.' },
+            { id: 'std_dev_calc', title: 'Standard Deviation', icon: '📊', category: 'math', file: 'Standard-Deviation-Calculator.html', desc: 'Calculate standard deviation.' },
+            { id: 'student_loan', title: 'Student Loan Calculator', icon: '🎓', category: 'finance', file: 'Student-Loan-Calculator.html', desc: 'Calculate student loan repayment.' },
+            { id: 'sudoku_solver', title: 'Sudoku Solver', icon: '🧩', category: 'game', file: 'Sudoku-Solver.html', desc: 'Solve Sudoku puzzles.' },
+            { id: 'hr_calc', title: 'Target Heart Rate', icon: '❤️', category: 'health', file: 'target-heart-rate-calculator.html', desc: 'Calculate target heart rate zones.' },
+            { id: 'tdee_calc', title: 'TDEE Calculator', icon: '🔥', category: 'health', file: 'tdee-calculator.html', desc: 'Calculate Total Daily Energy Expenditure.' },
+            { id: 'temp_conv', title: 'Temperature Converter', icon: '🌡️', category: 'tools', file: 'Temperature-Converter.html', desc: 'Convert temperature units.' },
+            { id: 'case_conv', title: 'Text Case Converter', icon: 'Aa', category: 'tools', file: 'Text-Case-Converter.html', desc: 'Convert text to UPPER, lower, Title Case.' },
+            { id: 'time_calc', title: 'Time Calculator', icon: '⏰', category: 'date', file: 'Time-Calculator.html', desc: 'Add or subtract time.' },
+            { id: 'time_conv', title: 'Time Converter', icon: '⏳', category: 'tools', file: 'Time-Converter.html', desc: 'Convert time units.' },
+            { id: 'torus_calc', title: 'Torus Calculator', icon: '🍩', category: 'math', file: 'Torus-Calculator.html', desc: 'Calculate volume and area of a torus.' },
+            { id: 'tri_calc', title: 'Triangle Calculator', icon: '📐', category: 'math', file: 'Triangle-Calculator.html', desc: 'Calculate triangle sides and angles.' },
+            { id: 'trig_calc', title: 'Trigonometry Calculator', icon: '📐', category: 'math', file: 'Trigonometry-Calculator.html', desc: 'Calculate Sin, Cos, Tan.' },
+            { id: 'unit_conv', title: 'Unit Converter', icon: '🔄', category: 'tools', file: 'Unit-Converter.html', desc: 'General unit converter.' },
+            { id: 'net_pay_calc', title: 'Universal Net Pay', icon: '💸', category: 'finance', file: 'Universal-Net-Pay-Calculator.html', desc: 'Estimate take-home pay.' },
+            { id: 'unix_conv', title: 'Unix Timestamp', icon: '⏱️', category: 'dev', file: 'Unix-Timestamp-Converter.html', desc: 'Convert Unix timestamps.' },
+            { id: 'va_calc', title: 'VA Mortgage Calc', icon: '🏠', category: 'finance', file: 'VA-Mortgage-Calculator.html', desc: 'Calculate VA loan payments.' },
+            { id: 'vol_conv', title: 'Volume Converter', icon: '🥛', category: 'tools', file: 'Volume-Converter.html', desc: 'Convert volume units.' },
+            { id: 'weight_conv', title: 'Weight Converter', icon: '⚖️', category: 'tools', file: 'Weight-Converter.html', desc: 'Convert weight units.' },
+            { id: 'diet_points', title: 'Diet Points Calculator', icon: '🥗', category: 'health', file: 'weight-watchers-points-calculator.html', desc: 'Calculate food points for diets.' },
+        ];
+
+        // =================================================================
+        // 🚀 系统逻辑
+        // =================================================================
+        const App = {
+            currentLang: 'en', // 默认英语
+            currentCategory: 'all',
+
+            init: () => {
+                App.renderUI();
+                App.renderMenu();
+                App.renderCards('all');
+                document.getElementById('tool-count').innerText = toolsConfig.length;
+                
+                // 搜索监听
+                document.getElementById('search-input').addEventListener('input', (e) => {
+                    App.filterTools(e.target.value);
+                });
+            },
+
+            // 切换语言
+            setLanguage: (lang) => {
+                App.currentLang = lang;
+                App.renderUI();
+                App.renderMenu();
+                App.renderCards(App.currentCategory);
+                document.documentElement.lang = lang;
+            },
+
+            // 更新静态界面文字
+            renderUI: () => {
+                const t = translations[App.currentLang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (t[key]) {
+                        el.innerText = t[key];
+                    }
+                });
+                document.getElementById('search-input').placeholder = t.searchPlaceholder;
+            },
+
+            // 获取分类名称 (带翻译)
+            getCategoryName: (catKey) => {
+                const t = translations[App.currentLang];
+                return t[`cat_${catKey}`] || catKey;
+            },
+
+            // 渲染侧边栏和分类
+            renderMenu: () => {
+                const mobileNav = document.getElementById('mobile-category-nav');
+                const desktopNav = document.getElementById('desktop-category-nav');
+                const menu = document.getElementById('menu-container');
+                const categories = ['all', ...new Set(toolsConfig.map(t => t.category))];
+
+                const t = translations[App.currentLang];
+
+                // 渲染分类按钮 (Mobile)
+                mobileNav.innerHTML = categories.map(cat => `
+                    <button onclick="App.switchCategory('${cat}')" class="${App.currentCategory === cat ? 'bg-primary-50 border-primary-200 text-primary-600' : 'bg-white border-gray-200'} px-3 py-1 text-sm rounded-full border whitespace-nowrap transition">
+                        ${App.getCategoryName(cat)}
+                    </button>
+                `).join('');
+
+                // 渲染分类标签 (Desktop Dashboard)
+                desktopNav.innerHTML = categories.map(cat => `
+                    <button onclick="App.switchCategory('${cat}')" class="${App.currentCategory === cat ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'} px-4 py-1.5 text-sm rounded-full transition shadow-sm">
+                        ${App.getCategoryName(cat)}
+                    </button>
+                `).join('');
+
+                // 渲染侧边栏列表 (Desktop)
+                menu.innerHTML = toolsConfig.map(tool => `
+                    <div class="sidebar-item p-2 rounded-lg text-sm text-gray-600 flex items-center gap-3 cursor-pointer hover:bg-gray-100" 
+                         onclick="App.openTool('${tool.id}')" data-cat="${tool.category}">
+                        <span>${tool.icon}</span>
+                        <span>${tool.title}</span>
+                    </div>
+                `).join('');
+            },
+
+            switchCategory: (cat) => {
+                App.currentCategory = cat;
+                App.renderMenu(); // Re-render to update active state
+                App.renderCards(cat);
+            },
+
+            // 渲染仪表盘卡片
+            renderCards: (filterCat) => {
+                App.goHome(); 
+                const container = document.getElementById('cards-container');
+                const t = translations[App.currentLang];
+                
+                const filtered = filterCat === 'all' 
+                    ? toolsConfig 
+                    : toolsConfig.filter(t => t.category === filterCat);
+
+                if (filtered.length === 0) {
+                    container.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">${t.notFound}</div>`;
+                    return;
+                }
+
+                container.innerHTML = filtered.map(tool => `
+                    <div class="tool-card bg-white p-5 rounded-xl border border-gray-100 cursor-pointer flex flex-col h-full" onclick="App.openTool('${tool.id}')">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="text-3xl bg-gray-50 p-2 rounded-lg">${tool.icon}</span>
+                            <div>
+                                <h3 class="font-bold text-gray-800">${tool.title}</h3>
+                                <span class="text-xs text-primary-500 bg-primary-50 px-2 py-0.5 rounded-full">${App.getCategoryName(tool.category)}</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 flex-1">${tool.desc || ''}</p>
+                        <div class="mt-4 text-xs font-bold text-gray-400 flex justify-between items-center">
+                            <span>${t.openTool}</span>
+                            <span>→</span>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // 打开工具
+            openTool: (id) => {
+                const tool = toolsConfig.find(t => t.id === id);
+                if(!tool) return;
+
+                document.getElementById('dashboard-view').style.display = 'none';
+                const toolView = document.getElementById('tool-view');
+                toolView.style.display = 'block';
+                
+                const iframe = document.getElementById('tool-frame');
+                if (iframe.src.indexOf(tool.file) === -1) {
+                    iframe.src = tool.file;
+                }
+
+                document.getElementById('header-title').innerText = tool.title;
+                document.getElementById('search-input').value = '';
+                
+                // Mobile: Hide header on tool view if needed, or keep it. 
+                // Currently keeping it for the "Back" button.
+            },
+
+            // 返回首页
+            goHome: () => {
+                document.getElementById('tool-view').style.display = 'none';
+                document.getElementById('dashboard-view').style.display = 'block';
+                document.getElementById('tool-frame').src = ''; 
+                const t = translations[App.currentLang];
+                document.getElementById('header-title').innerText = t.home;
+            },
+
+            // 搜索过滤
+            filterTools: (keyword) => {
+                const term = keyword.toLowerCase();
+                const cards = document.querySelectorAll('.tool-card');
+                const items = document.querySelectorAll('.sidebar-item');
+
+                // Filter Logic
+                const filterList = (nodeList) => {
+                    nodeList.forEach(node => {
+                        const text = node.innerText.toLowerCase();
+                        node.style.display = text.includes(term) ? 'flex' : 'none';
+                    });
+                };
+
+                if (document.getElementById('dashboard-view').style.display !== 'none') {
+                    filterList(cards);
+                }
+                filterList(items);
+            },
+
+            // 打开模态框
+            openModal: (type) => {
+                const modal = document.getElementById('info-modal');
+                const title = document.getElementById('modal-title');
+                const body = document.getElementById('modal-body');
+                const t = translations[App.currentLang];
+                const content = legalContent[type];
+
+                // Set Title (using the footer translation keys)
+                const titleKey = 'footer' + type.charAt(0).toUpperCase() + type.slice(1);
+                title.innerText = t[titleKey] || type.toUpperCase();
+
+                // Set Body (try to find lang specific content, fallback to en)
+                body.innerText = content[App.currentLang] || content['en'];
+
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                document.body.classList.add('modal-active');
+            },
+
+            // 关闭模态框
+            closeModal: () => {
+                const modal = document.getElementById('info-modal');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                document.body.classList.remove('modal-active');
+            }
+        };
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', App.init);
+    </script>
+</body>
+</html>
