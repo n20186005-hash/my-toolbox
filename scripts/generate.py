@@ -13,7 +13,9 @@ if not os.path.exists(DETAILS_DIR):
 
 tools_list = []
 
+print("-" * 50)
 print(f"开始扫描 {MODULES_DIR} 目录...")
+print("-" * 50)
 
 # 遍历 modules 目录
 for filename in os.listdir(MODULES_DIR):
@@ -25,7 +27,8 @@ for filename in os.listdir(MODULES_DIR):
             
             # 使用正则提取元数据 (比BeautifulSoup更轻量，不需要安装依赖)
             def get_meta(name):
-                match = re.search(r'<meta\s+name=["\']' + name + r'["\']\s+content=["\'](.*?)["\']', content, re.IGNORECASE)
+                # 兼容双引号和单引号
+                match = re.search(r'<meta\s+name=[\"\']' + name + r'[\"\']\s+content=[\"\'](.*?)[\"\']', content, re.IGNORECASE)
                 return match.group(1) if match else ""
 
             def get_title():
@@ -34,26 +37,24 @@ for filename in os.listdir(MODULES_DIR):
 
             # 提取数据
             t_id = get_meta('tool-id') or filename.replace('.html', '')
-            t_cat = get_meta('category') or 'tools'
+            t_cat = get_meta('category') or 'other'
             t_icon = get_meta('icon') or '🔧'
-            t_desc = get_meta('description') or 'No description available.'
+            t_desc = get_meta('description') or '暂无描述'
             t_title = get_title()
 
-            # 生成工具对象
-            tool_obj = {
+            tool = {
                 "id": t_id,
                 "title": t_title,
                 "icon": t_icon,
                 "category": t_cat,
-                "file": f"{MODULES_DIR}/{filename}", # 指向 modules 目录
+                "file": filename,
                 "desc": t_desc,
-                "detail_page": f"{DETAILS_DIR}/{t_id}.html" # 指向详情页
+                "detail_page": f"details/{t_id}.html"
             }
             
-            tools_list.append(tool_obj)
+            tools_list.append(tool)
             
-            # === 实现目标 3：自动生成详情介绍页 ===
-            # 这里生成一个简单的静态 HTML 介绍页
+            # --- 生成工具详情页 HTML (不包含任何功能限制) ---
             detail_html = f"""
             <!DOCTYPE html>
             <html lang="en">
@@ -63,9 +64,9 @@ for filename in os.listdir(MODULES_DIR):
                 <title>{t_title} - Details</title>
                 <script src="https://cdn.tailwindcss.com"></script>
             </head>
-            <body class="bg-gray-50 text-gray-800 p-8">
-                <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow">
-                    <a href="../index.html" class="text-blue-500 mb-4 inline-block">&larr; Back to Tools</a>
+            <body class="bg-gray-50 p-8">
+                <div class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+                    <a href="../index.html" class="text-blue-600 hover:underline mb-4 block">&larr; Back to Tools</a>
                     <h1 class="text-3xl font-bold mb-2">{t_icon} {t_title}</h1>
                     <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">{t_cat}</span>
                     
@@ -94,8 +95,16 @@ for filename in os.listdir(MODULES_DIR):
             with open(os.path.join(DETAILS_DIR, f"{t_id}.html"), 'w', encoding='utf-8') as df:
                 df.write(detail_html)
 
+print("-" * 50)
+print(f"扫描完成。发现 {len(tools_list)} 个工具。")
+print("-" * 50)
+
+# ！！重要检查！！：如果在这里发现列表被切片（例如 tools_list = tools_list[:100]），请删除该行代码。
+# 确保写入 JSON 的是完整的 tools_list。
+
 # 写入 tools.json
 with open(OUTPUT_JSON, 'w', encoding='utf-8') as f:
-    json.dump(tools_list, f, ensure_ascii=False, indent=4)
+    # 确保写入的是完整的 tools_list
+    json.dump(tools_list, f, indent=4, ensure_ascii=False)
 
-print(f"成功处理 {len(tools_list)} 个工具，tools.json 已更新。")
+print(f"成功将 {len(tools_list)} 个工具写入 {OUTPUT_JSON}。")
