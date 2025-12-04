@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>工具箱配置生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .json-output { font-family: 'Menlo', 'Monaco', 'Courier New', monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8 h-screen flex flex-col">
+
+    <div class="max-w-5xl mx-auto w-full flex-1 flex flex-col">
+        <div class="bg-white p-6 rounded-xl shadow-md mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">🛠️ 自动化配置生成器</h1>
+            <p class="text-gray-600 mb-4">请点击下方按钮，批量选择您的所有模块 HTML 文件（例如：ovulation-calculator.html 等）。系统将自动解析文件内容并生成 `index.html` 所需的配置代码。</p>
+            
+            <div class="flex gap-4 items-center">
+                <!-- 文件选择器 -->
+                <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold transition shadow-lg flex items-center gap-2">
+                    <span>📂 选择模块文件 (可多选)</span>
+                    <input type="file" id="fileInput" multiple accept=".html" class="hidden">
+                </label>
+                <span id="status" class="text-gray-500 font-medium">等待选择文件...</span>
+            </div>
+        </div>
+
+        <div class="flex-1 bg-gray-900 rounded-xl shadow-inner p-4 overflow-hidden flex flex-col relative border border-gray-700">
+            <div class="flex justify-between items-center mb-2 pb-2 border-b border-gray-700">
+                <span class="text-gray-400 text-sm">生成的配置代码 (Tools Config)</span>
+                <button onclick="copyCode()" class="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded transition">复制代码</button>
+            </div>
+            <textarea id="output" class="flex-1 w-full h-full bg-transparent text-green-400 text-sm font-mono outline-none resize-none p-2" readonly>// 请选择文件生成配置...</textarea>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            const status = document.getElementById('status');
+            const output = document.getElementById('output');
+            
+            if (files.length === 0) return;
+
+            status.innerText = `正在处理 ${files.length} 个文件...`;
+            
+            const configs = [];
+
+            // 按照文件名排序，保证生成顺序固定
+            files.sort((a, b) => a.name.localeCompare(b.name));
+
+            for (const file of files) {
+                // 跳过 index.html, A.html 或这个生成器本身
+                if (file.name === 'index.html' || file.name === 'A.html' || file.name === 'config-generator.html') continue;
+
+                const text = await readFile(file);
+                const info = parseHtml(text, file.name);
+                if (info) {
+                    configs.push(info);
+                }
+            }
+
+            // 生成代码字符串
+            const jsonString = generateJsCode(configs);
+            output.value = jsonString;
+            status.innerText = `✅ 成功解析 ${configs.length} 个模块！`;
+        });
+
+        function readFile(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsText(file);
+            });
+        }
+
+        function parseHtml(html, filename) {
+            // 1. 提取 tool-module div 中的 data 属性
+            // 正则匹配: <div class="tool-module ... data-id="xxx" ... >
+            const divMatch = html.match(/<div[^>]*class=["'][^"']*tool-module[^"']*["'][^>]*>/i);
+            
+            if (!divMatch) return null; // 不是有效的模块文件
+            
+            const tag = divMatch[0];
+            
+            const getId = (attr) => {
+                const match = tag.match(new RegExp(`${attr}=["']([^"']+)["']`));
+                return match ? match[1] : '';
+            };
+
+            const id = getId('data-id');
+            const title = getId('data-title');
+            const category = getId('data-category') || 'tools';
+            const icon = getId('data-icon') || '🔧';
+
+            // 2. 提取描述 (从 JS 的 i18n 'en' 部分提取 desc)
+            // 匹配: desc: 'Some text',
+            let desc = '';
+            const descMatch = html.match(/desc:\s*['"]([^'"]+)['"]/);
+            if (descMatch) {
+                desc = descMatch[1];
+            } else {
+                // 备用：尝试从 HTML 标签中提取 data-i18n="desc"
+                const htmlDescMatch = html.match(/<[^>]+data-i18n=["']desc["'][^>]*>([^<]+)</);
+                if (htmlDescMatch) desc = htmlDescMatch[1];
+            }
+
+            return {
+                id,
+                title,
+                icon,
+                category,
+                file: filename,
+                desc
+            };
+        }
+
+        function generateJsCode(configs) {
+            let code = "const toolsConfig = [\n";
+            
+            configs.forEach(tool => {
+                code += `    { 
+        id: '${tool.id}', 
+        title: '${tool.title}', 
+        icon: '${tool.icon}', 
+        category: '${tool.category}', 
+        file: '${tool.file}', 
+        desc: '${tool.desc.replace(/'/g, "\\'")}' 
+    },\n`;
+            });
+
+            code += "];";
+            return code;
+        }
+
+        function copyCode() {
+            const copyText = document.getElementById("output");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                alert("配置代码已复制！请粘贴到 index.html 的 toolsConfig 变量中。");
+            });
+        }
+    </script>
+</body>
+</html>

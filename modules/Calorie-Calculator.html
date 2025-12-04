@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Calorie Calculator Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="calorie_calc" 
+         data-category="health" 
+         data-title="Calorie Calculator" 
+         data-icon="🔥">
+        
+        <div class="absolute top-4 right-4">
+            <select id="cc-lang" onchange="CalorieCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔥 Calorie Calculator</h2>
+
+        <!-- Unit Toggle -->
+        <div class="flex justify-center mb-4 bg-gray-100 p-1 rounded-lg w-max mx-auto">
+            <button class="px-3 py-1 text-sm rounded-md bg-white shadow text-green-600 font-medium transition" id="btn-metric" onclick="CalorieCalc.setUnit('metric')">Metric</button>
+            <button class="px-3 py-1 text-sm rounded-md text-gray-500 hover:text-green-600 transition" id="btn-imperial" onclick="CalorieCalc.setUnit('imperial')">US Units</button>
+        </div>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="age">Age</label>
+                    <input type="number" id="cc-age" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="25">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gender">Gender</label>
+                    <select id="cc-gender" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none bg-white">
+                        <option value="male" data-i18n="gen_male">Male</option>
+                        <option value="female" data-i18n="gen_female">Female</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Height / Weight Inputs (Dynamic) -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-height">Height (cm)</label>
+                    <div class="flex gap-2">
+                         <input type="number" id="cc-height" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="175">
+                         <input type="number" id="cc-height-ft" class="hidden w-1/2 p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="ft">
+                         <input type="number" id="cc-height-in" class="hidden w-1/2 p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="in">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-weight">Weight (kg)</label>
+                    <input type="number" id="cc-weight" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="70">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="activity">Activity Level</label>
+                <select id="cc-activity" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none bg-white">
+                    <option value="1.2" data-i18n="act_sedentary">Sedentary (little or no exercise)</option>
+                    <option value="1.375" data-i18n="act_light">Light (exercise 1-3 times/week)</option>
+                    <option value="1.55" data-i18n="act_moderate">Moderate (exercise 4-5 times/week)</option>
+                    <option value="1.725" data-i18n="act_active">Active (daily exercise/intense 3-4)</option>
+                    <option value="1.9" data-i18n="act_very">Very Active (intense exercise daily)</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="CalorieCalc.calc()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Calories</button>
+
+        <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600" data-i18n="res_maintain">Maintain Weight</span>
+                <div class="text-right">
+                    <div id="cc-result-main" class="text-2xl font-bold text-green-700">--</div>
+                    <div class="text-xs text-gray-500">kcal / day</div>
+                </div>
+            </div>
+            <div class="space-y-2 mt-4 pt-3 border-t border-green-200">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-600" data-i18n="res_mild_loss">Mild Weight Loss (0.25kg/w)</span>
+                    <span id="cc-result-loss1" class="font-semibold text-gray-800">--</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-600" data-i18n="res_loss">Weight Loss (0.5kg/w)</span>
+                    <span id="cc-result-loss2" class="font-semibold text-gray-800">--</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-600" data-i18n="res_extreme">Extreme Loss (1kg/w)</span>
+                    <span id="cc-result-loss3" class="font-semibold text-red-600">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CalorieCalc = {
+            unit: 'metric', // metric or imperial
+            i18n: {
+                'en': {
+                    title: '🔥 Calorie Calculator',
+                    age: 'Age',
+                    gender: 'Gender',
+                    gen_male: 'Male',
+                    gen_female: 'Female',
+                    activity: 'Activity Level',
+                    act_sedentary: 'Sedentary (office job)',
+                    act_light: 'Light Exercise (1-3 days/wk)',
+                    act_moderate: 'Moderate Exercise (4-5 days/wk)',
+                    act_active: 'Active (daily exercise)',
+                    act_very: 'Very Active (physical job)',
+                    btn_calc: 'Calculate',
+                    res_maintain: 'Maintenance',
+                    res_mild_loss: 'Mild Loss (-0.25kg/wk)',
+                    res_loss: 'Weight Loss (-0.5kg/wk)',
+                    res_extreme: 'Extreme Loss (-1kg/wk)'
+                },
+                'zh-CN': {
+                    title: '🔥 卡路里计算器',
+                    age: '年龄',
+                    gender: '性别',
+                    gen_male: '男性',
+                    gen_female: '女性',
+                    activity: '活动强度',
+                    act_sedentary: '久坐 (办公室工作)',
+                    act_light: '轻度运动 (每周1-3次)',
+                    act_moderate: '中度运动 (每周4-5次)',
+                    act_active: '活跃 (每天运动)',
+                    act_very: '非常活跃 (体力工作)',
+                    btn_calc: '计算',
+                    res_maintain: '维持体重',
+                    res_mild_loss: '轻度减重 (-0.25kg/周)',
+                    res_loss: '减重 (-0.5kg/周)',
+                    res_extreme: '快速减重 (-1kg/周)'
+                },
+                'zh-TW': {
+                    title: '🔥 卡路里計算器',
+                    age: '年齡',
+                    gender: '性別',
+                    gen_male: '男性',
+                    gen_female: '女性',
+                    activity: '活動強度',
+                    act_sedentary: '久坐 (辦公室工作)',
+                    act_light: '輕度運動 (每週1-3次)',
+                    act_moderate: '中度運動 (每週4-5次)',
+                    act_active: '活躍 (每天運動)',
+                    act_very: '非常活躍 (體力工作)',
+                    btn_calc: '計算',
+                    res_maintain: '維持體重',
+                    res_mild_loss: '輕度減重 (-0.25kg/週)',
+                    res_loss: '減重 (-0.5kg/週)',
+                    res_extreme: '快速減重 (-1kg/週)'
+                },
+                'ja': {
+                    title: '🔥 カロリー計算',
+                    age: '年齢',
+                    gender: '性別',
+                    gen_male: '男性',
+                    gen_female: '女性',
+                    activity: '活動レベル',
+                    act_sedentary: '座り仕事 (運動なし)',
+                    act_light: '軽い運動 (週1-3回)',
+                    act_moderate: '中程度の運動 (週4-5回)',
+                    act_active: '活発 (毎日運動)',
+                    act_very: '非常に活発 (肉体労働)',
+                    btn_calc: '計算する',
+                    res_maintain: '体重維持',
+                    res_mild_loss: '緩やかな減量',
+                    res_loss: '減量',
+                    res_extreme: 'ハードな減量'
+                },
+                'ru': {
+                    title: '🔥 Калькулятор калорий',
+                    age: 'Возраст',
+                    gender: 'Пол',
+                    gen_male: 'Мужской',
+                    gen_female: 'Женский',
+                    activity: 'Активность',
+                    act_sedentary: 'Сидячий образ жизни',
+                    act_light: 'Лёгкая (1-3 раза/нед)',
+                    act_moderate: 'Средняя (4-5 раз/нед)',
+                    act_active: 'Высокая (спорт каждый день)',
+                    act_very: 'Экстремальная (тяж. работа)',
+                    btn_calc: 'Рассчитать',
+                    res_maintain: 'Поддержание веса',
+                    res_mild_loss: 'Лёгкое похудение',
+                    res_loss: 'Похудение',
+                    res_extreme: 'Быстрое похудение'
+                },
+                'es': {
+                    title: '🔥 Calculadora de Calorías',
+                    age: 'Edad',
+                    gender: 'Género',
+                    gen_male: 'Hombre',
+                    gen_female: 'Mujer',
+                    activity: 'Nivel de Actividad',
+                    act_sedentary: 'Sedentario',
+                    act_light: 'Ligero (1-3 días/sem)',
+                    act_moderate: 'Moderado (4-5 días/sem)',
+                    act_active: 'Activo (Diario)',
+                    act_very: 'Muy Activo',
+                    btn_calc: 'Calcular',
+                    res_maintain: 'Mantener Peso',
+                    res_mild_loss: 'Pérdida Leve',
+                    res_loss: 'Pérdida de Peso',
+                    res_extreme: 'Pérdida Extrema'
+                }
+            },
+
+            setUnit: (u) => {
+                CalorieCalc.unit = u;
+                const isMetric = u === 'metric';
+                
+                // Toggle Buttons Style
+                const btnM = document.getElementById('btn-metric');
+                const btnI = document.getElementById('btn-imperial');
+                if (isMetric) {
+                    btnM.className = "px-3 py-1 text-sm rounded-md bg-white shadow text-green-600 font-medium transition";
+                    btnI.className = "px-3 py-1 text-sm rounded-md text-gray-500 hover:text-green-600 transition";
+                } else {
+                    btnI.className = "px-3 py-1 text-sm rounded-md bg-white shadow text-green-600 font-medium transition";
+                    btnM.className = "px-3 py-1 text-sm rounded-md text-gray-500 hover:text-green-600 transition";
+                }
+
+                // Toggle Inputs
+                if (isMetric) {
+                    document.getElementById('cc-height').classList.remove('hidden');
+                    document.getElementById('cc-height-ft').classList.add('hidden');
+                    document.getElementById('cc-height-in').classList.add('hidden');
+                    document.getElementById('lbl-height').innerText = 'Height (cm)';
+                    document.getElementById('lbl-weight').innerText = 'Weight (kg)';
+                } else {
+                    document.getElementById('cc-height').classList.add('hidden');
+                    document.getElementById('cc-height-ft').classList.remove('hidden');
+                    document.getElementById('cc-height-in').classList.remove('hidden');
+                    document.getElementById('lbl-height').innerText = 'Height (ft/in)';
+                    document.getElementById('lbl-weight').innerText = 'Weight (lbs)';
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('cc-lang').value;
+                const texts = CalorieCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="calorie_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                // Update select options manually
+                const opts = document.querySelectorAll('#cc-activity option, #cc-gender option');
+                opts.forEach(op => {
+                    const key = op.getAttribute('data-i18n');
+                    if(texts[key]) op.text = texts[key];
+                });
+            },
+
+            calc: () => {
+                const age = parseFloat(document.getElementById('cc-age').value);
+                const gender = document.getElementById('cc-gender').value;
+                const activity = parseFloat(document.getElementById('cc-activity').value);
+                
+                let weight = parseFloat(document.getElementById('cc-weight').value);
+                let height = 0;
+
+                if (CalorieCalc.unit === 'metric') {
+                    height = parseFloat(document.getElementById('cc-height').value);
+                } else {
+                    const ft = parseFloat(document.getElementById('cc-height-ft').value) || 0;
+                    const inc = parseFloat(document.getElementById('cc-height-in').value) || 0;
+                    height = (ft * 30.48) + (inc * 2.54);
+                    weight = weight * 0.453592; // lbs to kg
+                }
+
+                if (!age || !weight || !height) return;
+
+                // Mifflin-St Jeor Equation
+                let bmr = (10 * weight) + (6.25 * height) - (5 * age);
+                if (gender === 'male') {
+                    bmr += 5;
+                } else {
+                    bmr -= 161;
+                }
+
+                const tdee = Math.round(bmr * activity);
+
+                document.getElementById('cc-result-main').innerText = tdee;
+                
+                // Imperial weight loss is approx 0.5lb and 1lb
+                // 1lb fat ~ 3500 kcal. 
+                // Mild (0.25kg / 0.5lb) -> -250 kcal
+                // Normal (0.5kg / 1lb) -> -500 kcal
+                // Extreme (1kg / 2lb) -> -1000 kcal
+
+                document.getElementById('cc-result-loss1').innerText = (tdee - 250) + " kcal";
+                document.getElementById('cc-result-loss2').innerText = (tdee - 500) + " kcal";
+                
+                const extreme = tdee - 1000;
+                document.getElementById('cc-result-loss3').innerText = (extreme < 1200 ? "< 1200 (Dangerous)" : extreme + " kcal");
+            }
+        };
+    </script>
+</body>
+</html>
