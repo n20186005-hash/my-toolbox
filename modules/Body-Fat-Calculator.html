@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Body Fat Calculator Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f4ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="bf_calc" 
+         data-category="health" 
+         data-title="Body Fat Calculator" 
+         data-icon="⚖️">
+        
+        <div class="absolute top-4 right-4">
+            <select id="bfc-lang" onchange="BodyFatCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">⚖️ Body Fat Calculator</h2>
+
+        <div class="flex justify-center mb-4 bg-gray-100 p-1 rounded-lg w-max mx-auto">
+            <button class="px-3 py-1 text-sm rounded-md bg-white shadow text-blue-600 font-medium transition" id="bfc-btn-metric" onclick="BodyFatCalc.setUnit('metric')">Metric</button>
+            <button class="px-3 py-1 text-sm rounded-md text-gray-500 hover:text-blue-600 transition" id="bfc-btn-imperial" onclick="BodyFatCalc.setUnit('imperial')">US Units</button>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gender">Gender</label>
+                    <select id="bfc-gender" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white" onchange="BodyFatCalc.uiUpdate()">
+                        <option value="male" data-i18n="gen_male">Male</option>
+                        <option value="female" data-i18n="gen_female">Female</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="age">Age</label>
+                    <input type="number" id="bfc-age" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="30">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" id="bfc-lbl-height">Height (cm)</label>
+                    <input type="number" id="bfc-height" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="175">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" id="bfc-lbl-weight">Weight (kg)</label>
+                    <input type="number" id="bfc-weight" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="70">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" id="bfc-lbl-neck">Neck (cm)</label>
+                    <input type="number" id="bfc-neck" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="38">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" id="bfc-lbl-waist">Waist (cm)</label>
+                    <input type="number" id="bfc-waist" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="85">
+                </div>
+            </div>
+
+            <div id="bfc-hip-box" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1" id="bfc-lbl-hip">Hip (cm)</label>
+                <input type="number" id="bfc-hip" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="95">
+            </div>
+        </div>
+
+        <button onclick="BodyFatCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Body Fat</button>
+
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div class="text-center mb-4">
+                <div class="text-gray-600 text-sm mb-1" data-i18n="res_fat">Body Fat Percentage</div>
+                <div id="bfc-result-pct" class="text-4xl font-bold text-blue-700">--%</div>
+                <div id="bfc-result-cat" class="text-sm font-medium text-blue-500 mt-1"></div>
+            </div>
+            
+            <div class="flex justify-between items-center text-sm pt-3 border-t border-blue-200">
+                <span class="text-gray-500" data-i18n="res_mass">Fat Mass</span>
+                <span id="bfc-result-mass" class="font-semibold text-gray-800">--</span>
+            </div>
+            <div class="flex justify-between items-center text-sm mt-2">
+                <span class="text-gray-500" data-i18n="res_lean">Lean Mass</span>
+                <span id="bfc-result-lean" class="font-semibold text-gray-800">--</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BodyFatCalc = {
+            unit: 'metric',
+            i18n: {
+                'en': {
+                    title: '⚖️ Body Fat Calculator',
+                    gender: 'Gender',
+                    gen_male: 'Male',
+                    gen_female: 'Female',
+                    age: 'Age',
+                    btn_calc: 'Calculate Body Fat',
+                    res_fat: 'Body Fat Percentage',
+                    res_mass: 'Fat Mass',
+                    res_lean: 'Lean Mass',
+                    cat_essential: 'Essential Fat',
+                    cat_athletes: 'Athletes',
+                    cat_fitness: 'Fitness',
+                    cat_avg: 'Average',
+                    cat_obese: 'Obese'
+                },
+                'zh-CN': {
+                    title: '⚖️ 体脂率计算器',
+                    gender: '性别',
+                    gen_male: '男性',
+                    gen_female: '女性',
+                    age: '年龄',
+                    btn_calc: '计算体脂率',
+                    res_fat: '体脂百分比',
+                    res_mass: '脂肪重量',
+                    res_lean: '瘦体重 (去脂体重)',
+                    cat_essential: '必需脂肪',
+                    cat_athletes: '运动员',
+                    cat_fitness: '健康健身',
+                    cat_avg: '平均水平',
+                    cat_obese: '肥胖'
+                },
+                'zh-TW': {
+                    title: '⚖️ 體脂率計算器',
+                    gender: '性別',
+                    gen_male: '男性',
+                    gen_female: '女性',
+                    age: '年齡',
+                    btn_calc: '計算體脂率',
+                    res_fat: '體脂百分比',
+                    res_mass: '脂肪重量',
+                    res_lean: '瘦體重 (去脂體重)',
+                    cat_essential: '必需脂肪',
+                    cat_athletes: '運動員',
+                    cat_fitness: '健康健身',
+                    cat_avg: '平均水平',
+                    cat_obese: '肥胖'
+                },
+                'ja': {
+                    title: '⚖️ 体脂肪率計算',
+                    gender: '性別',
+                    gen_male: '男性',
+                    gen_female: '女性',
+                    age: '年齢',
+                    btn_calc: '計算する',
+                    res_fat: '体脂肪率',
+                    res_mass: '体脂肪量',
+                    res_lean: '除脂肪体重',
+                    cat_essential: '必須脂肪',
+                    cat_athletes: 'アスリート',
+                    cat_fitness: 'フィットネス',
+                    cat_avg: '平均',
+                    cat_obese: '肥満'
+                },
+                'ru': {
+                    title: '⚖️ Калькулятор жира',
+                    gender: 'Пол',
+                    gen_male: 'Мужской',
+                    gen_female: 'Женский',
+                    age: 'Возраст',
+                    btn_calc: 'Рассчитать',
+                    res_fat: 'Процент жира',
+                    res_mass: 'Масса жира',
+                    res_lean: 'Сухая масса',
+                    cat_essential: 'Минимальный жир',
+                    cat_athletes: 'Атлетичный',
+                    cat_fitness: 'Фитнес',
+                    cat_avg: 'Средний',
+                    cat_obese: 'Ожирение'
+                },
+                'es': {
+                    title: '⚖️ Grasa Corporal',
+                    gender: 'Género',
+                    gen_male: 'Hombre',
+                    gen_female: 'Mujer',
+                    age: 'Edad',
+                    btn_calc: 'Calcular',
+                    res_fat: 'Porcentaje de Grasa',
+                    res_mass: 'Masa Grasa',
+                    res_lean: 'Masa Magra',
+                    cat_essential: 'Grasa Esencial',
+                    cat_athletes: 'Atletas',
+                    cat_fitness: 'Fitness',
+                    cat_avg: 'Promedio',
+                    cat_obese: 'Obeso'
+                }
+            },
+
+            setUnit: (u) => {
+                BodyFatCalc.unit = u;
+                const isM = u === 'metric';
+                const s = (id, txt) => document.getElementById(id).innerText = txt;
+                
+                s('bfc-lbl-height', isM ? 'Height (cm)' : 'Height (in)');
+                s('bfc-lbl-weight', isM ? 'Weight (kg)' : 'Weight (lbs)');
+                s('bfc-lbl-neck', isM ? 'Neck (cm)' : 'Neck (in)');
+                s('bfc-lbl-waist', isM ? 'Waist (cm)' : 'Waist (in)');
+                s('bfc-lbl-hip', isM ? 'Hip (cm)' : 'Hip (in)');
+
+                const btnM = document.getElementById('bfc-btn-metric');
+                const btnI = document.getElementById('bfc-btn-imperial');
+                
+                btnM.className = isM ? "px-3 py-1 text-sm rounded-md bg-white shadow text-blue-600 font-medium transition" : "px-3 py-1 text-sm rounded-md text-gray-500 hover:text-blue-600 transition";
+                btnI.className = !isM ? "px-3 py-1 text-sm rounded-md bg-white shadow text-blue-600 font-medium transition" : "px-3 py-1 text-sm rounded-md text-gray-500 hover:text-blue-600 transition";
+            },
+
+            uiUpdate: () => {
+                const gender = document.getElementById('bfc-gender').value;
+                const hipBox = document.getElementById('bfc-hip-box');
+                hipBox.style.display = (gender === 'female') ? 'block' : 'none';
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('bfc-lang').value;
+                const texts = BodyFatCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="bf_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                const opts = document.querySelectorAll('#bfc-gender option');
+                opts.forEach(op => {
+                    const key = op.getAttribute('data-i18n');
+                    if(texts[key]) op.text = texts[key];
+                });
+            },
+
+            calc: () => {
+                const gender = document.getElementById('bfc-gender').value;
+                let h = parseFloat(document.getElementById('bfc-height').value);
+                let w = parseFloat(document.getElementById('bfc-weight').value);
+                let neck = parseFloat(document.getElementById('bfc-neck').value);
+                let waist = parseFloat(document.getElementById('bfc-waist').value);
+                let hip = parseFloat(document.getElementById('bfc-hip').value);
+
+                if (!h || !w || !neck || !waist) return;
+                if (gender === 'female' && !hip) return;
+
+                // Navy Method requires Metric inputs for formula usually, 
+                // or specific formulas for Imperial.
+                // Standard formula uses cm. So convert if imperial.
+                
+                if (BodyFatCalc.unit === 'imperial') {
+                    h = h * 2.54;
+                    w = w * 0.453592; // for mass calc later
+                    neck = neck * 2.54;
+                    waist = waist * 2.54;
+                    hip = hip * 2.54;
+                }
+
+                let bf = 0;
+
+                // US Navy Formula
+                if (gender === 'male') {
+                    // 495 / (1.0324 - 0.19077 * log10(waist - neck) + 0.15456 * log10(height)) - 450
+                    bf = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(h)) - 450;
+                } else {
+                    // 495 / (1.29579 - 0.35004 * log10(waist + hip - neck) + 0.22100 * log10(height)) - 450
+                    bf = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(h)) - 450;
+                }
+
+                if (bf < 0) bf = 0;
+                
+                const fatMass = w * (bf / 100);
+                const leanMass = w - fatMass;
+
+                const lang = document.getElementById('bfc-lang').value;
+                const unitTxt = BodyFatCalc.unit === 'metric' ? 'kg' : 'lbs';
+                
+                // Convert back weight for display if needed? 
+                // Wait, if input was lbs, w is now kg. We should display in original unit.
+                // Actually easier to just use the calculated % to multiply against original input weight value for mass.
+                const origW = parseFloat(document.getElementById('bfc-weight').value);
+                const dispFat = origW * (bf / 100);
+                const dispLean = origW - dispFat;
+
+                document.getElementById('bfc-result-pct').innerText = bf.toFixed(1) + "%";
+                document.getElementById('bfc-result-mass').innerText = dispFat.toFixed(1) + " " + unitTxt;
+                document.getElementById('bfc-result-lean').innerText = dispLean.toFixed(1) + " " + unitTxt;
+
+                // Categories
+                const texts = BodyFatCalc.i18n[lang];
+                let cat = "";
+                if (gender === 'male') {
+                    if (bf < 6) cat = texts.cat_essential;
+                    else if (bf < 14) cat = texts.cat_athletes;
+                    else if (bf < 18) cat = texts.cat_fitness;
+                    else if (bf < 25) cat = texts.cat_avg;
+                    else cat = texts.cat_obese;
+                } else {
+                    if (bf < 14) cat = texts.cat_essential;
+                    else if (bf < 21) cat = texts.cat_athletes;
+                    else if (bf < 25) cat = texts.cat_fitness;
+                    else if (bf < 32) cat = texts.cat_avg;
+                    else cat = texts.cat_obese;
+                }
+                document.getElementById('bfc-result-cat').innerText = cat;
+            }
+        };
+        
+        // init
+        BodyFatCalc.uiUpdate();
+    </script>
+</body>
+</html>

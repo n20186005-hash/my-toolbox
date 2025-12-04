@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BAC Calculator Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #eff6ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="bac_calc" 
+         data-category="health" 
+         data-title="BAC Calculator" 
+         data-icon="🍺">
+        
+        <div class="absolute top-4 right-4">
+            <select id="bc-lang" onchange="BACCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🍺 BAC Calculator</h2>
+        
+        <p class="text-xs text-gray-400 mb-4" data-i18n="desc">Estimate Blood Alcohol Content (Widmark Formula).</p>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1" data-i18n="lbl_gender">Gender</label>
+                <select id="bc-gender" class="w-full p-2 border rounded bg-white text-sm">
+                    <option value="m" data-i18n="g_male">Male</option>
+                    <option value="f" data-i18n="g_female">Female</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1" id="lbl-weight">Weight (kg)</label>
+                <div class="flex gap-2">
+                    <input type="number" id="bc-weight" class="flex-1 p-2 border rounded focus:ring-1 focus:ring-blue-500 outline-none" placeholder="70" value="70">
+                    <button onclick="BACCalc.toggleUnit()" id="bc-unit-btn" class="px-2 bg-gray-100 rounded text-xs font-bold text-gray-600 border">KG</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 p-3 rounded mb-4">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-bold text-gray-700" data-i18n="lbl_drinks">Drinks Consumed</span>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-2 text-center text-xs text-gray-600">
+                <div>
+                    <div class="font-bold">Beer (5%)</div>
+                    <div>350ml / 12oz</div>
+                    <input type="number" id="bc-beer" class="w-full mt-1 p-1 border rounded text-center" placeholder="0">
+                </div>
+                <div>
+                    <div class="font-bold">Wine (12%)</div>
+                    <div>150ml / 5oz</div>
+                    <input type="number" id="bc-wine" class="w-full mt-1 p-1 border rounded text-center" placeholder="0">
+                </div>
+                <div>
+                    <div class="font-bold">Shot (40%)</div>
+                    <div>45ml / 1.5oz</div>
+                    <input type="number" id="bc-shot" class="w-full mt-1 p-1 border rounded text-center" placeholder="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-xs text-gray-500 mb-1" data-i18n="lbl_time">Time Since First Drink</label>
+            <div class="flex items-center">
+                <input type="range" id="bc-time" min="0" max="12" step="0.5" value="1" class="flex-1 mr-3 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="BACCalc.updateTime(this.value)">
+                <span id="bc-time-val" class="text-blue-700 font-bold w-16 text-right">1 hr</span>
+            </div>
+        </div>
+
+        <button onclick="BACCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate BAC</button>
+
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 text-center">
+            <span class="text-gray-500 text-xs block mb-1" data-i18n="res_bac">Estimated BAC %</span>
+            <div id="bc-result" class="text-3xl font-bold text-gray-800">-- %</div>
+            <div id="bc-status" class="text-sm font-bold mt-2"></div>
+        </div>
+    </div>
+
+    <script>
+        const BACCalc = {
+            unit: 'kg',
+            i18n: {
+                'en': {
+                    title: '🍺 BAC Calculator',
+                    desc: 'Estimate Blood Alcohol Content (Widmark Formula).',
+                    lbl_gender: 'Gender', g_male: 'Male', g_female: 'Female',
+                    lbl_weight: 'Weight', lbl_drinks: 'Drinks Consumed',
+                    lbl_time: 'Time Since First Drink',
+                    btn_calc: 'Calculate BAC',
+                    res_bac: 'Estimated BAC %',
+                    st_safe: 'Likely Safe (Low)', st_warn: 'Impairment Possible', st_danger: 'Legally Intoxicated (Danger)',
+                    txt_hr: 'hr'
+                },
+                'zh-CN': {
+                    title: '🍺 血液酒精浓度计算',
+                    desc: '基于 Widmark 公式估算 BAC。',
+                    lbl_gender: '性别', g_male: '男性', g_female: '女性',
+                    lbl_weight: '体重', lbl_drinks: '饮酒量',
+                    lbl_time: '距第一杯酒的时间',
+                    btn_calc: '计算 BAC',
+                    res_bac: '估算酒精浓度 %',
+                    st_safe: '安全范围 (低)', st_warn: '可能受影响', st_danger: '醉酒/禁止驾驶 (危险)',
+                    txt_hr: '小时'
+                },
+                'zh-TW': {
+                    title: '🍺 血液酒精濃度計算',
+                    desc: '基於 Widmark 公式估算 BAC。',
+                    lbl_gender: '性別', g_male: '男性', g_female: '女性',
+                    lbl_weight: '體重', lbl_drinks: '飲酒量',
+                    lbl_time: '距第一杯酒的時間',
+                    btn_calc: '計算 BAC',
+                    res_bac: '估算酒精濃度 %',
+                    st_safe: '安全範圍 (低)', st_warn: '可能受影響', st_danger: '醉酒/禁止駕駛 (危險)',
+                    txt_hr: '小時'
+                },
+                'ja': {
+                    title: '🍺 アルコール濃度計算',
+                    desc: 'Widmark式による血中アルコール濃度の推定。',
+                    lbl_gender: '性別', g_male: '男性', g_female: '女性',
+                    lbl_weight: '体重', lbl_drinks: '飲酒量',
+                    lbl_time: '飲み始めからの経過時間',
+                    btn_calc: '計算する',
+                    res_bac: '推定濃度 %',
+                    st_safe: '安全圏 (低)', st_warn: '注意 (影響あり)', st_danger: '酒気帯び/危険',
+                    txt_hr: '時間'
+                },
+                'ru': {
+                    title: '🍺 Алкоголь в крови (BAC)',
+                    desc: 'Расчет по формуле Видмарка.',
+                    lbl_gender: 'Пол', g_male: 'Мужской', g_female: 'Женский',
+                    lbl_weight: 'Вес', lbl_drinks: 'Выпито',
+                    lbl_time: 'Время с первого глотка',
+                    btn_calc: 'Рассчитать',
+                    res_bac: 'Уровень BAC %',
+                    st_safe: 'Низкий уровень', st_warn: 'Возможно опьянение', st_danger: 'Опьянение (Опасно)',
+                    txt_hr: 'ч'
+                },
+                'es': {
+                    title: '🍺 Calculadora de Alcohol',
+                    desc: 'Estimación BAC (Fórmula Widmark).',
+                    lbl_gender: 'Género', g_male: 'Hombre', g_female: 'Mujer',
+                    lbl_weight: 'Peso', lbl_drinks: 'Bebidas',
+                    lbl_time: 'Tiempo transcurrido',
+                    btn_calc: 'Calcular',
+                    res_bac: 'BAC Estimado %',
+                    st_safe: 'Bajo Riesgo', st_warn: 'Posible Deterioro', st_danger: 'Intoxicado (Peligro)',
+                    txt_hr: 'h'
+                }
+            },
+
+            toggleUnit: () => {
+                const btn = document.getElementById('bc-unit-btn');
+                const inp = document.getElementById('bc-weight');
+                if (BACCalc.unit === 'kg') {
+                    BACCalc.unit = 'lb';
+                    btn.innerText = 'LBS';
+                    inp.value = Math.round(inp.value * 2.20462);
+                } else {
+                    BACCalc.unit = 'kg';
+                    btn.innerText = 'KG';
+                    inp.value = Math.round(inp.value / 2.20462);
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('bc-lang').value;
+                const texts = BACCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="bac_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                
+                const timeVal = document.getElementById('bc-time').value;
+                BACCalc.updateTime(timeVal);
+                
+                if(document.getElementById('bc-result').innerText !== '-- %') BACCalc.calc();
+            },
+
+            updateTime: (val) => {
+                const lang = document.getElementById('bc-lang').value;
+                document.getElementById('bc-time-val').innerText = `${val} ${BACCalc.i18n[lang].txt_hr}`;
+            },
+
+            calc: () => {
+                const gender = document.getElementById('bc-gender').value;
+                let weight = parseFloat(document.getElementById('bc-weight').value);
+                const time = parseFloat(document.getElementById('bc-time').value);
+                
+                // Drinks
+                const nBeer = parseFloat(document.getElementById('bc-beer').value) || 0;
+                const nWine = parseFloat(document.getElementById('bc-wine').value) || 0;
+                const nShot = parseFloat(document.getElementById('bc-shot').value) || 0;
+
+                if (!weight || weight <= 0) return;
+
+                // Alcohol in grams
+                // Beer: 350ml * 0.05 * 0.789 = 13.8g
+                // Wine: 150ml * 0.12 * 0.789 = 14.2g
+                // Shot: 45ml * 0.40 * 0.789 = 14.2g
+                // Let's avg standard drink to ~14g alcohol
+                const alcoholGrams = (nBeer * 14) + (nWine * 14) + (nShot * 14);
+
+                if (alcoholGrams === 0) {
+                    document.getElementById('bc-result').innerText = "0.00 %";
+                    document.getElementById('bc-status').innerText = "";
+                    return;
+                }
+
+                // Widmark Formula
+                // BAC = [Alcohol(g) / (Body Weight(g) * r)] * 100 - (Time * 0.015)
+                // r: 0.68 men, 0.55 women
+                
+                const r = gender === 'm' ? 0.68 : 0.55;
+                let weightGrams = weight * 1000;
+                if (BACCalc.unit === 'lb') weightGrams = (weight * 0.453592) * 1000;
+
+                let bac = (alcoholGrams / (weightGrams * r)) * 100;
+                
+                // Metabolism
+                bac = bac - (time * 0.015);
+
+                if (bac < 0) bac = 0;
+
+                const resEl = document.getElementById('bc-result');
+                const stEl = document.getElementById('bc-status');
+                const lang = document.getElementById('bc-lang').value;
+                const txt = BACCalc.i18n[lang];
+
+                resEl.innerText = bac.toFixed(3) + " %";
+
+                if (bac < 0.03) {
+                    stEl.innerText = txt.st_safe;
+                    stEl.className = "text-sm font-bold mt-2 text-green-600";
+                } else if (bac < 0.08) {
+                    stEl.innerText = txt.st_warn;
+                    stEl.className = "text-sm font-bold mt-2 text-yellow-600";
+                } else {
+                    stEl.innerText = txt.st_danger;
+                    stEl.className = "text-sm font-bold mt-2 text-red-600";
+                }
+            }
+        };
+    </script>
+</body>
+</html>
