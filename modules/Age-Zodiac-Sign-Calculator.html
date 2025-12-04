@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Age & Zodiac Calculator Module</title>
+    <meta name="tool-id" content="age_zod">
+    <meta name="category" content="life">
+    <meta name="icon" content="🎂">
+    <meta name="description" content="输入出生日期，查询年龄、生肖、星座和距离下次生日的天数。">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #fff1f2; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="age_zod" 
+         data-category="life" 
+         data-title="Age & Zodiac Calculator" 
+         data-icon="🎂">
+        
+        <div class="absolute top-4 right-4">
+            <select id="az-lang" onchange="AgeZod.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🎂 Age & Zodiac Calculator</h2>
+
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="lbl_dob">Date of Birth</label>
+            <input type="date" id="az-dob" class="w-full p-3 border rounded text-lg focus:ring-2 focus:ring-pink-500 outline-none">
+        </div>
+
+        <button onclick="AgeZod.calc()" class="w-full bg-pink-500 text-white py-2 rounded font-bold hover:bg-pink-600 transition mb-6" data-i18n="btn_calc">Analyze</button>
+
+        <div class="bg-pink-50 p-4 rounded-lg border border-pink-100 hidden" id="az-result-box">
+            <div class="flex justify-between items-end border-b border-pink-200 pb-3 mb-3">
+                <div>
+                    <span class="text-xs text-gray-500 uppercase font-bold" data-i18n="res_age">Age</span>
+                    <div id="res-age-val" class="text-3xl font-bold text-gray-800">--</div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-gray-500 uppercase font-bold" data-i18n="res_next">Next Birthday</span>
+                    <div id="res-next-val" class="text-pink-600 font-medium">-- days left</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="text-center p-2 bg-white rounded shadow-sm">
+                    <span class="text-2xl block mb-1">🐀</span>
+                    <span class="text-xs text-gray-400 uppercase" data-i18n="res_zodiac">Chinese Zodiac</span>
+                    <div id="res-zodiac-val" class="font-bold text-gray-800 mt-1">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded shadow-sm">
+                    <span class="text-2xl block mb-1">♈</span>
+                    <span class="text-xs text-gray-400 uppercase" data-i18n="res_sign">Star Sign</span>
+                    <div id="res-sign-val" class="font-bold text-gray-800 mt-1">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AgeZod = {
+            i18n: {
+                'en': {
+                    title: '🎂 Age & Zodiac Calculator',
+                    lbl_dob: 'Date of Birth',
+                    btn_calc: 'Analyze',
+                    res_age: 'Age',
+                    res_next: 'Next Birthday',
+                    res_zodiac: 'Chinese Zodiac',
+                    res_sign: 'Star Sign',
+                    fmt_age: '{y} Years {m} Months {d} Days',
+                    fmt_left: '{d} days left',
+                    signs: ['Capricorn', 'Aquarius', 'Pisces', 'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius'],
+                    zodiacs: ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig']
+                },
+                'zh-CN': {
+                    title: '🎂 年龄与生肖星座',
+                    lbl_dob: '出生日期',
+                    btn_calc: '开始分析',
+                    res_age: '周岁',
+                    res_next: '距离下个生日',
+                    res_zodiac: '生肖',
+                    res_sign: '星座',
+                    fmt_age: '{y} 岁 {m} 个月 {d} 天',
+                    fmt_left: '还有 {d} 天',
+                    signs: ['摩羯座', '水瓶座', '双鱼座', '白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座'],
+                    zodiacs: ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪']
+                },
+                'zh-TW': {
+                    title: '🎂 年齡與生肖星座',
+                    lbl_dob: '出生日期',
+                    btn_calc: '開始分析',
+                    res_age: '實歲',
+                    res_next: '距離下個生日',
+                    res_zodiac: '生肖',
+                    res_sign: '星座',
+                    fmt_age: '{y} 歲 {m} 個月 {d} 天',
+                    fmt_left: '還有 {d} 天',
+                    signs: ['摩羯座', '水瓶座', '雙魚座', '白羊座', '金牛座', '雙子座', '巨蟹座', '獅子座', '處女座', '天秤座', '天蠍座', '射手座'],
+                    zodiacs: ['鼠', '牛', '虎', '兔', '龍', '蛇', '馬', '羊', '猴', '雞', '狗', '豬']
+                },
+                'ja': {
+                    title: '🎂 年齢・干支・星座',
+                    lbl_dob: '生年月日',
+                    btn_calc: '診断する',
+                    res_age: '年齢',
+                    res_next: '次の誕生日まで',
+                    res_zodiac: '干支',
+                    res_sign: '星座',
+                    fmt_age: '{y} 歳 {m} ヶ月 {d} 日',
+                    fmt_left: 'あと {d} 日',
+                    signs: ['山羊座', '水瓶座', '魚座', '牡羊座', '牡牛座', '双子座', '蟹座', '獅子座', '乙女座', '天秤座', '蠍座', '射手座'],
+                    zodiacs: ['子 (ね)', '丑 (うし)', '寅 (とら)', '卯 (う)', '辰 (たつ)', '巳 (み)', '午 (うま)', '未 (ひつじ)', '申 (さる)', '酉 (とり)', '戌 (いぬ)', '亥 (い)']
+                },
+                'ru': {
+                    title: '🎂 Возраст и Зодиак',
+                    lbl_dob: 'Дата рождения',
+                    btn_calc: 'Анализ',
+                    res_age: 'Возраст',
+                    res_next: 'До дня рождения',
+                    res_zodiac: 'Кит. зодиак',
+                    res_sign: 'Знак зодиака',
+                    fmt_age: '{y} лет {m} мес {d} дн',
+                    fmt_left: 'осталось {d} дн',
+                    signs: ['Козерог', 'Водолей', 'Рыбы', 'Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева', 'Весы', 'Скорпион', 'Стрелец'],
+                    zodiacs: ['Крыса', 'Бык', 'Тигр', 'Кролик', 'Дракон', 'Змея', 'Лошадь', 'Коза', 'Обезьяна', 'Петух', 'Собака', 'Свинья']
+                },
+                'es': {
+                    title: '🎂 Edad y Zodíaco',
+                    lbl_dob: 'Fecha de nacimiento',
+                    btn_calc: 'Analizar',
+                    res_age: 'Edad',
+                    res_next: 'Próximo cumple',
+                    res_zodiac: 'Zodíaco Chino',
+                    res_sign: 'Signo Zodiacal',
+                    fmt_age: '{y} años {m} meses {d} días',
+                    fmt_left: 'faltan {d} días',
+                    signs: ['Capricornio', 'Acuario', 'Piscis', 'Aries', 'Tauro', 'Géminis', 'Cáncer', 'Leo', 'Virgo', 'Libra', 'Escorpio', 'Sagitario'],
+                    zodiacs: ['Rata', 'Buey', 'Tigre', 'Conejo', 'Dragón', 'Serpiente', 'Caballo', 'Cabra', 'Mono', 'Gallo', 'Perro', 'Cerdo']
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('az-lang').value;
+                const texts = AgeZod.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="age_zod"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                if(document.getElementById('az-result-box').style.display !== 'none') AgeZod.calc();
+            },
+
+            calc: () => {
+                const dobStr = document.getElementById('az-dob').value;
+                if(!dobStr) return;
+
+                const dob = new Date(dobStr);
+                const today = new Date();
+                const lang = document.getElementById('az-lang').value;
+                const txt = AgeZod.i18n[lang];
+
+                // 1. Age Calculation
+                let years = today.getFullYear() - dob.getFullYear();
+                let months = today.getMonth() - dob.getMonth();
+                let days = today.getDate() - dob.getDate();
+
+                if (days < 0) {
+                    months--;
+                    const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                    days += prevMonth.getDate();
+                }
+                if (months < 0) {
+                    years--;
+                    months += 12;
+                }
+                const ageStr = txt.fmt_age.replace('{y}', years).replace('{m}', months).replace('{d}', days);
+                document.getElementById('res-age-val').innerText = ageStr;
+
+                // 2. Next Birthday
+                const nextBday = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+                if (nextBday < today) {
+                    nextBday.setFullYear(today.getFullYear() + 1);
+                }
+                const diffTime = Math.abs(nextBday - today);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                document.getElementById('res-next-val').innerText = txt.fmt_left.replace('{d}', diffDays);
+
+                // 3. Chinese Zodiac (Based on year 1900 = Rat)
+                // Offset: 1900 % 12 = 4 (Rat is index 0). Actually 1900 is Rat.
+                // (Year - 1900) % 12. 
+                // Alternatively: (Year - 4) % 12.
+                // Rat is 0. (1924 - 4) % 12 = 0. Correct.
+                const zIndex = (dob.getFullYear() - 4) % 12;
+                const finalZIndex = zIndex < 0 ? zIndex + 12 : zIndex;
+                const zodiacIcons = ['🐀','🐂','🐅','🐇','🐉','🐍','🐎','🐐','🐒','🐓','🐕','🐖'];
+                document.getElementById('res-zodiac-val').innerText = zodiacIcons[finalZIndex] + ' ' + txt.zodiacs[finalZIndex];
+
+                // 4. Star Sign
+                const m = dob.getMonth() + 1; // 1-12
+                const d = dob.getDate();
+                let sIdx = 0;
+                // Capr: Dec 22 - Jan 19.  Aqu: Jan 20...
+                if ((m == 1 && d <= 19) || (m == 12 && d >= 22)) sIdx = 0;
+                else if ((m == 1 && d >= 20) || (m == 2 && d <= 18)) sIdx = 1;
+                else if ((m == 2 && d >= 19) || (m == 3 && d <= 20)) sIdx = 2;
+                else if ((m == 3 && d >= 21) || (m == 4 && d <= 19)) sIdx = 3;
+                else if ((m == 4 && d >= 20) || (m == 5 && d <= 20)) sIdx = 4;
+                else if ((m == 5 && d >= 21) || (m == 6 && d <= 20)) sIdx = 5;
+                else if ((m == 6 && d >= 21) || (m == 7 && d <= 22)) sIdx = 6;
+                else if ((m == 7 && d >= 23) || (m == 8 && d <= 22)) sIdx = 7;
+                else if ((m == 8 && d >= 23) || (m == 9 && d <= 22)) sIdx = 8;
+                else if ((m == 9 && d >= 23) || (m == 10 && d <= 22)) sIdx = 9;
+                else if ((m == 10 && d >= 23) || (m == 11 && d <= 21)) sIdx = 10;
+                else if ((m == 11 && d >= 22) || (m == 12 && d <= 21)) sIdx = 11;
+
+                const signIcons = ['♑','♒','♓','♈','♉','♊','♋','♌','♍','♎','♏','♐'];
+                document.getElementById('res-sign-val').innerText = signIcons[sIdx] + ' ' + txt.signs[sIdx];
+
+                document.getElementById('az-result-box').classList.remove('hidden');
+            }
+        };
+    </script>
+</body>
+</html>
