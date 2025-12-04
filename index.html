@@ -350,9 +350,9 @@
                 file_not_found: "Файл инструмента не найден：",
                 txt_about: "Мы предоставляем бесплатные и эффективные онлайн-инструменты.\n\nНаша цель — помочь вам решать повседневные задачи без установки программ.",
                 txt_terms: "1. Инструменты бесплатны.\n2. Мы не несем ответственности за потерю данных.\n3. Не используйте в незаконных целях.",
-                txt_privacy: "Мы уважаем вашу конфиденциальность.\n\nВсе вычисления выполняются локально в браузере. Мы не храним ваши данные.",
-                txt_disclaimer: "Результаты предназначены только для ознакомления.",
-                txt_sitemap: "Список инструментов:"
+                txt_privacy: "Мы уважаем вашу конфиденциальность。\n\nВсе вычисления выполняются локально в браузере. Мы не храним ваши данные。",
+                txt_disclaimer: "Результаты предназначены только для ознакомления。",
+                txt_sitemap: "Список инструментов："
             }
         };
 
@@ -376,25 +376,19 @@
                 // Initialize Language
                 document.getElementById('lang-selector').value = currentLang;
                 
-                // 1. 生成分类按钮（支持多语言）
                 App.renderCategoryButtons();
-                
-                // 2. Load Data (Fix: Absolute path + cache busting)
                 await App.loadToolsData();
-
-                // 3. Render UI
                 App.applyLanguage(currentLang);
                 App.renderMenu();
                 App.renderCards();
                 
-                // 4. Bind Search
                 const searchInput = document.getElementById('search-input');
                 searchInput.addEventListener('input', (e) => {
                     App.filterTools(e.target.value);
                 });
             },
 
-            // --- 新增：动态生成分类按钮（支持多语言） ---
+            // --- 渲染和事件绑定（保持不变，已正确） ---
             renderCategoryButtons: () => {
                 const t = translations[currentLang] || translations['en'];
                 let btnHtml = '';
@@ -414,7 +408,6 @@
                 App.bindCategoryEvents();
             },
 
-            // --- 分类点击事件绑定 (修复：确保侧边栏和移动端按钮状态同步) ---
             bindCategoryEvents: () => {
                 document.querySelectorAll('.category-btn').forEach(btn => {
                     btn.removeEventListener('click', App.handleCategoryClick);
@@ -422,7 +415,6 @@
                 });
             },
 
-            // --- 分类点击事件处理函数 ---
             handleCategoryClick: (e) => {
                 const clickedCategory = e.currentTarget.getAttribute('data-category');
                 
@@ -439,7 +431,6 @@
                 App.filterToolsByCategory(clickedCategory);
             },
 
-            // --- 按分类筛选工具 ---
             filterToolsByCategory: (category) => {
                 const searchKeyword = document.getElementById('search-input').value.toLowerCase();
                 const cards = document.querySelectorAll('.tool-card');
@@ -457,7 +448,6 @@
                 menuItems.forEach(filterItem);
             },
 
-            // --- Language System ---
             setLanguage: (lang) => {
                 currentLang = lang;
                 localStorage.setItem('app_lang', lang);
@@ -484,10 +474,11 @@
                 return t[key] || key;
             },
 
-            // --- Data Loading ---
+            // --- Data Loading（增加错误信息可见性） ---
             loadToolsData: async () => {
                 try {
                     const baseUrl = window.location.origin;
+                    // 使用缓存破坏，确保拿到最新的 tools.json
                     const response = await fetch(`${baseUrl}/tools.json?t=${Date.now()}`, {
                         cache: 'no-cache',
                         headers: {
@@ -496,20 +487,22 @@
                     });
 
                     if (!response.ok) {
+                        // 如果文件不存在（404）或加载失败，抛出错误
                         throw new Error(`HTTP error! Status: ${response.status}`);
                     }
                     
                     toolsConfig = await response.json();
-                    console.log('✅ Loaded tools.json successfully:', toolsConfig);
                     
                 } catch (error) {
                     console.error("❌ Failed to load tools.json, using demo data:", error);
                     isDemoMode = true;
                     
+                    // FALLBACK: Demo Data
                     const t = translations[currentLang] || translations['en'];
+                    // 确保 demo 工具的 file 属性是有效的，如果 details/A.html 存在的话
                     toolsConfig = [
-                        { id: 'demo1', title: t.demo_notice.replace(/<[^>]*>/g, '').split(':')[1].trim() + ' 1', desc: t.demo_notice.replace(/<[^>]*>/g, ''), icon: '🧪', file: 'A.html', category: 'all' },
-                        { id: 'demo2', title: 'System Status', desc: 'System check tool', icon: '📊', file: 'A.html', category: 'dev' }
+                        { id: 'demo1', title: '演示工具 1', desc: t.demo_notice.replace(/<[^>]*>/g, '').trim(), icon: '🧪', file: 'A.html', category: 'all' },
+                        { id: 'demo2', title: '系统状态检查', desc: 'System check tool', icon: '📊', file: 'A.html', category: 'dev' }
                     ];
                 }
                 
@@ -533,7 +526,7 @@
                 const container = document.getElementById('cards-container');
                 const t = translations[currentLang] || translations['en'];
                 
-                if (toolsConfig.length === 0) {
+                if (toolsConfig.length === 0 && !isDemoMode) {
                     container.innerHTML = `<div class="col-span-full p-6 text-center text-gray-500">${t.loading_error}</div>`;
                     return;
                 }
@@ -569,16 +562,16 @@
                 App.filterToolsByCategory(activeCategory);
             },
 
-            // --- Interactions (FIXED) ---
+            // --- Interactions (FIXED: 确保视图切换为第一步) ---
             openTool: (id) => {
                 const dashboardView = document.getElementById('dashboard-view');
                 const toolView = document.getElementById('tool-view');
                 const toolFrame = document.getElementById('tool-frame');
                 const headerTitle = document.getElementById('header-title');
 
-                // 🚀 FIX: 确保在任何数据查找失败之前，UI 视图切换是成功的。
+                // 核心修复：确保视图切换是第一步，解决“多一个侧边栏”和“不跳转”的问题
                 dashboardView.style.display = 'none';
-                toolView.style.display = 'flex'; 
+                toolView.style.display = 'flex'; // 确保 tool-view 占据主内容区
 
                 const tool = toolsConfig.find(t => t.id === id);
                 
@@ -586,7 +579,7 @@
                     const t = translations[currentLang] || translations['en'];
                     headerTitle.innerText = App.getTrans('error_msg');
                     
-                    // 显示错误信息在 Iframe 内部
+                    // 显示找不到工具的错误信息
                     const doc = toolFrame.contentWindow.document;
                     doc.open();
                     doc.write(`
@@ -607,10 +600,10 @@
                 headerTitle.innerText = tool.title;
 
                 if (toolFilePath) {
+                    // 先清空 src，防止显示旧内容
                     toolFrame.src = 'about:blank'; 
                     toolFrame.src = `${baseUrl}/${toolFilePath}`;
                     
-                    // 可选：添加错误处理（但通常 CORS 或 404 会在 iframe 内部显示）
                 } else {
                     const t = translations[currentLang] || translations['en'];
                     const doc = toolFrame.contentWindow.document;
@@ -648,7 +641,7 @@
                 filter(menuItems);
             },
 
-            // --- Modal System ---
+            // --- Modal System (保持不变) ---
             openModal: (type) => {
                 const modal = document.getElementById('info-modal');
                 const titleEl = document.getElementById('modal-title');
