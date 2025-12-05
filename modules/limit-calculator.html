@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limit Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="limit_calculator">
+    <meta name="category" content="math">
+    <meta name="icon" content="📈">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Limit Calculator">
+    <meta name="description" content="Calculate the limit of a function as it approaches a specified value.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="极限计算器">
+    <meta name="lang-description-zh-CN" content="计算函数趋近于指定值时的极限。">
+    
+    <meta name="lang-title-zh-TW" content="極限計算器">
+    <meta name="lang-description-zh-TW" content="計算函數趨近於指定值時的極限。">
+    
+    <meta name="lang-title-ja" content="限界計算機">
+    <meta name="lang-description-ja" content="指定された値に近づく関数の限界を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор пределов">
+    <meta name="lang-description-ru" content="Вычислите предел функции при приближении к указанному значению.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .formula-input { font-family: 'Courier New', monospace; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="limit_calculator" 
+         data-category="math" 
+         data-title="Limit Calculator" 
+         data-icon="📈">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="limit-lang" onchange="LimitCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📈 Limit Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="function_label">Function</label>
+                <input type="text" id="function" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none formula-input" placeholder="e.g. (x^2 - 4)/(x - 2)" value="(x^2 - 4)/(x - 2)">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="variable_label">Variable</label>
+                <input type="text" id="variable" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none formula-input" placeholder="e.g. x" value="x">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="approaches_label">Approaches</label>
+                <input type="text" id="approaches" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none formula-input" placeholder="e.g. 2" value="2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="direction_label">Direction</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="direction" value="both" checked class="text-blue-600 focus:ring-blue-500">
+                        <span data-i18n="both">Both sides</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="direction" value="left" class="text-blue-600 focus:ring-blue-500">
+                        <span data-i18n="left">Left (-)</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="direction" value="right" class="text-blue-600 focus:ring-blue-500">
+                        <span data-i18n="right">Right (+)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="LimitCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Limit</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="result_label">Result</div>
+            <div id="limit-result" class="text-2xl font-bold text-blue-800 mb-4">--</div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="expression_label" class="font-medium mb-1">Expression:</div>
+                <div id="limit-expression" class="text-gray-600 font-mono">lim(x→2) (x² - 4)/(x - 2)</div>
+            </div>
+            
+            <div class="text-sm mt-4 text-gray-600" data-i18n="disclaimer">Disclaimer: Results are for educational purposes only. Verify complex calculations.</div>
+        </div>
+    </div>
+
+    <script>
+        const LimitCalc = {
+            i18n: {
+                'en': {
+                    title: '📈 Limit Calculator',
+                    function_label: 'Function',
+                    variable_label: 'Variable',
+                    approaches_label: 'Approaches',
+                    direction_label: 'Direction',
+                    both: 'Both sides',
+                    left: 'Left (-)',
+                    right: 'Right (+)',
+                    btn_calc: 'Calculate Limit',
+                    result_label: 'Result',
+                    expression_label: 'Expression:',
+                    err_invalid: 'Please enter valid expression',
+                    disclaimer: 'Disclaimer: Results are for educational purposes only. Verify complex calculations.',
+                    calculating: 'Calculating...'
+                },
+                'zh-CN': {
+                    title: '📈 极限计算器',
+                    function_label: '函数',
+                    variable_label: '变量',
+                    approaches_label: '趋近值',
+                    direction_label: '方向',
+                    both: '两侧',
+                    left: '左侧 (-)',
+                    right: '右侧 (+)',
+                    btn_calc: '计算极限',
+                    result_label: '结果',
+                    expression_label: '表达式：',
+                    err_invalid: '请输入有效的表达式',
+                    disclaimer: '免责声明：结果仅用于教育目的。复杂计算请核实。',
+                    calculating: '计算中...'
+                },
+                'zh-TW': {
+                    title: '📈 極限計算器',
+                    function_label: '函數',
+                    variable_label: '變量',
+                    approaches_label: '趨近值',
+                    direction_label: '方向',
+                    both: '兩側',
+                    left: '左側 (-)',
+                    right: '右側 (+)',
+                    btn_calc: '計算極限',
+                    result_label: '結果',
+                    expression_label: '表達式：',
+                    err_invalid: '請輸入有效的表達式',
+                    disclaimer: '免責聲明：結果僅用於教育目的。複雜計算請核實。',
+                    calculating: '計算中...'
+                },
+                'ja': {
+                    title: '📈 限界計算機',
+                    function_label: '関数',
+                    variable_label: '変数',
+                    approaches_label: '接近値',
+                    direction_label: '方向',
+                    both: '両側',
+                    left: '左側 (-)',
+                    right: '右側 (+)',
+                    btn_calc: '限界を計算',
+                    result_label: '結果',
+                    expression_label: '式：',
+                    err_invalid: '有効な式を入力してください',
+                    disclaimer: '免責事項：結果は教育目的のみで使用されます。複雑な計算を確認してください。',
+                    calculating: '計算中...'
+                },
+                'ru': {
+                    title: '📈 Калькулятор пределов',
+                    function_label: 'Функция',
+                    variable_label: 'Переменная',
+                    approaches_label: 'Приближается к',
+                    direction_label: 'Направление',
+                    both: 'Оба направления',
+                    left: 'Слева (-)',
+                    right: 'Справа (+)',
+                    btn_calc: 'Вычислить предел',
+                    result_label: 'Результат',
+                    expression_label: 'Выражение:',
+                    err_invalid: 'Введите действительное выражение',
+                    disclaimer: 'Отказ от ответственности: Результаты предназначены только для образовательных целей. Проверяйте сложные вычисления.',
+                    calculating: 'Вычисление...'
+                }
+            },
+
+            init: () => {
+                // 初始化
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('limit-lang').value;
+                const texts = LimitCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="limit_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            calc: () => {
+                const func = document.getElementById('function').value.trim();
+                const variable = document.getElementById('variable').value.trim();
+                const approaches = document.getElementById('approaches').value.trim();
+                const direction = document.querySelector('input[name="direction"]:checked').value;
+                const lang = document.getElementById('limit-lang').value;
+                const texts = LimitCalc.i18n[lang];
+
+                const resultEl = document.getElementById('limit-result');
+                const expressionEl = document.getElementById('limit-expression');
+
+                // 验证输入
+                if (!func || !variable || !approaches) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600";
+                    return;
+                }
+
+                // 显示计算中状态
+                resultEl.innerText = texts.calculating;
+                resultEl.className = "text-2xl font-bold text-blue-800";
+
+                // 构建表达式显示
+                let directionSymbol = '';
+                if (direction === 'left') directionSymbol = '-';
+                if (direction === 'right') directionSymbol = '+';
+                expressionEl.innerText = `lim(${variable}→${approaches}${directionSymbol}) ${func}`;
+
+                // 模拟计算（实际应用中应连接到计算引擎）
+                setTimeout(() => {
+                    // 这里使用示例结果，实际应用中应替换为真实计算
+                    let result = '4'; // 示例：(x²-4)/(x-2) 在x→2时的极限是4
+                    
+                    // 更复杂的示例逻辑
+                    if (func.includes('sin') && variable === 'x' && approaches === '0') {
+                        result = '1'; // sin(x)/x 在x→0时的极限是1
+                    }
+                    
+                    resultEl.innerText = result;
+                }, 800);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', LimitCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('limit-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    LimitCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

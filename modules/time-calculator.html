@@ -7,45 +7,55 @@
     
     <!-- 基础信息 -->
     <meta name="tool-id" content="time_calculator">
-    <meta name="category" content="tools">
-    <meta name="icon" content="⏱️">
+    <meta name="category" content="calculation">
+    <meta name="icon" content="⏰">
     
     <!-- 默认英文内容 -->
     <meta name="title" content="Time Calculator">
-    <meta name="description" content="Calculate time differences and add/subtract time values">
+    <meta name="description" content="Add, subtract and calculate time durations.">
     
     <!-- 多语言配置 -->
     <meta name="lang-title-zh-CN" content="时间计算器">
-    <meta name="lang-description-zh-CN" content="计算时间差和加减时间值">
+    <meta name="lang-description-zh-CN" content="添加、减去和计算持续时间。">
     
     <meta name="lang-title-zh-TW" content="時間計算器">
-    <meta name="lang-description-zh-TW" content="計算時間差和加減時間值">
+    <meta name="lang-description-zh-TW" content="添加、減去和計算持續時間。">
     
     <meta name="lang-title-ja" content="時間計算機">
-    <meta name="lang-description-ja" content="時間差の計算と時間の加減算を行います">
+    <meta name="lang-description-ja" content="時間の加算、減算、期間の計算を行います。">
     
     <meta name="lang-title-ru" content="Калькулятор времени">
-    <meta name="lang-description-ru" content="Вычислите разницу во времени и добавьте/вычтите временные значения">
+    <meta name="lang-description-ru" content="Добавляйте, вычитайте и вычисляйте продолжительность времени.">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
         .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
-        .result { background-color: #f0fdf4; border: 1px solid #10b981; color: #059669; padding: 10px; border-radius: 5px; margin-top: 10px; }
-        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .time-input-group { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+        .time-input { width: 80px; }
+        .operation-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .operation-btn:hover { background-color: #2563eb; }
+        .result { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 5px; margin-top: 15px; }
+        .result-item { margin: 8px 0; padding: 8px; background-color: #eff8ff; border-radius: 4px; }
+        .result-label { font-weight: bold; color: #1e40af; }
+        .add-row-btn { background-color: #10b981; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-top: 10px; }
+        .add-row-btn:hover { background-color: #059669; }
+        .remove-row-btn { background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+        .remove-row-btn:hover { background-color: #dc2626; }
+        .info { background-color: #eff8ff; border: 1px solid #3b82f6; color: #1e40af; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div class="tool-module active" 
          data-id="time_calculator" 
-         data-category="tools" 
+         data-category="calculation" 
          data-title="Time Calculator" 
-         data-icon="⏱️">
+         data-icon="⏰">
         
         <!-- 语言选择器 -->
         <div class="absolute top-4 right-4">
-            <select id="time-lang" onchange="TimeCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+            <select id="time-calc-lang" onchange="TimeCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
                 <option value="en" selected>English</option>
                 <option value="zh-CN">简体中文</option>
                 <option value="zh-TW">繁體中文</option>
@@ -54,238 +64,281 @@
             </select>
         </div>
 
-        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">⏱️ Time Calculator</h2>
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">⏰ Time Calculator</h2>
         
-        <div class="grid grid-cols-1 gap-4 mb-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="calculation_type">Calculation Type</label>
-                <div class="flex gap-4">
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="calc-type" value="difference" checked class="text-blue-600 focus:ring-blue-500">
-                        <span data-i18n="time_difference">Time Difference</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="calc-type" value="addition" class="text-blue-600 focus:ring-blue-500">
-                        <span data-i18n="time_addition">Time Addition</span>
-                    </label>
-                </div>
-            </div>
-            
-            <div id="time1-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="time1">Time 1</label>
-                <div class="grid grid-cols-3 gap-2">
-                    <input type="number" id="hours1" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="HH" min="0" max="23" value="10">
-                    <input type="number" id="minutes1" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="MM" min="0" max="59" value="30">
-                    <input type="number" id="seconds1" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="SS" min="0" max="59" value="0">
-                </div>
-            </div>
-            
-            <div id="operator" class="flex items-center justify-center">
-                <span class="text-xl font-bold text-gray-500" data-i18n="minus">-</span>
-            </div>
-            
-            <div id="time2-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="time2">Time 2</label>
-                <div class="grid grid-cols-3 gap-2">
-                    <input type="number" id="hours2" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="HH" min="0" max="23" value="2">
-                    <input type="number" id="minutes2" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="MM" min="0" max="59" value="15">
-                    <input type="number" id="seconds2" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="SS" min="0" max="59" value="30">
+        <div data-i18n="instructions" class="mb-6 text-gray-600">Add or subtract time values (hours, minutes, seconds) to get the total duration.</div>
+        
+        <div id="time-inputs-container">
+            <div class="time-input-row">
+                <div class="time-input-group">
+                    <select class="operation-select border rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="add" selected data-i18n="add">+</option>
+                        <option value="subtract" data-i18n="subtract">-</option>
+                    </select>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-500" data-i18n="hours">Hours</label>
+                        <input type="number" class="time-input hours p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" value="0">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-500" data-i18n="minutes">Minutes</label>
+                        <input type="number" class="time-input minutes p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" max="59" value="0">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-500" data-i18n="seconds">Seconds</label>
+                        <input type="number" class="time-input seconds p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" max="59" value="0">
+                    </div>
+                    
+                    <button class="remove-row-btn" onclick="TimeCalc.removeRow(this)" data-i18n="remove">Remove</button>
                 </div>
             </div>
         </div>
-
-        <button onclick="TimeCalc.calculate()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="calculate">Calculate</button>
-
-        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
-            <div class="text-sm text-gray-500 mb-2" data-i18n="result">Result</div>
-            <div id="time-result" class="text-2xl font-bold text-blue-800">--:--:--</div>
-            
-            <div class="result text-sm mt-4" id="result-details">
-                <span data-i18n="result_details">Detailed result will be shown here</span>
+        
+        <button class="add-row-btn" onclick="TimeCalc.addRow()" data-i18n="add_another">Add Another Time Value</button>
+        
+        <button onclick="TimeCalc.calculate()" class="w-full mt-6 bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-4" data-i18n="calculate_total">Calculate Total</button>
+        
+        <div id="result-container" class="result hidden">
+            <div class="result-item">
+                <span class="result-label" data-i18n="total_time">Total Time:</span>
+                <span id="total-time" class="ml-2"></span>
             </div>
-            
-            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: For reference only. Accuracy not guaranteed for critical applications.</div>
+            <div class="result-item">
+                <span class="result-label" data-i18n="total_seconds">Total in Seconds:</span>
+                <span id="total-seconds" class="ml-2"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label" data-i18n="total_minutes">Total in Minutes:</span>
+                <span id="total-minutes" class="ml-2"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label" data-i18n="total_hours">Total in Hours:</span>
+                <span id="total-hours" class="ml-2"></span>
+            </div>
         </div>
+        
+        <div class="info mt-4" data-i18n="info_text">Use this calculator to add or subtract multiple time values. Useful for calculating work hours, project durations, etc.</div>
+
     </div>
 
     <script>
         const TimeCalc = {
+            currentLang: 'en',
+            
             i18n: {
                 'en': {
-                    title: '⏱️ Time Calculator',
-                    calculation_type: 'Calculation Type',
-                    time_difference: 'Time Difference',
-                    time_addition: 'Time Addition',
-                    time1: 'Time 1',
-                    time2: 'Time 2',
-                    minus: '-',
-                    plus: '+',
-                    calculate: 'Calculate',
-                    result: 'Result',
-                    result_details: 'Detailed result will be shown here',
-                    disclaimer: 'Disclaimer: For reference only. Accuracy not guaranteed for critical applications.',
-                    err_invalid: 'Please enter valid time values',
-                    days: 'days',
-                    hours: 'hours',
-                    minutes: 'minutes',
-                    seconds: 'seconds'
+                    title: '⏰ Time Calculator',
+                    instructions: 'Add or subtract time values (hours, minutes, seconds) to get the total duration.',
+                    add: '+',
+                    subtract: '-',
+                    hours: 'Hours',
+                    minutes: 'Minutes',
+                    seconds: 'Seconds',
+                    remove: 'Remove',
+                    add_another: 'Add Another Time Value',
+                    calculate_total: 'Calculate Total',
+                    total_time: 'Total Time:',
+                    total_seconds: 'Total in Seconds:',
+                    total_minutes: 'Total in Minutes:',
+                    total_hours: 'Total in Hours:',
+                    info_text: 'Use this calculator to add or subtract multiple time values. Useful for calculating work hours, project durations, etc.',
+                    time_format: '{h}h {m}m {s}s'
                 },
                 'zh-CN': {
-                    title: '⏱️ 时间计算器',
-                    calculation_type: '计算类型',
-                    time_difference: '时间差',
-                    time_addition: '时间相加',
-                    time1: '时间 1',
-                    time2: '时间 2',
-                    minus: '-',
-                    plus: '+',
-                    calculate: '计算',
-                    result: '结果',
-                    result_details: '详细结果将显示在这里',
-                    disclaimer: '免责声明：仅供参考。对于关键应用，不保证准确性。',
-                    err_invalid: '请输入有效的时间值',
-                    days: '天',
+                    title: '⏰ 时间计算器',
+                    instructions: '添加或减去时间值（小时、分钟、秒）以获得总持续时间。',
+                    add: '+',
+                    subtract: '-',
                     hours: '小时',
                     minutes: '分钟',
-                    seconds: '秒'
+                    seconds: '秒',
+                    remove: '移除',
+                    add_another: '添加另一个时间值',
+                    calculate_total: '计算总计',
+                    total_time: '总时间：',
+                    total_seconds: '总秒数：',
+                    total_minutes: '总分钟数：',
+                    total_hours: '总小时数：',
+                    info_text: '使用此计算器添加或减去多个时间值。适用于计算工作时间、项目持续时间等。',
+                    time_format: '{h}小时 {m}分钟 {s}秒'
                 },
                 'zh-TW': {
-                    title: '⏱️ 時間計算器',
-                    calculation_type: '計算類型',
-                    time_difference: '時間差',
-                    time_addition: '時間相加',
-                    time1: '時間 1',
-                    time2: '時間 2',
-                    minus: '-',
-                    plus: '+',
-                    calculate: '計算',
-                    result: '結果',
-                    result_details: '詳細結果將顯示在這裡',
-                    disclaimer: '免責聲明：僅供參考。對於關鍵應用，不保證準確性。',
-                    err_invalid: '請輸入有效的時間值',
-                    days: '天',
+                    title: '⏰ 時間計算器',
+                    instructions: '添加或減去時間值（小時、分鐘、秒）以獲得總持續時間。',
+                    add: '+',
+                    subtract: '-',
                     hours: '小時',
                     minutes: '分鐘',
-                    seconds: '秒'
+                    seconds: '秒',
+                    remove: '移除',
+                    add_another: '添加另一個時間值',
+                    calculate_total: '計算總計',
+                    total_time: '總時間：',
+                    total_seconds: '總秒數：',
+                    total_minutes: '總分鐘數：',
+                    total_hours: '總小時數：',
+                    info_text: '使用此計算器添加或減去多個時間值。適用於計算工作時間、項目持續時間等。',
+                    time_format: '{h}小時 {m}分鐘 {s}秒'
                 },
                 'ja': {
-                    title: '⏱️ 時間計算機',
-                    calculation_type: '計算タイプ',
-                    time_difference: '時間差',
-                    time_addition: '時間の加算',
-                    time1: '時間 1',
-                    time2: '時間 2',
-                    minus: '-',
-                    plus: '+',
-                    calculate: '計算',
-                    result: '結果',
-                    result_details: '詳細な結果はここに表示されます',
-                    disclaimer: '免責事項：参考用のみです。重要な用途における正確性は保証されません。',
-                    err_invalid: '有効な時間値を入力してください',
-                    days: '日',
+                    title: '⏰ 時間計算機',
+                    instructions: '時間値（時間、分、秒）を加算または減算して、総期間を取得します。',
+                    add: '+',
+                    subtract: '-',
                     hours: '時間',
                     minutes: '分',
-                    seconds: '秒'
+                    seconds: '秒',
+                    remove: '削除',
+                    add_another: '別の時間値を追加',
+                    calculate_total: '合計を計算',
+                    total_time: '総時間：',
+                    total_seconds: '総秒数：',
+                    total_minutes: '総分数：',
+                    total_hours: '総時間数：',
+                    info_text: 'この計算機を使用して、複数の時間値を加算または減算できます。労働時間、プロジェクト期間などの計算に役立ちます。',
+                    time_format: '{h}時間 {m}分 {s}秒'
                 },
                 'ru': {
-                    title: '⏱️ Калькулятор времени',
-                    calculation_type: 'Тип вычисления',
-                    time_difference: 'Разница во времени',
-                    time_addition: 'Сложение времени',
-                    time1: 'Время 1',
-                    time2: 'Время 2',
-                    minus: '-',
-                    plus: '+',
-                    calculate: 'Вычислить',
-                    result: 'Результат',
-                    result_details: 'Подробный результат будет показан здесь',
-                    disclaimer: 'Отказ от ответственности: Только для справки. Точность не гарантируется для критических приложений.',
-                    err_invalid: 'Введите действительные временные значения',
-                    days: 'дней',
-                    hours: 'часов',
-                    minutes: 'минут',
-                    seconds: 'секунд'
+                    title: '⏰ Калькулятор времени',
+                    instructions: 'Добавляйте или вычитайте значения времени (часы, минуты, секунды), чтобы получить общую длительность.',
+                    add: '+',
+                    subtract: '-',
+                    hours: 'Часы',
+                    minutes: 'Минуты',
+                    seconds: 'Секунды',
+                    remove: 'Удалить',
+                    add_another: 'Добавить другое значение времени',
+                    calculate_total: 'Вычислить сумму',
+                    total_time: 'Общее время:',
+                    total_seconds: 'Всего в секундах:',
+                    total_minutes: 'Всего в минутах:',
+                    total_hours: 'Всего в часах:',
+                    info_text: 'Используйте этот калькулятор для добавления или вычитания нескольких значений времени. Полезно для расчета рабочих часов, длительности проектов и т.д.',
+                    time_format: '{h}ч {m}м {s}с'
                 }
             },
             
-            changeLang: function() {
-                const lang = document.getElementById('time-lang').value;
-                document.querySelectorAll('[data-i18n]').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-                    if (this.i18n[lang][key]) {
-                        el.textContent = this.i18n[lang][key];
-                    }
-                });
-                this.updateOperator();
+            addRow: function() {
+                const container = document.getElementById('time-inputs-container');
+                const rows = container.getElementsByClassName('time-input-row');
+                
+                // 确保至少保留一行
+                if (rows.length >= 10) return;
+                
+                const newRow = document.createElement('div');
+                newRow.className = 'time-input-row';
+                newRow.innerHTML = `
+                    <div class="time-input-group">
+                        <select class="operation-select border rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="add" selected data-i18n="add">+</option>
+                            <option value="subtract" data-i18n="subtract">-</option>
+                        </select>
+                        
+                        <div>
+                            <label class="block text-xs text-gray-500" data-i18n="hours">Hours</label>
+                            <input type="number" class="time-input hours p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" value="0">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs text-gray-500" data-i18n="minutes">Minutes</label>
+                            <input type="number" class="time-input minutes p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" max="59" value="0">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs text-gray-500" data-i18n="seconds">Seconds</label>
+                            <input type="number" class="time-input seconds p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" max="59" value="0">
+                        </div>
+                        
+                        <button class="remove-row-btn" onclick="TimeCalc.removeRow(this)" data-i18n="remove">Remove</button>
+                    </div>
+                `;
+                
+                container.appendChild(newRow);
+                this.updateLanguage(); // 更新新行的语言
             },
             
-            updateOperator: function() {
-                const calcType = document.querySelector('input[name="calc-type"]:checked').value;
-                const lang = document.getElementById('time-lang').value;
-                const operatorEl = document.querySelector('#operator span');
-                operatorEl.textContent = calcType === 'difference' ? 
-                    this.i18n[lang]['minus'] : this.i18n[lang]['plus'];
+            removeRow: function(button) {
+                const container = document.getElementById('time-inputs-container');
+                const rows = container.getElementsByClassName('time-input-row');
+                
+                // 确保至少保留一行
+                if (rows.length <= 1) return;
+                
+                const row = button.closest('.time-input-row');
+                container.removeChild(row);
             },
             
             calculate: function() {
-                // 获取输入值
-                const hours1 = parseInt(document.getElementById('hours1').value) || 0;
-                const minutes1 = parseInt(document.getElementById('minutes1').value) || 0;
-                const seconds1 = parseInt(document.getElementById('seconds1').value) || 0;
+                const rows = document.getElementsByClassName('time-input-row');
+                let totalSeconds = 0;
                 
-                const hours2 = parseInt(document.getElementById('hours2').value) || 0;
-                const minutes2 = parseInt(document.getElementById('minutes2').value) || 0;
-                const seconds2 = parseInt(document.getElementById('seconds2').value) || 0;
-                
-                // 验证输入
-                if (isNaN(hours1) || isNaN(minutes1) || isNaN(seconds1) ||
-                    isNaN(hours2) || isNaN(minutes2) || isNaN(seconds2)) {
-                    alert(this.i18n[document.getElementById('time-lang').value]['err_invalid']);
-                    return;
+                // 计算所有时间的总秒数
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const operation = row.querySelector('.operation-select').value;
+                    const hours = parseInt(row.querySelector('.hours').value) || 0;
+                    const minutes = parseInt(row.querySelector('.minutes').value) || 0;
+                    const seconds = parseInt(row.querySelector('.seconds').value) || 0;
+                    
+                    const rowSeconds = hours * 3600 + minutes * 60 + seconds;
+                    totalSeconds += operation === 'add' ? rowSeconds : -rowSeconds;
                 }
                 
-                // 转换为秒
-                const time1InSeconds = hours1 * 3600 + minutes1 * 60 + seconds1;
-                const time2InSeconds = hours2 * 3600 + minutes2 * 60 + seconds2;
-                
-                // 计算结果
-                const calcType = document.querySelector('input[name="calc-type"]:checked').value;
-                let resultSeconds;
-                
-                if (calcType === 'difference') {
-                    resultSeconds = Math.abs(time1InSeconds - time2InSeconds);
-                } else {
-                    resultSeconds = time1InSeconds + time2InSeconds;
-                }
-                
-                // 转换回天、时、分、秒
-                const days = Math.floor(resultSeconds / 86400);
-                const remainingSeconds = resultSeconds % 86400;
-                const hours = Math.floor(remainingSeconds / 3600);
-                const minutes = Math.floor((remainingSeconds % 3600) / 60);
+                // 转换总秒数为小时、分钟、秒
+                const hours = Math.floor(Math.abs(totalSeconds) / 3600);
+                const remainingSeconds = Math.abs(totalSeconds) % 3600;
+                const minutes = Math.floor(remainingSeconds / 60);
                 const seconds = remainingSeconds % 60;
                 
-                // 格式化显示
-                const formattedTime = `${this.pad(hours)}:${this.pad(minutes)}:${this.pad(seconds)}`;
-                document.getElementById('time-result').textContent = formattedTime;
+                // 确定符号
+                const sign = totalSeconds < 0 ? '-' : '';
                 
-                // 详细结果
-                const lang = document.getElementById('time-lang').value;
-                let details = '';
-                if (days > 0) details += `${days} ${this.i18n[lang]['days']} `;
-                details += `${hours} ${this.i18n[lang]['hours']}, ${minutes} ${this.i18n[lang]['minutes']}, ${seconds} ${this.i18n[lang]['seconds']}`;
-                document.getElementById('result-details').textContent = details;
+                // 格式化时间显示
+                const formatStr = this.i18n[this.currentLang].time_format;
+                const formattedTime = sign + formatStr
+                    .replace('{h}', hours)
+                    .replace('{m}', minutes)
+                    .replace('{s}', seconds);
+                
+                // 更新结果
+                document.getElementById('total-time').textContent = formattedTime;
+                document.getElementById('total-seconds').textContent = Math.abs(totalSeconds) + ' ' + (this.currentLang === 'en' ? 'seconds' : 
+                                                                                                      this.currentLang === 'zh-CN' || this.currentLang === 'zh-TW' ? '秒' : 
+                                                                                                      this.currentLang === 'ja' ? '秒' : 'секунд');
+                document.getElementById('total-minutes').textContent = (Math.abs(totalSeconds) / 60).toFixed(2) + ' ' + (this.currentLang === 'en' ? 'minutes' : 
+                                                                                                                      this.currentLang === 'zh-CN' || this.currentLang === 'zh-TW' ? '分钟' : 
+                                                                                                                      this.currentLang === 'ja' ? '分' : 'минут');
+                document.getElementById('total-hours').textContent = (Math.abs(totalSeconds) / 3600).toFixed(2) + ' ' + (this.currentLang === 'en' ? 'hours' : 
+                                                                                                                      this.currentLang === 'zh-CN' || this.currentLang === 'zh-TW' ? '小时' : 
+                                                                                                                      this.currentLang === 'ja' ? '時間' : 'часов');
+                
+                // 显示结果
+                document.getElementById('result-container').classList.remove('hidden');
             },
             
-            pad: function(num) {
-                return num.toString().padStart(2, '0');
+            changeLang: function() {
+                const select = document.getElementById('time-calc-lang');
+                this.currentLang = select.value;
+                this.updateLanguage();
+            },
+            
+            updateLanguage: function() {
+                // 更新所有带data-i18n属性的元素
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[this.currentLang][key]) {
+                        el.textContent = this.i18n[this.currentLang][key];
+                    }
+                });
+                
+                // 如果已有结果，重新计算以更新语言
+                if (!document.getElementById('result-container').classList.contains('hidden')) {
+                    this.calculate();
+                }
             }
         };
-        
-        // 初始化事件监听
-        document.querySelectorAll('input[name="calc-type"]').forEach(radio => {
-            radio.addEventListener('change', () => TimeCalc.updateOperator());
-        });
     </script>
 </body>
 </html>

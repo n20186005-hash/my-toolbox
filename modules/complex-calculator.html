@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complex Numbers Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="complex_calculator">
+    <meta name="category" content="math">
+    <meta name="icon" content="√">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Complex Numbers Calculator">
+    <meta name="description" content="Perform calculations with complex numbers.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="复数计算器">
+    <meta name="lang-description-zh-CN" content="进行复数计算。">
+    
+    <meta name="lang-title-zh-TW" content="複數計算器">
+    <meta name="lang-description-zh-TW" content="進行複數計算。">
+    
+    <meta name="lang-title-ja" content="複素数計算機">
+    <meta name="lang-description-ja" content="複素数の計算を実行します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор комплексных чисел">
+    <meta name="lang-description-ru" content="Выполняйте вычисления с комплексными числами.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .operation-btn { width: 100%; margin: 5px 0; padding: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="complex_calculator" 
+         data-category="math" 
+         data-title="Complex Numbers Calculator" 
+         data-icon="√">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="complex-lang" onchange="ComplexCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">√ Complex Numbers Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="num1_real">Number 1 (Real part)</label>
+                    <input type="number" id="num1_real" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 3" value="3">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="num1_imag">Number 1 (Imaginary part)</label>
+                    <input type="number" id="num1_imag" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 4" value="4">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="num2_real">Number 2 (Real part)</label>
+                    <input type="number" id="num2_real" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 1" value="1">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="num2_imag">Number 2 (Imaginary part)</label>
+                    <input type="number" id="num2_imag" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 2" value="2">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="operation">Operation</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="ComplexCalc.calc('add')" class="operation-btn bg-blue-600 text-white rounded hover:bg-blue-700 transition" data-i18n="op_add">+</button>
+                    <button onclick="ComplexCalc.calc('subtract')" class="operation-btn bg-blue-600 text-white rounded hover:bg-blue-700 transition" data-i18n="op_subtract">-</button>
+                    <button onclick="ComplexCalc.calc('multiply')" class="operation-btn bg-blue-600 text-white rounded hover:bg-blue-700 transition" data-i18n="op_multiply">×</button>
+                    <button onclick="ComplexCalc.calc('divide')" class="operation-btn bg-blue-600 text-white rounded hover:bg-blue-700 transition" data-i18n="op_divide">÷</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="result">Result</div>
+            <div id="complex-result" class="text-3xl font-bold text-blue-800">--</div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="expression" class="font-medium mb-1">Expression:</div>
+                <div id="complex-expression" class="text-gray-600">--</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ComplexCalc = {
+            i18n: {
+                'en': {
+                    title: '√ Complex Numbers Calculator',
+                    num1_real: 'Number 1 (Real part)',
+                    num1_imag: 'Number 1 (Imaginary part)',
+                    num2_real: 'Number 2 (Real part)',
+                    num2_imag: 'Number 2 (Imaginary part)',
+                    operation: 'Operation',
+                    op_add: '+',
+                    op_subtract: '-',
+                    op_multiply: '×',
+                    op_divide: '÷',
+                    result: 'Result',
+                    expression: 'Expression:',
+                    err_invalid: 'Please enter valid numbers',
+                    err_divide_zero: 'Cannot divide by zero'
+                },
+                'zh-CN': {
+                    title: '√ 复数计算器',
+                    num1_real: '数字 1（实部）',
+                    num1_imag: '数字 1（虚部）',
+                    num2_real: '数字 2（实部）',
+                    num2_imag: '数字 2（虚部）',
+                    operation: '运算',
+                    op_add: '+',
+                    op_subtract: '-',
+                    op_multiply: '×',
+                    op_divide: '÷',
+                    result: '结果',
+                    expression: '表达式：',
+                    err_invalid: '请输入有效的数字',
+                    err_divide_zero: '不能除以零'
+                },
+                'zh-TW': {
+                    title: '√ 複數計算器',
+                    num1_real: '數字 1（實部）',
+                    num1_imag: '數字 1（虛部）',
+                    num2_real: '數字 2（實部）',
+                    num2_imag: '數字 2（虛部）',
+                    operation: '運算',
+                    op_add: '+',
+                    op_subtract: '-',
+                    op_multiply: '×',
+                    op_divide: '÷',
+                    result: '結果',
+                    expression: '表達式：',
+                    err_invalid: '請輸入有效的數字',
+                    err_divide_zero: '不能除以零'
+                },
+                'ja': {
+                    title: '√ 複素数計算機',
+                    num1_real: '数値1（実部）',
+                    num1_imag: '数値1（虚部）',
+                    num2_real: '数値2（実部）',
+                    num2_imag: '数値2（虚部）',
+                    operation: '演算',
+                    op_add: '+',
+                    op_subtract: '-',
+                    op_multiply: '×',
+                    op_divide: '÷',
+                    result: '結果',
+                    expression: '式：',
+                    err_invalid: '有効な数字を入力してください',
+                    err_divide_zero: 'ゼロで除算できません'
+                },
+                'ru': {
+                    title: '√ Калькулятор комплексных чисел',
+                    num1_real: 'Число 1 (Действительная часть)',
+                    num1_imag: 'Число 1 (Мнимая часть)',
+                    num2_real: 'Число 2 (Действительная часть)',
+                    num2_imag: 'Число 2 (Мнимая часть)',
+                    operation: 'Операция',
+                    op_add: '+',
+                    op_subtract: '-',
+                    op_multiply: '×',
+                    op_divide: '÷',
+                    result: 'Результат',
+                    expression: 'Выражение:',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    err_divide_zero: 'Нельзя делить на ноль'
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('complex-lang').value;
+                const texts = ComplexCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="complex_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            formatComplex: (real, imag) => {
+                if (imag === 0) return real.toString();
+                if (real === 0) return `${imag}i`;
+                
+                const sign = imag > 0 ? '+' : '';
+                return `${real}${sign}${imag}i`;
+            },
+
+            calc: (operation) => {
+                const num1_real = parseFloat(document.getElementById('num1_real').value) || 0;
+                const num1_imag = parseFloat(document.getElementById('num1_imag').value) || 0;
+                const num2_real = parseFloat(document.getElementById('num2_real').value) || 0;
+                const num2_imag = parseFloat(document.getElementById('num2_imag').value) || 0;
+                const lang = document.getElementById('complex-lang').value;
+                const texts = ComplexCalc.i18n[lang];
+
+                const resultEl = document.getElementById('complex-result');
+                const exprEl = document.getElementById('complex-expression');
+
+                // 验证输入
+                if (isNaN(num1_real) || isNaN(num1_imag) || isNaN(num2_real) || isNaN(num2_imag)) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600";
+                    exprEl.innerText = "";
+                    return;
+                }
+
+                let result_real, result_imag;
+                let opSymbol, expression;
+
+                // 格式化复数
+                const num1_str = ComplexCalc.formatComplex(num1_real, num1_imag);
+                const num2_str = ComplexCalc.formatComplex(num2_real, num2_imag);
+
+                // 根据运算类型计算
+                switch(operation) {
+                    case 'add':
+                        result_real = num1_real + num2_real;
+                        result_imag = num1_imag + num2_imag;
+                        opSymbol = '+';
+                        break;
+                    case 'subtract':
+                        result_real = num1_real - num2_real;
+                        result_imag = num1_imag - num2_imag;
+                        opSymbol = '-';
+                        break;
+                    case 'multiply':
+                        result_real = num1_real * num2_real - num1_imag * num2_imag;
+                        result_imag = num1_imag * num2_real + num1_real * num2_imag;
+                        opSymbol = '×';
+                        break;
+                    case 'divide':
+                        // 检查除数是否为零
+                        if (num2_real === 0 && num2_imag === 0) {
+                            resultEl.innerText = texts.err_divide_zero;
+                            resultEl.className = "text-xl font-bold text-red-600";
+                            exprEl.innerText = "";
+                            return;
+                        }
+                        const denominator = num2_real * num2_real + num2_imag * num2_imag;
+                        result_real = (num1_real * num2_real + num1_imag * num2_imag) / denominator;
+                        result_imag = (num1_imag * num2_real - num1_real * num2_imag) / denominator;
+                        opSymbol = '÷';
+                        break;
+                }
+
+                // 格式化结果
+                const result_str = ComplexCalc.formatComplex(
+                    parseFloat(result_real.toFixed(4)), 
+                    parseFloat(result_imag.toFixed(4))
+                );
+                
+                // 构建表达式
+                expression = `${num1_str} ${opSymbol} ${num2_str} = ${result_str}`;
+
+                // 显示结果
+                resultEl.className = "text-3xl font-bold text-blue-800";
+                resultEl.innerText = result_str;
+                exprEl.innerText = expression;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', ComplexCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('complex-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    ComplexCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Shape Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="2d_shape_calculator">
+    <meta name="category" content="geometry">
+    <meta name="icon" content="📐">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="2D Shape Calculator">
+    <meta name="description" content="Calculate area and perimeter of 2D shapes.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="平面几何计算器">
+    <meta name="lang-description-zh-CN" content="计算平面图形的面积和周长。">
+    
+    <meta name="lang-title-zh-TW" content="平面幾何計算器">
+    <meta name="lang-description-zh-TW" content="計算平面圖形的面積和周長。">
+    
+    <meta name="lang-title-ja" content="2D図形計算機">
+    <meta name="lang-description-ja" content="2D図形の面積と周囲長を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор 2D фигур">
+    <meta name="lang-description-ru" content="Вычисление площади и периметра 2D фигур.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result { background-color: #f0fdf4; border: 1px solid #10b981; color: #059669; padding: 15px; border-radius: 5px; margin-top: 15px; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .input-group { display: none; }
+        .input-group.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="2d_shape_calculator" 
+         data-category="geometry" 
+         data-title="2D Shape Calculator" 
+         data-icon="📐">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="2d-lang" onchange="Shape2D.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📐 2D Shape Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="shape">Select Shape</label>
+                <select id="shape-type" onchange="Shape2D.showInputs()" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none">
+                    <option value="circle" data-i18n-option="circle">Circle</option>
+                    <option value="square" data-i18n-option="square">Square</option>
+                    <option value="rectangle" data-i18n-option="rectangle">Rectangle</option>
+                    <option value="triangle" data-i18n-option="triangle">Triangle</option>
+                </select>
+            </div>
+
+            <!-- 圆形输入 -->
+            <div id="circle-inputs" class="input-group active">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="radius">Radius</label>
+                <input type="number" id="radius" min="0" step="0.01" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none">
+            </div>
+
+            <!-- 正方形输入 -->
+            <div id="square-inputs" class="input-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_length">Side Length</label>
+                <input type="number" id="square-side" min="0" step="0.01" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none">
+            </div>
+
+            <!-- 长方形输入 -->
+            <div id="rectangle-inputs" class="input-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="length">Length</label>
+                <input type="number" id="rect-length" min="0" step="0.01" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none mb-2">
+                
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="width">Width</label>
+                <input type="number" id="rect-width" min="0" step="0.01" value="3" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none">
+            </div>
+
+            <!-- 三角形输入 -->
+            <div id="triangle-inputs" class="input-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="base">Base</label>
+                <input type="number" id="tri-base" min="0" step="0.01" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none mb-2">
+                
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height">Height</label>
+                <input type="number" id="tri-height" min="0" step="0.01" value="3" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none">
+            </div>
+        </div>
+
+        <button onclick="Shape2D.calculate()" class="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+        <div id="shape-result" class="result hidden">
+            <div class="text-lg font-bold mb-2" data-i18n="result_title">Calculation Results</div>
+            <div id="area" class="mb-2" data-i18n-format="area">Area: --</div>
+            <div id="perimeter" data-i18n-format="perimeter">Perimeter: --</div>
+        </div>
+
+        <div id="shape-error" class="warning hidden" data-i18n="err_invalid">Please enter valid positive values</div>
+    </div>
+
+    <script>
+        const Shape2D = {
+            i18n: {
+                'en': {
+                    title: '📐 2D Shape Calculator',
+                    shape: 'Select Shape',
+                    circle: 'Circle',
+                    square: 'Square',
+                    rectangle: 'Rectangle',
+                    triangle: 'Triangle',
+                    radius: 'Radius',
+                    side_length: 'Side Length',
+                    length: 'Length',
+                    width: 'Width',
+                    base: 'Base',
+                    height: 'Height',
+                    btn_calc: 'Calculate',
+                    result_title: 'Calculation Results',
+                    area: 'Area: {value} square units',
+                    perimeter: 'Perimeter: {value} units',
+                    err_invalid: 'Please enter valid positive values',
+                },
+                'zh-CN': {
+                    title: '📐 平面几何计算器',
+                    shape: '选择图形',
+                    circle: '圆形',
+                    square: '正方形',
+                    rectangle: '长方形',
+                    triangle: '三角形',
+                    radius: '半径',
+                    side_length: '边长',
+                    length: '长度',
+                    width: '宽度',
+                    base: '底边长',
+                    height: '高',
+                    btn_calc: '计算',
+                    result_title: '计算结果',
+                    area: '面积: {value} 平方单位',
+                    perimeter: '周长: {value} 单位',
+                    err_invalid: '请输入有效的正值',
+                },
+                'zh-TW': {
+                    title: '📐 平面幾何計算器',
+                    shape: '選擇圖形',
+                    circle: '圓形',
+                    square: '正方形',
+                    rectangle: '長方形',
+                    triangle: '三角形',
+                    radius: '半徑',
+                    side_length: '邊長',
+                    length: '長度',
+                    width: '寬度',
+                    base: '底邊長',
+                    height: '高',
+                    btn_calc: '計算',
+                    result_title: '計算結果',
+                    area: '面積: {value} 平方單位',
+                    perimeter: '周長: {value} 單位',
+                    err_invalid: '請輸入有效的正值',
+                },
+                'ja': {
+                    title: '📐 2D図形計算機',
+                    shape: '図形を選択',
+                    circle: '円',
+                    square: '正方形',
+                    rectangle: '長方形',
+                    triangle: '三角形',
+                    radius: '半径',
+                    side_length: '一辺の長さ',
+                    length: '長さ',
+                    width: '幅',
+                    base: '底辺',
+                    height: '高さ',
+                    btn_calc: '計算',
+                    result_title: '計算結果',
+                    area: '面積: {value} 平方単位',
+                    perimeter: '周囲長: {value} 単位',
+                    err_invalid: '有効な正数を入力してください',
+                },
+                'ru': {
+                    title: '📐 Калькулятор 2D фигур',
+                    shape: 'Выберите фигуру',
+                    circle: 'Круг',
+                    square: 'Квадрат',
+                    rectangle: 'Прямоугольник',
+                    triangle: 'Треугольник',
+                    radius: 'Радиус',
+                    side_length: 'Длина стороны',
+                    length: 'Длина',
+                    width: 'Ширина',
+                    base: 'Основание',
+                    height: 'Высота',
+                    btn_calc: 'Вычислить',
+                    result_title: 'Результаты вычисления',
+                    area: 'Площадь: {value} квадратных единиц',
+                    perimeter: 'Периметр: {value} единиц',
+                    err_invalid: 'Введите действительные положительные значения',
+                }
+            },
+
+            init() {
+                this.changeLang();
+                this.showInputs();
+            },
+
+            changeLang() {
+                const lang = document.getElementById('2d-lang').value;
+                // 更新普通文本
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                // 更新选项文本
+                document.querySelectorAll('[data-i18n-option]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-option');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+
+            showInputs() {
+                const shape = document.getElementById('shape-type').value;
+                // 隐藏所有输入组
+                document.querySelectorAll('.input-group').forEach(el => {
+                    el.classList.remove('active');
+                });
+                // 显示选中的输入组
+                document.getElementById(`${shape}-inputs`).classList.add('active');
+            },
+
+            calculate() {
+                const shape = document.getElementById('shape-type').value;
+                const resultEl = document.getElementById('shape-result');
+                const errorEl = document.getElementById('shape-error');
+                const areaEl = document.getElementById('area');
+                const perimeterEl = document.getElementById('perimeter');
+                const lang = document.getElementById('2d-lang').value;
+                let area, perimeter, valid = true;
+
+                // 根据不同图形计算
+                switch(shape) {
+                    case 'circle':
+                        const radius = parseFloat(document.getElementById('radius').value);
+                        if (isNaN(radius) || radius <= 0) valid = false;
+                        else {
+                            area = Math.PI * radius * radius;
+                            perimeter = 2 * Math.PI * radius;
+                        }
+                        break;
+                    case 'square':
+                        const side = parseFloat(document.getElementById('square-side').value);
+                        if (isNaN(side) || side <= 0) valid = false;
+                        else {
+                            area = side * side;
+                            perimeter = 4 * side;
+                        }
+                        break;
+                    case 'rectangle':
+                        const length = parseFloat(document.getElementById('rect-length').value);
+                        const width = parseFloat(document.getElementById('rect-width').value);
+                        if (isNaN(length) || isNaN(width) || length <= 0 || width <= 0) valid = false;
+                        else {
+                            area = length * width;
+                            perimeter = 2 * (length + width);
+                        }
+                        break;
+                    case 'triangle':
+                        const base = parseFloat(document.getElementById('tri-base').value);
+                        const height = parseFloat(document.getElementById('tri-height').value);
+                        if (isNaN(base) || isNaN(height) || base <= 0 || height <= 0) valid = false;
+                        else {
+                            area = 0.5 * base * height;
+                            perimeter = 'N/A (requires all sides)'; // 简化处理
+                        }
+                        break;
+                }
+
+                // 显示结果或错误
+                if (!valid) {
+                    resultEl.classList.add('hidden');
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                errorEl.classList.add('hidden');
+                resultEl.classList.remove('hidden');
+
+                // 格式化结果
+                const formatValue = (value) => {
+                    return typeof value === 'number' ? value.toFixed(2) : value;
+                };
+
+                areaEl.textContent = this.i18n[lang].area.replace('{value}', formatValue(area));
+                perimeterEl.textContent = this.i18n[lang].perimeter.replace('{value}', formatValue(perimeter));
+            }
+        };
+
+        // 初始化
+        window.onload = () => Shape2D.init();
+    </script>
+</body>
+</html>
