@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="finance_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💰">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Finance Calculator">
+    <meta name="description" content="Calculate financial metrics including present value, future value and interest.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="财务计算器">
+    <meta name="lang-description-zh-CN" content="计算包括现值、未来值和利息在内的财务指标。">
+    
+    <meta name="lang-title-zh-TW" content="財務計算器">
+    <meta name="lang-description-zh-TW" content="計算包括現值、未來值和利息在內的財務指標。">
+    
+    <meta name="lang-title-ja" content="財務計算機">
+    <meta name="lang-description-ja" content="現在価値、将来価値、利息を含む財務指標を計算します。">
+    
+    <meta name="lang-title-ru" content="Финансовый калькулятор">
+    <meta name="lang-description-ru" content="Вычисляйте финансовые показатели, включая текущую стоимость, будущую стоимость и проценты.">
+    
+    <meta name="lang-title-es" content="Calculadora financiera">
+    <meta name="lang-description-es" content="Calcule métricas financieras que incluyen valor presente, valor futuro e interés.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="finance_calculator" 
+         data-category="finance" 
+         data-title="Finance Calculator" 
+         data-icon="💰">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="finance-lang" onchange="FinanceCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💰 Finance Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="principal_label">Principal Amount</label>
+                <input type="number" id="principal" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 10000" min="0" step="any">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rate_label">Interest Rate (% per period)</label>
+                <input type="number" id="rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 5" min="0" step="0.01">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="periods_label">Number of Periods</label>
+                <input type="number" id="periods" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 10" min="1" step="1">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="contribution_label">Periodic Contribution (optional)</label>
+                <input type="number" id="contribution" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 100" min="0" step="any">
+            </div>
+        </div>
+
+        <button onclick="FinanceCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="future_value_label">Future Value</div>
+                    <div id="future-value" class="text-xl font-bold text-blue-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="total_interest_label">Total Interest</div>
+                    <div id="total-interest" class="text-xl font-bold text-blue-800">--</div>
+                </div>
+            </div>
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">Formula: FV = P*(1+r)^n + PMT*[((1+r)^n - 1)/r]</div>
+                <div id="finance-formula" class="text-gray-600">--</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FinanceCalc = {
+            i18n: {
+                'en': {
+                    title: '💰 Finance Calculator',
+                    principal_label: 'Principal Amount',
+                    rate_label: 'Interest Rate (% per period)',
+                    periods_label: 'Number of Periods',
+                    contribution_label: 'Periodic Contribution (optional)',
+                    btn_calc: 'Calculate',
+                    future_value_label: 'Future Value',
+                    total_interest_label: 'Total Interest',
+                    formula_label: 'Formula: FV = P*(1+r)^n + PMT*[((1+r)^n - 1)/r]',
+                    err_invalid: 'Please enter valid numbers',
+                    currency: '$'
+                },
+                'zh-CN': {
+                    title: '💰 财务计算器',
+                    principal_label: '本金金额',
+                    rate_label: '利率（每期%）',
+                    periods_label: '期数',
+                    contribution_label: '每期投入（可选）',
+                    btn_calc: '计算',
+                    future_value_label: '未来价值',
+                    total_interest_label: '总利息',
+                    formula_label: '公式：终值 = 本金*(1+利率)^期数 + 每期投入*[((1+利率)^期数 - 1)/利率]',
+                    err_invalid: '请输入有效的数字',
+                    currency: '¥'
+                },
+                'zh-TW': {
+                    title: '💰 財務計算器',
+                    principal_label: '本金金額',
+                    rate_label: '利率（每期%）',
+                    periods_label: '期數',
+                    contribution_label: '每期投入（可選）',
+                    btn_calc: '計算',
+                    future_value_label: '未來價值',
+                    total_interest_label: '總利息',
+                    formula_label: '公式：終值 = 本金*(1+利率)^期數 + 每期投入*[((1+利率)^期數 - 1)/利率]',
+                    err_invalid: '請輸入有效的數字',
+                    currency: 'NT$'
+                },
+                'ja': {
+                    title: '💰 財務計算機',
+                    principal_label: '元本額',
+                    rate_label: '金利（期間ごとの%）',
+                    periods_label: '期間数',
+                    contribution_label: '定期拠出額（任意）',
+                    btn_calc: '計算',
+                    future_value_label: '将来価値',
+                    total_interest_label: '総利息',
+                    formula_label: '公式：将来価値 = 元本*(1+金利)^期間数 + 定期拠出額*[((1+金利)^期間数 - 1)/金利]',
+                    err_invalid: '有効な数字を入力してください',
+                    currency: '¥'
+                },
+                'ru': {
+                    title: '💰 Финансовый калькулятор',
+                    principal_label: 'Сумма основного долга',
+                    rate_label: 'Процентная ставка (% за период)',
+                    periods_label: 'Количество периодов',
+                    contribution_label: 'Периодические вклады (опционально)',
+                    btn_calc: 'Вычислить',
+                    future_value_label: 'Будущая стоимость',
+                    total_interest_label: 'Общий процент',
+                    formula_label: 'Формула: БС = С*(1+п)^п + ПВ*[((1+п)^п - 1)/п]',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    currency: '₽'
+                },
+                'es': {
+                    title: '💰 Calculadora financiera',
+                    principal_label: 'Monto principal',
+                    rate_label: 'Tasa de interés (% por período)',
+                    periods_label: 'Número de períodos',
+                    contribution_label: 'Contribución periódica (opcional)',
+                    btn_calc: 'Calcular',
+                    future_value_label: 'Valor futuro',
+                    total_interest_label: 'Interés total',
+                    formula_label: 'Fórmula: VF = P*(1+t)^n + PMT*[((1+t)^n - 1)/t]',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    currency: '€'
+                }
+            },
+
+            init: () => {
+                // 初始化示例值
+                document.getElementById('principal').value = 10000;
+                document.getElementById('rate').value = 5;
+                document.getElementById('periods').value = 10;
+                document.getElementById('contribution').value = 1000;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('finance-lang').value;
+                const texts = FinanceCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="finance_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                FinanceCalc.calc();
+            },
+
+            calc: () => {
+                const principal = parseFloat(document.getElementById('principal').value) || 0;
+                const rate = parseFloat(document.getElementById('rate').value) / 100 || 0;
+                const periods = parseFloat(document.getElementById('periods').value) || 0;
+                const contribution = parseFloat(document.getElementById('contribution').value) || 0;
+                const lang = document.getElementById('finance-lang').value;
+                const texts = FinanceCalc.i18n[lang];
+
+                const fvEl = document.getElementById('future-value');
+                const interestEl = document.getElementById('total-interest');
+                const formulaEl = document.getElementById('finance-formula');
+
+                // 验证输入
+                if (isNaN(principal) || isNaN(rate) || isNaN(periods) || periods <= 0) {
+                    fvEl.innerText = texts.err_invalid;
+                    fvEl.className = "text-xl font-bold text-red-600";
+                    interestEl.innerText = "";
+                    formulaEl.innerText = "";
+                    return;
+                }
+
+                // 计算未来值
+                const compoundFactor = Math.pow(1 + rate, periods);
+                const futureValue = principal * compoundFactor + contribution * ((compoundFactor - 1) / rate);
+                const totalInterest = futureValue - principal - (contribution * periods);
+
+                // 显示结果
+                fvEl.className = "text-xl font-bold text-blue-800";
+                interestEl.className = "text-xl font-bold text-blue-800";
+                fvEl.innerText = `${texts.currency}${futureValue.toFixed(2).toLocaleString()}`;
+                interestEl.innerText = `${texts.currency}${totalInterest.toFixed(2).toLocaleString()}`;
+                
+                // 显示计算公式
+                formulaEl.innerText = `${texts.currency}${futureValue.toFixed(2).toLocaleString()} = ${texts.currency}${principal.toFixed(2)}*(1+${rate*100}%)^${periods} + ${texts.currency}${contribution.toFixed(2)}*[((1+${rate*100}%)^${periods} - 1)/${rate*100}%]`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', FinanceCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('finance-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    FinanceCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

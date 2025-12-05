@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Converter</title>
+    
+    <meta name="tool-id" content="currency_converter">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💱">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Currency Converter">
+    <meta name="description" content="Convert between different currencies with up-to-date exchange rates.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="货币转换器">
+    <meta name="lang-description-zh-CN" content="使用最新汇率在不同货币之间进行转换。">
+    
+    <meta name="lang-title-zh-TW" content="貨幣轉換器">
+    <meta name="lang-description-zh-TW" content="使用最新匯率在不同貨幣之間進行轉換。">
+    
+    <meta name="lang-title-ja" content="通貨コンバーター">
+    <meta name="lang-description-ja" content="最新の為替レートでさまざまな通貨を換算します。">
+    
+    <meta name="lang-title-ru" content="Конвертер валют">
+    <meta name="lang-description-ru" content="Конвертируйте различные валюты по актуальным обменным курсам.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result { background-color: #f0fdf4; border: 1px solid #10b981; color: #059669; padding: 15px; border-radius: 5px; margin-top: 15px; text-align: center; font-size: 1.2rem; }
+        .info { background-color: #eff8ff; border: 1px solid #3b82f6; color: #1e40af; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="currency_converter" 
+         data-category="finance" 
+         data-title="Currency Converter" 
+         data-icon="💱">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="currency-lang" onchange="CurrencyConv.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💱 Currency Converter</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="amount">Amount</label>
+                <input type="number" id="amount" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 100" min="0" step="0.01" value="100">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="from_currency">From Currency</label>
+                    <select id="from-currency" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="JPY">JPY - Japanese Yen</option>
+                        <option value="CNY">CNY - Chinese Yuan</option>
+                        <option value="RUB">RUB - Russian Ruble</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="to_currency">To Currency</label>
+                    <select id="to-currency" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="USD" selected>USD - US Dollar</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="JPY">JPY - Japanese Yen</option>
+                        <option value="CNY">CNY - Chinese Yuan</option>
+                        <option value="RUB">RUB - Russian Ruble</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button onclick="CurrencyConv.swapCurrencies()" class="py-2 border border-blue-500 text-blue-600 rounded font-medium hover:bg-blue-50 transition" data-i18n="swap">Swap Currencies ↔️</button>
+        </div>
+
+        <button onclick="CurrencyConv.convert()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_convert">Convert Currency</button>
+
+        <div id="conversion-result" class="result hidden">
+            <span id="result-text">100 USD = 92.00 EUR</span>
+        </div>
+        
+        <div class="info" data-i18n="exchange_rate_info">Exchange rates are approximate and for informational purposes only.</div>
+        <div class="info mt-2" data-i18n="disclaimer">Disclaimer: This tool is not intended for financial advice. Always verify rates with a financial institution.</div>
+    </div>
+
+    <script>
+        const CurrencyConv = {
+            // 基础汇率 (USD为基准)
+            rates: {
+                USD: 1,
+                EUR: 0.92,
+                GBP: 0.79,
+                JPY: 134.5,
+                CNY: 7.25,
+                RUB: 75.0
+            },
+            
+            i18n: {
+                'en': {
+                    title: '💱 Currency Converter',
+                    amount: 'Amount',
+                    from_currency: 'From Currency',
+                    to_currency: 'To Currency',
+                    swap: 'Swap Currencies ↔️',
+                    btn_convert: 'Convert Currency',
+                    exchange_rate_info: 'Exchange rates are approximate and for informational purposes only.',
+                    disclaimer: 'Disclaimer: This tool is not intended for financial advice. Always verify rates with a financial institution.',
+                    result_format: '{amount} {from} = {result} {to}'
+                },
+                'zh-CN': {
+                    title: '💱 货币转换器',
+                    amount: '金额',
+                    from_currency: '从货币',
+                    to_currency: '到货币',
+                    swap: '交换货币 ↔️',
+                    btn_convert: '转换货币',
+                    exchange_rate_info: '汇率为近似值，仅供参考。',
+                    disclaimer: '免责声明：本工具不用于提供财务建议。请始终向金融机构核实汇率。',
+                    result_format: '{amount} {from} = {result} {to}'
+                },
+                'zh-TW': {
+                    title: '💱 貨幣轉換器',
+                    amount: '金額',
+                    from_currency: '從貨幣',
+                    to_currency: '到貨幣',
+                    swap: '交換貨幣 ↔️',
+                    btn_convert: '轉換貨幣',
+                    exchange_rate_info: '匯率為近似值，僅供參考。',
+                    disclaimer: '免責聲明：本工具不用於提供財務建議。請始終向金融機構核實匯率。',
+                    result_format: '{amount} {from} = {result} {to}'
+                },
+                'ja': {
+                    title: '💱 通貨コンバーター',
+                    amount: '金額',
+                    from_currency: '変換元の通貨',
+                    to_currency: '変換先の通貨',
+                    swap: '通貨を交換 ↔️',
+                    btn_convert: '通貨を換算',
+                    exchange_rate_info: '為替レートはおおよその値で、情報提供のみを目的としています。',
+                    disclaimer: '免責事項：このツールは財務アドバイスを目的としたものではありません。必ず金融機関でレートを確認してください。',
+                    result_format: '{amount} {from} = {result} {to}'
+                },
+                'ru': {
+                    title: '💱 Конвертер валют',
+                    amount: 'Сумма',
+                    from_currency: 'Из валюты',
+                    to_currency: 'В валюту',
+                    swap: 'Поменять валюты ↔️',
+                    btn_convert: 'Конвертировать валюту',
+                    exchange_rate_info: 'Обменные курсы приблизительные и предназначены только для ознакомления.',
+                    disclaimer: 'Отказ от ответственности: Этот инструмент не предназначен для финансовых советов. Всегда проверяйте курсы в финансовом учреждении.',
+                    result_format: '{amount} {from} = {result} {to}'
+                }
+            },
+            
+            convert: function() {
+                const amount = parseFloat(document.getElementById('amount').value);
+                const from = document.getElementById('from-currency').value;
+                const to = document.getElementById('to-currency').value;
+                
+                if (isNaN(amount) || amount < 0) {
+                    alert(this.getCurrentLangData().err_invalid || 'Please enter a valid amount');
+                    return;
+                }
+                
+                // 计算转换结果
+                const result = (amount / this.rates[from] * this.rates[to]).toFixed(2);
+                
+                // 显示结果
+                const resultText = this.getCurrentLangData().result_format
+                    .replace('{amount}', amount.toFixed(2))
+                    .replace('{from}', from)
+                    .replace('{result}', result)
+                    .replace('{to}', to);
+                
+                document.getElementById('result-text').textContent = resultText;
+                document.getElementById('conversion-result').classList.remove('hidden');
+            },
+            
+            swapCurrencies: function() {
+                const from = document.getElementById('from-currency');
+                const to = document.getElementById('to-currency');
+                const temp = from.value;
+                from.value = to.value;
+                to.value = temp;
+            },
+            
+            changeLang: function() {
+                const lang = document.getElementById('currency-lang').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+            
+            getCurrentLangData: function() {
+                const lang = document.getElementById('currency-lang').value;
+                return this.i18n[lang] || this.i18n['en'];
+            }
+        };
+    </script>
+</body>
+</html>

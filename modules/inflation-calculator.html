@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inflation Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="inflation_calculator">
+    <meta name="category" content="financial">
+    <meta name="icon" content="💸">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Inflation Calculator">
+    <meta name="description" content="Calculate the impact of inflation on the purchasing power of money over time.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="通货膨胀计算器">
+    <meta name="lang-description-zh-CN" content="计算通货膨胀对货币购买力的长期影响。">
+    
+    <meta name="lang-title-zh-TW" content="通貨膨脹計算器">
+    <meta name="lang-description-zh-TW" content="計算通貨膨脹對貨幣購買力的長期影響。">
+    
+    <meta name="lang-title-ja" content="インフレ計算ツール">
+    <meta name="lang-description-ja" content="時間の経過に伴うインフレが通貨の購買力に及ぼす影響を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор инфляции">
+    <meta name="lang-description-ru" content="Рассчитайте влияние инфляции на покупательную способность денег со временем.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .result-section { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; text-sm font-medium text-gray-700 mb-1; }
+        select, input[type="number"], input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .result-item { background: white; padding: 10px; border-radius: 4px; }
+        .result-label { font-size: 0.85rem; color: gray; }
+        .result-value { font-size: 1.1rem; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="inflation_calculator" 
+         data-category="financial" 
+         data-title="Inflation Calculator" 
+         data-icon="💸">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="inflation-lang" onchange="InflationCalculator.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💸 Inflation Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 初始金额 -->
+            <div class="form-group">
+                <label data-i18n="initial_amount">Initial Amount</label>
+                <input type="number" id="initial-amount" step="any" min="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00">
+            </div>
+            
+            <div class="grid-2">
+                <!-- 起始年份 -->
+                <div class="form-group">
+                    <label data-i18n="start_year">Start Year</label>
+                    <input type="number" id="start-year" min="1900" max="2100" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="YYYY">
+                </div>
+                
+                <!-- 目标年份 -->
+                <div class="form-group">
+                    <label data-i18n="target_year">Target Year</label>
+                    <input type="number" id="target-year" min="1900" max="2100" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="YYYY">
+                </div>
+            </div>
+            
+            <!-- 年通货膨胀率 (%) -->
+            <div class="form-group">
+                <label data-i18n="inflation_rate">Annual Inflation Rate (%)</label>
+                <input type="number" id="inflation-rate" step="0.1" min="0" max="100" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.0">
+            </div>
+            
+            <!-- 精度选择 -->
+            <div class="form-group">
+                <label data-i18n="precision">Precision (decimal places)</label>
+                <input type="number" id="inflation-precision" min="0" max="6" value="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="InflationCalculator.clearForm()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="InflationCalculator.calculate()" class="flex-1 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="inflation-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="inflation-results" class="hidden">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="calculation_results">Inflation Impact</div>
+            <div class="result-section">
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="years_period">Years in Period</div>
+                        <div class="result-value" id="years-period">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="future_value">Future Value</div>
+                        <div class="result-value" id="future-value">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="total_increase">Total Increase</div>
+                        <div class="result-value" id="total-increase">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="purchasing_power">Purchasing Power</div>
+                        <div class="result-value" id="purchasing-power">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" id="notes-list">
+                <li data-i18n="note1">This calculator uses the formula: Future Value = Present Value × (1 + inflation rate)^number of years</li>
+                <li data-i18n="note2">Purchasing power represents the value of the initial amount in terms of future purchasing ability.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const InflationCalculator = {
+            // 多语言文本
+            i18n: {
+                'en': {
+                    title: '💸 Inflation Calculator',
+                    initial_amount: 'Initial Amount',
+                    start_year: 'Start Year',
+                    target_year: 'Target Year',
+                    inflation_rate: 'Annual Inflation Rate (%)',
+                    precision: 'Precision (decimal places)',
+                    clear: 'Clear',
+                    calculate: 'Calculate',
+                    calculation_results: 'Inflation Impact',
+                    years_period: 'Years in Period',
+                    future_value: 'Future Value',
+                    total_increase: 'Total Increase (%)',
+                    purchasing_power: 'Purchasing Power',
+                    notes: 'Notes:',
+                    note1: 'This calculator uses the formula: Future Value = Present Value × (1 + inflation rate)^number of years',
+                    note2: 'Purchasing power represents the value of the initial amount in terms of future purchasing ability.',
+                    err_invalid_input: 'Please enter valid numbers and ensure target year is greater than start year'
+                },
+                'zh-CN': {
+                    title: '💸 通货膨胀计算器',
+                    initial_amount: '初始金额',
+                    start_year: '起始年份',
+                    target_year: '目标年份',
+                    inflation_rate: '年通货膨胀率 (%)',
+                    precision: '精度（小数位数）',
+                    clear: '清除',
+                    calculate: '计算',
+                    calculation_results: '通货膨胀影响',
+                    years_period: '期间年数',
+                    future_value: '未来价值',
+                    total_increase: '总增长率 (%)',
+                    purchasing_power: '购买力',
+                    notes: '说明：',
+                    note1: '本计算器使用公式：未来价值 = 现值 × (1 + 通货膨胀率)^年数',
+                    note2: '购买力表示初始金额在未来的购买能力价值。',
+                    err_invalid_input: '请输入有效的数字，并确保目标年份大于起始年份'
+                },
+                'zh-TW': {
+                    title: '💸 通貨膨脹計算器',
+                    initial_amount: '初始金額',
+                    start_year: '起始年份',
+                    target_year: '目標年份',
+                    inflation_rate: '年通貨膨脹率 (%)',
+                    precision: '精度（小數位數）',
+                    clear: '清除',
+                    calculate: '計算',
+                    calculation_results: '通貨膨脹影響',
+                    years_period: '期間年數',
+                    future_value: '未來價值',
+                    total_increase: '總增長率 (%)',
+                    purchasing_power: '購買力',
+                    notes: '說明：',
+                    note1: '本計算器使用公式：未來價值 = 現值 × (1 + 通貨膨脹率)^年數',
+                    note2: '購買力表示初始金額在未來的購買能力價值。',
+                    err_invalid_input: '請輸入有效的數字，並確保目標年份大於起始年份'
+                },
+                'ja': {
+                    title: '💸 インフレ計算ツール',
+                    initial_amount: '当初金額',
+                    start_year: '開始年度',
+                    target_year: '対象年度',
+                    inflation_rate: '年間インフレ率 (%)',
+                    precision: '精度（小数桁数）',
+                    clear: 'クリア',
+                    calculate: '計算',
+                    calculation_results: 'インフレの影響',
+                    years_period: '期間の年数',
+                    future_value: '将来価値',
+                    total_increase: '総上昇率 (%)',
+                    purchasing_power: '購買力',
+                    notes: '注釈：',
+                    note1: 'この計算機は次の公式を使用しています：将来価値 = 現在価値 × (1 + インフレ率)^年数',
+                    note2: '購買力とは、当初金額の将来の購買能力を表します。',
+                    err_invalid_input: '有効な数字を入力し、対象年度が開始年度より大きいことを確認してください'
+                },
+                'ru': {
+                    title: '💸 Калькулятор инфляции',
+                    initial_amount: 'Начальная сумма',
+                    start_year: 'Начальный год',
+                    target_year: 'Целевой год',
+                    inflation_rate: 'Годовая инфляционная ставка (%)',
+                    precision: 'Точность (знаков после запятой)',
+                    clear: 'Очистить',
+                    calculate: 'Рассчитать',
+                    calculation_results: 'Воздействие инфляции',
+                    years_period: 'Лет в периоде',
+                    future_value: 'Будущая стоимость',
+                    total_increase: 'Общий рост (%)',
+                    purchasing_power: 'Покупательная способность',
+                    notes: 'Примечания:',
+                    note1: 'Этот калькулятор использует формулу: Будущая стоимость = Текущая стоимость × (1 + инфляционная ставка)^количество лет',
+                    note2: 'Покупательная способность представляет собой значение начальной суммы в терминах будущих покупательских возможностей.',
+                    err_invalid_input: 'Пожалуйста, введите действительные числа и убедитесь, что целевой год больше начального года'
+                }
+            },
+            
+            // 初始化
+            init: function() {
+                this.updateLanguageElements();
+            },
+            
+            // 计算通货膨胀影响
+            calculate: function() {
+                const initialAmount = parseFloat(document.getElementById('initial-amount').value);
+                const startYear = parseInt(document.getElementById('start-year').value);
+                const targetYear = parseInt(document.getElementById('target-year').value);
+                const inflationRate = parseFloat(document.getElementById('inflation-rate').value) / 100 || 0;
+                const precision = parseInt(document.getElementById('inflation-precision').value) || 2;
+                
+                const errorEl = document.getElementById('inflation-error');
+                const resultsEl = document.getElementById('inflation-results');
+                
+                // 验证输入
+                if (isNaN(initialAmount) || initialAmount <= 0 ||
+                    isNaN(startYear) || startYear < 1900 || startYear > 2100 ||
+                    isNaN(targetYear) || targetYear <= startYear || targetYear > 2100 ||
+                    inflationRate < 0) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_input;
+                    errorEl.classList.remove('hidden');
+                    resultsEl.classList.add('hidden');
+                    return;
+                }
+                
+                // 清除错误
+                errorEl.classList.add('hidden');
+                
+                // 计算期间年数
+                const yearsPeriod = targetYear - startYear;
+                
+                // 计算未来价值 (考虑通货膨胀)
+                const futureValue = initialAmount * Math.pow(1 + inflationRate, yearsPeriod);
+                
+                // 计算总增长率
+                const totalIncrease = ((futureValue - initialAmount) / initialAmount) * 100;
+                
+                // 计算购买力 (初始金额在未来的价值)
+                const purchasingPower = initialAmount / Math.pow(1 + inflationRate, yearsPeriod);
+                
+                // 显示结果
+                document.getElementById('years-period').textContent = yearsPeriod;
+                document.getElementById('future-value').textContent = this.formatNumber(futureValue, precision);
+                document.getElementById('total-increase').textContent = totalIncrease.toFixed(precision) + '%';
+                document.getElementById('purchasing-power').textContent = this.formatNumber(purchasingPower, precision);
+                
+                // 显示结果区域
+                resultsEl.classList.remove('hidden');
+            },
+            
+            // 格式化数字显示
+            formatNumber: function(value, precision) {
+                return value.toFixed(precision);
+            },
+            
+            // 清除表单
+            clearForm: function() {
+                document.getElementById('initial-amount').value = '';
+                document.getElementById('start-year').value = '';
+                document.getElementById('target-year').value = '';
+                document.getElementById('inflation-rate').value = '';
+                document.getElementById('inflation-results').classList.add('hidden');
+                document.getElementById('inflation-error').classList.add('hidden');
+            },
+            
+            // 切换语言
+            changeLang: function() {
+                this.updateLanguageElements();
+                
+                // 如果有结果，重新计算以更新显示
+                if (!document.getElementById('inflation-results').classList.contains('hidden')) {
+                    this.calculate();
+                }
+            },
+            
+            // 更新语言元素
+            updateLanguageElements: function() {
+                const lang = this.getCurrentLang();
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+            
+            // 获取当前语言
+            getCurrentLang: function() {
+                return document.getElementById('inflation-lang').value;
+            }
+        };
+        
+        // 初始化计算器
+        document.addEventListener('DOMContentLoaded', function() {
+            InflationCalculator.init();
+        });
+    </script>
+</body>
+</html>

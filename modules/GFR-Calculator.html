@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GFR Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="gfr_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="🔍">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="GFR Calculator">
+    <meta name="description" content="Estimate your Glomerular Filtration Rate">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="肾小球滤过率计算器">
+    <meta name="lang-description-zh-CN" content="估算您的肾小球滤过率">
+    
+    <meta name="lang-title-zh-TW" content="腎小球濾過率計算器">
+    <meta name="lang-description-zh-TW" content="估算您的腎小球濾過率">
+    
+    <meta name="lang-title-ja" content="糸球体濾過量計算機">
+    <meta name="lang-description-ja" content="糸球体濾過量を推定します">
+    
+    <meta name="lang-title-ru" content="Калькулятор СФР">
+    <meta name="lang-description-ru" content="Оцените свою клубочковую фильтрационную скорость">
+    
+    <meta name="lang-title-es" content="Calculadora de TFG">
+    <meta name="lang-description-es" content="Estime su Tasa de Filtración Glomerular">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="gfr_calculator" 
+         data-category="health" 
+         data-title="GFR Calculator" 
+         data-icon="🔍">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="gfr-lang" onchange="GFRCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔍 GFR Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="age_label">Age (years)</label>
+                <input type="number" id="age" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 50" min="18" max="120" value="50">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gender_label">Gender</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="male" checked class="text-purple-600 focus:ring-purple-500">
+                        <span data-i18n="male">Male</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="female" class="text-purple-600 focus:ring-purple-500">
+                        <span data-i18n="female">Female</span>
+                    </label>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="creatinine_label">Serum Creatinine (mg/dL)</label>
+                <input type="number" id="creatinine" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 1.0" min="0.1" max="15" step="0.01" value="1.0">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="race_label">Race</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="race" value="african" class="text-purple-600 focus:ring-purple-500">
+                        <span data-i18n="race_african">African American</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="race" value="other" checked class="text-purple-600 focus:ring-purple-500">
+                        <span data-i18n="race_other">Other</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="GFRCalc.calc()" class="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700 transition mb-6" data-i18n="btn_calc">Calculate GFR</button>
+
+        <div class="bg-purple-50 p-6 rounded-lg border border-purple-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Estimated Glomerular Filtration Rate</div>
+            <div id="gfr-result" class="text-3xl font-bold text-purple-800">--</div>
+            <div id="gfr-status" class="mt-2 text-lg font-medium"></div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">CKD-EPI Formula Used for Calculation</div>
+                <div id="gfr-formula" class="text-gray-600">--</div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Consult a healthcare provider for interpretation.</div>
+        </div>
+    </div>
+
+    <script>
+        const GFRCalc = {
+            i18n: {
+                'en': {
+                    title: '🔍 GFR Calculator',
+                    age_label: 'Age (years)',
+                    gender_label: 'Gender',
+                    male: 'Male',
+                    female: 'Female',
+                    creatinine_label: 'Serum Creatinine (mg/dL)',
+                    race_label: 'Race',
+                    race_african: 'African American',
+                    race_other: 'Other',
+                    btn_calc: 'Calculate GFR',
+                    res_label: 'Estimated Glomerular Filtration Rate',
+                    formula_label: 'CKD-EPI Formula Used for Calculation',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Consult a healthcare provider for interpretation.',
+                    unit: 'mL/min/1.73m²',
+                    status: {
+                        90: 'Normal or high kidney function',
+                        60: 'Mildly decreased kidney function',
+                        30: 'Moderately decreased kidney function',
+                        15: 'Severely decreased kidney function',
+                        0: 'Kidney failure'
+                    }
+                },
+                'zh-CN': {
+                    title: '🔍 肾小球滤过率计算器',
+                    age_label: '年龄（岁）',
+                    gender_label: '性别',
+                    male: '男',
+                    female: '女',
+                    creatinine_label: '血清肌酐（mg/dL）',
+                    race_label: '种族',
+                    race_african: '非洲裔美国人',
+                    race_other: '其他',
+                    btn_calc: '计算GFR',
+                    res_label: '估算肾小球滤过率',
+                    formula_label: '使用CKD-EPI公式计算',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。请咨询医疗服务提供者进行解读。',
+                    unit: '毫升/分钟/1.73平方米',
+                    status: {
+                        90: '肾功能正常或偏高',
+                        60: '肾功能轻度下降',
+                        30: '肾功能中度下降',
+                        15: '肾功能严重下降',
+                        0: '肾功能衰竭'
+                    }
+                },
+                'zh-TW': {
+                    title: '🔍 腎小球濾過率計算器',
+                    age_label: '年齡（歲）',
+                    gender_label: '性別',
+                    male: '男',
+                    female: '女',
+                    creatinine_label: '血清肌酸酐（mg/dL）',
+                    race_label: '種族',
+                    race_african: '非洲裔美國人',
+                    race_other: '其他',
+                    btn_calc: '計算GFR',
+                    res_label: '估算腎小球濾過率',
+                    formula_label: '使用CKD-EPI公式計算',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。請諮詢醫療服務提供者進行解讀。',
+                    unit: '毫升/分鐘/1.73平方米',
+                    status: {
+                        90: '腎功能正常或偏高',
+                        60: '腎功能輕度下降',
+                        30: '腎功能中度下降',
+                        15: '腎功能嚴重下降',
+                        0: '腎功能衰竭'
+                    }
+                },
+                'ja': {
+                    title: '🔍 糸球体濾過量計算機',
+                    age_label: '年齢（歳）',
+                    gender_label: '性別',
+                    male: '男性',
+                    female: '女性',
+                    creatinine_label: '血清クレアチニン（mg/dL）',
+                    race_label: '人種',
+                    race_african: 'アフリカ系アメリカ人',
+                    race_other: 'その他',
+                    btn_calc: 'GFRを計算',
+                    res_label: '推定糸球体濾過量',
+                    formula_label: 'CKD-EPI式を使用して計算',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。解釈については医療提供者に相談してください。',
+                    unit: 'mL/分/1.73m²',
+                    status: {
+                        90: '腎機能正常または高値',
+                        60: '腎機能軽度低下',
+                        30: '腎機能中等度低下',
+                        15: '腎機能重度低下',
+                        0: '腎不全'
+                    }
+                },
+                'ru': {
+                    title: '🔍 Калькулятор СФР',
+                    age_label: 'Возраст (годы)',
+                    gender_label: 'Пол',
+                    male: 'Мужской',
+                    female: 'Женский',
+                    creatinine_label: 'Сывороточный креатинин (мг/дл)',
+                    race_label: 'Раса',
+                    race_african: 'Афроамериканец',
+                    race_other: 'Другая',
+                    btn_calc: 'Вычислить СФР',
+                    res_label: 'Предполагаемая клубочковая фильтрационная скорость',
+                    formula_label: 'Для расчета используется формула CKD-EPI',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Обратитесь к медицинскому работнику за интерпретацией.',
+                    unit: 'мл/мин/1.73м²',
+                    status: {
+                        90: 'Нормальная или повышенная почечная функция',
+                        60: 'Легкое снижение почечной функции',
+                        30: 'Умеренное снижение почечной функции',
+                        15: 'Значительное снижение почечной функции',
+                        0: 'Почковая недостаточность'
+                    }
+                },
+                'es': {
+                    title: '🔍 Calculadora de TFG',
+                    age_label: 'Edad (años)',
+                    gender_label: 'Género',
+                    male: 'Masculino',
+                    female: 'Femenino',
+                    creatinine_label: 'Creatinina sérica (mg/dL)',
+                    race_label: 'Raza',
+                    race_african: 'Afroamericano',
+                    race_other: 'Otra',
+                    btn_calc: 'Calcular TFG',
+                    res_label: 'Tasa de Filtración Glomerular estimada',
+                    formula_label: 'Se utilizó la fórmula CKD-EPI para el cálculo',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo una estimación. Consulte a un proveedor de salud para la interpretación.',
+                    unit: 'mL/min/1.73m²',
+                    status: {
+                        90: 'Función renal normal o alta',
+                        60: 'Función renal ligeramente disminuida',
+                        30: 'Función renal moderadamente disminuida',
+                        15: 'Función renal severamente disminuida',
+                        0: 'Insuficiencia renal'
+                    }
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('gfr-lang').value;
+                const texts = GFRCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="gfr_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                GFRCalc.calc();
+            },
+
+            getStatus: (gfr, texts) => {
+                if (gfr >= 90) return texts.status[90];
+                if (gfr >= 60) return texts.status[60];
+                if (gfr >= 30) return texts.status[30];
+                if (gfr >= 15) return texts.status[15];
+                return texts.status[0];
+            },
+
+            getStatusColor: (gfr) => {
+                if (gfr < 15) return 'text-red-700';
+                if (gfr < 30) return 'text-orange-700';
+                if (gfr < 60) return 'text-yellow-700';
+                return 'text-green-700';
+            },
+
+            calc: () => {
+                const age = parseFloat(document.getElementById('age').value) || 0;
+                const gender = document.querySelector('input[name="gender"]:checked').value;
+                const creatinine = parseFloat(document.getElementById('creatinine').value) || 0;
+                const race = document.querySelector('input[name="race"]:checked').value;
+                const lang = document.getElementById('gfr-lang').value;
+                const texts = GFRCalc.i18n[lang];
+
+                const resultEl = document.getElementById('gfr-result');
+                const statusEl = document.getElementById('gfr-status');
+                const formulaEl = document.getElementById('gfr-formula');
+
+                // 验证输入
+                if (isNaN(age) || isNaN(creatinine) || age <= 0 || creatinine <= 0) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600";
+                    statusEl.innerText = "";
+                    formulaEl.innerText = "";
+                    return;
+                }
+
+                // 使用CKD-EPI公式计算GFR
+                let k, a, gfr;
+                const scr = creatinine;
+                const minVal = Math.min(scr / k, 1);
+                const maxVal = Math.max(scr / k, 1);
+
+                if (gender === 'male') {
+                    k = 0.9;
+                    a = -0.411;
+                } else {
+                    k = 0.7;
+                    a = -0.329;
+                }
+
+                // 种族调整
+                const raceFactor = race === 'african' ? 1.159 : 1;
+
+                // 计算GFR
+                gfr = 141 * Math.pow(minVal, a) * Math.pow(maxVal, -1.209) * 
+                      Math.pow(0.993, age) * (gender === 'female' ? 0.969 : 1) * raceFactor;
+                gfr = Math.max(0, Math.round(gfr));
+
+                // 显示结果
+                resultEl.className = "text-3xl font-bold text-purple-800";
+                resultEl.innerText = gfr + ' ' + texts.unit;
+                
+                // 显示状态
+                statusEl.innerText = GFRCalc.getStatus(gfr, texts);
+                statusEl.className = `mt-2 text-lg font-medium ${GFRCalc.getStatusColor(gfr)}`;
+                
+                // 显示计算公式说明
+                formulaEl.innerText = `GFR = 141 × min(${scr}/${k},1)^${a} × max(${scr}/${k},1)^-1.209 × 0.993^${age} × ${gender === 'female' ? 0.969 : 1} × ${raceFactor}`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', GFRCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('gfr-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    GFRCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

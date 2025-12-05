@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BAC Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="bac_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="🍷">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="BAC Calculator">
+    <meta name="description" content="Estimate your blood alcohol concentration based on your drinks.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="血液酒精浓度计算器">
+    <meta name="lang-description-zh-CN" content="根据您的饮酒量估算血液酒精浓度。">
+    
+    <meta name="lang-title-zh-TW" content="血液酒精濃度計算器">
+    <meta name="lang-description-zh-TW" content="根據您的飲酒量估算血液酒精濃度。">
+    
+    <meta name="lang-title-ja" content="血液アルコール濃度計算機">
+    <meta name="lang-description-ja" content="飲酒量に基づいて血液アルコール濃度を推定します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор САК">
+    <meta name="lang-description-ru" content="Оцените концентрацию алкоголя в крови на основе выпитого.">
+    
+    <meta name="lang-title-es" content="Calculadora de TAC">
+    <meta name="lang-description-es" content="Estime su concentración de alcohol en sangre según sus bebidas.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="bac_calculator" 
+         data-category="health" 
+         data-title="BAC Calculator" 
+         data-icon="🍷">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="bac-lang" onchange="BACCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🍷 BAC Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_label">Weight (lbs)</label>
+                <input type="number" id="weight" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 150" min="50" max="400" value="150">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gender_label">Gender</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="male" checked class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="male">Male</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="female" class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="female">Female</span>
+                    </label>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="drinks_label">Number of Drinks</label>
+                <input type="number" id="drinks" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 3" min="0" max="20" value="3">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="hours_label">Hours Since First Drink</label>
+                <input type="number" id="hours" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 2" min="0" max="24" value="2">
+            </div>
+        </div>
+
+        <button onclick="BACCalc.calc()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate BAC</button>
+
+        <div class="bg-green-50 p-6 rounded-lg border border-green-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Estimated Blood Alcohol Concentration</div>
+            <div id="bac-result" class="text-3xl font-bold text-green-800">--</div>
+            <div id="bac-status" class="mt-2 text-lg font-medium"></div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">Formula: BAC = (Drinks × 0.06 × 100 × 1.055 / Weight × Gender Constant) - (0.015 × Hours)</div>
+                <div id="bac-formula" class="text-gray-600">--</div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual BAC may vary based on various factors.</div>
+        </div>
+    </div>
+
+    <script>
+        const BACCalc = {
+            i18n: {
+                'en': {
+                    title: '🍷 BAC Calculator',
+                    weight_label: 'Weight (lbs)',
+                    gender_label: 'Gender',
+                    male: 'Male',
+                    female: 'Female',
+                    drinks_label: 'Number of Drinks',
+                    hours_label: 'Hours Since First Drink',
+                    btn_calc: 'Calculate BAC',
+                    res_label: 'Estimated Blood Alcohol Concentration',
+                    formula_label: 'Formula: BAC = (Drinks × 0.06 × 100 × 1.055 / Weight × Gender Constant) - (0.015 × Hours)',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual BAC may vary based on various factors.',
+                    status: {
+                        0.02: 'Slight impairment',
+                        0.05: 'Moderate impairment',
+                        0.08: 'Legally intoxicated',
+                        0.10: 'Significant impairment',
+                        0.15: 'Severe impairment'
+                    }
+                },
+                'zh-CN': {
+                    title: '🍷 血液酒精浓度计算器',
+                    weight_label: '体重（磅）',
+                    gender_label: '性别',
+                    male: '男',
+                    female: '女',
+                    drinks_label: '饮酒数量',
+                    hours_label: '首次饮酒后小时数',
+                    btn_calc: '计算血液酒精浓度',
+                    res_label: '估算血液酒精浓度',
+                    formula_label: '公式：血液酒精浓度 = (饮酒数 × 0.06 × 100 × 1.055 / 体重 × 性别常数) - (0.015 × 小时数)',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。实际血液酒精浓度可能因各种因素而异。',
+                    status: {
+                        0.02: '轻微影响',
+                        0.05: '中度影响',
+                        0.08: '法定醉酒',
+                        0.10: '显著影响',
+                        0.15: '严重影响'
+                    }
+                },
+                'zh-TW': {
+                    title: '🍷 血液酒精濃度計算器',
+                    weight_label: '體重（磅）',
+                    gender_label: '性別',
+                    male: '男',
+                    female: '女',
+                    drinks_label: '飲酒數量',
+                    hours_label: '首次飲酒后小時數',
+                    btn_calc: '計算血液酒精濃度',
+                    res_label: '估算血液酒精濃度',
+                    formula_label: '公式：血液酒精濃度 = (飲酒數 × 0.06 × 100 × 1.055 / 體重 × 性別常數) - (0.015 × 小時數)',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。實際血液酒精濃度可能因各種因素而異。',
+                    status: {
+                        0.02: '輕微影響',
+                        0.05: '中度影響',
+                        0.08: '法定醉酒',
+                        0.10: '顯著影響',
+                        0.15: '嚴重影響'
+                    }
+                },
+                'ja': {
+                    title: '🍷 血液アルコール濃度計算機',
+                    weight_label: '体重（ポンド）',
+                    gender_label: '性別',
+                    male: '男性',
+                    female: '女性',
+                    drinks_label: '飲酒量',
+                    hours_label: '最初の飲酒からの時間（時間）',
+                    btn_calc: '血液アルコール濃度を計算',
+                    res_label: '推定血液アルコール濃度',
+                    formula_label: '公式：BAC = (飲酒量 × 0.06 × 100 × 1.055 / 体重 × 性別定数) - (0.015 × 時間)',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際のBACはさまざまな要因によって異なる場合があります。',
+                    status: {
+                        0.02: '軽度の障害',
+                        0.05: '中等度の障害',
+                        0.08: '法的に酔っている',
+                        0.10: '著しい障害',
+                        0.15: '重度の障害'
+                    }
+                },
+                'ru': {
+                    title: '🍷 Калькулятор САК',
+                    weight_label: 'Вес (фунты)',
+                    gender_label: 'Пол',
+                    male: 'Мужской',
+                    female: 'Женский',
+                    drinks_label: 'Количество напитков',
+                    hours_label: 'Часы после первого напитка',
+                    btn_calc: 'Вычислить САК',
+                    res_label: 'Предполагаемая концентрация алкоголя в крови',
+                    formula_label: 'Формула: САК = (Напитки × 0.06 × 100 × 1.055 / Вес × Половая константа) - (0.015 × Часы)',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактическое САК может отличаться в зависимости от различных факторов.',
+                    status: {
+                        0.02: 'Легкое нарушение',
+                        0.05: 'Умеренное нарушение',
+                        0.08: 'Законно пьяный',
+                        0.10: 'Значительное нарушение',
+                        0.15: 'Серьезное нарушение'
+                    }
+                },
+                'es': {
+                    title: '🍷 Calculadora de TAC',
+                    weight_label: 'Peso (libras)',
+                    gender_label: 'Género',
+                    male: 'Masculino',
+                    female: 'Femenino',
+                    drinks_label: 'Número de bebidas',
+                    hours_label: 'Horas desde la primera bebida',
+                    btn_calc: 'Calcular TAC',
+                    res_label: 'Concentración estimada de alcohol en sangre',
+                    formula_label: 'Fórmula: TAC = (Bebidas × 0.06 × 100 × 1.055 / Peso × Constante de género) - (0.015 × Horas)',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo una estimación. El TAC real puede variar según varios factores.',
+                    status: {
+                        0.02: 'Leve deterioro',
+                        0.05: 'Deterioro moderado',
+                        0.08: 'Legalmente intoxicado',
+                        0.10: 'Deterioro significativo',
+                        0.15: 'Deterioro grave'
+                    }
+                }
+            },
+
+            init: () => {
+                // 初始化已在HTML中设置
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('bac-lang').value;
+                const texts = BACCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="bac_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                BACCalc.calc();
+            },
+
+            getStatus: (bac, texts) => {
+                if (bac >= 0.15) return texts.status[0.15];
+                if (bac >= 0.10) return texts.status[0.10];
+                if (bac >= 0.08) return texts.status[0.08];
+                if (bac >= 0.05) return texts.status[0.05];
+                if (bac >= 0.02) return texts.status[0.02];
+                return 'No significant impairment';
+            },
+
+            getStatusColor: (bac) => {
+                if (bac >= 0.15) return 'text-red-700';
+                if (bac >= 0.08) return 'text-orange-700';
+                if (bac >= 0.05) return 'text-yellow-700';
+                return 'text-green-700';
+            },
+
+            calc: () => {
+                const weight = parseFloat(document.getElementById('weight').value) || 0;
+                const gender = document.querySelector('input[name="gender"]:checked').value;
+                const drinks = parseFloat(document.getElementById('drinks').value) || 0;
+                const hours = parseFloat(document.getElementById('hours').value) || 0;
+                const lang = document.getElementById('bac-lang').value;
+                const texts = BACCalc.i18n[lang];
+
+                const resultEl = document.getElementById('bac-result');
+                const statusEl = document.getElementById('bac-status');
+                const formulaEl = document.getElementById('bac-formula');
+
+                // 验证输入
+                if (isNaN(weight) || isNaN(drinks) || isNaN(hours) || weight <= 0 || drinks < 0 || hours < 0) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600";
+                    statusEl.innerText = "";
+                    formulaEl.innerText = "";
+                    return;
+                }
+
+                // 计算BAC (血液酒精浓度)
+                // 性别常数: 男性 0.73，女性 0.66
+                const genderConstant = gender === 'male' ? 0.73 : 0.66;
+                let bac = (drinks * 0.06 * 100 * 1.055 / weight * genderConstant) - (0.015 * hours);
+                bac = Math.max(0, bac.toFixed(3)); // 确保不出现负数
+
+                // 显示结果
+                resultEl.className = "text-3xl font-bold text-green-800";
+                resultEl.innerText = bac + '%';
+                
+                // 显示状态
+                statusEl.innerText = BACCalc.getStatus(bac, texts);
+                statusEl.className = `mt-2 text-lg font-medium ${BACCalc.getStatusColor(bac)}`;
+                
+                // 显示计算公式
+                formulaEl.innerText = `${bac}% = (${drinks} × 0.06 × 100 × 1.055 / ${weight} × ${genderConstant}) - (0.015 × ${hours})`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', BACCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('bac-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    BACCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

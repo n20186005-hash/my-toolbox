@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Loan Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="auto_loan_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="🚗">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Auto Loan Calculator">
+    <meta name="description" content="Calculate your car loan payments with different calculation methods.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="汽车贷款计算器">
+    <meta name="lang-description-zh-CN" content="使用不同的计算方法计算您的汽车贷款付款。">
+    
+    <meta name="lang-title-zh-TW" content="汽車貸款計算器">
+    <meta name="lang-description-zh-TW" content="使用不同的計算方法計算您的汽車貸款付款。">
+    
+    <meta name="lang-title-ja" content="自動車ローン計算機">
+    <meta name="lang-description-ja" content="さまざまな計算方法で自動車ローンの支払額を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор автокредитов">
+    <meta name="lang-description-ru" content="Рассчитайте платежи по автокредиту с использованием разных методов расчета.">
+    
+    <meta name="lang-title-es" content="Calculadora de préstamos automotrices">
+    <meta name="lang-description-es" content="Calcule sus pagos de préstamos automotrices con diferentes métodos de cálculo.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .payment-schedule { max-height: 300px; overflow-y: auto; margin-top: 15px; }
+        .schedule-row { display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px; border-bottom: 1px solid #eee; }
+        .schedule-header { font-weight: bold; background-color: #f8fafc; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="auto_loan_calculator" 
+         data-category="finance" 
+         data-title="Auto Loan Calculator" 
+         data-icon="🚗">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="auto-loan-lang" onchange="AutoLoanCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🚗 Auto Loan Calculator</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="car_price_label">Car Price</label>
+                <input type="number" id="car-price" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="e.g. 30000" min="1000" value="30000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="down_payment_label">Down Payment</label>
+                <input type="number" id="down-payment" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="e.g. 5000" min="0" value="5000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="trade_in_value_label">Trade-in Value</label>
+                <input type="number" id="trade-in-value" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="e.g. 2000" min="0" value="2000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="interest_rate_label">Annual Interest Rate (%)</label>
+                <input type="number" id="interest-rate" step="0.01" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="e.g. 3.9" min="0.01" max="20" value="3.9">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="loan_term_label">Loan Term (Months)</label>
+                <input type="number" id="loan-term" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="e.g. 60" min="12" max="84" value="60">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="calculation_method_label">Calculation Method</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="calc-method" value="equal-principal-interest" checked class="text-red-600 focus:ring-red-500">
+                        <span data-i18n="equal_principal_interest">Equal Principal & Interest</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="calc-method" value="equal-principal" class="text-red-600 focus:ring-red-500">
+                        <span data-i18n="equal_principal">Equal Principal</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="AutoLoanCalc.calc()" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700 transition mb-6" data-i18n="btn_calc">Calculate Auto Loan</button>
+
+        <div class="bg-red-50 p-6 rounded-lg border border-red-100">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="loan_amount_label">Loan Amount</div>
+                    <div id="loan-amount" class="text-2xl font-bold text-red-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="monthly_payment_label">Monthly Payment</div>
+                    <div id="monthly-payment" class="text-2xl font-bold text-red-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="total_payment_label">Total Payment</div>
+                    <div id="total-payment" class="text-2xl font-bold text-red-800">--</div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-sm text-gray-500 mb-1" data-i18n="total_principal_label">Total Principal</div>
+                            <div id="total-principal" class="text-lg font-medium text-gray-800">--</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-500 mb-1" data-i18n="total_interest_label">Total Interest</div>
+                            <div id="total-interest" class="text-lg font-medium text-gray-800">--</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-500 mb-1" data-i18n="payment_count_label">Payment Count</div>
+                            <div id="payment-count" class="text-lg font-medium text-gray-800">--</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-500 mb-1" data-i18n="total_cost_label">Total Car Cost</div>
+                            <div id="total-cost" class="text-lg font-medium text-gray-800">--</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="payment_schedule_label">Payment Schedule (First 12 Months)</div>
+                    <div class="schedule-row schedule-header">
+                        <div data-i18n="month_label">Month</div>
+                        <div data-i18n="payment_label">Payment</div>
+                        <div data-i18n="principal_label">Principal</div>
+                        <div data-i18n="interest_label">Interest</div>
+                    </div>
+                    <div id="payment-schedule" class="payment-schedule">
+                        <!-- 付款计划将在这里动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual payments may vary based on taxes, fees, and other charges.</div>
+        </div>
+    </div>
+
+    <script>
+        const AutoLoanCalc = {
+            i18n: {
+                'en': {
+                    title: '🚗 Auto Loan Calculator',
+                    car_price_label: 'Car Price',
+                    down_payment_label: 'Down Payment',
+                    trade_in_value_label: 'Trade-in Value',
+                    interest_rate_label: 'Annual Interest Rate (%)',
+                    loan_term_label: 'Loan Term (Months)',
+                    calculation_method_label: 'Calculation Method',
+                    equal_principal_interest: 'Equal Principal & Interest',
+                    equal_principal: 'Equal Principal',
+                    btn_calc: 'Calculate Auto Loan',
+                    loan_amount_label: 'Loan Amount',
+                    monthly_payment_label: 'Monthly Payment',
+                    total_payment_label: 'Total Payment',
+                    total_principal_label: 'Total Principal',
+                    total_interest_label: 'Total Interest',
+                    payment_count_label: 'Payment Count',
+                    total_cost_label: 'Total Car Cost',
+                    payment_schedule_label: 'Payment Schedule (First 12 Months)',
+                    month_label: 'Month',
+                    payment_label: 'Payment',
+                    principal_label: 'Principal',
+                    interest_label: 'Interest',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual payments may vary based on taxes, fees, and other charges.'
+                },
+                'zh-CN': {
+                    title: '🚗 汽车贷款计算器',
+                    car_price_label: '汽车价格',
+                    down_payment_label: '首付款',
+                    trade_in_value_label: '置换价值',
+                    interest_rate_label: '年利率 (%)',
+                    loan_term_label: '贷款期限 (月)',
+                    calculation_method_label: '计算方式',
+                    equal_principal_interest: '等额本息',
+                    equal_principal: '等额本金',
+                    btn_calc: '计算汽车贷款',
+                    loan_amount_label: '贷款金额',
+                    monthly_payment_label: '每月还款',
+                    total_payment_label: '还款总额',
+                    total_principal_label: '总本金',
+                    total_interest_label: '总利息',
+                    payment_count_label: '还款期数',
+                    total_cost_label: '汽车总成本',
+                    payment_schedule_label: '还款计划（前12期）',
+                    month_label: '期数',
+                    payment_label: '还款额',
+                    principal_label: '本金',
+                    interest_label: '利息',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。实际还款可能因税费、手续费和其他费用而异。'
+                },
+                'zh-TW': {
+                    title: '🚗 汽車貸款計算器',
+                    car_price_label: '汽車價格',
+                    down_payment_label: '首付款',
+                    trade_in_value_label: '置換價值',
+                    interest_rate_label: '年利率 (%)',
+                    loan_term_label: '貸款期限 (月)',
+                    calculation_method_label: '計算方式',
+                    equal_principal_interest: '等額本息',
+                    equal_principal: '等額本金',
+                    btn_calc: '計算汽車貸款',
+                    loan_amount_label: '貸款金額',
+                    monthly_payment_label: '每月還款',
+                    total_payment_label: '還款總額',
+                    total_principal_label: '總本金',
+                    total_interest_label: '總利息',
+                    payment_count_label: '還款期數',
+                    total_cost_label: '汽車總成本',
+                    payment_schedule_label: '還款計劃（前12期）',
+                    month_label: '期數',
+                    payment_label: '還款額',
+                    principal_label: '本金',
+                    interest_label: '利息',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。實際還款可能因稅費、手續費和其他費用而異。'
+                },
+                'ja': {
+                    title: '🚗 自動車ローン計算機',
+                    car_price_label: '車両価格',
+                    down_payment_label: '頭金',
+                    trade_in_value_label: 'トレードイン価値',
+                    interest_rate_label: '年利 (%)',
+                    loan_term_label: 'ローン期間 (月)',
+                    calculation_method_label: '計算方法',
+                    equal_principal_interest: '元利均等',
+                    equal_principal: '元金均等',
+                    btn_calc: '自動車ローンを計算',
+                    loan_amount_label: 'ローン金額',
+                    monthly_payment_label: '月々の支払い',
+                    total_payment_label: '総支払額',
+                    total_principal_label: '総元金',
+                    total_interest_label: '総利息',
+                    payment_count_label: '支払回数',
+                    total_cost_label: '車両総費用',
+                    payment_schedule_label: '支払スケジュール（最初の12ヶ月）',
+                    month_label: '月',
+                    payment_label: '支払額',
+                    principal_label: '元金',
+                    interest_label: '利息',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際の支払額は税金、手数料、その他の料金によって異なる場合があります。'
+                },
+                'ru': {
+                    title: '🚗 Калькулятор автокредитов',
+                    car_price_label: 'Цена автомобиля',
+                    down_payment_label: 'Первоначальный взнос',
+                    trade_in_value_label: 'Трейд-ин стоимость',
+                    interest_rate_label: 'Годовая процентная ставка (%)',
+                    loan_term_label: 'Срок кредита (месяцев)',
+                    calculation_method_label: 'Метод расчета',
+                    equal_principal_interest: 'Равные платежи (с основным и процентами)',
+                    equal_principal: 'Равный основной долг',
+                    btn_calc: 'Рассчитать автокредит',
+                    loan_amount_label: 'Сумма кредита',
+                    monthly_payment_label: 'Ежемесячный платеж',
+                    total_payment_label: 'Общий платеж',
+                    total_principal_label: 'Общий основной долг',
+                    total_interest_label: 'Общий процент',
+                    payment_count_label: 'Количество платежей',
+                    total_cost_label: 'Общая стоимость автомобиля',
+                    payment_schedule_label: 'График платежей (первые 12 месяцев)',
+                    month_label: 'Месяц',
+                    payment_label: 'Платеж',
+                    principal_label: 'Основной долг',
+                    interest_label: 'Процент',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактические платежи могут отличаться в зависимости от налогов, комиссий и других расходов.'
+                },
+                'es': {
+                    title: '🚗 Calculadora de préstamos automotrices',
+                    car_price_label: 'Precio del coche',
+                    down_payment_label: 'Pago inicial',
+                    trade_in_value_label: 'Valor de intercambio',
+                    interest_rate_label: 'Tasa de interés anual (%)',
+                    loan_term_label: 'Plazo del préstamo (meses)',
+                    calculation_method_label: 'Método de cálculo',
+                    equal_principal_interest: 'Principal e interés iguales',
+                    equal_principal: 'Principal igual',
+                    btn_calc: 'Calcular préstamo automotriz',
+                    loan_amount_label: 'Monto del préstamo',
+                    monthly_payment_label: 'Pago mensual',
+                    total_payment_label: 'Pago total',
+                    total_principal_label: 'Principal total',
+                    total_interest_label: 'Interés total',
+                    payment_count_label: 'Número de pagos',
+                    total_cost_label: 'Costo total del coche',
+                    payment_schedule_label: 'Programación de pagos (primeros 12 meses)',
+                    month_label: 'Mes',
+                    payment_label: 'Pago',
+                    principal_label: 'Principal',
+                    interest_label: 'Interés',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo una estimación. Los pagos reales pueden variar según impuestos, tarifas y otros cargos.'
+                }
+            },
+
+            init: () => {
+                // 初始化计算
+                AutoLoanCalc.calc();
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('auto-loan-lang').value;
+                const texts = AutoLoanCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="auto_loan_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                AutoLoanCalc.calc();
+            },
+
+            // 等额本息计算
+            calculateEqualPrincipalInterest: (loanAmount, monthlyRate, totalMonths) => {
+                const monthlyPayment = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, totalMonths) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
+                let remainingPrincipal = loanAmount;
+                const schedule = [];
+                
+                for (let month = 1; month <= totalMonths; month++) {
+                    const interestPayment = remainingPrincipal * monthlyRate;
+                    const principalPayment = monthlyPayment - interestPayment;
+                    remainingPrincipal -= principalPayment;
+                    
+                    schedule.push({
+                        month,
+                        payment: monthlyPayment,
+                        principal: principalPayment,
+                        interest: interestPayment,
+                        remaining: remainingPrincipal
+                    });
+                    
+                    if (month === 12) break; // 只显示前12期
+                }
+                
+                const totalPayment = monthlyPayment * totalMonths;
+                const totalInterest = totalPayment - loanAmount;
+                
+                return {
+                    monthlyPayment,
+                    totalPayment,
+                    totalInterest,
+                    totalPrincipal: loanAmount,
+                    paymentCount: totalMonths,
+                    schedule
+                };
+            },
+
+            // 等额本金计算
+            calculateEqualPrincipal: (loanAmount, monthlyRate, totalMonths) => {
+                const monthlyPrincipal = loanAmount / totalMonths;
+                let remainingPrincipal = loanAmount;
+                const schedule = [];
+                let totalPayment = 0;
+                
+                for (let month = 1; month <= totalMonths; month++) {
+                    const interestPayment = remainingPrincipal * monthlyRate;
+                    const payment = monthlyPrincipal + interestPayment;
+                    remainingPrincipal -= monthlyPrincipal;
+                    totalPayment += payment;
+                    
+                    schedule.push({
+                        month,
+                        payment,
+                        principal: monthlyPrincipal,
+                        interest: interestPayment,
+                        remaining: remainingPrincipal
+                    });
+                    
+                    if (month === 12) break; // 只显示前12期
+                }
+                
+                const totalInterest = totalPayment - loanAmount;
+                
+                return {
+                    monthlyPayment: schedule[0].payment, // 首月还款额作为参考
+                    totalPayment,
+                    totalInterest,
+                    totalPrincipal: loanAmount,
+                    paymentCount: totalMonths,
+                    schedule
+                };
+            },
+
+            formatCurrency: (value) => {
+                return new Intl.NumberFormat(document.getElementById('auto-loan-lang').value).format(value.toFixed(2));
+            },
+
+            calc: () => {
+                const carPrice = parseFloat(document.getElementById('car-price').value) || 0;
+                const downPayment = parseFloat(document.getElementById('down-payment').value) || 0;
+                const tradeInValue = parseFloat(document.getElementById('trade-in-value').value) || 0;
+                const interestRate = parseFloat(document.getElementById('interest-rate').value) || 0;
+                const loanTerm = parseFloat(document.getElementById('loan-term').value) || 0;
+                const calcMethod = document.querySelector('input[name="calc-method"]:checked').value;
+                const lang = document.getElementById('auto-loan-lang').value;
+                const texts = AutoLoanCalc.i18n[lang];
+
+                // 计算贷款金额
+                const loanAmount = carPrice - downPayment - tradeInValue;
+
+                const loanAmountEl = document.getElementById('loan-amount');
+                const monthlyPaymentEl = document.getElementById('monthly-payment');
+                const totalPaymentEl = document.getElementById('total-payment');
+                const totalPrincipalEl = document.getElementById('total-principal');
+                const totalInterestEl = document.getElementById('total-interest');
+                const paymentCountEl = document.getElementById('payment-count');
+                const totalCostEl = document.getElementById('total-cost');
+                const scheduleEl = document.getElementById('payment-schedule');
+
+                // 验证输入
+                if (isNaN(carPrice) || isNaN(downPayment) || isNaN(tradeInValue) || 
+                    isNaN(interestRate) || isNaN(loanTerm) || 
+                    carPrice <= 0 || interestRate <= 0 || loanTerm <= 0 || loanAmount <= 0) {
+                    loanAmountEl.innerText = texts.err_invalid;
+                    loanAmountEl.className = "text-xl font-bold text-red-600";
+                    monthlyPaymentEl.innerText = "";
+                    totalPaymentEl.innerText = "";
+                    totalPrincipalEl.innerText = "";
+                    totalInterestEl.innerText = "";
+                    paymentCountEl.innerText = "";
+                    totalCostEl.innerText = "";
+                    scheduleEl.innerHTML = "";
+                    return;
+                }
+
+                // 计算参数
+                const monthlyRate = interestRate / 100 / 12;
+                const totalMonths = loanTerm;
+                const totalCarCost = downPayment + (carPrice - downPayment - tradeInValue);
+                
+                // 根据选择的计算方式进行计算
+                let result;
+                if (calcMethod === 'equal-principal-interest') {
+                    result = AutoLoanCalc.calculateEqualPrincipalInterest(loanAmount, monthlyRate, totalMonths);
+                } else {
+                    result = AutoLoanCalc.calculateEqualPrincipal(loanAmount, monthlyRate, totalMonths);
+                }
+
+                // 显示结果
+                loanAmountEl.className = "text-2xl font-bold text-red-800";
+                loanAmountEl.innerText = AutoLoanCalc.formatCurrency(loanAmount);
+                
+                monthlyPaymentEl.className = "text-2xl font-bold text-red-800";
+                monthlyPaymentEl.innerText = AutoLoanCalc.formatCurrency(result.monthlyPayment);
+                
+                totalPaymentEl.className = "text-2xl font-bold text-red-800";
+                totalPaymentEl.innerText = AutoLoanCalc.formatCurrency(result.totalPayment);
+                
+                totalPrincipalEl.innerText = AutoLoanCalc.formatCurrency(result.totalPrincipal);
+                totalInterestEl.innerText = AutoLoanCalc.formatCurrency(result.totalInterest);
+                paymentCountEl.innerText = result.paymentCount;
+                totalCostEl.innerText = AutoLoanCalc.formatCurrency(totalCarCost + result.totalInterest);
+
+                // 生成还款计划
+                scheduleEl.innerHTML = "";
+                result.schedule.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = "schedule-row";
+                    row.innerHTML = `
+                        <div>${item.month}</div>
+                        <div>${AutoLoanCalc.formatCurrency(item.payment)}</div>
+                        <div>${AutoLoanCalc.formatCurrency(item.principal)}</div>
+                        <div>${AutoLoanCalc.formatCurrency(item.interest)}</div>
+                    `;
+                    scheduleEl.appendChild(row);
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', AutoLoanCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('auto-loan-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    AutoLoanCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

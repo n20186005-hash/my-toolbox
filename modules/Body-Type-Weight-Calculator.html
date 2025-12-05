@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Type & Weight Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="body_type_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="📏">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Body Type & Weight Calculator">
+    <meta name="description" content="Calculate your BMI and determine your body type.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="体型体重计算器">
+    <meta name="lang-description-zh-CN" content="计算您的BMI并确定您的体型。">
+    
+    <meta name="lang-title-zh-TW" content="體型體重計算器">
+    <meta name="lang-description-zh-TW" content="計算您的BMI並確定您的體型。">
+    
+    <meta name="lang-title-ja" content="体型と体重計算機">
+    <meta name="lang-description-ja" content="BMIを計算し、体型を判断します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор телосложения и веса">
+    <meta name="lang-description-ru" content="Вычислите свой ИМТ и определите тип телосложения.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result { background-color: #f0fdf4; border: 1px solid #10b981; color: #059669; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .info { background-color: #eff8ff; border: 1px solid #3b82f6; color: #1e40af; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="body_type_calculator" 
+         data-category="health" 
+         data-title="Body Type & Weight Calculator" 
+         data-icon="📏">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="body-lang" onchange="BodyCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📏 Body Type & Weight Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gender">Gender</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="male" checked class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="male">Male</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="female" class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="female">Female</span>
+                    </label>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="unit_system">Unit System</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="metric" checked class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="metric">Metric (cm, kg)</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="imperial" class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="imperial">Imperial (ft, lbs)</span>
+                    </label>
+                </div>
+            </div>
+            <div id="height-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_cm">Height (cm)</label>
+                <input type="number" id="height-cm" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 175" min="100" max="250" value="175">
+            </div>
+            <div id="height-imperial" style="display: none;">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_ft">Height (ft)</label>
+                        <input type="number" id="height-ft" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 5" min="3" max="7" value="5">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_in">Height (in)</label>
+                        <input type="number" id="height-in" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 9" min="0" max="11" value="9">
+                    </div>
+                </div>
+            </div>
+            <div id="weight-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_kg">Weight (kg)</label>
+                <input type="number" id="weight-kg" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 70" min="30" max="300" value="70">
+            </div>
+            <div id="weight-imperial" style="display: none;">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_lbs">Weight (lbs)</label>
+                <input type="number" id="weight-lbs" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 154" min="66" max="660" value="154">
+            </div>
+        </div>
+
+        <button onclick="BodyCalc.calc()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Body Type</button>
+
+        <div class="bg-green-50 p-6 rounded-lg border border-green-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="bmi_result">BMI Result</div>
+            <div id="bmi-result" class="text-2xl font-bold text-green-800">--</div>
+            <div id="body-type" class="mt-1 text-lg font-medium"></div>
+            
+            <div class="mt-6 text-sm text-gray-500 mb-2" data-i18n="ideal_weight">Ideal Weight Range</div>
+            <div id="ideal-weight" class="text-xl font-bold text-green-800">--</div>
+            
+            <div class="info text-sm mt-4" data-i18n="bmi_explanation">BMI is a measure of body fat based on height and weight that applies to adult men and women.</div>
+        </div>
+    </div>
+
+    <script>
+        const BodyCalc = {
+            i18n: {
+                'en': {
+                    title: '📏 Body Type & Weight Calculator',
+                    gender: 'Gender',
+                    male: 'Male',
+                    female: 'Female',
+                    unit_system: 'Unit System',
+                    metric: 'Metric (cm, kg)',
+                    imperial: 'Imperial (ft, lbs)',
+                    height_cm: 'Height (cm)',
+                    height_ft: 'Height (ft)',
+                    height_in: 'Height (in)',
+                    weight_kg: 'Weight (kg)',
+                    weight_lbs: 'Weight (lbs)',
+                    btn_calc: 'Calculate Body Type',
+                    bmi_result: 'BMI Result',
+                    ideal_weight: 'Ideal Weight Range',
+                    bmi_explanation: 'BMI is a measure of body fat based on height and weight that applies to adult men and women.',
+                    err_invalid: 'Please enter valid values',
+                    body_types: {
+                        underweight: 'Underweight (BMI < 18.5)',
+                        normal: 'Normal weight (BMI 18.5 - 24.9)',
+                        overweight: 'Overweight (BMI 25 - 29.9)',
+                        obese: 'Obese (BMI ≥ 30)'
+                    },
+                    ideal_weight_range: '{min} - {max} {unit}'
+                },
+                'zh-CN': {
+                    title: '📏 体型体重计算器',
+                    gender: '性别',
+                    male: '男',
+                    female: '女',
+                    unit_system: '单位系统',
+                    metric: '公制（厘米，千克）',
+                    imperial: '英制（英尺，磅）',
+                    height_cm: '身高（厘米）',
+                    height_ft: '身高（英尺）',
+                    height_in: '身高（英寸）',
+                    weight_kg: '体重（千克）',
+                    weight_lbs: '体重（磅）',
+                    btn_calc: '计算体型',
+                    bmi_result: 'BMI结果',
+                    ideal_weight: '理想体重范围',
+                    bmi_explanation: 'BMI是基于身高和体重的体脂测量指标，适用于成年男性和女性。',
+                    err_invalid: '请输入有效值',
+                    body_types: {
+                        underweight: '偏瘦（BMI < 18.5）',
+                        normal: '正常体重（BMI 18.5 - 24.9）',
+                        overweight: '超重（BMI 25 - 29.9）',
+                        obese: '肥胖（BMI ≥ 30）'
+                    },
+                    ideal_weight_range: '{min} - {max} {unit}'
+                },
+                'zh-TW': {
+                    title: '📏 體型體重計算器',
+                    gender: '性別',
+                    male: '男',
+                    female: '女',
+                    unit_system: '單位系統',
+                    metric: '公制（公分，公斤）',
+                    imperial: '英制（英尺，磅）',
+                    height_cm: '身高（公分）',
+                    height_ft: '身高（英尺）',
+                    height_in: '身高（英寸）',
+                    weight_kg: '體重（公斤）',
+                    weight_lbs: '體重（磅）',
+                    btn_calc: '計算體型',
+                    bmi_result: 'BMI結果',
+                    ideal_weight: '理想體重範圍',
+                    bmi_explanation: 'BMI是基於身高和體重的體脂測量指標，適用於成年男性和女性。',
+                    err_invalid: '請輸入有效值',
+                    body_types: {
+                        underweight: '偏瘦（BMI < 18.5）',
+                        normal: '正常體重（BMI 18.5 - 24.9）',
+                        overweight: '超重（BMI 25 - 29.9）',
+                        obese: '肥胖（BMI ≥ 30）'
+                    },
+                    ideal_weight_range: '{min} - {max} {unit}'
+                },
+                'ja': {
+                    title: '📏 体型と体重計算機',
+                    gender: '性別',
+                    male: '男性',
+                    female: '女性',
+                    unit_system: '単位系',
+                    metric: 'メートル法（cm、kg）',
+                    imperial: 'インペリアル法（フィート、ポンド）',
+                    height_cm: '身長（cm）',
+                    height_ft: '身長（フィート）',
+                    height_in: '身長（インチ）',
+                    weight_kg: '体重（kg）',
+                    weight_lbs: '体重（ポンド）',
+                    btn_calc: '体型を計算',
+                    bmi_result: 'BMI結果',
+                    ideal_weight: '理想的な体重範囲',
+                    bmi_explanation: 'BMIは、成人の男性と女性に適用される、身長と体重に基づく体脂肪の指標です。',
+                    err_invalid: '有効な値を入力してください',
+                    body_types: {
+                        underweight: '低体重（BMI < 18.5）',
+                        normal: '標準体重（BMI 18.5 - 24.9）',
+                        overweight: '過体重（BMI 25 - 29.9）',
+                        obese: '肥満（BMI ≥ 30）'
+                    },
+                    ideal_weight_range: '{min} - {max} {unit}'
+                },
+                'ru': {
+                    title: '📏 Калькулятор телосложения и веса',
+                    gender: 'Пол',
+                    male: 'Мужской',
+                    female: 'Женский',
+                    unit_system: 'Система единиц',
+                    metric: 'Метрическая (см, кг)',
+                    imperial: 'Имперская (футы, фунты)',
+                    height_cm: 'Рост (см)',
+                    height_ft: 'Рост (футы)',
+                    height_in: 'Рост (дюймы)',
+                    weight_kg: 'Вес (кг)',
+                    weight_lbs: 'Вес (фунты)',
+                    btn_calc: 'Определить тип телосложения',
+                    bmi_result: 'Результат ИМТ',
+                    ideal_weight: 'Оптимальный диапазон веса',
+                    bmi_explanation: 'ИМТ — это мера жировой массы, основанная на росте и весе, применяется для взрослых мужчин и женщин.',
+                    err_invalid: 'Введите действительные значения',
+                    body_types: {
+                        underweight: 'Недостаток веса (ИМТ < 18.5)',
+                        normal: 'Нормальный вес (ИМТ 18.5 - 24.9)',
+                        overweight: 'Избыточный вес (ИМТ 25 - 29.9)',
+                        obese: 'Ожирение (ИМТ ≥ 30)'
+                    },
+                    ideal_weight_range: '{min} - {max} {unit}'
+                }
+            },
+            
+            init: function() {
+                // 监听单位切换
+                document.querySelectorAll('input[name="units"]').forEach(radio => {
+                    radio.addEventListener('change', () => this.toggleUnits());
+                });
+                this.toggleUnits();
+            },
+            
+            toggleUnits: function() {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                
+                // 显示/隐藏相应的输入框
+                document.getElementById('height-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('height-imperial').style.display = isMetric ? 'none' : 'block';
+                document.getElementById('weight-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('weight-imperial').style.display = isMetric ? 'none' : 'block';
+            },
+            
+            changeLang: function() {
+                const lang = document.getElementById('body-lang').value;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                // 如果已经计算过，重新计算以更新显示
+                if (document.getElementById('bmi-result').textContent !== '--') {
+                    this.calc();
+                }
+            },
+            
+            calc: function() {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                const lang = document.getElementById('body-lang').value;
+                let height, weight;
+                
+                // 获取身高值
+                if (isMetric) {
+                    height = parseFloat(document.getElementById('height-cm').value) / 100; // 转换为米
+                    weight = parseFloat(document.getElementById('weight-kg').value);
+                } else {
+                    const feet = parseFloat(document.getElementById('height-ft').value);
+                    const inches = parseFloat(document.getElementById('height-in').value);
+                    height = (feet * 12 + inches) * 0.0254; // 转换为米
+                    weight = parseFloat(document.getElementById('weight-lbs').value) * 0.453592; // 转换为千克
+                }
+                
+                // 验证输入
+                if (isNaN(height) || isNaN(weight) || height <= 0 || weight <= 0) {
+                    alert(this.i18n[lang]['err_invalid']);
+                    return;
+                }
+                
+                // 计算BMI
+                const bmi = weight / (height * height);
+                const formattedBmi = bmi.toFixed(1);
+                
+                // 确定体型
+                let bodyTypeKey;
+                if (bmi < 18.5) bodyTypeKey = 'underweight';
+                else if (bmi < 25) bodyTypeKey = 'normal';
+                else if (bmi < 30) bodyTypeKey = 'overweight';
+                else bodyTypeKey = 'obese';
+                
+                // 计算理想体重范围 (BMI 18.5-24.9)
+                const idealMin = 18.5 * height * height;
+                const idealMax = 24.9 * height * height;
+                
+                // 根据单位格式化结果
+                let idealMinFormatted, idealMaxFormatted, unit;
+                if (isMetric) {
+                    idealMinFormatted = idealMin.toFixed(1);
+                    idealMaxFormatted = idealMax.toFixed(1);
+                    unit = 'kg';
+                } else {
+                    idealMinFormatted = (idealMin / 0.453592).toFixed(0);
+                    idealMaxFormatted = (idealMax / 0.453592).toFixed(0);
+                    unit = 'lbs';
+                }
+                
+                // 显示结果
+                document.getElementById('bmi-result').textContent = formattedBmi;
+                document.getElementById('body-type').textContent = this.i18n[lang]['body_types'][bodyTypeKey];
+                
+                const idealWeightText = this.i18n[lang]['ideal_weight_range']
+                    .replace('{min}', idealMinFormatted)
+                    .replace('{max}', idealMaxFormatted)
+                    .replace('{unit}', unit);
+                document.getElementById('ideal-weight').textContent = idealWeightText;
+            }
+        };
+        
+        // 初始化
+        BodyCalc.init();
+    </script>
+</body>
+</html>

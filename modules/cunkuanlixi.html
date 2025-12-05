@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit Interest Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="deposit_interest_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💰">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Deposit Interest Calculator">
+    <meta name="description" content="Calculate interest earnings on your deposits.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="存款利息计算器">
+    <meta name="lang-description-zh-CN" content="计算您的存款利息收益。">
+    
+    <meta name="lang-title-zh-TW" content="存款利息計算器">
+    <meta name="lang-description-zh-TW" content="計算您的存款利息收益。">
+    
+    <meta name="lang-title-ja" content="預金利息計算機">
+    <meta name="lang-description-ja" content="預金の利息収入を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор процентов по вкладам">
+    <meta name="lang-description-ru" content="Вычислите доходы от процентов по вашим депозитам.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="deposit_interest_calculator" 
+         data-category="finance" 
+         data-title="Deposit Interest Calculator" 
+         data-icon="💰">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="interest-lang" onchange="InterestCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💰 Deposit Interest Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="principal_label">Principal Amount</label>
+                <input type="number" id="principal" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 10000" min="1" value="10000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rate_label">Annual Interest Rate (%)</label>
+                <input type="number" id="rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 2.5" min="0.01" max="100" step="0.01" value="2.5">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="years_label">Time (Years)</label>
+                <input type="number" id="years" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 5" min="0.5" step="0.5" value="5">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="type_label">Interest Type</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="interest-type" value="simple" checked class="text-blue-600 focus:ring-blue-500">
+                        <span data-i18n="simple">Simple</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="interest-type" value="compound" class="text-blue-600 focus:ring-blue-500">
+                        <span data-i18n="compound">Compound (Annual)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="InterestCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Interest</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Calculation Results</div>
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div data-i18n="total_interest" class="text-sm text-gray-500">Total Interest</div>
+                    <div id="total-interest" class="text-2xl font-bold text-blue-800">--</div>
+                </div>
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div data-i18n="total_amount" class="text-sm text-gray-500">Total Amount</div>
+                    <div id="total-amount" class="text-2xl font-bold text-blue-800">--</div>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">Formula</div>
+                <div id="interest-formula" class="text-gray-600">--</div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual results may vary.</div>
+        </div>
+    </div>
+
+    <script>
+        const InterestCalc = {
+            i18n: {
+                'en': {
+                    title: '💰 Deposit Interest Calculator',
+                    principal_label: 'Principal Amount',
+                    rate_label: 'Annual Interest Rate (%)',
+                    years_label: 'Time (Years)',
+                    type_label: 'Interest Type',
+                    simple: 'Simple',
+                    compound: 'Compound (Annual)',
+                    btn_calc: 'Calculate Interest',
+                    res_label: 'Calculation Results',
+                    total_interest: 'Total Interest',
+                    total_amount: 'Total Amount',
+                    formula_label: 'Formula',
+                    simple_formula: 'Simple Interest = Principal × Rate × Time',
+                    compound_formula: 'Compound Amount = Principal × (1 + Rate)^Time',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual results may vary.'
+                },
+                'zh-CN': {
+                    title: '💰 存款利息计算器',
+                    principal_label: '本金金额',
+                    rate_label: '年利率 (%)',
+                    years_label: '时间 (年)',
+                    type_label: '利息类型',
+                    simple: '单利',
+                    compound: '复利 (每年)',
+                    btn_calc: '计算利息',
+                    res_label: '计算结果',
+                    total_interest: '总利息',
+                    total_amount: '本息总额',
+                    formula_label: '计算公式',
+                    simple_formula: '单利 = 本金 × 利率 × 时间',
+                    compound_formula: '复利总额 = 本金 × (1 + 利率)^时间',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。实际结果可能有所不同。'
+                },
+                'zh-TW': {
+                    title: '💰 存款利息計算器',
+                    principal_label: '本金金額',
+                    rate_label: '年利率 (%)',
+                    years_label: '時間 (年)',
+                    type_label: '利息類型',
+                    simple: '單利',
+                    compound: '複利 (每年)',
+                    btn_calc: '計算利息',
+                    res_label: '計算結果',
+                    total_interest: '總利息',
+                    total_amount: '本息總額',
+                    formula_label: '計算公式',
+                    simple_formula: '單利 = 本金 × 利率 × 時間',
+                    compound_formula: '複利總額 = 本金 × (1 + 利率)^時間',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。實際結果可能有所不同。'
+                },
+                'ja': {
+                    title: '💰 預金利息計算機',
+                    principal_label: '元本額',
+                    rate_label: '年利 (%)',
+                    years_label: '期間 (年)',
+                    type_label: '利息の種類',
+                    simple: '単利',
+                    compound: '複利 (年次)',
+                    btn_calc: '利息を計算',
+                    res_label: '計算結果',
+                    total_interest: '総利息',
+                    total_amount: '総額',
+                    formula_label: '計算式',
+                    simple_formula: '単利 = 元本 × 利率 × 期間',
+                    compound_formula: '複利総額 = 元本 × (1 + 利率)^期間',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際の結果は異なる場合があります。'
+                },
+                'ru': {
+                    title: '💰 Калькулятор процентов по вкладам',
+                    principal_label: 'Сумма вклада',
+                    rate_label: 'Годовая процентная ставка (%)',
+                    years_label: 'Срок (годы)',
+                    type_label: 'Тип процентов',
+                    simple: 'Простые',
+                    compound: 'Сложные (годовые)',
+                    btn_calc: 'Вычислить проценты',
+                    res_label: 'Результаты вычисления',
+                    total_interest: 'Общие проценты',
+                    total_amount: 'Общая сумма',
+                    formula_label: 'Формула',
+                    simple_formula: 'Простые проценты = Сумма × Ставка × Срок',
+                    compound_formula: 'Сумма с сложными процентами = Сумма × (1 + Ставка)^Срок',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактические результаты могут отличаться.'
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('interest-lang').value;
+                const texts = InterestCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="deposit_interest_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                InterestCalc.calc();
+            },
+
+            calc: () => {
+                const principal = parseFloat(document.getElementById('principal').value) || 0;
+                const rate = parseFloat(document.getElementById('rate').value) / 100 || 0;
+                const years = parseFloat(document.getElementById('years').value) || 0;
+                const type = document.querySelector('input[name="interest-type"]:checked').value;
+                const lang = document.getElementById('interest-lang').value;
+                const texts = InterestCalc.i18n[lang];
+
+                const interestEl = document.getElementById('total-interest');
+                const amountEl = document.getElementById('total-amount');
+                const formulaEl = document.getElementById('interest-formula');
+
+                // 验证输入
+                if (isNaN(principal) || isNaN(rate) || isNaN(years) || principal <= 0 || rate <= 0 || years <= 0) {
+                    interestEl.innerText = texts.err_invalid;
+                    amountEl.innerText = "";
+                    formulaEl.innerText = "";
+                    interestEl.className = "text-xl font-bold text-red-600";
+                    return;
+                }
+
+                // 计算利息
+                let totalInterest, totalAmount, formulaText;
+                if (type === 'simple') {
+                    totalInterest = principal * rate * years;
+                    totalAmount = principal + totalInterest;
+                    formulaText = texts.simple_formula;
+                    formulaEl.innerText = `${totalInterest.toFixed(2)} = ${principal} × ${(rate*100).toFixed(2)}% × ${years}`;
+                } else {
+                    totalAmount = principal * Math.pow(1 + rate, years);
+                    totalInterest = totalAmount - principal;
+                    formulaText = texts.compound_formula;
+                    formulaEl.innerText = `${totalAmount.toFixed(2)} = ${principal} × (1 + ${(rate*100).toFixed(2)}%)^${years}`;
+                }
+
+                // 显示结果
+                interestEl.className = "text-2xl font-bold text-blue-800";
+                amountEl.className = "text-2xl font-bold text-blue-800";
+                interestEl.innerText = totalInterest.toFixed(2);
+                amountEl.innerText = totalAmount.toFixed(2);
+                document.querySelector('[data-i18n="formula_label"]').innerText = formulaText;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', InterestCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('interest-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    InterestCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
