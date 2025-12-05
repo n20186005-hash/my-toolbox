@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDEE Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="tdee_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="🔥">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="TDEE Calculator">
+    <meta name="description" content="Calculate your Total Daily Energy Expenditure">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="总每日能量消耗计算器">
+    <meta name="lang-description-zh-CN" content="计算您的总每日能量消耗">
+    
+    <meta name="lang-title-zh-TW" content="總每日能量消耗計算器">
+    <meta name="lang-description-zh-TW" content="計算您的總每日能量消耗">
+    
+    <meta name="lang-title-ja" content="TDEE計算機">
+    <meta name="lang-description-ja" content="総一日エネルギー消費量を計算します">
+    
+    <meta name="lang-title-ru" content="Калькулятор ТДЭЭ">
+    <meta name="lang-description-ru" content="Вычислите свою общую суточную энергопотребность">
+    
+    <meta name="lang-title-es" content="Calculadora TDEE">
+    <meta name="lang-description-es" content="Calcule su Gasto Energético Diario Total">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="tdee_calculator" 
+         data-category="health" 
+         data-title="TDEE Calculator" 
+         data-icon="🔥">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="tdee-lang" onchange="TDEECalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔥 TDEE Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_label">Weight (lbs)</label>
+                <input type="number" id="weight" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 150" min="50" max="400" value="150">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_label">Height (inches)</label>
+                <input type="number" id="height" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 68" min="40" max="96" value="68">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="age_label">Age (years)</label>
+                <input type="number" id="age" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 30" min="18" max="120" value="30">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gender_label">Gender</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="male" checked class="text-blue-600 focus:ring-blue-500">
+                        <span data-i18n="male">Male</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="female" class="text-blue-600 focus:ring-blue-500">
+                        <span data-i18n="female">Female</span>
+                    </label>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="activity_label">Activity Level</label>
+                <select id="activity" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="1.2" data-i18n="activity_sedentary">Sedentary (little exercise)</option>
+                    <option value="1.375" data-i18n="activity_light">Lightly Active (light exercise)</option>
+                    <option value="1.55" data-i18n="activity_mod" selected>Moderately Active (moderate exercise)</option>
+                    <option value="1.725" data-i18n="activity_very">Very Active (hard exercise)</option>
+                    <option value="1.9" data-i18n="activity_extra">Extra Active (very hard exercise)</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="TDEECalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate TDEE</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Total Daily Energy Expenditure</div>
+            <div id="tdee-result" class="text-3xl font-bold text-blue-800">--</div>
+            <div id="bmr-result" class="mt-2 text-lg text-blue-700"></div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">Formula: TDEE = BMR × Activity Factor</div>
+                <div id="tdee-formula" class="text-gray-600">--</div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual energy needs may vary.</div>
+        </div>
+    </div>
+
+    <script>
+        const TDEECalc = {
+            i18n: {
+                'en': {
+                    title: '🔥 TDEE Calculator',
+                    weight_label: 'Weight (lbs)',
+                    height_label: 'Height (inches)',
+                    age_label: 'Age (years)',
+                    gender_label: 'Gender',
+                    male: 'Male',
+                    female: 'Female',
+                    activity_label: 'Activity Level',
+                    activity_sedentary: 'Sedentary (little exercise)',
+                    activity_light: 'Lightly Active (light exercise)',
+                    activity_mod: 'Moderately Active (moderate exercise)',
+                    activity_very: 'Very Active (hard exercise)',
+                    activity_extra: 'Extra Active (very hard exercise)',
+                    btn_calc: 'Calculate TDEE',
+                    res_label: 'Total Daily Energy Expenditure',
+                    bmr_label: 'Basal Metabolic Rate:',
+                    formula_label: 'Formula: TDEE = BMR × Activity Factor',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual energy needs may vary.',
+                    unit: 'calories/day'
+                },
+                'zh-CN': {
+                    title: '🔥 总每日能量消耗计算器',
+                    weight_label: '体重（磅）',
+                    height_label: '身高（英寸）',
+                    age_label: '年龄（岁）',
+                    gender_label: '性别',
+                    male: '男',
+                    female: '女',
+                    activity_label: '活动水平',
+                    activity_sedentary: '久坐不动（很少运动）',
+                    activity_light: '轻度活动（少量运动）',
+                    activity_mod: '中度活动（适度运动）',
+                    activity_very: '高度活动（大量运动）',
+                    activity_extra: '极高活动（剧烈运动）',
+                    btn_calc: '计算TDEE',
+                    res_label: '总每日能量消耗',
+                    bmr_label: '基础代谢率：',
+                    formula_label: '公式：TDEE = 基础代谢率 × 活动系数',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。实际能量需求可能有所不同。',
+                    unit: '卡路里/天'
+                },
+                'zh-TW': {
+                    title: '🔥 總每日能量消耗計算器',
+                    weight_label: '體重（磅）',
+                    height_label: '身高（英寸）',
+                    age_label: '年齡（歲）',
+                    gender_label: '性別',
+                    male: '男',
+                    female: '女',
+                    activity_label: '活動水平',
+                    activity_sedentary: '久坐不動（很少運動）',
+                    activity_light: '輕度活動（少量運動）',
+                    activity_mod: '中度活動（適度運動）',
+                    activity_very: '高度活動（大量運動）',
+                    activity_extra: '極高活動（劇烈運動）',
+                    btn_calc: '計算TDEE',
+                    res_label: '總每日能量消耗',
+                    bmr_label: '基礎代謝率：',
+                    formula_label: '公式：TDEE = 基礎代謝率 × 活動係數',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。實際能量需求可能有所不同。',
+                    unit: '卡路里/天'
+                },
+                'ja': {
+                    title: '🔥 TDEE計算機',
+                    weight_label: '体重（ポンド）',
+                    height_label: '身長（インチ）',
+                    age_label: '年齢（歳）',
+                    gender_label: '性別',
+                    male: '男性',
+                    female: '女性',
+                    activity_label: '活動レベル',
+                    activity_sedentary: '座位中心（ほとんど運動なし）',
+                    activity_light: '軽度活動（軽い運動）',
+                    activity_mod: '中等度活動（適度な運動）',
+                    activity_very: '高度活動（激しい運動）',
+                    activity_extra: '超高度活動（非常に激しい運動）',
+                    btn_calc: 'TDEEを計算',
+                    res_label: '総一日エネルギー消費量',
+                    bmr_label: '基礎代謝率：',
+                    formula_label: '公式：TDEE = 基礎代謝率 × 活動係数',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際のエネルギー必要量は異なる場合があります。',
+                    unit: 'カロリー/日'
+                },
+                'ru': {
+                    title: '🔥 Калькулятор ТДЭЭ',
+                    weight_label: 'Вес (фунты)',
+                    height_label: 'Рост (дюймы)',
+                    age_label: 'Возраст (годы)',
+                    gender_label: 'Пол',
+                    male: 'Мужской',
+                    female: 'Женский',
+                    activity_label: 'Уровень активности',
+                    activity_sedentary: 'Сидячий образ жизни (малое количество упражнений)',
+                    activity_light: 'Легко активный (лёгкие упражнения)',
+                    activity_mod: 'Умеренно активный (умеренные упражнения)',
+                    activity_very: 'Очень активный (напряжённые упражнения)',
+                    activity_extra: 'Экстра активный (очень напряжённые упражнения)',
+                    btn_calc: 'Вычислить ТДЭЭ',
+                    res_label: 'Общая суточная энергопотребность',
+                    bmr_label: 'Базовый метаболический коэффициент:',
+                    formula_label: 'Формула: ТДЭЭ = БМР × Коэффициент активности',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактические энергетические нужды могут отличаться.',
+                    unit: 'калорий/день'
+                },
+                'es': {
+                    title: '🔥 Calculadora TDEE',
+                    weight_label: 'Peso (libras)',
+                    height_label: 'Altura (pulgadas)',
+                    age_label: 'Edad (años)',
+                    gender_label: 'Género',
+                    male: 'Masculino',
+                    female: 'Femenino',
+                    activity_label: 'Nivel de actividad',
+                    activity_sedentary: 'Sedentario (poco ejercicio)',
+                    activity_light: 'Ligeramente activo (ejercicio ligero)',
+                    activity_mod: 'Moderadamente activo (ejercicio moderado)',
+                    activity_very: 'Muy activo (ejercicio intenso)',
+                    activity_extra: 'Extra activo (ejercicio muy intenso)',
+                    btn_calc: 'Calcular TDEE',
+                    res_label: 'Gasto Energético Diario Total',
+                    bmr_label: 'Tasa Metabólica Basal:',
+                    formula_label: 'Fórmula: TDEE = TMB × Factor de actividad',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo una estimación. Las necesidades energéticas reales pueden variar.',
+                    unit: 'calorías/día'
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('tdee-lang').value;
+                const texts = TDEECalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="tdee_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 翻译下拉选项
+                document.querySelectorAll('#activity option').forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+
+                TDEECalc.calc();
+            },
+
+            calc: () => {
+                const weight = parseFloat(document.getElementById('weight').value) || 0;
+                const height = parseFloat(document.getElementById('height').value) || 0;
+                const age = parseFloat(document.getElementById('age').value) || 0;
+                const gender = document.querySelector('input[name="gender"]:checked').value;
+                const activity = parseFloat(document.getElementById('activity').value) || 0;
+                const lang = document.getElementById('tdee-lang').value;
+                const texts = TDEECalc.i18n[lang];
+
+                const resultEl = document.getElementById('tdee-result');
+                const bmrEl = document.getElementById('bmr-result');
+                const formulaEl = document.getElementById('tdee-formula');
+
+                // 验证输入
+                if (isNaN(weight) || isNaN(height) || isNaN(age) || isNaN(activity) || 
+                    weight <= 0 || height <= 0 || age <= 0 || activity <= 0) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600";
+                    bmrEl.innerText = "";
+                    formulaEl.innerText = "";
+                    return;
+                }
+
+                // 计算BMR (基础代谢率) 使用Mifflin-St Jeor公式
+                let bmr;
+                if (gender === 'male') {
+                    bmr = 10 * (weight / 2.205) + 6.25 * (height * 2.54) - 5 * age + 5;
+                } else {
+                    bmr = 10 * (weight / 2.205) + 6.25 * (height * 2.54) - 5 * age - 161;
+                }
+
+                // 计算TDEE (总每日能量消耗)
+                const tdee = bmr * activity;
+
+                // 显示结果
+                resultEl.className = "text-3xl font-bold text-blue-800";
+                resultEl.innerText = Math.round(tdee) + ' ' + texts.unit;
+                bmrEl.innerText = `${texts.bmr_label} ${Math.round(bmr)} ${texts.unit}`;
+                formulaEl.innerText = `${Math.round(tdee)} = ${Math.round(bmr)} × ${activity}`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', TDEECalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('tdee-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    TDEECalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

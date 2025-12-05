@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Conversion Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="temperature_conversion_calculator">
+    <meta name="category" content="conversion">
+    <meta name="icon" content="🌡️">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Temperature Conversion Calculator">
+    <meta name="description" content="Convert between Celsius, Fahrenheit, and Kelvin temperature scales.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="温度转换计算器">
+    <meta name="lang-description-zh-CN" content="在摄氏度、华氏度和开尔文温度尺度之间进行转换。">
+    
+    <meta name="lang-title-zh-TW" content="溫度轉換計算器">
+    <meta name="lang-description-zh-TW" content="在攝氏度、華氏度和開爾文溫度尺度之間進行轉換。">
+    
+    <meta name="lang-title-ja" content="温度換算計算機">
+    <meta name="lang-description-ja" content="摂氏、華氏、ケルビンの温度尺度を変換します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор перевода температур">
+    <meta name="lang-description-ru" content="Конвертируйте между шкалами температуры Цельсия, Фаренгейта и Кельвина.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result { background-color: #f0fdf4; border: 1px solid #22c55e; color: #15803d; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .info { background-color: #eff8ff; border: 1px solid #3b82f6; color: #1e40af; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="temperature_conversion_calculator" 
+         data-category="conversion" 
+         data-title="Temperature Conversion Calculator" 
+         data-icon="🌡️">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="temp-lang" onchange="TempConv.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🌡️ Temperature Conversion Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="input_value">Temperature Value</label>
+                <input type="number" id="temp-value" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="e.g. 20" value="20">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="from_unit">From Scale</label>
+                    <select id="temp-from-unit" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none">
+                        <option value="celsius">Celsius (°C)</option>
+                        <option value="fahrenheit">Fahrenheit (°F)</option>
+                        <option value="kelvin">Kelvin (K)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="to_unit">To Scale</label>
+                    <select id="temp-to-unit" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none">
+                        <option value="celsius">Celsius (°C)</option>
+                        <option value="fahrenheit" selected>Fahrenheit (°F)</option>
+                        <option value="kelvin">Kelvin (K)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="TempConv.convert()" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700 transition mb-6" data-i18n="btn_convert">Convert</button>
+
+        <div class="bg-red-50 p-6 rounded-lg border border-red-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="conversion_result">Conversion Result</div>
+            <div id="temp-conversion-result" class="text-2xl font-bold text-red-800">--</div>
+            
+            <div class="info text-sm mt-4" data-i18n="conversion_formula">Conversion formulas: °C to °F = (°C × 9/5) + 32; °F to °C = (°F - 32) × 5/9; °C to K = °C + 273.15</div>
+        </div>
+    </div>
+
+    <script>
+        const TempConv = {
+            i18n: {
+                'en': {
+                    title: '🌡️ Temperature Conversion Calculator',
+                    input_value: 'Temperature Value',
+                    from_unit: 'From Scale',
+                    to_unit: 'To Scale',
+                    btn_convert: 'Convert',
+                    conversion_result: 'Conversion Result',
+                    conversion_formula: 'Conversion formulas: °C to °F = (°C × 9/5) + 32; °F to °C = (°F - 32) × 5/9; °C to K = °C + 273.15',
+                    err_invalid: 'Please enter a valid number',
+                    result_format: '{value} {from_unit} = {result} {to_unit}'
+                },
+                'zh-CN': {
+                    title: '🌡️ 温度转换计算器',
+                    input_value: '温度值',
+                    from_unit: '从尺度',
+                    to_unit: '到尺度',
+                    btn_convert: '转换',
+                    conversion_result: '转换结果',
+                    conversion_formula: '转换公式：摄氏度到华氏度 = (°C × 9/5) + 32；华氏度到摄氏度 = (°F - 32) × 5/9；摄氏度到开尔文 = °C + 273.15',
+                    err_invalid: '请输入有效的数字',
+                    result_format: '{value} {from_unit} = {result} {to_unit}'
+                },
+                'zh-TW': {
+                    title: '🌡️ 溫度轉換計算器',
+                    input_value: '溫度值',
+                    from_unit: '從尺度',
+                    to_unit: '到尺度',
+                    btn_convert: '轉換',
+                    conversion_result: '轉換結果',
+                    conversion_formula: '轉換公式：攝氏度到華氏度 = (°C × 9/5) + 32；華氏度到攝氏度 = (°F - 32) × 5/9；攝氏度到開爾文 = °C + 273.15',
+                    err_invalid: '請輸入有效的數字',
+                    result_format: '{value} {from_unit} = {result} {to_unit}'
+                },
+                'ja': {
+                    title: '🌡️ 温度換算計算機',
+                    input_value: '温度値',
+                    from_unit: '変換元尺度',
+                    to_unit: '変換先尺度',
+                    btn_convert: '換算',
+                    conversion_result: '換算結果',
+                    conversion_formula: '換算式：摂氏から華氏 = (°C × 9/5) + 32；華氏から摂氏 = (°F - 32) × 5/9；摂氏からケルビン = °C + 273.15',
+                    err_invalid: '有効な数値を入力してください',
+                    result_format: '{value} {from_unit} = {result} {to_unit}'
+                },
+                'ru': {
+                    title: '🌡️ Калькулятор перевода температур',
+                    input_value: 'Температурное значение',
+                    from_unit: 'Из шкалы',
+                    to_unit: 'В шкалу',
+                    btn_convert: 'Конвертировать',
+                    conversion_result: 'Результат преобразования',
+                    conversion_formula: 'Формулы преобразования: °C в °F = (°C × 9/5) + 32; °F в °C = (°F - 32) × 5/9; °C в K = °C + 273.15',
+                    err_invalid: 'Пожалуйста, введите действительное число',
+                    result_format: '{value} {from_unit} = {result} {to_unit}'
+                }
+            },
+            
+            units: {
+                'celsius': {
+                    'en': '°C',
+                    'zh-CN': '°C',
+                    'zh-TW': '°C',
+                    'ja': '°C',
+                    'ru': '°C'
+                },
+                'fahrenheit': {
+                    'en': '°F',
+                    'zh-CN': '°F',
+                    'zh-TW': '°F',
+                    'ja': '°F',
+                    'ru': '°F'
+                },
+                'kelvin': {
+                    'en': 'K',
+                    'zh-CN': 'K',
+                    'zh-TW': 'K',
+                    'ja': 'K',
+                    'ru': 'K'
+                }
+            },
+            
+            getUnitFullLabel: function(unit, lang) {
+                const labels = {
+                    'celsius': {
+                        'en': 'Celsius (°C)',
+                        'zh-CN': '摄氏度 (°C)',
+                        'zh-TW': '攝氏度 (°C)',
+                        'ja': '摂氏 (°C)',
+                        'ru': 'Цельсий (°C)'
+                    },
+                    'fahrenheit': {
+                        'en': 'Fahrenheit (°F)',
+                        'zh-CN': '华氏度 (°F)',
+                        'zh-TW': '華氏度 (°F)',
+                        'ja': '華氏 (°F)',
+                        'ru': 'Фаренгейт (°F)'
+                    },
+                    'kelvin': {
+                        'en': 'Kelvin (K)',
+                        'zh-CN': '开尔文 (K)',
+                        'zh-TW': '開爾文 (K)',
+                        'ja': 'ケルビン (K)',
+                        'ru': 'Кельвин (K)'
+                    }
+                };
+                return labels[unit][lang];
+            },
+            
+            changeLang: function() {
+                const lang = document.getElementById('temp-lang').value;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                this.updateUnitLabels(lang);
+            },
+            
+            updateUnitLabels: function(lang) {
+                const fromUnit = document.getElementById('temp-from-unit');
+                const toUnit = document.getElementById('temp-to-unit');
+                
+                // 保存当前选中值
+                const fromVal = fromUnit.value;
+                const toVal = toUnit.value;
+                
+                // 清空并重新填充选项
+                fromUnit.innerHTML = '';
+                toUnit.innerHTML = '';
+                
+                ['celsius', 'fahrenheit', 'kelvin'].forEach(unit => {
+                    const label = this.getUnitFullLabel(unit, lang);
+                    
+                    const fromOption = document.createElement('option');
+                    fromOption.value = unit;
+                    fromOption.textContent = label;
+                    fromUnit.appendChild(fromOption);
+                    
+                    const toOption = document.createElement('option');
+                    toOption.value = unit;
+                    toOption.textContent = label;
+                    toUnit.appendChild(toOption);
+                });
+                
+                // 恢复选中值
+                fromUnit.value = fromVal;
+                toUnit.value = toVal;
+            },
+            
+            convert: function() {
+                const value = parseFloat(document.getElementById('temp-value').value);
+                const fromUnit = document.getElementById('temp-from-unit').value;
+                const toUnit = document.getElementById('temp-to-unit').value;
+                const lang = document.getElementById('temp-lang').value;
+                
+                if (isNaN(value)) {
+                    alert(this.i18n[lang].err_invalid);
+                    return;
+                }
+                
+                let result;
+                
+                // 先转换为摄氏度，再转换为目标单位
+                if (fromUnit === 'celsius') {
+                    result = this.convertFromCelsius(value, toUnit);
+                } else if (fromUnit === 'fahrenheit') {
+                    const celsius = (value - 32) * 5 / 9;
+                    result = this.convertFromCelsius(celsius, toUnit);
+                } else { // kelvin
+                    const celsius = value - 273.15;
+                    result = this.convertFromCelsius(celsius, toUnit);
+                }
+                
+                // 格式化结果
+                const formattedResult = result.toFixed(2);
+                const fromUnitLabel = this.units[fromUnit][lang];
+                const toUnitLabel = this.units[toUnit][lang];
+                
+                const resultText = this.i18n[lang].result_format
+                    .replace('{value}', value)
+                    .replace('{from_unit}', fromUnitLabel)
+                    .replace('{result}', formattedResult)
+                    .replace('{to_unit}', toUnitLabel);
+                
+                document.getElementById('temp-conversion-result').textContent = resultText;
+            },
+            
+            convertFromCelsius: function(celsius, toUnit) {
+                switch(toUnit) {
+                    case 'celsius':
+                        return celsius;
+                    case 'fahrenheit':
+                        return (celsius * 9 / 5) + 32;
+                    case 'kelvin':
+                        return celsius + 273.15;
+                    default:
+                        return 0;
+                }
+            }
+        };
+        
+        // 初始化单位标签
+        TempConv.updateUnitLabels('en');
+    </script>
+</body>
+</html>

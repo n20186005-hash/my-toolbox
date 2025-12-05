@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rental Property Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="rental_property_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="🏠">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Rental Property Calculator">
+    <meta name="description" content="Analyze the potential return on investment for rental properties.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="租赁房产计算器">
+    <meta name="lang-description-zh-CN" content="分析租赁房产的潜在投资回报率。">
+    
+    <meta name="lang-title-zh-TW" content="租賃房產計算器">
+    <meta name="lang-description-zh-TW" content="分析租賃房產的潛在投資回報率。">
+    
+    <meta name="lang-title-ja" content="賃貸不動産計算機">
+    <meta name="lang-description-ja" content="賃貸不動産の潜在的な投資収益率を分析します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор арендной недвижимости">
+    <meta name="lang-description-ru" content="Проанализируйте потенциальную доходность инвестиций в арендную недвижимость.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .info { background-color: #eff8ff; border: 1px solid #3b82f6; color: #1e40af; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .result { background-color: #ecfdf5; border: 1px solid #10b981; color: #059669; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="rental_property_calculator" 
+         data-category="finance" 
+         data-title="Rental Property Calculator" 
+         data-icon="🏠">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="rental-lang" onchange="RentalPropertyCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🏠 Rental Property Calculator</h2>
+        
+        <!-- 输入部分 -->
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="property_value">Property Value</label>
+                <input type="number" id="property-value" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 300000" min="10000" step="10000" value="300000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="down_payment">Down Payment (%)</label>
+                <input type="number" id="down-payment" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 20" min="5" max="100" step="1" value="20">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="mortgage_rate">Mortgage Interest Rate (% per year)</label>
+                <input type="number" id="mortgage-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 4.25" min="0.1" max="20" step="0.1" value="4.25">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="loan_term">Loan Term (years)</label>
+                <input type="number" id="loan-term" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 30" min="5" max="40" step="5" value="30">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="monthly_rent">Monthly Rent Income</label>
+                <input type="number" id="monthly-rent" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 1800" min="100" step="100" value="1800">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="monthly_expenses">Monthly Expenses (taxes, insurance, maintenance)</label>
+                <input type="number" id="monthly-expenses" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 500" min="0" step="100" value="500">
+            </div>
+        </div>
+
+        <button onclick="RentalPropertyCalc.calc()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Investment Metrics</button>
+
+        <!-- 结果部分 -->
+        <div class="bg-green-50 p-6 rounded-lg border border-green-100">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="monthly_cash_flow">Monthly Cash Flow</div>
+                    <div id="monthly-cash-flow" class="text-xl font-bold text-green-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="annual_cash_flow">Annual Cash Flow</div>
+                    <div id="annual-cash-flow" class="text-xl font-bold text-green-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="cash_on_cash">Cash-on-Cash Return (%)</div>
+                    <div id="cash-on-cash" class="text-xl font-bold text-green-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="monthly_mortgage">Monthly Mortgage Payment</div>
+                    <div id="monthly-mortgage" class="text-xl font-bold text-green-800">--</div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="investment_summary">Investment Summary</div>
+                <div class="bg-white rounded border border-gray-100 p-3 text-sm">
+                    <div id="investment-details" class="text-gray-600 space-y-1">
+                        <!-- 投资详情将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info text-sm mt-4" data-i18n="source_info">Calculations based on standard real estate investment formulas.</div>
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual returns may vary.</div>
+        </div>
+    </div>
+
+    <script>
+        const RentalPropertyCalc = {
+            i18n: {
+                'en': {
+                    title: '🏠 Rental Property Calculator',
+                    property_value: 'Property Value',
+                    down_payment: 'Down Payment (%)',
+                    mortgage_rate: 'Mortgage Interest Rate (% per year)',
+                    loan_term: 'Loan Term (years)',
+                    monthly_rent: 'Monthly Rent Income',
+                    monthly_expenses: 'Monthly Expenses (taxes, insurance, maintenance)',
+                    btn_calc: 'Calculate Investment Metrics',
+                    monthly_cash_flow: 'Monthly Cash Flow',
+                    annual_cash_flow: 'Annual Cash Flow',
+                    cash_on_cash: 'Cash-on-Cash Return (%)',
+                    monthly_mortgage: 'Monthly Mortgage Payment',
+                    investment_summary: 'Investment Summary',
+                    source_info: 'Calculations based on standard real estate investment formulas.',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual returns may vary.',
+                    err_invalid: 'Please enter valid numbers',
+                    investment_details: {
+                        down_payment: 'Down Payment: {amount}',
+                        loan_amount: 'Loan Amount: {amount}',
+                        total_monthly_exp: 'Total Monthly Expenses: {amount}',
+                        exp_vs_income: 'Expenses vs Income Ratio: {ratio}%'
+                    },
+                    currency: '$'
+                },
+                'zh-CN': {
+                    title: '🏠 租赁房产计算器',
+                    property_value: '房产价值',
+                    down_payment: '首付款 (%)',
+                    mortgage_rate: '抵押贷款利率 (% 每年)',
+                    loan_term: '贷款期限 (年)',
+                    monthly_rent: '月租金收入',
+                    monthly_expenses: '月支出（税费、保险、维护）',
+                    btn_calc: '计算投资指标',
+                    monthly_cash_flow: '月现金流',
+                    annual_cash_flow: '年现金流',
+                    cash_on_cash: '现金回报率 (%)',
+                    monthly_mortgage: '月抵押贷款还款',
+                    investment_summary: '投资摘要',
+                    source_info: '计算基于标准房地产投资公式。',
+                    disclaimer: '免责声明：这只是一个估计值。实际回报可能有所不同。',
+                    err_invalid: '请输入有效的数字',
+                    investment_details: {
+                        down_payment: '首付款：{amount}',
+                        loan_amount: '贷款金额：{amount}',
+                        total_monthly_exp: '月总支出：{amount}',
+                        exp_vs_income: '支出与收入比率：{ratio}%'
+                    },
+                    currency: '¥'
+                },
+                'zh-TW': {
+                    title: '🏠 租賃房產計算器',
+                    property_value: '房產價值',
+                    down_payment: '首付款 (%)',
+                    mortgage_rate: '抵押貸款利率 (% 每年)',
+                    loan_term: '貸款期限 (年)',
+                    monthly_rent: '月租金收入',
+                    monthly_expenses: '月支出（稅費、保險、維護）',
+                    btn_calc: '計算投資指標',
+                    monthly_cash_flow: '月現金流',
+                    annual_cash_flow: '年現金流',
+                    cash_on_cash: '現金回報率 (%)',
+                    monthly_mortgage: '月抵押貸款還款',
+                    investment_summary: '投資摘要',
+                    source_info: '計算基於標準房地產投資公式。',
+                    disclaimer: '免責聲明：這只是一個估計值。實際回報可能有所不同。',
+                    err_invalid: '請輸入有效的數字',
+                    investment_details: {
+                        down_payment: '首付款：{amount}',
+                        loan_amount: '貸款金額：{amount}',
+                        total_monthly_exp: '月總支出：{amount}',
+                        exp_vs_income: '支出與收入比率：{ratio}%'
+                    },
+                    currency: 'NT$'
+                },
+                'ja': {
+                    title: '🏠 賃貸不動産計算機',
+                    property_value: '不動産価値',
+                    down_payment: '頭金（％）',
+                    mortgage_rate: '住宅ローン金利（年率％）',
+                    loan_term: 'ローン期間（年）',
+                    monthly_rent: '月額家賃収入',
+                    monthly_expenses: '月額経費（税金、保険、維持費）',
+                    btn_calc: '投資指標を計算',
+                    monthly_cash_flow: '月額キャッシュフロー',
+                    annual_cash_flow: '年額キャッシュフロー',
+                    cash_on_cash: 'キャッシュオンキャッシュリターン（％）',
+                    monthly_mortgage: '月額住宅ローン返済',
+                    investment_summary: '投資サマリー',
+                    source_info: '計算は標準的な不動産投資の公式に基づいています。',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際の収益は異なる場合があります。',
+                    err_invalid: '有効な数字を入力してください',
+                    investment_details: {
+                        down_payment: '頭金：{amount}',
+                        loan_amount: 'ローン額：{amount}',
+                        total_monthly_exp: '月額総経費：{amount}',
+                        exp_vs_income: '経費対収入比率：{ratio}%'
+                    },
+                    currency: '￥'
+                },
+                'ru': {
+                    title: '🏠 Калькулятор арендной недвижимости',
+                    property_value: 'Стоимость недвижимости',
+                    down_payment: 'Первоначальный взнос (%)',
+                    mortgage_rate: 'Ставка ипотеки (% в год)',
+                    loan_term: 'Срок кредита (лет)',
+                    monthly_rent: 'Ежемесячный арендный доход',
+                    monthly_expenses: 'Ежемесячные расходы (налоги, страхование, ремонт)',
+                    btn_calc: 'Рассчитать инвестиционные показатели',
+                    monthly_cash_flow: 'Ежемесячный денежный поток',
+                    annual_cash_flow: 'Годовой денежный поток',
+                    cash_on_cash: 'Кэш-он-кэш возврат (%)',
+                    monthly_mortgage: 'Ежемесячный платеж по ипотеке',
+                    investment_summary: 'Сводка инвестиций',
+                    source_info: 'Расчеты основаны на стандартных формулах инвестиций в недвижимость.',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактическая доходность может отличаться.',
+                    err_invalid: 'Введите действительные числа',
+                    investment_details: {
+                        down_payment: 'Первоначальный взнос: {amount}',
+                        loan_amount: 'Сумма кредита: {amount}',
+                        total_monthly_exp: 'Общие ежемесячные расходы: {amount}',
+                        exp_vs_income: 'Соотношение расходов к доходам: {ratio}%'
+                    },
+                    currency: '₽'
+                }
+            },
+
+            init: function() {
+                this.applyLang();
+            },
+
+            changeLang: function() {
+                this.applyLang();
+            },
+
+            applyLang: function() {
+                const lang = document.getElementById('rental-lang').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+
+            calc: function() {
+                const lang = document.getElementById('rental-lang').value;
+                const propertyValue = parseFloat(document.getElementById('property-value').value);
+                const downPaymentPercent = parseFloat(document.getElementById('down-payment').value);
+                const mortgageRate = parseFloat(document.getElementById('mortgage-rate').value);
+                const loanTermYears = parseFloat(document.getElementById('loan-term').value);
+                const monthlyRent = parseFloat(document.getElementById('monthly-rent').value);
+                const monthlyExpenses = parseFloat(document.getElementById('monthly-expenses').value);
+
+                // 验证输入
+                if (isNaN(propertyValue) || isNaN(downPaymentPercent) || isNaN(mortgageRate) || 
+                    isNaN(loanTermYears) || isNaN(monthlyRent) || isNaN(monthlyExpenses)) {
+                    alert(this.i18n[lang].err_invalid);
+                    return;
+                }
+
+                // 计算首付款金额
+                const downPaymentAmount = propertyValue * (downPaymentPercent / 100);
+                
+                // 计算贷款金额
+                const loanAmount = propertyValue - downPaymentAmount;
+                
+                // 计算月利率和贷款期限（月）
+                const monthlyRate = (mortgageRate / 100) / 12;
+                const loanTermMonths = loanTermYears * 12;
+                
+                // 计算月抵押贷款还款
+                const monthlyMortgage = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanTermMonths) / 
+                                      (Math.pow(1 + monthlyRate, loanTermMonths) - 1);
+                
+                // 计算总月支出
+                const totalMonthlyExpenses = monthlyMortgage + monthlyExpenses;
+                
+                // 计算月现金流
+                const monthlyCashFlow = monthlyRent - totalMonthlyExpenses;
+                
+                // 计算年现金流
+                const annualCashFlow = monthlyCashFlow * 12;
+                
+                // 计算现金回报率
+                const cashOnCashReturn = (annualCashFlow / downPaymentAmount) * 100;
+                
+                // 计算支出与收入比率
+                const expenseIncomeRatio = (totalMonthlyExpenses / monthlyRent) * 100;
+
+                // 格式化货币显示
+                const currency = this.i18n[lang].currency;
+                const formatCurrency = (amount) => {
+                    return currency + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                };
+
+                // 显示结果
+                document.getElementById('monthly-cash-flow').textContent = formatCurrency(monthlyCashFlow);
+                document.getElementById('annual-cash-flow').textContent = formatCurrency(annualCashFlow);
+                document.getElementById('cash-on-cash').textContent = cashOnCashReturn.toFixed(2) + '%';
+                document.getElementById('monthly-mortgage').textContent = formatCurrency(monthlyMortgage);
+                
+                // 显示投资详情
+                const details = this.i18n[lang].investment_details;
+                const detailsHtml = `
+                    <div>${details.down_payment.replace('{amount}', formatCurrency(downPaymentAmount))}</div>
+                    <div>${details.loan_amount.replace('{amount}', formatCurrency(loanAmount))}</div>
+                    <div>${details.total_monthly_exp.replace('{amount}', formatCurrency(totalMonthlyExpenses))}</div>
+                    <div>${details.exp_vs_income.replace('{ratio}', expenseIncomeRatio.toFixed(1))}</div>
+                `;
+                document.getElementById('investment-details').innerHTML = detailsHtml;
+            }
+        };
+
+        // 初始化计算器
+        document.addEventListener('DOMContentLoaded', () => RentalPropertyCalc.init());
+    </script>
+</body>
+</html>

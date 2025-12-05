@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number to Words Converter</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="number_words_tool">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💰">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Number to Words Converter">
+    <meta name="description" content="Convert numerical values to their word representation, including currency formats.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="金额大小写转换工具">
+    <meta name="lang-description-zh-CN" content="将数值转换为其文字表示形式，包括货币格式（人民币大写）。">
+    
+    <meta name="lang-title-zh-TW" content="金額大小寫轉換工具">
+    <meta name="lang-description-zh-TW" content="將數值轉換為其文字表示形式，包括貨幣格式（人民幣大寫）。">
+    
+    <meta name="lang-title-ja" content="数値から文字表記への変換ツール">
+    <meta name="lang-description-ja" content="数値を文字表記に変換します。通貨形式にも対応。">
+    
+    <meta name="lang-title-ru" content="Конвертер чисел в слова">
+    <meta name="lang-description-ru" content="Конвертирует числовые значения в их текстовое представление, включая валютные форматы.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: 'Inter', sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-container { min-height: 100px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; font-size: 1.1rem; color: #1e40af; font-weight: bold; word-break: break-all; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body onload="NumberToWords.init()">
+
+    <div class="tool-module active" 
+         data-id="number_words_tool" 
+         data-category="finance" 
+         data-title="Number to Words Converter" 
+         data-icon="💰">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="num-lang" onchange="NumberToWords.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文 (CNY)</option>
+                <option value="zh-TW">繁體中文 (CNY)</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💰 Number to Words Converter</h2>
+        
+        <div class="space-y-4">
+            
+            <!-- 输入数字 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="input-number" data-i18n="input_number">Input Number</label>
+                <input type="number" step="any" id="input-number" oninput="NumberToWords.convert()" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none text-xl" placeholder="e.g., 123456.78" max="99999999999999.99">
+                <p class="text-xs text-gray-500 mt-1" data-i18n="input_note">Max value is 99,999,999,999,999.99</p>
+            </div>
+
+            <!-- 输出结果 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="output_words">Output in Words</label>
+                <div id="output-words" class="result-container"></div>
+            </div>
+
+            <!-- 错误提示 -->
+            <div id="num-error" class="text-sm text-red-600 hidden"></div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="NumberToWords.copyResult()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition" data-i18n="copy_result">Copy Result</button>
+                <button onclick="NumberToWords.clearInput()" class="flex-1 bg-gray-600 text-white py-2 rounded-lg font-bold hover:bg-gray-700 transition" data-i18n="clear_input">Clear Input</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const NumberToWords = {
+            
+            i18n: {
+                'en': {
+                    title: '💰 Number to Words Converter',
+                    input_number: 'Input Number',
+                    input_note: 'Max value is 99,999,999,999,999.99',
+                    output_words: 'Output in Words',
+                    copy_result: 'Copy Result',
+                    copied: 'Copied!',
+                    clear_input: 'Clear Input',
+                    error_invalid: 'Please enter a valid non-negative number.',
+                    error_out_of_range: 'Number is too large or contains too many decimals (max 14 digits integer, 2 decimals).'
+                },
+                'zh-CN': {
+                    title: '💰 金额大小写转换工具',
+                    input_number: '输入金额 (人民币)',
+                    input_note: '最大支持 999,999,999,999,999.99 (近百兆)',
+                    output_words: '大写金额',
+                    copy_result: '复制结果',
+                    copied: '已复制！',
+                    clear_input: '清空输入',
+                    error_invalid: '请输入有效的非负数。',
+                    error_out_of_range: '金额超出范围 (最大 14 位整数, 2 位小数)。'
+                },
+                'zh-TW': {
+                    title: '💰 金額大小寫轉換工具',
+                    input_number: '輸入金額 (人民幣)',
+                    input_note: '最大支持 999,999,999,999,999.99 (近百兆)',
+                    output_words: '大寫金額',
+                    copy_result: '複製結果',
+                    copied: '已複製！',
+                    clear_input: '清空輸入',
+                    error_invalid: '請輸入有效的非負數。',
+                    error_out_of_range: '金額超出範圍 (最大 14 位整數, 2 位小數)。'
+                },
+                // Add more languages as needed
+            },
+
+            init: () => {
+                // Initial conversion if needed, or simply set the language
+                const userLang = navigator.language || navigator.userLanguage;
+                let targetLang = 'en'; 
+                if (userLang.startsWith('zh')) {
+                    targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+                }
+                const langSelect = document.getElementById('num-lang');
+                if(langSelect && targetLang !== 'en' && NumberToWords.i18n[targetLang]) {
+                    langSelect.value = targetLang;
+                    NumberToWords.changeLang();
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('num-lang').value;
+                const texts = NumberToWords.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="number_words_tool"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.textContent = texts[key];
+                });
+                // Re-run conversion to update result format
+                NumberToWords.convert();
+            },
+
+            setError(messageKey) {
+                const lang = document.getElementById('num-lang').value;
+                const errorElement = document.getElementById('num-error');
+                errorElement.textContent = NumberToWords.i18n[lang][messageKey];
+                errorElement.classList.remove('hidden');
+                document.getElementById('output-words').textContent = '';
+            },
+
+            clearError() {
+                document.getElementById('num-error').classList.add('hidden');
+            },
+
+            convert: () => {
+                NumberToWords.clearError();
+                const inputElement = document.getElementById('input-number');
+                const lang = document.getElementById('num-lang').value;
+                
+                const rawNumber = inputElement.value.trim();
+                if (rawNumber === '') {
+                    document.getElementById('output-words').textContent = '';
+                    return;
+                }
+
+                const number = parseFloat(rawNumber);
+                
+                if (isNaN(number) || number < 0) {
+                    NumberToWords.setError('error_invalid');
+                    return;
+                }
+
+                // Check for general limits
+                if (number > 99999999999999.99 || rawNumber.split('.').length > 2 || (rawNumber.split('.')[1] && rawNumber.split('.')[1].length > 2)) {
+                    NumberToWords.setError('error_out_of_range');
+                    return;
+                }
+                
+                let result = '';
+                if (lang === 'zh-CN' || lang === 'zh-TW') {
+                    result = NumberToWords.convertCNY(rawNumber);
+                } else {
+                    // Placeholder for non-CNY conversion logic
+                    result = `(${lang}) ${rawNumber}`;
+                }
+
+                document.getElementById('output-words').textContent = result;
+            },
+
+            copyResult() {
+                const result = document.getElementById('output-words').textContent;
+                if (result) {
+                    // Use execCommand for broader compatibility in iFrames
+                    const tempInput = document.createElement('textarea');
+                    tempInput.value = result;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    try {
+                        document.execCommand('copy');
+                        const lang = document.getElementById('num-lang').value;
+                        const copyButton = document.querySelector('[data-i18n="copy_result"]');
+                        const originalText = NumberToWords.i18n[lang].copy_result; // Use i18n map for original text
+                        copyButton.textContent = NumberToWords.i18n[lang].copied;
+                        
+                        setTimeout(() => {
+                            copyButton.textContent = originalText;
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                    } finally {
+                        document.body.removeChild(tempInput);
+                    }
+                }
+            },
+
+            clearInput() {
+                document.getElementById('input-number').value = '';
+                document.getElementById('output-words').textContent = '';
+                document.getElementById('num-error').classList.add('hidden');
+            },
+
+            // === 核心：人民币大写转换逻辑 (CNY Conversion Logic) ===
+            convertCNY(numberStr) {
+                const CN_NUMBERS = ["零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"];
+                const CN_INT_UNITS = ["", "拾", "佰", "仟"];
+                const CN_GROUP_UNITS = ["", "万", "亿", "兆"]; // Max up to 兆 (trillion)
+                const CN_CURRENCY_UNIT = "元";
+                const CN_DECIMAL_UNITS = ["角", "分"];
+                const CN_EXACT = "整";
+
+                // Split integer and decimal parts
+                let [integerPart, decimalPart] = numberStr.split('.');
+                
+                // Remove leading zeros from integer part
+                integerPart = integerPart.replace(/^0+/, '');
+                
+                let result = '';
+
+                // 1. Convert Integer Part
+                if (integerPart.length > 0) {
+                    let temp = '';
+                    let zeroCount = 0;
+                    
+                    // Iterate through groups of 4 digits (仟, 佰, 拾, 个)
+                    for (let i = 0; i < integerPart.length; i++) {
+                        const p = integerPart.length - 1 - i; // Position from right (0 to N-1)
+                        const digit = parseInt(integerPart[i], 10);
+                        const unitIdx = p % 4; // Unit index within the group (0=个, 1=拾, 2=佰, 3=仟)
+                        const groupIdx = Math.floor(p / 4); // Group index (0=个, 1=万, 2=亿, 3=兆)
+
+                        if (digit === 0) {
+                            // a. Handle consecutive zeros
+                            zeroCount++;
+                            if (unitIdx === 0 && groupIdx > 0 && zeroCount < 4) {
+                                // Add group unit (万, 亿) if it's the end of a non-zero group (unitIdx == 0)
+                                temp += CN_GROUP_UNITS[groupIdx];
+                            }
+                        } else {
+                            // b. Add '零' if the previous digit was zero
+                            if (zeroCount > 0) {
+                                temp += CN_NUMBERS[0];
+                            }
+                            // c. Add digit and local unit (拾, 佰, 仟)
+                            temp += CN_NUMBERS[digit] + CN_INT_UNITS[unitIdx];
+                            zeroCount = 0;
+                        }
+
+                        // d. Add group unit (万, 亿, 兆) at the end of every 4-digit block
+                        if (unitIdx === 0 && zeroCount < 4 && groupIdx > 0) {
+                            temp += CN_GROUP_UNITS[groupIdx];
+                        }
+                    }
+                    
+                    // Cleanup '零' at the end of the integer part
+                    result = temp.replace(/零+$/, '') + CN_CURRENCY_UNIT;
+                }
+
+                // 2. Convert Decimal Part
+                if (decimalPart && parseInt(decimalPart) > 0) {
+                    let decimalWords = '';
+                    const jiao = parseInt(decimalPart[0] || '0', 10);
+                    const fen = parseInt(decimalPart[1] || '0', 10);
+
+                    // A. 角 part
+                    if (jiao > 0) {
+                        decimalWords += CN_NUMBERS[jiao] + CN_DECIMAL_UNITS[0]; // 壹角
+                    } else if (integerPart.length > 0 && fen > 0) {
+                        // Integer part exists, and only Fen is present (e.g., 1.05) -> Needs a '零'
+                        decimalWords += CN_NUMBERS[0]; // 零分
+                    }
+
+                    // B. 分 part
+                    if (fen > 0) {
+                        decimalWords += CN_NUMBERS[fen] + CN_DECIMAL_UNITS[1]; // 伍分
+                    }
+
+                    result += decimalWords;
+
+                } else if (result.length > 0) {
+                    // Integer part exists, and no decimal or decimal is 00 (e.g., 100 or 100.00)
+                    result += CN_EXACT;
+                }
+                
+                // Final cleanup: remove trailing '零' from integer part if it ended with one before adding '元'
+                result = result.replace(/零元$/, '元');
+                
+                // If the entire number is 0.xx (e.g., 0.50 -> 伍角)
+                if (integerPart.length === 0 && result.length > 0 && result !== CN_EXACT) {
+                    // Result starts directly with decimal part, no '元' or '整' needed.
+                    // This is the correct format for amounts less than 1 CNY (e.g., 伍角, 零壹分)
+                } else if (integerPart.length === 0 && (!decimalPart || parseInt(decimalPart) === 0)) {
+                    // If input is 0 or 0.00
+                    return CN_NUMBERS[0] + CN_CURRENCY_UNIT + CN_EXACT; // 零元整
+                }
+
+                return result;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+             // 自动设置语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            }
+            const langSelect = document.getElementById('num-lang');
+            if(langSelect && targetLang !== 'en' && NumberToWords.i18n[targetLang]) {
+                langSelect.value = targetLang;
+                NumberToWords.changeLang();
+            }
+        });
+    </script>
+</body>
+</html>

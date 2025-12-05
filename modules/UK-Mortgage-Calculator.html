@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK Mortgage Calculator</title>
+    
+    <meta name="tool-id" content="uk_mortgage_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="🏠">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="UK Mortgage Calculator">
+    <meta name="description" content="Calculate your UK mortgage payments with this easy-to-use calculator.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="英国抵押贷款计算器">
+    <meta name="lang-description-zh-CN" content="使用这个易于使用的计算器计算您的英国抵押贷款付款。">
+    
+    <meta name="lang-title-zh-TW" content="英國抵押貸款計算器">
+    <meta name="lang-description-zh-TW" content="使用這個易於使用的計算器計算您的英國抵押貸款付款。">
+    
+    <meta name="lang-title-ja" content="英国住宅ローン計算機">
+    <meta name="lang-description-ja" content="この使いやすい計算機で英国の住宅ローン支払いを計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор ипотечных кредитов в Великобритании">
+    <meta name="lang-description-ru" content="Вычислите платежи по ипотечному кредиту в Великобритании с помощью этого простого калькулятора.">
+    
+    <meta name="lang-title-es" content="Calculadora de hipotecas del Reino Unido">
+    <meta name="lang-description-es" content="Calcule sus pagos de hipoteca en el Reino Unido con esta calculadora fácil de usar.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="uk_mortgage_calculator" 
+         data-category="finance" 
+         data-title="UK Mortgage Calculator" 
+         data-icon="🏠">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="mortgage-lang" onchange="MortgageCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🏠 UK Mortgage Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="loan_amount_label">Loan Amount (£)</label>
+                <input type="number" id="loan-amount" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 250000" min="0" step="any">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="interest_rate_label">Interest Rate (%)</label>
+                <input type="number" id="interest-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 3.5" min="0" step="0.01">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="term_label">Loan Term (Years)</label>
+                <input type="number" id="loan-term" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 25" min="1" max="40">
+            </div>
+        </div>
+
+        <button onclick="MortgageCalc.calc()" class="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700 transition mb-6" data-i18n="btn_calc">Calculate Mortgage</button>
+
+        <div class="bg-purple-50 p-6 rounded-lg border border-purple-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="monthly_payment_label">Monthly Payment</div>
+            <div id="monthly-payment" class="text-3xl font-bold text-purple-800">--</div>
+            
+            <div class="grid grid-cols-2 gap-4 mt-6">
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-xs text-gray-500 mb-1" data-i18n="total_payment_label">Total Payment</div>
+                    <div id="total-payment" class="text-lg font-bold text-purple-700">--</div>
+                </div>
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-xs text-gray-500 mb-1" data-i18n="total_interest_label">Total Interest</div>
+                    <div id="total-interest" class="text-lg font-bold text-purple-700">--</div>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">Formula: M = P * (r(1+r)^n) / ((1+r)^n - 1)</div>
+                <div id="mortgage-formula" class="text-gray-600">--</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MortgageCalc = {
+            i18n: {
+                'en': {
+                    title: '🏠 UK Mortgage Calculator',
+                    loan_amount_label: 'Loan Amount (£)',
+                    interest_rate_label: 'Interest Rate (%)',
+                    term_label: 'Loan Term (Years)',
+                    btn_calc: 'Calculate Mortgage',
+                    monthly_payment_label: 'Monthly Payment',
+                    total_payment_label: 'Total Payment',
+                    total_interest_label: 'Total Interest',
+                    formula_label: 'Formula: M = P * (r(1+r)^n) / ((1+r)^n - 1)',
+                    err_invalid: 'Please enter valid numbers',
+                    currency: '£'
+                },
+                'zh-CN': {
+                    title: '🏠 英国抵押贷款计算器',
+                    loan_amount_label: '贷款金额 (£)',
+                    interest_rate_label: '利率 (%)',
+                    term_label: '贷款期限 (年)',
+                    btn_calc: '计算抵押贷款',
+                    monthly_payment_label: '月付款',
+                    total_payment_label: '总付款',
+                    total_interest_label: '总利息',
+                    formula_label: '公式：M = P * (r(1+r)^n) / ((1+r)^n - 1)',
+                    err_invalid: '请输入有效的数字',
+                    currency: '£'
+                },
+                'zh-TW': {
+                    title: '🏠 英國抵押貸款計算器',
+                    loan_amount_label: '貸款金額 (£)',
+                    interest_rate_label: '利率 (%)',
+                    term_label: '貸款期限 (年)',
+                    btn_calc: '計算抵押貸款',
+                    monthly_payment_label: '月付款',
+                    total_payment_label: '總付款',
+                    total_interest_label: '總利息',
+                    formula_label: '公式：M = P * (r(1+r)^n) / ((1+r)^n - 1)',
+                    err_invalid: '請輸入有效的數字',
+                    currency: '£'
+                },
+                'ja': {
+                    title: '🏠 英国住宅ローン計算機',
+                    loan_amount_label: 'ローン額 (£)',
+                    interest_rate_label: '金利 (%)',
+                    term_label: 'ローン期間 (年)',
+                    btn_calc: '住宅ローンを計算',
+                    monthly_payment_label: '月々の支払い',
+                    total_payment_label: '総支払い額',
+                    total_interest_label: '総利息',
+                    formula_label: '公式：M = P * (r(1+r)^n) / ((1+r)^n - 1)',
+                    err_invalid: '有効な数字を入力してください',
+                    currency: '£'
+                },
+                'ru': {
+                    title: '🏠 Калькулятор ипотечных кредитов в Великобритании',
+                    loan_amount_label: 'Сумма кредита (£)',
+                    interest_rate_label: 'Процентная ставка (%)',
+                    term_label: 'Срок кредита (лет)',
+                    btn_calc: 'Вычислить ипотеку',
+                    monthly_payment_label: 'Ежемесячный платеж',
+                    total_payment_label: 'Общий платеж',
+                    total_interest_label: 'Общий процент',
+                    formula_label: 'Формула: M = P * (r(1+r)^n) / ((1+r)^n - 1)',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    currency: '£'
+                },
+                'es': {
+                    title: '🏠 Calculadora de hipotecas del Reino Unido',
+                    loan_amount_label: 'Monto del préstamo (£)',
+                    interest_rate_label: 'Tasa de interés (%)',
+                    term_label: 'Plazo del préstamo (años)',
+                    btn_calc: 'Calcular hipoteca',
+                    monthly_payment_label: 'Pago mensual',
+                    total_payment_label: 'Pago total',
+                    total_interest_label: 'Interés total',
+                    formula_label: 'Fórmula: M = P * (r(1+r)^n) / ((1+r)^n - 1)',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    currency: '£'
+                }
+            },
+
+            init: () => {
+                // 初始化示例值
+                document.getElementById('loan-amount').value = 250000;
+                document.getElementById('interest-rate').value = 3.5;
+                document.getElementById('loan-term').value = 25;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('mortgage-lang').value;
+                const texts = MortgageCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="uk_mortgage_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                MortgageCalc.calc();
+            },
+
+            calc: () => {
+                const principal = parseFloat(document.getElementById('loan-amount').value) || 0;
+                const rate = parseFloat(document.getElementById('interest-rate').value) || 0;
+                const years = parseFloat(document.getElementById('loan-term').value) || 0;
+                const lang = document.getElementById('mortgage-lang').value;
+                const texts = MortgageCalc.i18n[lang];
+
+                const monthlyEl = document.getElementById('monthly-payment');
+                const totalEl = document.getElementById('total-payment');
+                const interestEl = document.getElementById('total-interest');
+                const formulaEl = document.getElementById('mortgage-formula');
+
+                // 验证输入
+                if (isNaN(principal) || isNaN(rate) || isNaN(years) || principal <= 0 || rate < 0 || years <= 0) {
+                    monthlyEl.innerText = texts.err_invalid;
+                    monthlyEl.className = "text-xl font-bold text-red-600";
+                    totalEl.innerText = "--";
+                    interestEl.innerText = "--";
+                    formulaEl.innerText = "";
+                    return;
+                }
+
+                // 计算抵押贷款
+                const monthlyRate = (rate / 100) / 12;
+                const months = years * 12;
+                const monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+                const totalPayment = monthlyPayment * months;
+                const totalInterest = totalPayment - principal;
+
+                // 显示结果
+                monthlyEl.className = "text-3xl font-bold text-purple-800";
+                monthlyEl.innerText = `${texts.currency}${monthlyPayment.toFixed(2)}`;
+                
+                totalEl.innerText = `${texts.currency}${totalPayment.toFixed(2)}`;
+                interestEl.innerText = `${texts.currency}${totalInterest.toFixed(2)}`;
+                
+                // 显示计算公式
+                formulaEl.innerText = `${texts.currency}${monthlyPayment.toFixed(2)} = ${texts.currency}${principal} * (${monthlyRate.toFixed(6)}*(1+${monthlyRate.toFixed(6)})^${months}) / ((1+${monthlyRate.toFixed(6)})^${months} - 1)`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', MortgageCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('mortgage-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    MortgageCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

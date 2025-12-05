@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="tax_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💸">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Tax Calculator">
+    <meta name="description" content="Calculate income tax based on progressive tax brackets.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="所得税计算器">
+    <meta name="lang-description-zh-CN" content="根据累进税率计算所得税。">
+    
+    <meta name="lang-title-zh-TW" content="所得稅計算器">
+    <meta name="lang-description-zh-TW" content="根據累進稅率計算所得稅。">
+    
+    <meta name="lang-title-ja" content="所得税計算機">
+    <meta name="lang-description-ja" content="累進課税方式に基づいて所得税を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор налогов">
+    <meta name="lang-description-ru" content="Вычислите подоходный налог на основе прогрессивных налоговых ставок.">
+    
+    <meta name="lang-title-es" content="Calculadora de impuestos">
+    <meta name="lang-description-es" content="Calcule el impuesto sobre la renta según tramos impositivos progresivos.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .tax-bracket { margin-bottom: 4px; padding: 4px; border-radius: 4px; }
+        .tax-bracket:nth-child(odd) { background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="tax_calculator" 
+         data-category="finance" 
+         data-title="Tax Calculator" 
+         data-icon="💸">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="tax-lang" onchange="TaxCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💸 Tax Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="income_label">Annual Income</label>
+                <input type="number" id="annual-income" class="w-full p-2 border rounded focus:ring-2 focus:ring-orange-500 outline-none" placeholder="e.g. 80000" min="0" step="any">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="deductions_label">Total Deductions</label>
+                <input type="number" id="deductions" class="w-full p-2 border rounded focus:ring-2 focus:ring-orange-500 outline-none" placeholder="e.g. 12000" min="0" step="any">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="filing_status_label">Filing Status</label>
+                <select id="filing-status" class="w-full p-2 border rounded focus:ring-2 focus:ring-orange-500 outline-none">
+                    <option value="single" data-i18n="status_single">Single</option>
+                    <option value="married_joint" data-i18n="status_joint">Married Filing Jointly</option>
+                    <option value="married_separate" data-i18n="status_separate">Married Filing Separately</option>
+                    <option value="head" data-i18n="status_head">Head of Household</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="TaxCalc.calc()" class="w-full bg-orange-600 text-white py-2 rounded font-bold hover:bg-orange-700 transition mb-6" data-i18n="btn_calc">Calculate Tax</button>
+
+        <div class="bg-orange-50 p-6 rounded-lg border border-orange-100">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="taxable_income_label">Taxable Income</div>
+                    <div id="taxable-income" class="text-xl font-bold text-orange-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="total_tax_label">Total Tax</div>
+                    <div id="total-tax" class="text-xl font-bold text-orange-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="effective_rate_label">Effective Tax Rate</div>
+                    <div id="effective-rate" class="text-xl font-bold text-orange-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="marginal_rate_label">Marginal Tax Rate</div>
+                    <div id="marginal-rate" class="text-xl font-bold text-orange-800">--</div>
+                </div>
+            </div>
+
+            <div>
+                <div data-i18n="breakdown_label" class="font-medium mb-2">Tax Breakdown by Bracket</div>
+                <div id="tax-breakdown" class="text-sm">
+                    <div data-i18n="breakdown_empty">Please calculate to see tax breakdown</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TaxCalc = {
+            // 税率表 (示例使用美国联邦所得税率)
+            taxBrackets: {
+                'en': {
+                    'single': [
+                        { min: 0, max: 10275, rate: 10 },
+                        { min: 10276, max: 41775, rate: 12 },
+                        { min: 41776, max: 89075, rate: 22 },
+                        { min: 89076, max: 170050, rate: 24 },
+                        { min: 170051, max: 215950, rate: 32 },
+                        { min: 215951, max: 539900, rate: 35 },
+                        { min: 539901, max: Infinity, rate: 37 }
+                    ],
+                    'married_joint': [
+                        { min: 0, max: 20550, rate: 10 },
+                        { min: 20551, max: 83550, rate: 12 },
+                        { min: 83551, max: 178150, rate: 22 },
+                        { min: 178151, max: 340100, rate: 24 },
+                        { min: 340101, max: 431900, rate: 32 },
+                        { min: 431901, max: 647850, rate: 35 },
+                        { min: 647851, max: Infinity, rate: 37 }
+                    ],
+                    'married_separate': [
+                        { min: 0, max: 10275, rate: 10 },
+                        { min: 10276, max: 41775, rate: 12 },
+                        { min: 41776, max: 89075, rate: 22 },
+                        { min: 89076, max: 170050, rate: 24 },
+                        { min: 170051, max: 215950, rate: 32 },
+                        { min: 215951, max: 323925, rate: 35 },
+                        { min: 323926, max: Infinity, rate: 37 }
+                    ],
+                    'head': [
+                        { min: 0, max: 14650, rate: 10 },
+                        { min: 14651, max: 55900, rate: 12 },
+                        { min: 55901, max: 89050, rate: 22 },
+                        { min: 89051, max: 170050, rate: 24 },
+                        { min: 170051, max: 215950, rate: 32 },
+                        { min: 215951, max: 539900, rate: 35 },
+                        { min: 539901, max: Infinity, rate: 37 }
+                    ]
+                },
+                // 其他语言使用相同税率结构，仅翻译说明文字
+                'zh-CN': {}, 'zh-TW': {}, 'ja': {}, 'ru': {}, 'es': {}
+            },
+
+            i18n: {
+                'en': {
+                    title: '💸 Tax Calculator',
+                    income_label: 'Annual Income',
+                    deductions_label: 'Total Deductions',
+                    filing_status_label: 'Filing Status',
+                    status_single: 'Single',
+                    status_joint: 'Married Filing Jointly',
+                    status_separate: 'Married Filing Separately',
+                    status_head: 'Head of Household',
+                    btn_calc: 'Calculate Tax',
+                    taxable_income_label: 'Taxable Income',
+                    total_tax_label: 'Total Tax',
+                    effective_rate_label: 'Effective Tax Rate',
+                    marginal_rate_label: 'Marginal Tax Rate',
+                    breakdown_label: 'Tax Breakdown by Bracket',
+                    breakdown_empty: 'Please calculate to see tax breakdown',
+                    bracket_label: 'Income from %s to %s: %s%% → %s',
+                    bracket_label_top: 'Income over %s: %s%% → %s',
+                    err_invalid: 'Please enter valid numbers',
+                    currency: '$'
+                },
+                'zh-CN': {
+                    title: '💸 所得税计算器',
+                    income_label: '年收入',
+                    deductions_label: '总扣除额',
+                    filing_status_label: '申报状态',
+                    status_single: '单身',
+                    status_joint: '已婚联合申报',
+                    status_separate: '已婚单独申报',
+                    status_head: '户主',
+                    btn_calc: '计算税款',
+                    taxable_income_label: '应税所得额',
+                    total_tax_label: '总税额',
+                    effective_rate_label: '实际税率',
+                    marginal_rate_label: '边际税率',
+                    breakdown_label: '税率级距明细',
+                    breakdown_empty: '请计算以查看税率明细',
+                    bracket_label: '%s至%s收入部分：%s%% → %s',
+                    bracket_label_top: '%s以上收入部分：%s%% → %s',
+                    err_invalid: '请输入有效的数字',
+                    currency: '¥'
+                },
+                'zh-TW': {
+                    title: '💸 所得稅計算器',
+                    income_label: '年收入',
+                    deductions_label: '總扣除額',
+                    filing_status_label: '申報狀態',
+                    status_single: '單身',
+                    status_joint: '已婚聯合申報',
+                    status_separate: '已婚單獨申報',
+                    status_head: '戶主',
+                    btn_calc: '計算稅款',
+                    taxable_income_label: '應稅所得額',
+                    total_tax_label: '總稅額',
+                    effective_rate_label: '實際稅率',
+                    marginal_rate_label: '邊際稅率',
+                    breakdown_label: '稅率級距明細',
+                    breakdown_empty: '請計算以查看稅率明細',
+                    bracket_label: '%s至%s收入部分：%s%% → %s',
+                    bracket_label_top: '%s以上收入部分：%s%% → %s',
+                    err_invalid: '請輸入有效的數字',
+                    currency: 'NT$'
+                },
+                'ja': {
+                    title: '💸 所得税計算機',
+                    income_label: '年収',
+                    deductions_label: '総控除額',
+                    filing_status_label: '申告 status',
+                    status_single: '単身',
+                    status_joint: '夫婦共同申告',
+                    status_separate: '夫婦個別申告',
+                    status_head: '世帯主',
+                    btn_calc: '税額計算',
+                    taxable_income_label: '課税所得額',
+                    total_tax_label: '総税額',
+                    effective_rate_label: '実効税率',
+                    marginal_rate_label: '限界税率',
+                    breakdown_label: '税率ブラケット内訳',
+                    breakdown_empty: '計算を実行して税率内訳を表示',
+                    bracket_label: '%s～%sの所得部分：%s%% → %s',
+                    bracket_label_top: '%s超の所得部分：%s%% → %s',
+                    err_invalid: '有効な数字を入力してください',
+                    currency: '¥'
+                },
+                'ru': {
+                    title: '💸 Калькулятор налогов',
+                    income_label: 'Годовой доход',
+                    deductions_label: 'Всего вычетов',
+                    filing_status_label: 'Статус декларации',
+                    status_single: 'Холостой/незамужняя',
+                    status_joint: 'Женатые/замужние, совместная декларация',
+                    status_separate: 'Женатые/замужние, отдельная декларация',
+                    status_head: 'Глава семьи',
+                    btn_calc: 'Вычислить налог',
+                    taxable_income_label: 'Налогоплательная база',
+                    total_tax_label: 'Общий налог',
+                    effective_rate_label: 'Эффективная налоговая ставка',
+                    marginal_rate_label: 'Маржинальная налоговая ставка',
+                    breakdown_label: 'Разбивка налога по ставкам',
+                    breakdown_empty: 'Вычислите, чтобы увидеть разбивку налога',
+                    bracket_label: 'Доход от %s до %s: %s%% → %s',
+                    bracket_label_top: 'Доход свыше %s: %s%% → %s',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    currency: '₽'
+                },
+                'es': {
+                    title: '💸 Calculadora de impuestos',
+                    income_label: 'Ingreso anual',
+                    deductions_label: 'Deducciones totales',
+                    filing_status_label: 'Estado de declaración',
+                    status_single: 'Soltero/a',
+                    status_joint: 'Casado/a, declaración conjunta',
+                    status_separate: 'Casado/a, declaración separada',
+                    status_head: 'Jefe de hogar',
+                    btn_calc: 'Calcular impuestos',
+                    taxable_income_label: 'Ingreso gravable',
+                    total_tax_label: 'Impuesto total',
+                    effective_rate_label: 'Tasa impositiva efectiva',
+                    marginal_rate_label: 'Tasa impositiva marginal',
+                    breakdown_label: 'Desglose del impuesto por tramos',
+                    breakdown_empty: 'Por favor, calcule para ver el desglose',
+                    bracket_label: 'Ingreso de %s a %s: %s%% → %s',
+                    bracket_label_top: 'Ingreso superior a %s: %s%% → %s',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    currency: '€'
+                }
+            },
+
+            // 初始化税率表（复制英文税率到其他语言）
+            initTaxBrackets: () => {
+                const langs = ['zh-CN', 'zh-TW', 'ja', 'ru', 'es'];
+                langs.forEach(lang => {
+                    TaxCalc.taxBrackets[lang] = JSON.parse(JSON.stringify(TaxCalc.taxBrackets.en));
+                });
+            },
+
+            init: () => {
+                TaxCalc.initTaxBrackets();
+                // 初始化示例值
+                document.getElementById('annual-income').value = 80000;
+                document.getElementById('deductions').value = 12000;
+                document.getElementById('filing-status').value = 'single';
+                
+                // 初始化状态选项的翻译
+                TaxCalc.updateStatusOptions();
+            },
+
+            updateStatusOptions: () => {
+                const lang = document.getElementById('tax-lang').value;
+                const texts = TaxCalc.i18n[lang];
+                const statusSelect = document.getElementById('filing-status');
+                
+                Array.from(statusSelect.options).forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (key && texts[key]) {
+                        option.text = texts[key];
+                    }
+                });
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('tax-lang').value;
+                const texts = TaxCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="tax_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                TaxCalc.updateStatusOptions();
+                // 重新计算以更新结果语言
+                TaxCalc.calc();
+            },
+
+            calc: () => {
+                const income = parseFloat(document.getElementById('annual-income').value) || 0;
+                const deductions = parseFloat(document.getElementById('deductions').value) || 0;
+                const status = document.getElementById('filing-status').value;
+                const lang = document.getElementById('tax-lang').value;
+                const texts = TaxCalc.i18n[lang];
+
+                const taxableEl = document.getElementById('taxable-income');
+                const totalTaxEl = document.getElementById('total-tax');
+                const effectiveEl = document.getElementById('effective-rate');
+                const marginalEl = document.getElementById('marginal-rate');
+                const breakdownEl = document.getElementById('tax-breakdown');
+
+                // 验证输入
+                if (isNaN(income) || isNaN(deductions) || income < 0 || deductions < 0) {
+                    taxableEl.innerText = texts.err_invalid;
+                    taxableEl.className = "text-xl font-bold text-red-600";
+                    totalTaxEl.innerText = "";
+                    effectiveEl.innerText = "";
+                    marginalEl.innerText = "";
+                    breakdownEl.innerHTML = `<div>${texts.err_invalid}</div>`;
+                    return;
+                }
+
+                // 计算应税所得
+                const taxableIncome = Math.max(0, income - deductions);
+                const brackets = TaxCalc.taxBrackets[lang][status];
+                
+                // 计算税款
+                let totalTax = 0;
+                let marginalRate = 0;
+                let breakdownHtml = '';
+                
+                brackets.forEach(bracket => {
+                    if (taxableIncome > bracket.min) {
+                        const amountInBracket = Math.min(taxableIncome, bracket.max) - bracket.min;
+                        if (amountInBracket > 0) {
+                            const taxInBracket = amountInBracket * (bracket.rate / 100);
+                            totalTax += taxInBracket;
+                            
+                            // 记录边际税率
+                            if (taxableIncome > bracket.min) {
+                                marginalRate = bracket.rate;
+                            }
+                            
+                            // 格式化金额显示
+                            const minFormatted = texts.currency + bracket.min.toLocaleString();
+                            let maxFormatted = bracket.max === Infinity ? 
+                                texts.currency + '∞' : texts.currency + bracket.max.toLocaleString();
+                            const taxFormatted = texts.currency + taxInBracket.toFixed(2).toLocaleString();
+                            
+                            // 添加到明细
+                            if (bracket.max === Infinity) {
+                                breakdownHtml += `<div class="tax-bracket">${texts.bracket_label_top.replace(/%s/g, (match, i) => 
+                                    [minFormatted, bracket.rate, taxFormatted][i])}</div>`;
+                            } else {
+                                breakdownHtml += `<div class="tax-bracket">${texts.bracket_label.replace(/%s/g, (match, i) => 
+                                    [minFormatted, maxFormatted, bracket.rate, taxFormatted][i])}</div>`;
+                            }
+                        }
+                    }
+                });
+                
+                // 计算实际税率
+                const effectiveRate = taxableIncome > 0 ? (totalTax / taxableIncome) * 100 : 0;
+
+                // 显示结果
+                taxableEl.className = "text-xl font-bold text-orange-800";
+                totalTaxEl.className = "text-xl font-bold text-orange-800";
+                effectiveEl.className = "text-xl font-bold text-orange-800";
+                marginalEl.className = "text-xl font-bold text-orange-800";
+                
+                taxableEl.innerText = `${texts.currency}${taxableIncome.toLocaleString()}`;
+                totalTaxEl.innerText = `${texts.currency}${totalTax.toFixed(2).toLocaleString()}`;
+                effectiveEl.innerText = `${effectiveRate.toFixed(1)}%`;
+                marginalEl.innerText = `${marginalRate}%`;
+                
+                breakdownEl.innerHTML = breakdownHtml;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', TaxCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('tax-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    TaxCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

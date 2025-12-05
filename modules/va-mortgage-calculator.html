@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VA Mortgage Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="va_mortgage_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="🏠">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="VA Mortgage Calculator">
+    <meta name="description" content="Calculate monthly payments for a VA-backed mortgage loan.">
+    
+    <!-- 多语言配置 (SEO/Meta) -->
+    <meta name="lang-title-zh-CN" content="退伍军人抵押贷款计算器">
+    <meta name="lang-description-zh-CN" content="计算VA担保抵押贷款的月付款。">
+    
+    <meta name="lang-title-zh-TW" content="退伍軍人抵押貸款計算器">
+    <meta name="lang-description-zh-TW" content="計算VA擔保抵押貸款的月付款。">
+    
+    <meta name="lang-title-ja" content="VA住宅ローン計算機">
+    <meta name="lang-description-ja" content="VA保証住宅ローンの月々の支払いを計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор ипотечных кредитов VA">
+    <meta name="lang-description-ru" content="Вычислите ежемесячные платежи по ипотечному кредиту с гарантией VA.">
+    
+    <meta name="lang-title-es" content="Calculadora de hipotecas VA">
+    <meta name="lang-description-es" content="Calcule los pagos mensuales para una hipoteca respaldada por el VA.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         id="va-calculator-container"
+         data-id="va_mortgage_calculator" 
+         data-category="finance" 
+         data-title="VA Mortgage Calculator" 
+         data-icon="🏠">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="va-lang" onchange="VAMortgageCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🏠 VA Mortgage Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="home_price_label">Home Price ($)</label>
+                <input type="number" id="home-price" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 300000" min="50000" step="10000" value="300000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="down_payment_label">Down Payment ($)</label>
+                <input type="number" id="down-payment" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 0" min="0" step="1000" value="0">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rate_label">Interest Rate (% per year)</label>
+                <input type="number" id="va-interest-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 3.5" min="0.1" max="20" step="0.1" value="3.5">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="term_label">Loan Term (Years)</label>
+                <select id="va-loan-term" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" onchange="VAMortgageCalc.calc()">
+                    <option value="15" data-i18n="15_years">15 Years</option>
+                    <option value="30" selected data-i18n="30_years">30 Years</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="funding_fee_label">Funding Fee (%)</label>
+                <input type="number" id="funding-fee" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 2.3" min="0" max="5" step="0.1" value="2.3">
+            </div>
+        </div>
+
+        <button onclick="VAMortgageCalc.calc()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate VA Mortgage</button>
+
+        <div class="bg-green-50 p-6 rounded-lg border border-green-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">VA Mortgage Calculation Results</div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="monthly_label">Monthly Payment</div>
+                    <div id="va-monthly-payment" class="text-xl font-bold text-green-800">--</div>
+                </div>
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="funding_fee_amount_label">Funding Fee Amount</div>
+                    <div id="funding-fee-amount" class="text-xl font-bold text-green-800">--</div>
+                </div>
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="loan_amount_label">Loan Amount</div>
+                    <div id="va-loan-amount" class="text-xl font-bold text-green-800">--</div>
+                </div>
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="total_interest_label">Total Interest</div>
+                    <div id="va-total-interest" class="text-xl font-bold text-green-800">--</div>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="disclaimer_note" class="font-medium mb-1">Note: VA loans typically require no down payment and have competitive interest rates.</div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual loan terms may vary. Contact a VA-approved lender for details.</div>
+        </div>
+    </div>
+
+    <script>
+        const VAMortgageCalc = {
+            i18n: {
+                'en': {
+                    title: '🏠 VA Mortgage Calculator',
+                    home_price_label: 'Home Price ($)',
+                    down_payment_label: 'Down Payment ($)',
+                    rate_label: 'Interest Rate (% per year)',
+                    term_label: 'Loan Term (Years)',
+                    '15_years': '15 Years',
+                    '30_years': '30 Years',
+                    funding_fee_label: 'Funding Fee (%)',
+                    btn_calc: 'Calculate VA Mortgage',
+                    res_label: 'VA Mortgage Calculation Results',
+                    monthly_label: 'Monthly Payment',
+                    funding_fee_amount_label: 'Funding Fee Amount',
+                    loan_amount_label: 'Loan Amount',
+                    total_interest_label: 'Total Interest',
+                    disclaimer_note: 'Note: VA loans typically require no down payment and have competitive interest rates.',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual loan terms may vary. Contact a VA-approved lender for details.',
+                    placeholder_prefix: 'e.g. '
+                },
+                'zh-CN': {
+                    title: '🏠 退伍军人抵押贷款计算器',
+                    home_price_label: '房屋价格（美元）',
+                    down_payment_label: '首付金额（美元）',
+                    rate_label: '年利率（%）',
+                    term_label: '贷款期限（年）',
+                    '15_years': '15年',
+                    '30_years': '30年',
+                    funding_fee_label: '融资费用（%）',
+                    btn_calc: '计算退伍军人抵押贷款',
+                    res_label: '退伍军人抵押贷款计算结果',
+                    monthly_label: '月付款',
+                    funding_fee_amount_label: '融资费用金额',
+                    loan_amount_label: '贷款金额',
+                    total_interest_label: '总利息',
+                    disclaimer_note: '注：退伍军人贷款通常不需要首付，并且利率具有竞争力。',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。实际贷款条款可能有所不同。详情请联系VA批准的贷款人。',
+                    placeholder_prefix: '例如：'
+                },
+                'zh-TW': {
+                    title: '🏠 退伍軍人抵押貸款計算器',
+                    home_price_label: '房屋價格（美元）',
+                    down_payment_label: '首付金額（美元）',
+                    rate_label: '年利率（%）',
+                    term_label: '貸款期限（年）',
+                    '15_years': '15年',
+                    '30_years': '30年',
+                    funding_fee_label: '融資費用（%）',
+                    btn_calc: '計算退伍軍人抵押貸款',
+                    res_label: '退伍軍人抵押貸款計算結果',
+                    monthly_label: '月付款',
+                    funding_fee_amount_label: '融資費用金額',
+                    loan_amount_label: '貸款金額',
+                    total_interest_label: '總利息',
+                    disclaimer_note: '注：退伍軍人貸款通常不需要首付，並且利率具有競爭力。',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。實際貸款條款可能有所不同。詳情請聯繫VA批准的貸款人。',
+                    placeholder_prefix: '例如：'
+                },
+                'ja': {
+                    title: '🏠 VA住宅ローン計算機',
+                    home_price_label: '住宅価格（ドル）',
+                    down_payment_label: '頭金（ドル）',
+                    rate_label: '金利（年利%）',
+                    term_label: 'ローン期間（年）',
+                    '15_years': '15年',
+                    '30_years': '30年',
+                    funding_fee_label: 'ファンディング手数料（%）',
+                    btn_calc: 'VA住宅ローンを計算',
+                    res_label: 'VA住宅ローン計算結果',
+                    monthly_label: '月々の支払額',
+                    funding_fee_amount_label: 'ファンディング手数料金額',
+                    loan_amount_label: 'ローン金額',
+                    total_interest_label: '総利息',
+                    disclaimer_note: '注：VAローンは通常頭金を必要とせず、競争力のある金利を提供しています。',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際のローン条件は異なる場合があります。詳細については、VA承認の貸し手にお問い合わせください。',
+                    placeholder_prefix: '例：'
+                },
+                'ru': {
+                    title: '🏠 Калькулятор ипотечных кредитов VA',
+                    home_price_label: 'Цена дома ($)',
+                    down_payment_label: 'Первоначальный взнос ($)',
+                    rate_label: 'Процентная ставка (% в год)',
+                    term_label: 'Срок кредита (лет)',
+                    '15_years': '15 лет',
+                    '30_years': '30 лет',
+                    funding_fee_label: 'Комиссия за финансирование (%)',
+                    btn_calc: 'Вычислить ипотечный кредит VA',
+                    res_label: 'Результаты расчета ипотечного кредита VA',
+                    monthly_label: 'Ежемесячный платеж',
+                    funding_fee_amount_label: 'Сумма комиссии за финансирование',
+                    loan_amount_label: 'Сумма кредита',
+                    total_interest_label: 'Общий процент',
+                    disclaimer_note: 'Примечание: Ипотечные кредиты VA обычно не требуют первоначального взноса и имеют конкурентоспособные процентные ставки.',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактические условия кредита могут отличаться. Для получения подробной информации свяжитесь с одобренным кредитором VA.',
+                    placeholder_prefix: 'например '
+                },
+                'es': {
+                    title: '🏠 Calculadora de hipotecas VA',
+                    home_price_label: 'Precio de la vivienda ($)',
+                    down_payment_label: 'Pago inicial ($)',
+                    rate_label: 'Tasa de interés (% anual)',
+                    term_label: 'Plazo del préstamo (años)',
+                    '15_years': '15 años',
+                    '30_years': '30 años',
+                    funding_fee_label: 'Tarifa de financiamiento (%)',
+                    btn_calc: 'Calcular hipoteca VA',
+                    res_label: 'Resultados del cálculo de hipoteca VA',
+                    monthly_label: 'Pago mensual',
+                    funding_fee_amount_label: 'Monto de la tarifa de financiamiento',
+                    loan_amount_label: 'Monto del préstamo',
+                    total_interest_label: 'Interés total',
+                    disclaimer_note: 'Nota: Las hipotecas VA generalmente no requieren pago inicial y tienen tasas de interés competitivas.',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo una estimación. Los términos reales del préstamo pueden variar. Contáctese con un prestamista aprobado por el VA para obtener detalles.',
+                    placeholder_prefix: 'ej. '
+                }
+            },
+
+            // 缓存DOM元素，提高性能并防止ID冲突
+            container: null,
+
+            init: () => {
+                VAMortgageCalc.container = document.getElementById('va-calculator-container');
+                
+                // 自动匹配浏览器语言
+                const userLang = navigator.language || navigator.userLanguage;
+                let targetLang = 'en'; 
+                if (userLang.startsWith('zh')) {
+                    targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+                } else if (userLang.startsWith('ja')) {
+                    targetLang = 'ja';
+                } else if (userLang.startsWith('ru')) {
+                    targetLang = 'ru';
+                } else if (userLang.startsWith('es')) {
+                    targetLang = 'es';
+                }
+                
+                const langSelect = document.getElementById('va-lang');
+                if(langSelect && targetLang !== 'en') {
+                    langSelect.value = targetLang;
+                }
+
+                // 初始化时应用语言并计算一次
+                VAMortgageCalc.changeLang();
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('va-lang').value;
+                const texts = VAMortgageCalc.i18n[lang];
+                
+                // 更新页面标题
+                if (texts.title) {
+                    document.title = texts.title.replace('🏠 ', ''); // 去掉图标作为页面标题
+                }
+
+                if (!VAMortgageCalc.container) return;
+
+                // 更新文本内容
+                const elements = VAMortgageCalc.container.querySelectorAll('[data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        el.innerText = texts[key];
+                    }
+                });
+
+                // 更新Placeholder（占位符）
+                const inputs = VAMortgageCalc.container.querySelectorAll('input[placeholder]');
+                inputs.forEach(input => {
+                    // 假设所有占位符格式都是 "e.g. 123"，我们替换前缀
+                    const currentPlaceholder = input.getAttribute('placeholder');
+                    // 找到数字部分
+                    const numberPart = currentPlaceholder.match(/[\d.]+/);
+                    if (numberPart && texts.placeholder_prefix) {
+                        input.setAttribute('placeholder', texts.placeholder_prefix + numberPart[0]);
+                    }
+                });
+
+                // 重新计算以更新结果区域的文本（特别是错误信息）
+                VAMortgageCalc.calc();
+            },
+
+            calc: () => {
+                const homePrice = parseFloat(document.getElementById('home-price').value) || 0;
+                const downPayment = parseFloat(document.getElementById('down-payment').value) || 0;
+                const annualRate = parseFloat(document.getElementById('va-interest-rate').value) || 0;
+                const years = parseFloat(document.getElementById('va-loan-term').value) || 0;
+                const fundingFeeRate = parseFloat(document.getElementById('funding-fee').value) || 0;
+                const lang = document.getElementById('va-lang').value;
+                const texts = VAMortgageCalc.i18n[lang];
+
+                const monthlyEl = document.getElementById('va-monthly-payment');
+                const feeAmountEl = document.getElementById('funding-fee-amount');
+                const loanAmountEl = document.getElementById('va-loan-amount');
+                const totalInterestEl = document.getElementById('va-total-interest');
+
+                // 验证输入
+                if (isNaN(homePrice) || isNaN(downPayment) || isNaN(annualRate) || 
+                    isNaN(years) || isNaN(fundingFeeRate) || 
+                    homePrice <= 0 || downPayment < 0 || annualRate <= 0 || 
+                    years <= 0 || fundingFeeRate < 0 || downPayment >= homePrice) {
+                    monthlyEl.innerText = texts.err_invalid;
+                    monthlyEl.className = "text-xl font-bold text-red-600";
+                    feeAmountEl.innerText = "--";
+                    loanAmountEl.innerText = "--";
+                    totalInterestEl.innerText = "--";
+                    return;
+                }
+
+                // 计算VA抵押贷款
+                const principal = homePrice - downPayment;
+                const fundingFee = principal * (fundingFeeRate / 100);
+                const totalLoanAmount = principal + fundingFee;
+                const months = years * 12;
+                const monthlyRate = annualRate / 100 / 12;
+                
+                // 修复：如果利率极低或0的情况（虽然UI限制了最小0.1，但防止意外）
+                let monthlyPayment = 0;
+                if (monthlyRate === 0) {
+                    monthlyPayment = totalLoanAmount / months;
+                } else {
+                    monthlyPayment = totalLoanAmount * (monthlyRate * Math.pow(1 + monthlyRate, months)) / 
+                                      (Math.pow(1 + monthlyRate, months) - 1);
+                }
+
+                const totalPayment = monthlyPayment * months;
+                const totalInterest = totalPayment - principal;
+
+                // 格式化结果
+                const formatCurrency = (num) => '$' + num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                // 显示结果
+                monthlyEl.className = "text-xl font-bold text-green-800";
+                monthlyEl.innerText = formatCurrency(monthlyPayment);
+                
+                feeAmountEl.className = "text-xl font-bold text-green-800";
+                feeAmountEl.innerText = formatCurrency(fundingFee);
+                
+                loanAmountEl.className = "text-xl font-bold text-green-800";
+                loanAmountEl.innerText = formatCurrency(totalLoanAmount);
+                
+                totalInterestEl.className = "text-xl font-bold text-green-800";
+                totalInterestEl.innerText = formatCurrency(totalInterest);
+            }
+        };
+
+        // 统一在DOM加载完成后初始化
+        document.addEventListener('DOMContentLoaded', VAMortgageCalc.init);
+    </script>
+</body>
+</html>

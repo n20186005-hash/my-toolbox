@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pace Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="pace_calculator">
+    <meta name="category" content="calculators">
+    <meta name="icon" content="🏃">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Pace Calculator">
+    <meta name="description" content="Calculate your running pace, distance, and time for various units including km, miles, minutes per km, minutes per mile.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="配速计算器">
+    <meta name="lang-description-zh-CN" content="计算您的跑步配速、距离和时间，支持多种单位，包括公里、英里、分钟/公里、分钟/英里。">
+    
+    <meta name="lang-title-zh-TW" content="配速計算器">
+    <meta name="lang-description-zh-TW" content="計算您的跑步配速、距離和時間，支持多種單位，包括公里、英里、分鐘/公里、分鐘/英里。">
+    
+    <meta name="lang-title-ja" content="ペース計算ツール">
+    <meta name="lang-description-ja" content="ランニングのペース、距離、時間を計算します。km、マイル、分/km、分/マイルなどのさまざまな単位に対応。">
+    
+    <meta name="lang-title-ru" content="Калькулятор темпа бега">
+    <meta name="lang-description-ru" content="Вычислите ваш темп бега, расстояние и время для различных единиц, включая км, мили, минуты/км, минуты/миль.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .result-section { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 150px; }
+        select, input[type="number"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 15px; }
+        .result-item { background: white; padding: 10px; border-radius: 4px; }
+        .result-label { font-size: 0.8rem; color: #666; }
+        .result-value { font-size: 1.1rem; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="pace_calculator" 
+         data-category="calculators" 
+         data-title="Pace Calculator" 
+         data-icon="🏃">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="pace-lang" onchange="PaceCalculator.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🏃 Pace Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 输入区域 -->
+            <div class="input-group">
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="distance">Distance</label>
+                    <input type="number" id="distance" step="any" min="0.01" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="distance_unit">Distance Unit</label>
+                    <select id="distance-unit" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="km">Kilometers (km)</option>
+                        <option value="mi">Miles (mi)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="hours">Hours</label>
+                    <input type="number" id="hours" min="0" max="99" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="minutes">Minutes</label>
+                    <input type="number" id="minutes" min="0" max="59" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="seconds">Seconds</label>
+                    <input type="number" id="seconds" min="0" max="59" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+            
+            <!-- 精度选择 -->
+            <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="precision">Precision (decimal places)</label>
+                <input type="number" id="pace-precision" min="0" max="2" value="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="PaceCalculator.clearValue()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="PaceCalculator.calculate()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="pace-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="pace-results" class="hidden">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="results">Results</div>
+            <div class="result-section">
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="total_time">Total Time</div>
+                        <div class="result-value" id="total-time">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="pace_per_km">Pace per Kilometer</div>
+                        <div class="result-value" id="pace-per-km">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="pace_per_mi">Pace per Mile</div>
+                        <div class="result-value" id="pace-per-mi">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="speed_kmh">Speed (km/h)</div>
+                        <div class="result-value" id="speed-kmh">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="speed_mph">Speed (mph)</div>
+                        <div class="result-value" id="speed-mph">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" id="notes-list">
+                <li data-i18n="note1">Pace is calculated as time per unit distance</li>
+                <li data-i18n="note2">1 mile = 1.60934 kilometers</li>
+                <li data-i18n="note3">Speed is distance per unit time (km/h or mph)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const PaceCalculator = {
+            // 单位转换系数
+            conversionFactors: {
+                km_to_mi: 0.621371,
+                mi_to_km: 1.60934
+            },
+            
+            // 单位名称多语言
+            unitNames: {
+                'en': {
+                    'km': 'Kilometers (km)',
+                    'mi': 'Miles (mi)',
+                    'kmh': 'km/h',
+                    'mph': 'mph'
+                },
+                'zh-CN': {
+                    'km': '公里 (km)',
+                    'mi': '英里 (mi)',
+                    'kmh': '公里/小时',
+                    'mph': '英里/小时'
+                },
+                'zh-TW': {
+                    'km': '公里 (km)',
+                    'mi': '英里 (mi)',
+                    'kmh': '公里/小時',
+                    'mph': '英里/小時'
+                },
+                'ja': {
+                    'km': 'キロメートル (km)',
+                    'mi': 'マイル (mi)',
+                    'kmh': 'km/h',
+                    'mph': 'mph'
+                },
+                'ru': {
+                    'km': 'Километры (км)',
+                    'mi': 'Мили (ми)',
+                    'kmh': 'км/ч',
+                    'mph': 'миль/ч'
+                }
+            },
+            
+            i18n: {
+                'en': {
+                    title: '🏃 Pace Calculator',
+                    distance: 'Distance',
+                    distance_unit: 'Distance Unit',
+                    hours: 'Hours',
+                    minutes: 'Minutes',
+                    seconds: 'Seconds',
+                    precision: 'Precision (decimal places)',
+                    clear: 'Clear',
+                    calculate: 'Calculate',
+                    results: 'Results',
+                    total_time: 'Total Time',
+                    pace_per_km: 'Pace per Kilometer',
+                    pace_per_mi: 'Pace per Mile',
+                    speed_kmh: 'Speed (km/h)',
+                    speed_mph: 'Speed (mph)',
+                    notes: 'Notes:',
+                    note1: 'Pace is calculated as time per unit distance',
+                    note2: '1 mile = 1.60934 kilometers',
+                    note3: 'Speed is distance per unit time (km/h or mph)',
+                    err_invalid_input: 'Please enter valid distance and time values'
+                },
+                'zh-CN': {
+                    title: '🏃 配速计算器',
+                    distance: '距离',
+                    distance_unit: '距离单位',
+                    hours: '小时',
+                    minutes: '分钟',
+                    seconds: '秒',
+                    precision: '精度（小数位数）',
+                    clear: '清除',
+                    calculate: '计算',
+                    results: '结果',
+                    total_time: '总时间',
+                    pace_per_km: '每公里配速',
+                    pace_per_mi: '每英里配速',
+                    speed_kmh: '速度（公里/小时）',
+                    speed_mph: '速度（英里/小时）',
+                    notes: '说明：',
+                    note1: '配速按单位距离的时间计算',
+                    note2: '1英里 = 1.60934公里',
+                    note3: '速度是单位时间的距离（公里/小时或英里/小时）',
+                    err_invalid_input: '请输入有效的距离和时间值'
+                },
+                'zh-TW': {
+                    title: '🏃 配速計算器',
+                    distance: '距離',
+                    distance_unit: '距離單位',
+                    hours: '小時',
+                    minutes: '分鐘',
+                    seconds: '秒',
+                    precision: '精度（小數位數）',
+                    clear: '清除',
+                    calculate: '計算',
+                    results: '結果',
+                    total_time: '總時間',
+                    pace_per_km: '每公里配速',
+                    pace_per_mi: '每英里配速',
+                    speed_kmh: '速度（公里/小時）',
+                    speed_mph: '速度（英里/小時）',
+                    notes: '說明：',
+                    note1: '配速按單位距離的時間計算',
+                    note2: '1英里 = 1.60934公里',
+                    note3: '速度是單位時間的距離（公里/小時或英里/小時）',
+                    err_invalid_input: '請輸入有效的距離和時間值'
+                },
+                'ja': {
+                    title: '🏃 ペース計算ツール',
+                    distance: '距離',
+                    distance_unit: '距離の単位',
+                    hours: '時間',
+                    minutes: '分',
+                    seconds: '秒',
+                    precision: '精度（小数桁数）',
+                    clear: 'クリア',
+                    calculate: '計算',
+                    results: '結果',
+                    total_time: '総時間',
+                    pace_per_km: '1kmあたりのペース',
+                    pace_per_mi: '1マイルあたりのペース',
+                    speed_kmh: '速度 (km/h)',
+                    speed_mph: '速度 (mph)',
+                    notes: '注釈：',
+                    note1: 'ペースは単位距離あたりの時間で計算されます',
+                    note2: '1マイル = 1.60934キロメートル',
+                    note3: '速度は単位時間あたりの距離です (km/h または mph)',
+                    err_invalid_input: '有効な距離と時間の値を入力してください'
+                },
+                'ru': {
+                    title: '🏃 Калькулятор темпа бега',
+                    distance: 'Расстояние',
+                    distance_unit: 'Единица расстояния',
+                    hours: 'Часы',
+                    minutes: 'Минуты',
+                    seconds: 'Секунды',
+                    precision: 'Точность (знаков после запятой)',
+                    clear: 'Очистить',
+                    calculate: 'Вычислить',
+                    results: 'Результаты',
+                    total_time: 'Общее время',
+                    pace_per_km: 'Темп на километр',
+                    pace_per_mi: 'Темп на милю',
+                    speed_kmh: 'Скорость (км/ч)',
+                    speed_mph: 'Скорость (миль/ч)',
+                    notes: 'Примечания:',
+                    note1: 'Темп рассчитывается как время на единицу расстояния',
+                    note2: '1 миля = 1.60934 километра',
+                    note3: 'Скорость — это расстояние за единицу времени (км/ч или мил/ч)',
+                    err_invalid_input: 'Пожалуйста, введите действительные значения расстояния и времени'
+                }
+            },
+            
+            // 初始化
+            init: function() {
+                this.updateUnitOptions();
+            },
+            
+            // 计算配速
+            calculate: function() {
+                const distance = parseFloat(document.getElementById('distance').value);
+                const distanceUnit = document.getElementById('distance-unit').value;
+                const hours = parseInt(document.getElementById('hours').value) || 0;
+                const minutes = parseInt(document.getElementById('minutes').value) || 0;
+                const seconds = parseInt(document.getElementById('seconds').value) || 0;
+                const precision = parseInt(document.getElementById('pace-precision').value) || 2;
+                
+                const errorEl = document.getElementById('pace-error');
+                const resultsEl = document.getElementById('pace-results');
+                
+                // 验证输入
+                if (isNaN(distance) || distance <= 0 || (hours === 0 && minutes === 0 && seconds === 0)) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_input;
+                    errorEl.classList.remove('hidden');
+                    resultsEl.classList.add('hidden');
+                    return;
+                }
+                
+                // 清除错误
+                errorEl.classList.add('hidden');
+                
+                // 转换总时间为秒
+                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                
+                // 转换距离为公里和英里
+                let kmDistance, miDistance;
+                if (distanceUnit === 'km') {
+                    kmDistance = distance;
+                    miDistance = distance * this.conversionFactors.km_to_mi;
+                } else {
+                    kmDistance = distance * this.conversionFactors.mi_to_km;
+                    miDistance = distance;
+                }
+                
+                // 计算每公里配速（秒）
+                const pacePerKmSec = totalSeconds / kmDistance;
+                // 计算每英里配速（秒）
+                const pacePerMiSec = totalSeconds / miDistance;
+                
+                // 计算速度
+                const hoursTotal = totalSeconds / 3600;
+                const speedKmh = kmDistance / hoursTotal;
+                const speedMph = miDistance / hoursTotal;
+                
+                // 格式化时间显示
+                const formatTime = (seconds) => {
+                    const h = Math.floor(seconds / 3600);
+                    const m = Math.floor((seconds % 3600) / 60);
+                    const s = Math.round(seconds % 60);
+                    
+                    if (h > 0) {
+                        return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                    } else {
+                        return `${m}:${s.toString().padStart(2, '0')}`;
+                    }
+                };
+                
+                // 显示结果
+                document.getElementById('total-time').textContent = formatTime(totalSeconds);
+                document.getElementById('pace-per-km').textContent = `${formatTime(pacePerKmSec)}/km`;
+                document.getElementById('pace-per-mi').textContent = `${formatTime(pacePerMiSec)}/mi`;
+                document.getElementById('speed-kmh').textContent = speedKmh.toFixed(precision) + ' km/h';
+                document.getElementById('speed-mph').textContent = speedMph.toFixed(precision) + ' mph';
+                
+                // 显示结果区域
+                resultsEl.classList.remove('hidden');
+            },
+            
+            // 清除输入
+            clearValue: function() {
+                document.getElementById('distance').value = '';
+                document.getElementById('hours').value = '0';
+                document.getElementById('minutes').value = '0';
+                document.getElementById('seconds').value = '0';
+                document.getElementById('pace-results').classList.add('hidden');
+                document.getElementById('pace-error').classList.add('hidden');
+            },
+            
+            // 切换语言
+            changeLang: function() {
+                const lang = this.getCurrentLang();
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                this.updateUnitOptions();
+                
+                // 如果有值，重新计算以更新单位名称
+                if (document.getElementById('distance').value) {
+                    this.calculate();
+                }
+            },
+            
+            // 获取当前语言
+            getCurrentLang: function() {
+                return document.getElementById('pace-lang').value;
+            },
+            
+            // 获取单位名称
+            getUnitName: function(unit) {
+                return this.unitNames[this.getCurrentLang()][unit] || unit;
+            },
+            
+            // 更新单位选择器选项文本
+            updateUnitOptions: function() {
+                const lang = this.getCurrentLang();
+                const distanceUnit = document.getElementById('distance-unit');
+                
+                // 保存当前选中值
+                const currentValue = distanceUnit.value;
+                
+                // 重新创建选项
+                distanceUnit.innerHTML = '';
+                
+                const units = [
+                    {value: 'km', text: this.unitNames[lang]['km']},
+                    {value: 'mi', text: this.unitNames[lang]['mi']}
+                ];
+                
+                units.forEach(unit => {
+                    const option = document.createElement('option');
+                    option.value = unit.value;
+                    option.textContent = unit.text;
+                    if (option.value === currentValue) {
+                        option.selected = true;
+                    }
+                    distanceUnit.appendChild(option);
+                });
+            }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            PaceCalculator.init();
+        });
+    </script>
+</body>
+</html>
