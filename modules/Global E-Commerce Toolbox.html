@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global E-Commerce Toolbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Font Family optimized for multi-language */
+        body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Meiryo', sans-serif; background-color: #f8fafc; }
+        
+        /* Tab Navigation */
+        .nav-btn { position: relative; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .nav-btn.active { color: #2563eb; background-color: #eff6ff; font-weight: 600; }
+        .nav-btn.active::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: #2563eb; border-radius: 3px 3px 0 0;
+        }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Inputs */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-group { transition: transform 0.2s; }
+        .input-group:focus-within { transform: translateY(-1px); }
+
+        /* Scrollbar */
+        .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+
+        /* Toast Notification */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 50; pointer-events: none; }
+        .toast { pointer-events: auto; padding: 10px 20px; border-radius: 8px; color: white; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: slideDown 0.3s ease-out; font-size: 14px; font-weight: 500; display: flex; items-align: center; gap: 8px; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .toast.error { background-color: #ef4444; }
+        .toast.success { background-color: #10b981; }
+    </style>
+</head>
+<body class="p-0 md:p-6 min-h-screen flex flex-col text-slate-800">
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <div class="max-w-7xl mx-auto w-full flex-grow flex flex-col">
+        
+        <!-- Header -->
+        <div class="bg-white rounded-none md:rounded-2xl shadow-sm border-b md:border border-slate-200 mb-0 md:mb-6 sticky top-0 z-30">
+            <div class="flex flex-col md:flex-row justify-between items-center p-4 md:px-6">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 w-full md:w-auto mb-4 md:mb-0">
+                    <div class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
+                        <i class="fa-solid fa-boxes-packing text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-800 leading-tight" data-i18n="app_title">Global E-Commerce Toolbox</h1>
+                        <p class="text-xs text-slate-400 font-medium" data-i18n="app_subtitle">Professional Operations Suite</p>
+                    </div>
+                </div>
+
+                <!-- Navigation & Lang -->
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <!-- Tabs -->
+                    <div class="flex bg-slate-100 p-1.5 rounded-xl w-full sm:w-auto overflow-x-auto">
+                        <button onclick="App.switchTab('bid')" id="nav-bid" class="nav-btn active flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-700 flex items-center justify-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-calculator"></i> <span data-i18n="tab_bid">Bid Calc</span>
+                        </button>
+                        <button onclick="App.switchTab('merchant')" id="nav-merchant" class="nav-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-700 flex items-center justify-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-store"></i> <span data-i18n="tab_merchant">Merchant ROI</span>
+                        </button>
+                        <button onclick="App.switchTab('influencer')" id="nav-influencer" class="nav-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-700 flex items-center justify-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-user-tag"></i> <span data-i18n="tab_influencer">Influencer</span>
+                        </button>
+                    </div>
+
+                    <!-- Language -->
+                    <div class="relative w-full sm:w-auto">
+                        <select id="lang-select" onchange="I18nModule.changeLanguage(this.value)" class="w-full sm:w-40 appearance-none bg-white border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 cursor-pointer font-medium hover:border-blue-300 transition shadow-sm">
+                            <option value="en">🇺🇸 English</option>
+                            <option value="zh-CN">🇨🇳 简体中文</option>
+                            <option value="zh-TW">🇭🇰 繁體中文</option>
+                            <option value="ja">🇯🇵 日本語</option>
+                            <option value="ru">🇷🇺 Русский</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden flex-grow relative min-h-[600px]">
+            
+            <!-- MODULE 1: Bid Calculator -->
+            <div id="view-bid" class="fade-in p-6 md:p-10 h-full">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 h-full">
+                    <!-- Inputs -->
+                    <div class="lg:col-span-4 space-y-6">
+                        <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-sliders"></i></span>
+                                <span data-i18n="params_title">Parameters</span>
+                            </h3>
+                            
+                            <div class="space-y-5">
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="bid_label">Base Bid</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-tag"></i></div>
+                                        <input type="number" id="bid-base" step="0.01" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white text-slate-800 font-medium" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="premium_label">Crowd Premium (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-users"></i></div>
+                                        <input type="number" id="bid-premium" step="1" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium" placeholder="0">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="discount_label">Time Discount (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-clock"></i></div>
+                                        <input type="number" id="bid-discount" step="1" value="100" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium" placeholder="100">
+                                    </div>
+                                </div>
+
+                                <button onclick="BidModule.calculate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all transform active:scale-[0.98] mt-4 flex justify-center items-center gap-2 group">
+                                    <i class="fa-solid fa-bolt group-hover:animate-pulse"></i> <span data-i18n="btn_calc">Calculate</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed">
+                            <i class="fa-solid fa-circle-info text-blue-500 mr-1.5"></i> <span data-i18n="bid_hint">Formula: Final = Base * (1 + Premium%) * (Discount%)</span>
+                        </div>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="lg:col-span-8 flex flex-col h-full">
+                        <div class="flex justify-between items-end mb-5">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800" data-i18n="history_title">History</h3>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="App.exportCSV('bid')" class="text-xs font-semibold text-blue-600 hover:text-blue-800 px-3 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition"><i class="fa-solid fa-download mr-1"></i> CSV</button>
+                                <button onclick="App.clearData('bid')" class="text-xs font-semibold text-red-500 hover:text-red-700 px-3 py-2 bg-red-50 rounded-lg hover:bg-red-100 transition"><i class="fa-regular fa-trash-can mr-1"></i> Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow overflow-hidden rounded-xl border border-slate-200 bg-white relative shadow-sm">
+                            <div class="absolute inset-0 overflow-auto custom-scroll">
+                                <table class="w-full text-sm text-left text-slate-600">
+                                    <thead class="text-xs text-slate-400 uppercase bg-slate-50 sticky top-0 backdrop-blur-sm z-10 border-b border-slate-100">
+                                        <tr>
+                                            <th class="px-6 py-4 font-semibold" data-i18n="col_base">Base</th>
+                                            <th class="px-6 py-4 font-semibold" data-i18n="col_premium">Premium</th>
+                                            <th class="px-6 py-4 font-semibold" data-i18n="col_discount">Discount</th>
+                                            <th class="px-6 py-4 font-semibold text-blue-600" data-i18n="col_final">Final</th>
+                                            <th class="px-6 py-4 text-center" data-i18n="col_action">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="bid-list" class="divide-y divide-slate-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 2: Merchant ROI (Advanced) -->
+            <div id="view-merchant" class="fade-in hidden p-6 md:p-10 h-full">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 h-full">
+                    <!-- Inputs -->
+                    <div class="lg:col-span-4 space-y-6">
+                        <div class="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-shop"></i></span>
+                                <span data-i18n="m_cost_title">Merchant Costs</span>
+                            </h3>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="col-span-2">
+                                    <label class="block text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1" data-i18n="m_price">Selling Price</label>
+                                    <input type="number" id="m-price" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm font-semibold" placeholder="0.00">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="m_cost">Product Cost</label>
+                                    <input type="number" id="m-cost" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="0.00">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="m_shipping">Shipping</label>
+                                    <input type="number" id="m-shipping" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="0.00">
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="m_platform">Platform (%)</label>
+                                    <input type="number" id="m-platform" value="5" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="5.0">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="m_commission">Comm. (%)</label>
+                                    <input type="number" id="m-commission" value="0" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="0.0">
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="m_return">Return Rate %</label>
+                                    <input type="number" id="m-return" value="0" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="0.0">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="m_misc">Misc/Pack</label>
+                                    <input type="number" id="m-misc" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="0.00">
+                                </div>
+                            </div>
+                            
+                            <!-- Advanced Toggle details can be added here -->
+                            <div class="mt-4 pt-4 border-t border-indigo-100 grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="m_tax">Tax (%)</label>
+                                    <input type="number" id="m-tax" value="0" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="m_insurance">Insurance</label>
+                                    <input type="number" id="m-insurance" value="0" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white" placeholder="0.00">
+                                </div>
+                            </div>
+
+                            <button onclick="MerchantModule.calculate()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40 transition-all transform active:scale-[0.98] mt-6 flex justify-center items-center gap-2 group">
+                                <i class="fa-solid fa-chart-pie group-hover:animate-spin-slow"></i> <span data-i18n="btn_analyze">Analyze Profit</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="lg:col-span-8 flex flex-col h-full">
+                        <div class="flex justify-between items-end mb-5">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800" data-i18n="m_result_title">Profit Analysis</h3>
+                                <p class="text-sm text-slate-400 mt-1" data-i18n="m_result_sub">Includes deductions for returns & commissions.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="App.exportCSV('merchant')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-3 py-2 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition"><i class="fa-solid fa-download mr-1"></i> CSV</button>
+                                <button onclick="App.clearData('merchant')" class="text-xs font-semibold text-red-500 hover:text-red-700 px-3 py-2 bg-red-50 rounded-lg hover:bg-red-100 transition"><i class="fa-regular fa-trash-can mr-1"></i> Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow overflow-hidden rounded-xl border border-slate-200 bg-white relative shadow-sm">
+                            <div class="absolute inset-0 overflow-auto custom-scroll">
+                                <table class="w-full text-sm text-left text-slate-600">
+                                    <thead class="text-xs text-slate-400 uppercase bg-slate-50 sticky top-0 backdrop-blur-sm z-10 border-b border-slate-100">
+                                        <tr>
+                                            <th class="px-5 py-4 font-semibold" data-i18n="col_price">Price</th>
+                                            <th class="px-5 py-4 font-semibold" data-i18n="col_cost_total">Total Cost</th>
+                                            <th class="px-5 py-4 font-semibold" data-i18n="col_profit">Net Profit</th>
+                                            <th class="px-5 py-4 font-semibold text-indigo-600" data-i18n="col_breakeven">Breakeven ROI</th>
+                                            <th class="px-5 py-4 text-center" data-i18n="col_action">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="merchant-list" class="divide-y divide-slate-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 3: Influencer ROI (New) -->
+            <div id="view-influencer" class="fade-in hidden p-6 md:p-10 h-full">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 h-full">
+                    <!-- Inputs -->
+                    <div class="lg:col-span-4 space-y-6">
+                        <div class="bg-purple-50/50 p-6 rounded-2xl border border-purple-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-purple-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
+                                <span data-i18n="i_title">Influencer / Affiliate</span>
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="col-span-2">
+                                        <label class="block text-[10px] font-bold text-purple-400 uppercase tracking-wider mb-1" data-i18n="i_sales">Total Sales (GMV)</label>
+                                        <input type="number" id="i-gmv" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm font-semibold" placeholder="0.00">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="i_comm_rate">Comm. Rate (%)</label>
+                                        <input type="number" id="i-rate" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm" placeholder="20.0">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="i_platform_fee">Service Fee (%)</label>
+                                        <input type="number" id="i-fee" value="10" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm" placeholder="10.0">
+                                    </div>
+                                </div>
+                                
+                                <div class="pt-2 border-t border-purple-100">
+                                    <label class="block text-xs font-bold text-slate-800 mb-2 mt-2" data-i18n="i_costs">Promotion Costs</label>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="i_ad_spend">Ad Spend</label>
+                                            <input type="number" id="i-ad" value="0" class="w-full p-3 border border-slate-200 rounded-lg text-sm" placeholder="0.00">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" data-i18n="i_sample">Sample/Misc</label>
+                                            <input type="number" id="i-sample" value="0" class="w-full p-3 border border-slate-200 rounded-lg text-sm" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button onclick="InfluencerModule.calculate()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-600/20 hover:shadow-purple-600/40 transition-all transform active:scale-[0.98] mt-4 flex justify-center items-center gap-2">
+                                    <i class="fa-solid fa-coins"></i> <span data-i18n="btn_calc_income">Calculate Income</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="lg:col-span-8 flex flex-col h-full">
+                        <div class="flex justify-between items-end mb-5">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800" data-i18n="i_result_title">Income Statement</h3>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="App.exportCSV('influencer')" class="text-xs font-semibold text-purple-600 hover:text-purple-800 px-3 py-2 bg-purple-50 rounded-lg hover:bg-purple-100 transition"><i class="fa-solid fa-download mr-1"></i> CSV</button>
+                                <button onclick="App.clearData('influencer')" class="text-xs font-semibold text-red-500 hover:text-red-700 px-3 py-2 bg-red-50 rounded-lg hover:bg-red-100 transition"><i class="fa-regular fa-trash-can mr-1"></i> Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow overflow-hidden rounded-xl border border-slate-200 bg-white relative shadow-sm">
+                            <div class="absolute inset-0 overflow-auto custom-scroll">
+                                <table class="w-full text-sm text-left text-slate-600">
+                                    <thead class="text-xs text-slate-400 uppercase bg-slate-50 sticky top-0 backdrop-blur-sm z-10 border-b border-slate-100">
+                                        <tr>
+                                            <th class="px-5 py-4 font-semibold" data-i18n="col_gmv">GMV</th>
+                                            <th class="px-5 py-4 font-semibold" data-i18n="col_gross_comm">Gross Comm.</th>
+                                            <th class="px-5 py-4 font-semibold" data-i18n="col_net_income">Net Income</th>
+                                            <th class="px-5 py-4 font-semibold text-purple-600" data-i18n="col_roi_ad">Ad ROI</th>
+                                            <th class="px-5 py-4 text-center" data-i18n="col_action">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="influencer-list" class="divide-y divide-slate-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="text-center mt-6 text-slate-300 text-xs pb-4">
+            &copy; 2025 Global E-Commerce Toolbox. Local Processing.
+        </div>
+    </div>
+
+    <script>
+        /* --- MODULE 1: I18N (Multi-language) --- */
+        const I18nModule = {
+            currentLang: 'en',
+            data: {
+                'en': {
+                    app_title: 'Global E-Commerce Toolbox',
+                    app_subtitle: 'Professional Operations Suite',
+                    tab_bid: 'Bid Calculator',
+                    tab_merchant: 'Merchant ROI',
+                    tab_influencer: 'Influencer',
+                    params_title: 'Parameters',
+                    bid_label: 'Base Bid',
+                    premium_label: 'Crowd Premium (%)',
+                    discount_label: 'Time Discount (%)',
+                    btn_calc: 'Calculate Bid',
+                    bid_hint: 'Formula: Final = Base * (1 + Premium%) * (Discount%)',
+                    history_title: 'History',
+                    col_base: 'Base',
+                    col_premium: 'Premium',
+                    col_discount: 'Discount',
+                    col_final: 'Final Bid',
+                    col_action: 'Action',
+                    m_cost_title: 'Merchant Cost Structure',
+                    m_price: 'Selling Price',
+                    m_cost: 'Product Cost',
+                    m_shipping: 'Shipping',
+                    m_platform: 'Platform Fee (%)',
+                    m_commission: 'Commission (%)',
+                    m_return: 'Return Rate (%)',
+                    m_misc: 'Misc/Packing',
+                    m_tax: 'Tax (%)',
+                    m_insurance: 'Insurance',
+                    btn_analyze: 'Analyze Profit',
+                    m_result_title: 'Profit Analysis',
+                    m_result_sub: 'Includes deductions for returns & commissions.',
+                    col_price: 'Price',
+                    col_cost_total: 'Total Cost',
+                    col_profit: 'Net Profit',
+                    col_breakeven: 'Breakeven ROI',
+                    i_title: 'Influencer / Affiliate',
+                    i_sales: 'Total Sales (GMV)',
+                    i_comm_rate: 'Commission Rate (%)',
+                    i_platform_fee: 'Service Fee (%)',
+                    i_costs: 'Promotion Costs',
+                    i_ad_spend: 'Ad Spend',
+                    i_sample: 'Sample/Misc',
+                    btn_calc_income: 'Calculate Income',
+                    i_result_title: 'Income Statement',
+                    col_gmv: 'GMV',
+                    col_gross_comm: 'Gross Comm.',
+                    col_net_income: 'Net Income',
+                    col_roi_ad: 'Ad ROI',
+                    empty_data: 'No data. Please enter parameters.',
+                    loss_label: 'LOSS',
+                    msg_fill_required: 'Please fill in the required fields (Price/Bid/GMV).'
+                },
+                'zh-CN': {
+                    app_title: '全球电商工具箱',
+                    app_subtitle: '专业电商运营助手',
+                    tab_bid: '关键词出价',
+                    tab_merchant: '商家保本ROI',
+                    tab_influencer: '达人/联盟计算',
+                    params_title: '出价参数',
+                    bid_label: '基础出价',
+                    premium_label: '人群溢价 (%)',
+                    discount_label: '时间折扣 (%)',
+                    btn_calc: '计算出价',
+                    bid_hint: '公式：最终出价 = 基础出价 × (1 + 溢价%) × (时间折扣%)',
+                    history_title: '计算记录',
+                    col_base: '基础出价',
+                    col_premium: '溢价',
+                    col_discount: '折扣',
+                    col_final: '最终出价',
+                    col_action: '操作',
+                    m_cost_title: '商家成本结构',
+                    m_price: '销售价格',
+                    m_cost: '产品成本',
+                    m_shipping: '快递运费',
+                    m_platform: '平台扣点 (%)',
+                    m_commission: '达人佣金 (%)',
+                    m_return: '退货率 (%)',
+                    m_misc: '包装/杂费',
+                    m_tax: '税费 (%)',
+                    m_insurance: '运费险',
+                    btn_analyze: '分析利润',
+                    m_result_title: '利润分析结果',
+                    m_result_sub: '已自动扣除退货损耗与佣金支出',
+                    col_price: '售价',
+                    col_cost_total: '综合成本',
+                    col_profit: '净利润',
+                    col_breakeven: '保本ROI',
+                    i_title: '达人 / 流量主',
+                    i_sales: '总销售额 (GMV)',
+                    i_comm_rate: '佣金率 (%)',
+                    i_platform_fee: '平台服务费 (%)',
+                    i_costs: '推广成本',
+                    i_ad_spend: '投放花费',
+                    i_sample: '样品/杂费',
+                    btn_calc_income: '计算收益',
+                    i_result_title: '收益分析表',
+                    col_gmv: '销售额',
+                    col_gross_comm: '总佣金',
+                    col_net_income: '净收入',
+                    col_roi_ad: '投放ROI',
+                    empty_data: '暂无数据，请输入参数后计算。',
+                    loss_label: '亏损',
+                    msg_fill_required: '请填写必要参数（如价格、出价或GMV）。'
+                },
+                'zh-TW': {
+                    app_title: '全球電商工具箱',
+                    app_subtitle: '專業電商運營助手',
+                    tab_bid: '關鍵字出價',
+                    tab_merchant: '商家保本ROI',
+                    tab_influencer: '達人/聯盟計算',
+                    params_title: '出價參數',
+                    bid_label: '基礎出價',
+                    premium_label: '人群溢價 (%)',
+                    discount_label: '時間折扣 (%)',
+                    btn_calc: '計算出價',
+                    bid_hint: '公式：最終出價 = 基礎出價 × (1 + 溢價%) × (時間折扣%)',
+                    history_title: '計算記錄',
+                    col_base: '基礎出價',
+                    col_premium: '溢價',
+                    col_discount: '折扣',
+                    col_final: '最終出價',
+                    col_action: '操作',
+                    m_cost_title: '商家成本結構',
+                    m_price: '銷售價格',
+                    m_cost: '產品成本',
+                    m_shipping: '快遞運費',
+                    m_platform: '平台扣點 (%)',
+                    m_commission: '達人傭金 (%)',
+                    m_return: '退貨率 (%)',
+                    m_misc: '包裝/雜費',
+                    m_tax: '稅費 (%)',
+                    m_insurance: '運費險',
+                    btn_analyze: '分析利潤',
+                    m_result_title: '利潤分析結果',
+                    m_result_sub: '已自動扣除退貨損耗與傭金支出',
+                    col_price: '售價',
+                    col_cost_total: '綜合成本',
+                    col_profit: '淨利潤',
+                    col_breakeven: '保本ROI',
+                    i_title: '達人 / 流量主',
+                    i_sales: '總銷售額 (GMV)',
+                    i_comm_rate: '傭金率 (%)',
+                    i_platform_fee: '平台服務費 (%)',
+                    i_costs: '推廣成本',
+                    i_ad_spend: '投放花費',
+                    i_sample: '樣品/雜費',
+                    btn_calc_income: '計算收益',
+                    i_result_title: '收益分析表',
+                    col_gmv: '銷售額',
+                    col_gross_comm: '總傭金',
+                    col_net_income: '淨收入',
+                    col_roi_ad: '投放ROI',
+                    empty_data: '暫無數據，請輸入參數後計算。',
+                    loss_label: '虧損',
+                    msg_fill_required: '請填寫必要參數（如價格、出價或GMV）。'
+                },
+                'ja': {
+                    app_title: 'EC運営ツールボックス',
+                    app_subtitle: 'プロフェッショナル運営スイート',
+                    tab_bid: '入札計算',
+                    tab_merchant: '店舗ROI分析',
+                    tab_influencer: 'インフルエンサー',
+                    params_title: 'パラメータ',
+                    bid_label: '基本入札額',
+                    premium_label: '割増率 (%)',
+                    discount_label: '時間帯割引 (%)',
+                    btn_calc: '計算する',
+                    bid_hint: '式：最終 = 基本 × (1 + 割増%) × (割引%)',
+                    history_title: '履歴',
+                    col_base: '基本額',
+                    col_premium: '割増',
+                    col_discount: '割引',
+                    col_final: '最終入札',
+                    col_action: '操作',
+                    m_cost_title: 'コスト構造',
+                    m_price: '販売価格',
+                    m_cost: '製品原価',
+                    m_shipping: '送料',
+                    m_platform: 'PF手数料 (%)',
+                    m_commission: '紹介料 (%)',
+                    m_return: '返品率 (%)',
+                    m_misc: '梱包/雑費',
+                    m_tax: '税金 (%)',
+                    m_insurance: '返品保険',
+                    btn_analyze: '利益分析',
+                    m_result_title: '分析結果',
+                    m_result_sub: '返品損失と紹介料を考慮済み',
+                    col_price: '価格',
+                    col_cost_total: '総コスト',
+                    col_profit: '純利益',
+                    col_breakeven: '損益分岐ROI',
+                    i_title: 'インフルエンサー',
+                    i_sales: '総売上 (GMV)',
+                    i_comm_rate: '報酬率 (%)',
+                    i_platform_fee: 'システム手数料 (%)',
+                    i_costs: '販促コスト',
+                    i_ad_spend: '広告費',
+                    i_sample: 'サンプル費',
+                    btn_calc_income: '収益計算',
+                    i_result_title: '収益レポート',
+                    col_gmv: '売上',
+                    col_gross_comm: '総報酬',
+                    col_net_income: '純収入',
+                    col_roi_ad: '広告費用対効果',
+                    empty_data: 'データなし。パラメータを入力してください。',
+                    loss_label: '赤字',
+                    msg_fill_required: '必須項目（価格、入札額、GMVなど）を入力してください。'
+                },
+                'ru': {
+                    app_title: 'Инструменты E-Commerce',
+                    app_subtitle: 'Профессиональный пакет',
+                    tab_bid: 'Калькулятор ставок',
+                    tab_merchant: 'ROI Продавца',
+                    tab_influencer: 'Инфлюенсер',
+                    params_title: 'Параметры',
+                    bid_label: 'Базовая ставка',
+                    premium_label: 'Премиум (%)',
+                    discount_label: 'Скидка времени (%)',
+                    btn_calc: 'Рассчитать',
+                    bid_hint: 'Формула: Итог = База * (1 + Прем%) * (Скидка%)',
+                    history_title: 'История',
+                    col_base: 'База',
+                    col_premium: 'Премиум',
+                    col_discount: 'Скидка',
+                    col_final: 'Итог',
+                    col_action: 'Действие',
+                    m_cost_title: 'Структура расходов',
+                    m_price: 'Цена продажи',
+                    m_cost: 'Себестоимость',
+                    m_shipping: 'Доставка',
+                    m_platform: 'Комиссия (%)',
+                    m_commission: 'Партнерские (%)',
+                    m_return: 'Возврат (%)',
+                    m_misc: 'Упаковка',
+                    m_tax: 'Налог (%)',
+                    m_insurance: 'Страховка',
+                    btn_analyze: 'Анализ прибыли',
+                    m_result_title: 'Результаты',
+                    m_result_sub: 'Учтены возвраты и комиссии',
+                    col_price: 'Цена',
+                    col_cost_total: 'Полн. расходы',
+                    col_profit: 'Прибыль',
+                    col_breakeven: 'ROI (Безубыток)',
+                    i_title: 'Инфлюенсер',
+                    i_sales: 'Продажи (GMV)',
+                    i_comm_rate: 'Ставка (%)',
+                    i_platform_fee: 'Сервисный сбор (%)',
+                    i_costs: 'Расходы на промо',
+                    i_ad_spend: 'Реклама',
+                    i_sample: 'Образцы',
+                    btn_calc_income: 'Расчет дохода',
+                    i_result_title: 'Отчет о доходах',
+                    col_gmv: 'Продажи',
+                    col_gross_comm: 'Комиссия',
+                    col_net_income: 'Чистый доход',
+                    col_roi_ad: 'ROI Рекламы',
+                    empty_data: 'Нет данных. Введите параметры.',
+                    loss_label: 'Убыток',
+                    msg_fill_required: 'Пожалуйста, заполните обязательные поля (Цена/Ставка/GMV).'
+                }
+            },
+            init: () => {
+                const saved = localStorage.getItem('app_lang');
+                if (saved && I18nModule.data[saved]) I18nModule.currentLang = saved;
+                document.getElementById('lang-select').value = I18nModule.currentLang;
+                I18nModule.apply();
+            },
+            changeLanguage: (lang) => {
+                I18nModule.currentLang = lang;
+                localStorage.setItem('app_lang', lang);
+                I18nModule.apply();
+                BidModule.render();
+                MerchantModule.render();
+                InfluencerModule.render();
+            },
+            apply: () => {
+                const texts = I18nModule.data[I18nModule.currentLang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(texts[key]) {
+                        if (el.tagName === 'INPUT') el.placeholder = texts[key];
+                        else el.textContent = texts[key];
+                    }
+                });
+            },
+            t: (key) => I18nModule.data[I18nModule.currentLang][key] || key
+        };
+
+        /* --- MODULE 2: Storage --- */
+        const StorageModule = {
+            get: (key) => JSON.parse(localStorage.getItem(key)) || [],
+            set: (key, data) => localStorage.setItem(key, JSON.stringify(data))
+        };
+
+        /* --- MODULE 3: Bid Calculator --- */
+        const BidModule = {
+            data: [],
+            init: () => {
+                BidModule.data = StorageModule.get('bid_history');
+                BidModule.render();
+            },
+            calculate: () => {
+                const baseEl = document.getElementById('bid-base');
+                const base = parseFloat(baseEl.value);
+                const premium = parseFloat(document.getElementById('bid-premium').value) || 0;
+                const discount = parseFloat(document.getElementById('bid-discount').value) || 100;
+                
+                if (isNaN(base)) {
+                    App.showToast(I18nModule.t('msg_fill_required'), 'error');
+                    baseEl.focus();
+                    baseEl.classList.add('ring-2', 'ring-red-500', 'bg-red-50');
+                    setTimeout(() => baseEl.classList.remove('ring-2', 'ring-red-500', 'bg-red-50'), 2000);
+                    return;
+                }
+
+                const final = base * (1 + premium / 100) * (discount / 100);
+                BidModule.data.unshift({ id: Date.now(), base: base.toFixed(2), premium, discount, final: final.toFixed(2) });
+                if (BidModule.data.length > 50) BidModule.data.pop();
+                StorageModule.set('bid_history', BidModule.data);
+                BidModule.render();
+                App.showToast('Calculation saved!', 'success');
+            },
+            delete: (id) => {
+                BidModule.data = BidModule.data.filter(i => i.id !== id);
+                StorageModule.set('bid_history', BidModule.data);
+                BidModule.render();
+            },
+            clear: () => {
+                BidModule.data = [];
+                StorageModule.set('bid_history', []);
+                BidModule.render();
+            },
+            render: () => {
+                const tbody = document.getElementById('bid-list');
+                if (BidModule.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">${I18nModule.t('empty_data')}</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = BidModule.data.map(i => `
+                    <tr class="hover:bg-blue-50/50 transition border-b border-slate-50 last:border-0">
+                        <td class="px-6 py-4 font-mono text-slate-600">¥${i.base}</td>
+                        <td class="px-6 py-4 text-slate-500">${i.premium}%</td>
+                        <td class="px-6 py-4 text-slate-500">${i.discount}%</td>
+                        <td class="px-6 py-4 font-bold text-blue-600">¥${i.final}</td>
+                        <td class="px-6 py-4 text-center"><button onclick="BidModule.delete(${i.id})" class="text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-xmark"></i></button></td>
+                    </tr>
+                `).join('');
+            }
+        };
+
+        /* --- MODULE 4: Merchant ROI (Advanced) --- */
+        const MerchantModule = {
+            data: [],
+            init: () => {
+                MerchantModule.data = StorageModule.get('merchant_history');
+                MerchantModule.render();
+            },
+            calculate: () => {
+                // Get Inputs
+                const priceEl = document.getElementById('m-price');
+                const price = parseFloat(priceEl.value) || 0;
+                
+                if (price <= 0) {
+                    App.showToast(I18nModule.t('msg_fill_required'), 'error');
+                    priceEl.focus();
+                    priceEl.classList.add('ring-2', 'ring-red-500', 'bg-red-50');
+                    setTimeout(() => priceEl.classList.remove('ring-2', 'ring-red-500', 'bg-red-50'), 2000);
+                    return;
+                }
+
+                const cost = parseFloat(document.getElementById('m-cost').value) || 0;
+                const shipping = parseFloat(document.getElementById('m-shipping').value) || 0;
+                const misc = parseFloat(document.getElementById('m-misc').value) || 0;
+                const insurance = parseFloat(document.getElementById('m-insurance').value) || 0;
+                
+                const ratePlatform = parseFloat(document.getElementById('m-platform').value) || 0;
+                const rateComm = parseFloat(document.getElementById('m-commission').value) || 0;
+                const rateTax = parseFloat(document.getElementById('m-tax').value) || 0;
+                const rateReturn = parseFloat(document.getElementById('m-return').value) || 0;
+
+                // Logic: 
+                // 1. Fixed costs per unit sold (assuming kept)
+                const fixedCost = cost + shipping + misc;
+                
+                // 2. Variable costs based on price (Platform + Comm + Tax)
+                const variableRate = (ratePlatform + rateComm + rateTax) / 100;
+                const variableCost = price * variableRate;
+
+                // 3. Return Losses (Average loss per unit distributed across all sales)
+                // When return happens: Lost Shipping + Insurance + Packaging (part of misc). 
+                // We simplify: Lost (Shipping + Insurance + Misc) * Return Rate.
+                // NOTE: Product cost is recovered (assuming resellable), Platform fee usually refunded.
+                const returnLoss = (shipping + insurance + misc) * (rateReturn / 100);
+
+                // Total Cost per settled unit (averaged)
+                // Insurance cost is paid on every order regardless of return? Yes usually.
+                const totalCost = fixedCost + variableCost + insurance + returnLoss;
+                const profit = price - totalCost;
+                
+                // Breakeven ROI (for ads)
+                // If profit is margin available for ads. 
+                // Breakeven ROI = Price / (Price - All Other Costs)
+                // We treat "Profit" calculated above as "Pre-Ad Profit".
+                // So Breakeven ROI = Price / Profit.
+                let roiDisplay = "∞";
+                if (profit > 0) roiDisplay = (price / profit).toFixed(2);
+                else roiDisplay = I18nModule.t('loss_label');
+
+                MerchantModule.data.unshift({
+                    id: Date.now(),
+                    price: price.toFixed(2),
+                    totalCost: totalCost.toFixed(2),
+                    profit: profit.toFixed(2),
+                    roi: roiDisplay,
+                    isLoss: profit <= 0
+                });
+                if (MerchantModule.data.length > 50) MerchantModule.data.pop();
+                StorageModule.set('merchant_history', MerchantModule.data);
+                MerchantModule.render();
+                App.showToast('Analysis completed!', 'success');
+            },
+            delete: (id) => {
+                MerchantModule.data = MerchantModule.data.filter(i => i.id !== id);
+                StorageModule.set('merchant_history', MerchantModule.data);
+                MerchantModule.render();
+            },
+            clear: () => {
+                MerchantModule.data = [];
+                StorageModule.set('merchant_history', []);
+                MerchantModule.render();
+            },
+            render: () => {
+                const tbody = document.getElementById('merchant-list');
+                if (MerchantModule.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">${I18nModule.t('empty_data')}</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = MerchantModule.data.map(i => {
+                    const roiClass = i.isLoss ? 'bg-red-50 text-red-500 px-2 py-1 rounded' : 'text-indigo-600 font-bold';
+                    const displayRoi = i.isLoss ? I18nModule.t('loss_label') : i.roi;
+                    return `
+                    <tr class="hover:bg-indigo-50/50 transition border-b border-slate-50 last:border-0">
+                        <td class="px-5 py-4 font-medium">¥${i.price}</td>
+                        <td class="px-5 py-4 text-slate-500 text-xs">¥${i.totalCost}</td>
+                        <td class="px-5 py-4 ${i.isLoss ? 'text-red-500' : 'text-green-600 font-bold'}">¥${i.profit}</td>
+                        <td class="px-5 py-4"><span class="${roiClass}">${displayRoi}</span></td>
+                        <td class="px-5 py-4 text-center"><button onclick="MerchantModule.delete(${i.id})" class="text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-xmark"></i></button></td>
+                    </tr>
+                `}).join('');
+            }
+        };
+
+        /* --- MODULE 5: Influencer ROI --- */
+        const InfluencerModule = {
+            data: [],
+            init: () => {
+                InfluencerModule.data = StorageModule.get('influencer_history');
+                InfluencerModule.render();
+            },
+            calculate: () => {
+                const gmvEl = document.getElementById('i-gmv');
+                const gmv = parseFloat(gmvEl.value) || 0;
+                const commRate = parseFloat(document.getElementById('i-rate').value) || 0;
+                const serviceFee = parseFloat(document.getElementById('i-fee').value) || 0; // Platform takes from commission? Usually takes from Creator's earnings.
+                
+                const adSpend = parseFloat(document.getElementById('i-ad').value) || 0;
+                const sampleCost = parseFloat(document.getElementById('i-sample').value) || 0;
+
+                if (gmv <= 0) {
+                    App.showToast(I18nModule.t('msg_fill_required'), 'error');
+                    gmvEl.focus();
+                    gmvEl.classList.add('ring-2', 'ring-red-500', 'bg-red-50');
+                    setTimeout(() => gmvEl.classList.remove('ring-2', 'ring-red-500', 'bg-red-50'), 2000);
+                    return;
+                }
+
+                // Logic:
+                // Gross Commission = GMV * Rate
+                // Net Commission = Gross * (1 - ServiceFee%)
+                // Net Income = Net Commission - Ad Spend - Sample
+                
+                const grossComm = gmv * (commRate / 100);
+                const netComm = grossComm * (1 - serviceFee / 100);
+                const netIncome = netComm - adSpend - sampleCost;
+                
+                // ROI (Return on Ad Spend + Cost)
+                // Investment = Ad Spend + Sample (time cost not included)
+                const investment = adSpend + sampleCost;
+                let roi = "N/A";
+                if (investment > 0) {
+                    roi = (netComm / investment).toFixed(2);
+                } else {
+                    roi = "∞"; // Organic traffic
+                }
+
+                InfluencerModule.data.unshift({
+                    id: Date.now(),
+                    gmv: gmv.toFixed(0),
+                    gross: grossComm.toFixed(2),
+                    income: netIncome.toFixed(2),
+                    roi: roi,
+                    isLoss: netIncome < 0
+                });
+                if (InfluencerModule.data.length > 50) InfluencerModule.data.pop();
+                StorageModule.set('influencer_history', InfluencerModule.data);
+                InfluencerModule.render();
+                App.showToast('Income calculated!', 'success');
+            },
+            delete: (id) => {
+                InfluencerModule.data = InfluencerModule.data.filter(i => i.id !== id);
+                StorageModule.set('influencer_history', InfluencerModule.data);
+                InfluencerModule.render();
+            },
+            clear: () => {
+                InfluencerModule.data = [];
+                StorageModule.set('influencer_history', []);
+                InfluencerModule.render();
+            },
+            render: () => {
+                const tbody = document.getElementById('influencer-list');
+                if (InfluencerModule.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">${I18nModule.t('empty_data')}</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = InfluencerModule.data.map(i => `
+                    <tr class="hover:bg-purple-50/50 transition border-b border-slate-50 last:border-0">
+                        <td class="px-5 py-4 font-medium">¥${i.gmv}</td>
+                        <td class="px-5 py-4 text-slate-500 text-xs">¥${i.gross}</td>
+                        <td class="px-5 py-4 ${i.isLoss ? 'text-red-500 font-bold' : 'text-green-600 font-bold'}">¥${i.income}</td>
+                        <td class="px-5 py-4 text-purple-600 font-mono">${i.roi}</td>
+                        <td class="px-5 py-4 text-center"><button onclick="InfluencerModule.delete(${i.id})" class="text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-xmark"></i></button></td>
+                    </tr>
+                `).join('');
+            }
+        };
+
+        /* --- App Controller --- */
+        const App = {
+            init: () => {
+                I18nModule.init();
+                BidModule.init();
+                MerchantModule.init();
+                InfluencerModule.init();
+            },
+            switchTab: (tab) => {
+                // Remove active classes
+                ['bid', 'merchant', 'influencer'].forEach(t => {
+                    document.getElementById(`nav-${t}`).classList.remove('active');
+                    document.getElementById(`view-${t}`).classList.add('hidden');
+                });
+                // Add active
+                document.getElementById(`nav-${tab}`).classList.add('active');
+                document.getElementById(`view-${tab}`).classList.remove('hidden');
+            },
+            showToast: (message, type = 'info') => {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                
+                let icon = '';
+                if(type === 'error') icon = '<i class="fa-solid fa-circle-exclamation"></i>';
+                else if(type === 'success') icon = '<i class="fa-solid fa-circle-check"></i>';
+                
+                toast.innerHTML = `${icon} <span>${message}</span>`;
+                container.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-20px)';
+                    setTimeout(() => container.removeChild(toast), 300);
+                }, 3000);
+            },
+            exportCSV: (type) => {
+                let list = [], header = "", rowFn = null;
+                if (type === 'bid') {
+                    list = BidModule.data;
+                    header = "Base,Premium,Discount,Final\n";
+                    rowFn = i => `${i.base},${i.premium},${i.discount},${i.final}\n`;
+                } else if (type === 'merchant') {
+                    list = MerchantModule.data;
+                    header = "Price,TotalCost,Profit,BreakevenROI\n";
+                    rowFn = i => `${i.price},${i.totalCost},${i.profit},${i.isLoss ? 'LOSS' : i.roi}\n`;
+                } else {
+                    list = InfluencerModule.data;
+                    header = "GMV,GrossComm,NetIncome,AdROI\n";
+                    rowFn = i => `${i.gmv},${i.gross},${i.income},${i.roi}\n`;
+                }
+
+                if (list.length === 0) {
+                    App.showToast(I18nModule.t('empty_data'), 'error');
+                    return;
+                }
+                const csv = "data:text/csv;charset=utf-8,\uFEFF" + header + list.map(rowFn).join('');
+                const link = document.createElement("a");
+                link.href = encodeURI(csv);
+                link.download = `export_${type}_${Date.now()}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+            clearData: (type) => {
+                if(!confirm("Clear all history?")) return;
+                if (type === 'bid') BidModule.clear();
+                else if (type === 'merchant') MerchantModule.clear();
+                else InfluencerModule.clear();
+                App.showToast('Data cleared.', 'success');
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', App.init);
+    </script>
+</body>
+</html>
