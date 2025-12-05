@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Financial Calculators">
+    <title>Profit Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Font Family optimized for multi-language */
+        body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Meiryo', sans-serif; background-color: #f8fafc; }
+        
+        /* Animations */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Inputs */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-group { transition: transform 0.2s; }
+        .input-group:focus-within { transform: translateY(-1px); }
+
+        /* Scrollbar */
+        .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+
+        /* Toast Notification */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 50; pointer-events: none; }
+        .toast { pointer-events: auto; padding: 10px 20px; border-radius: 8px; color: white; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: slideDown 0.3s ease-out; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .toast.error { background-color: #ef4444; }
+        .toast.success { background-color: #10b981; }
+
+        /* Result cards */
+        .result-card { transition: transform 0.3s, box-shadow 0.3s; }
+        .result-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="p-0 md:p-6 min-h-screen flex flex-col text-slate-800">
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <div class="max-w-7xl mx-auto w-full flex-grow flex flex-col">
+        
+        <!-- Header -->
+        <div class="bg-white rounded-none md:rounded-2xl shadow-sm border-b md:border border-slate-200 mb-0 md:mb-6 sticky top-0 z-30">
+            <div class="flex flex-col md:flex-row justify-between items-center p-4 md:px-6">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 w-full md:w-auto mb-4 md:mb-0">
+                    <div class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
+                        <i class="fa-solid fa-calculator text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-800 leading-tight" data-i18n="app_title">Profit Calculator</h1>
+                        <p class="text-xs text-slate-400 font-medium" data-i18n="app_subtitle">Financial Profit Analysis</p>
+                    </div>
+                </div>
+
+                <!-- Language -->
+                <div class="relative w-full sm:w-auto">
+                    <select id="lang-select" onchange="I18nModule.changeLanguage(this.value)" class="w-full sm:w-40 appearance-none bg-white border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 cursor-pointer font-medium hover:border-blue-300 transition shadow-sm">
+                        <option value="en">🇺🇸 English</option>
+                        <option value="zh-CN">🇨🇳 简体中文</option>
+                        <option value="zh-TW">🇭🇰 繁體中文</option>
+                        <option value="ja">🇯🇵 日本語</option>
+                        <option value="ru">🇷🇺 Русский</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden flex-grow relative min-h-[600px]">
+            
+            <!-- Profit Calculator Module -->
+            <div id="view-profit" class="fade-in p-6 md:p-10 h-full">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 h-full">
+                    <!-- Inputs -->
+                    <div class="lg:col-span-4 space-y-6">
+                        <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+                                <span data-i18n="financial_details">Financial Details</span>
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="revenue">Total Revenue</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-arrow-up text-green-500"></i></div>
+                                        <input type="number" id="revenue" step="0.01" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white text-slate-800 font-medium" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="cost">Cost of Goods</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-arrow-down text-red-500"></i></div>
+                                        <input type="number" id="cost" step="0.01" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="expenses">Total Expenses</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-arrow-down text-red-500"></i></div>
+                                        <input type="number" id="expenses" step="0.01" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="tax_rate">Income Tax Rate (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-percent"></i></div>
+                                        <input type="number" id="tax-rate" step="0.01" value="25" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium" placeholder="25">
+                                    </div>
+                                </div>
+
+                                <button onclick="ProfitModule.calculate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all transform active:scale-[0.98] mt-4 flex justify-center items-center gap-2 group">
+                                    <i class="fa-solid fa-calculator group-hover:animate-pulse"></i> <span data-i18n="calculate_profit">Calculate Profit</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed">
+                            <i class="fa-solid fa-circle-info text-blue-500 mr-1.5"></i> <span data-i18n="calculation_hint">Calculation includes gross profit, operating profit, net profit and their respective margins. All values are in your local currency.</span>
+                        </div>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="lg:col-span-8 flex flex-col h-full">
+                        <div class="flex justify-between items-end mb-5">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800" data-i18n="calculation_results">Calculation Results</h3>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="App.exportCSV()" class="text-xs font-semibold text-blue-600 hover:text-blue-800 px-3 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition"><i class="fa-solid fa-download mr-1"></i> CSV</button>
+                                <button onclick="App.clearHistory()" class="text-xs font-semibold text-red-500 hover:text-red-700 px-3 py-2 bg-red-50 rounded-lg hover:bg-red-100 transition"><i class="fa-regular fa-trash-can mr-1"></i> <span data-i18n="clear_history">Clear History</span></button>
+                            </div>
+                        </div>
+
+                        <!-- Results Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="result-card bg-gradient-to-br from-green-50 to-blue-50 p-5 rounded-xl border border-green-100">
+                                <p class="text-xs text-slate-500 mb-1" data-i18n="gross_profit">Gross Profit</p>
+                                <p class="text-2xl font-bold text-slate-800" id="result-gross-profit">0.00</p>
+                                <div class="mt-2 flex items-center">
+                                    <span class="text-xs text-green-600 font-medium" data-i18n="gross_margin">Gross Margin:</span>
+                                    <span class="text-xs font-semibold ml-1" id="result-gross-margin">0%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="result-card bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100">
+                                <p class="text-xs text-slate-500 mb-1" data-i18n="operating_profit">Operating Profit</p>
+                                <p class="text-2xl font-bold text-slate-800" id="result-operating-profit">0.00</p>
+                                <div class="mt-2 flex items-center">
+                                    <span class="text-xs text-blue-600 font-medium" data-i18n="operating_margin">Operating Margin:</span>
+                                    <span class="text-xs font-semibold ml-1" id="result-operating-margin">0%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="result-card bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-xl border border-indigo-100">
+                                <p class="text-xs text-slate-500 mb-1" data-i18n="tax_amount">Income Tax Amount</p>
+                                <p class="text-2xl font-bold text-slate-800" id="result-tax-amount">0.00</p>
+                                <div class="mt-2 flex items-center">
+                                    <span class="text-xs text-indigo-600 font-medium" data-i18n="tax_rate_display">Tax Rate:</span>
+                                    <span class="text-xs font-semibold ml-1" id="result-tax-rate">0%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="result-card bg-gradient-to-br from-purple-50 to-pink-50 p-5 rounded-xl border border-purple-100">
+                                <p class="text-xs text-slate-500 mb-1" data-i18n="net_profit">Net Profit</p>
+                                <p class="text-2xl font-bold text-slate-800" id="result-net-profit">0.00</p>
+                                <div class="mt-2 flex items-center">
+                                    <span class="text-xs text-purple-600 font-medium" data-i18n="net_margin">Net Margin:</span>
+                                    <span class="text-xs font-semibold ml-1" id="result-net-margin">0%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Metrics -->
+                        <div class="bg-slate-50 p-5 rounded-xl border border-slate-100 mb-6">
+                            <h4 class="text-sm font-semibold text-slate-700 mb-4" data-i18n="additional_metrics">Additional Metrics</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="cost_ratio">Cost Ratio</p>
+                                    <p class="text-lg font-bold text-slate-800" id="result-cost-ratio">0%</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="expense_ratio">Expense Ratio</p>
+                                    <p class="text-lg font-bold text-slate-800" id="result-expense-ratio">0%</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="tax_ratio">Tax Ratio</p>
+                                    <p class="text-lg font-bold text-slate-800" id="result-tax-ratio">0%</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="profit_factor">Profit Factor</p>
+                                    <p class="text-lg font-bold text-slate-800" id="result-profit-factor">0x</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calculation History -->
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800 mb-4" data-i18n="calculation_history">Calculation History</h3>
+                            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white relative shadow-sm">
+                                <div class="absolute inset-0 overflow-auto custom-scroll">
+                                    <table class="w-full text-sm text-left text-slate-600">
+                                        <thead class="text-xs text-slate-400 uppercase bg-slate-50 sticky top-0 backdrop-blur-sm z-10 border-b border-slate-100">
+                                            <tr>
+                                                <th class="px-5 py-4 font-semibold" data-i18n="col_date">Date</th>
+                                                <th class="px-5 py-4 font-semibold" data-i18n="col_revenue">Revenue</th>
+                                                <th class="px-5 py-4 font-semibold" data-i18n="col_profit">Net Profit</th>
+                                                <th class="px-5 py-4 font-semibold" data-i18n="col_margin">Net Margin</th>
+                                                <th class="px-5 py-4 text-center" data-i18n="col_action">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="history-list" class="divide-y divide-slate-100"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="text-center mt-6 text-slate-300 text-xs pb-4">
+            &copy; 2025 Profit Calculator. All calculations are done locally. No data is stored permanently.
+        </div>
+    </div>
+
+    <script>
+        /* --- I18N (Multi-language) Module --- */
+        const I18nModule = {
+            currentLang: 'en',
+            data: {
+                'en': {
+                    app_title: 'Profit Calculator',
+                    app_subtitle: 'Financial Profit Analysis',
+                    financial_details: 'Financial Details',
+                    revenue: 'Total Revenue',
+                    cost: 'Cost of Goods',
+                    expenses: 'Total Expenses',
+                    tax_rate: 'Income Tax Rate (%)',
+                    calculate_profit: 'Calculate Profit',
+                    calculation_hint: 'Calculation includes gross profit, operating profit, net profit and their respective margins. All values are in your local currency.',
+                    calculation_results: 'Calculation Results',
+                    clear_history: 'Clear History',
+                    gross_profit: 'Gross Profit',
+                    gross_margin: 'Gross Margin:',
+                    operating_profit: 'Operating Profit',
+                    operating_margin: 'Operating Margin:',
+                    tax_amount: 'Income Tax Amount',
+                    tax_rate_display: 'Tax Rate:',
+                    net_profit: 'Net Profit',
+                    net_margin: 'Net Margin:',
+                    additional_metrics: 'Additional Metrics',
+                    cost_ratio: 'Cost Ratio',
+                    expense_ratio: 'Expense Ratio',
+                    tax_ratio: 'Tax Ratio',
+                    profit_factor: 'Profit Factor',
+                    calculation_history: 'Calculation History',
+                    col_date: 'Date',
+                    col_revenue: 'Revenue',
+                    col_profit: 'Net Profit',
+                    col_margin: 'Net Margin',
+                    col_action: 'Action',
+                    toast_success: 'Calculation completed successfully',
+                    toast_error: 'Please fill in all required fields with positive values',
+                    action_copy: 'Copy',
+                    action_delete: 'Delete',
+                    confirm_clear: 'Are you sure you want to clear all calculation history?'
+                },
+                'zh-CN': {
+                    app_title: '利润计算器',
+                    app_subtitle: '财务利润分析',
+                    financial_details: '财务详情',
+                    revenue: '总营业额',
+                    cost: '商品成本',
+                    expenses: '总费用',
+                    tax_rate: '所得税率 (%)',
+                    calculate_profit: '计算利润',
+                    calculation_hint: '计算包括毛利润、营业利润、净利润及其各自的利润率。所有数值均为本地货币。',
+                    calculation_results: '计算结果',
+                    clear_history: '清空历史',
+                    gross_profit: '毛利润',
+                    gross_margin: '毛利率:',
+                    operating_profit: '营业利润',
+                    operating_margin: '营业利润率:',
+                    tax_amount: '所得税金额',
+                    tax_rate_display: '税率:',
+                    net_profit: '净利润',
+                    net_margin: '净利润率:',
+                    additional_metrics: '附加指标',
+                    cost_ratio: '成本比率',
+                    expense_ratio: '费用比率',
+                    tax_ratio: '税收比率',
+                    profit_factor: '利润系数',
+                    calculation_history: '计算历史',
+                    col_date: '日期',
+                    col_revenue: '营业额',
+                    col_profit: '净利润',
+                    col_margin: '净利润率',
+                    col_action: '操作',
+                    toast_success: '计算成功完成',
+                    toast_error: '请填写所有必填字段并确保为正值',
+                    action_copy: '复制',
+                    action_delete: '删除',
+                    confirm_clear: '确定要清除所有计算历史吗？'
+                },
+                'zh-TW': {
+                    app_title: '利潤計算器',
+                    app_subtitle: '財務利潤分析',
+                    financial_details: '財務詳情',
+                    revenue: '總營業額',
+                    cost: '商品成本',
+                    expenses: '總費用',
+                    tax_rate: '所得稅率 (%)',
+                    calculate_profit: '計算利潤',
+                    calculation_hint: '計算包括毛利潤、營業利潤、淨利潤及其各自的利潤率。所有數值均為本地貨幣。',
+                    calculation_results: '計算結果',
+                    clear_history: '清空歷史',
+                    gross_profit: '毛利潤',
+                    gross_margin: '毛利率:',
+                    operating_profit: '營業利潤',
+                    operating_margin: '營業利潤率:',
+                    tax_amount: '所得稅金額',
+                    tax_rate_display: '稅率:',
+                    net_profit: '淨利潤',
+                    net_margin: '淨利潤率:',
+                    additional_metrics: '附加指標',
+                    cost_ratio: '成本比率',
+                    expense_ratio: '費用比率',
+                    tax_ratio: '稅收比率',
+                    profit_factor: '利潤係數',
+                    calculation_history: '計算歷史',
+                    col_date: '日期',
+                    col_revenue: '營業額',
+                    col_profit: '淨利潤',
+                    col_margin: '淨利潤率',
+                    col_action: '操作',
+                    toast_success: '計算成功完成',
+                    toast_error: '請填寫所有必填欄位並確保為正值',
+                    action_copy: '複製',
+                    action_delete: '刪除',
+                    confirm_clear: '確定要清除所有計算歷史嗎？'
+                },
+                'ja': {
+                    app_title: '利益計算機',
+                    app_subtitle: '財務利益分析',
+                    financial_details: '財務詳細',
+                    revenue: '総収入',
+                    cost: '商品原価',
+                    expenses: '総費用',
+                    tax_rate: '所得税率 (%)',
+                    calculate_profit: '利益を計算',
+                    calculation_hint: '計算には粗利益、営業利益、純利益とそれぞれの利益率が含まれます。すべての数値は現地通貨で表示されます。',
+                    calculation_results: '計算結果',
+                    clear_history: '履歴を消去',
+                    gross_profit: '粗利益',
+                    gross_margin: '粗利率:',
+                    operating_profit: '営業利益',
+                    operating_margin: '営業利益率:',
+                    tax_amount: '所得税額',
+                    tax_rate_display: '税率:',
+                    net_profit: '純利益',
+                    net_margin: '純利益率:',
+                    additional_metrics: '追加指標',
+                    cost_ratio: '原価比率',
+                    expense_ratio: '費用比率',
+                    tax_ratio: '税比率',
+                    profit_factor: '利益係数',
+                    calculation_history: '計算履歴',
+                    col_date: '日付',
+                    col_revenue: '収入',
+                    col_profit: '純利益',
+                    col_margin: '純利益率',
+                    col_action: '操作',
+                    toast_success: '計算が正常に完了しました',
+                    toast_error: 'すべての必須項目を入力し、正の値であることを確認してください',
+                    action_copy: 'コピー',
+                    action_delete: '削除',
+                    confirm_clear: 'すべての計算履歴を消去してもよろしいですか？'
+                },
+                'ru': {
+                    app_title: 'Калькулятор прибыли',
+                    app_subtitle: 'Финансовый анализ прибыли',
+                    financial_details: 'Финансовые данные',
+                    revenue: 'Общий доход',
+                    cost: ' Себестоимость товаров',
+                    expenses: 'Общие расходы',
+                    tax_rate: 'Ставка подоходного налога (%)',
+                    calculate_profit: 'Рассчитать прибыль',
+                    calculation_hint: 'Расчет включает в себе валовую прибыль, операционную прибыль, чистую прибыль и их соответствующие маржи. Все значения указаны в местной валюте.',
+                    calculation_results: 'Результаты расчета',
+                    clear_history: 'Очистить историю',
+                    gross_profit: 'Валовая прибыль',
+                    gross_margin: 'Валовая маржа:',
+                    operating_profit: 'Операционная прибыль',
+                    operating_margin: 'Операционная маржа:',
+                    tax_amount: 'Сумма подоходного налога',
+                    tax_rate_display: 'Ставка налога:',
+                    net_profit: 'Чистая прибыль',
+                    net_margin: 'Чистая маржа:',
+                    additional_metrics: 'Дополнительные показатели',
+                    cost_ratio: 'Коэффициент себестоимости',
+                    expense_ratio: 'Коэффициент расходов',
+                    tax_ratio: 'Коэффициент налогообложения',
+                    profit_factor: 'Фактор прибыли',
+                    calculation_history: 'История расчетов',
+                    col_date: 'Дата',
+                    col_revenue: 'Доход',
+                    col_profit: 'Чистая прибыль',
+                    col_margin: 'Чистая маржа',
+                    col_action: 'Действие',
+                    toast_success: 'Расчет успешно завершен',
+                    toast_error: 'Пожалуйста, заполните все обязательные поля положительными значениями',
+                    action_copy: 'Копировать',
+                    action_delete: 'Удалить',
+                    confirm_clear: 'Вы уверены, что хотите очистить всю историю расчетов?'
+                }
+            },
+            
+            init: function() {
+                // Try to get saved language from localStorage
+                const savedLang = localStorage.getItem('profitCalcLang');
+                if (savedLang && this.data[savedLang]) {
+                    this.currentLang = savedLang;
+                    document.getElementById('lang-select').value = savedLang;
+                }
+                this.updateTextContent();
+            },
+            
+            changeLanguage: function(lang) {
+                if (this.data[lang]) {
+                    this.currentLang = lang;
+                    localStorage.setItem('profitCalcLang', lang);
+                    this.updateTextContent();
+                }
+            },
+            
+            updateTextContent: function() {
+                const elements = document.querySelectorAll('[data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.data[this.currentLang][key]) {
+                        el.textContent = this.data[this.currentLang][key];
+                    }
+                });
+            }
+        };
+
+        /* --- Profit Calculation Module --- */
+        const ProfitModule = {
+            history: [],
+            
+            init: function() {
+                // Load calculation history from localStorage
+                const savedHistory = localStorage.getItem('profitCalculations');
+                if (savedHistory) {
+                    try {
+                        this.history = JSON.parse(savedHistory);
+                        this.renderHistory();
+                    } catch (e) {
+                        console.error('Error loading history:', e);
+                        this.history = [];
+                    }
+                }
+            },
+            
+            calculate: function() {
+                // Get input values
+                const revenue = parseFloat(document.getElementById('revenue').value) || 0;
+                const cost = parseFloat(document.getElementById('cost').value) || 0;
+                const expenses = parseFloat(document.getElementById('expenses').value) || 0;
+                const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+                
+                // Validate inputs
+                if (revenue <= 0 || cost < 0 || expenses < 0 || taxRate < 0 || taxRate > 100) {
+                    App.showToast(I18nModule.data[I18nModule.currentLang].toast_error, 'error');
+                    return;
+                }
+                
+                // Calculate all profit metrics
+                const grossProfit = revenue - cost;
+                const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+                
+                const operatingProfit = grossProfit - expenses;
+                const operatingMargin = revenue > 0 ? (operatingProfit / revenue) * 100 : 0;
+                
+                const taxableIncome = Math.max(0, operatingProfit); // Don't tax losses
+                const taxAmount = taxableIncome * (taxRate / 100);
+                
+                const netProfit = operatingProfit - taxAmount;
+                const netMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+                
+                // Additional metrics
+                const costRatio = revenue > 0 ? (cost / revenue) * 100 : 0;
+                const expenseRatio = revenue > 0 ? (expenses / revenue) * 100 : 0;
+                const taxRatio = revenue > 0 ? (taxAmount / revenue) * 100 : 0;
+                const profitFactor = (cost + expenses + taxAmount) > 0 ? (revenue / (cost + expenses + taxAmount)) : 0;
+                
+                // Update result display
+                document.getElementById('result-gross-profit').textContent = grossProfit.toFixed(2);
+                document.getElementById('result-gross-margin').textContent = grossMargin.toFixed(1) + '%';
+                
+                document.getElementById('result-operating-profit').textContent = operatingProfit.toFixed(2);
+                document.getElementById('result-operating-margin').textContent = operatingMargin.toFixed(1) + '%';
+                
+                document.getElementById('result-tax-amount').textContent = taxAmount.toFixed(2);
+                document.getElementById('result-tax-rate').textContent = taxRate.toFixed(1) + '%';
+                
+                document.getElementById('result-net-profit').textContent = netProfit.toFixed(2);
+                document.getElementById('result-net-margin').textContent = netMargin.toFixed(1) + '%';
+                
+                document.getElementById('result-cost-ratio').textContent = costRatio.toFixed(1) + '%';
+                document.getElementById('result-expense-ratio').textContent = expenseRatio.toFixed(1) + '%';
+                document.getElementById('result-tax-ratio').textContent = taxRatio.toFixed(1) + '%';
+                document.getElementById('result-profit-factor').textContent = profitFactor.toFixed(2) + 'x';
+                
+                // Create calculation record
+                const calculation = {
+                    id: Date.now(),
+                    date: new Date().toISOString(),
+                    revenue,
+                    cost,
+                    expenses,
+                    taxRate,
+                    grossProfit,
+                    grossMargin,
+                    operatingProfit,
+                    operatingMargin,
+                    taxAmount,
+                    netProfit,
+                    netMargin
+                };
+                
+                // Save and update history
+                this.history.unshift(calculation); // Add to beginning
+                this.saveHistory();
+                this.renderHistory();
+                
+                App.showToast(I18nModule.data[I18nModule.currentLang].toast_success, 'success');
+            },
+            
+            renderHistory: function() {
+                const listElement = document.getElementById('history-list');
+                listElement.innerHTML = '';
+                
+                if (this.history.length === 0) {
+                    listElement.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-5 py-10 text-center text-slate-400">
+                                <i class="fa-solid fa-history text-2xl mb-2"></i>
+                                <p data-i18n="no_history">No calculation history yet</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                this.history.forEach(item => {
+                    const date = new Date(item.date);
+                    const formattedDate = date.toLocaleDateString();
+                    const profitClass = item.netProfit >= 0 ? 'text-green-600' : 'text-red-600';
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-slate-50 transition';
+                    row.innerHTML = `
+                        <td class="px-5 py-4">${formattedDate}</td>
+                        <td class="px-5 py-4">${item.revenue.toFixed(2)}</td>
+                        <td class="px-5 py-4 font-medium ${profitClass}">${item.netProfit.toFixed(2)}</td>
+                        <td class="px-5 py-4">${item.netMargin.toFixed(1)}%</td>
+                        <td class="px-5 py-4 text-center">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="ProfitModule.copyCalculation(${item.id})" class="text-xs text-blue-600 hover:text-blue-800">
+                                    <i class="fa-regular fa-copy mr-1"></i>${I18nModule.data[I18nModule.currentLang].action_copy}
+                                </button>
+                                <button onclick="ProfitModule.deleteCalculation(${item.id})" class="text-xs text-red-500 hover:text-red-800">
+                                    <i class="fa-regular fa-trash-can mr-1"></i>${I18nModule.data[I18nModule.currentLang].action_delete}
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    listElement.appendChild(row);
+                });
+            },
+            
+            copyCalculation: function(id) {
+                const item = this.history.find(h => h.id === id);
+                if (item) {
+                    document.getElementById('revenue').value = item.revenue;
+                    document.getElementById('cost').value = item.cost;
+                    document.getElementById('expenses').value = item.expenses;
+                    document.getElementById('tax-rate').value = item.taxRate;
+                    
+                    App.showToast('Calculation data copied to form', 'success');
+                }
+            },
+            
+            deleteCalculation: function(id) {
+                this.history = this.history.filter(item => item.id !== id);
+                this.saveHistory();
+                this.renderHistory();
+            },
+            
+            saveHistory: function() {
+                localStorage.setItem('profitCalculations', JSON.stringify(this.history));
+            }
+        };
+
+        /* --- Main App Module --- */
+        const App = {
+            init: function() {
+                I18nModule.init();
+                ProfitModule.init();
+            },
+            
+            showToast: function(message, type = 'success') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type} fade-in`;
+                
+                const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+                toast.innerHTML = `<i class="fa-solid fa-${icon}"></i> ${message}`;
+                
+                container.appendChild(toast);
+                
+                // Remove toast after 3 seconds
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-20px)';
+                    toast.style.transition = 'opacity 0.3s, transform 0.3s';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            },
+            
+            exportCSV: function() {
+                if (ProfitModule.history.length === 0) {
+                    this.showToast('No data to export', 'error');
+                    return;
+                }
+                
+                // Create CSV content
+                let csv = 'Date,Revenue,Cost,Expenses,Tax Rate,Gross Profit,Operating Profit,Net Profit,Gross Margin (%),Operating Margin (%),Net Margin (%)\n';
+                
+                ProfitModule.history.forEach(item => {
+                    const date = new Date(item.date).toLocaleDateString();
+                    csv += `${date},${item.revenue},${item.cost},${item.expenses},${item.taxRate},${item.grossProfit},${item.operatingProfit},${item.netProfit},${item.grossMargin},${item.operatingMargin},${item.netMargin}\n`;
+                });
+                
+                // Create and download CSV file
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.setAttribute('href', url);
+                a.setAttribute('download', `profit-calculations-${new Date().toISOString().slice(0,10)}.csv`);
+                a.style.visibility = 'hidden';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            },
+            
+            clearHistory: function() {
+                if (confirm(I18nModule.data[I18nModule.currentLang].confirm_clear)) {
+                    ProfitModule.history = [];
+                    ProfitModule.saveHistory();
+                    ProfitModule.renderHistory();
+                    this.showToast('All history has been cleared', 'success');
+                }
+            }
+        };
+
+        // Initialize the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            App.init();
+        });
+    </script>
+</body>
+</html>

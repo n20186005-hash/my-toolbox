@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinduoduo Profit Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Meiryo', sans-serif; background-color: #f8fafc; }
+        
+        /* Animations */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Inputs */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-group { transition: transform 0.2s; }
+        .input-group:focus-within { transform: translateY(-1px); }
+
+        /* Tabs */
+        .tab-active { border-color: #E02E24; color: #E02E24; font-weight: 600; }
+        
+        /* Toast Notification */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 50; pointer-events: none; }
+        .toast { pointer-events: auto; padding: 10px 20px; border-radius: 8px; color: white; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: slideDown 0.3s ease-out; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .toast.error { background-color: #ef4444; }
+        .toast.success { background-color: #10b981; }
+    </style>
+</head>
+<body class="p-4 md:p-6 min-h-screen flex flex-col text-slate-800">
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <div class="max-w-7xl mx-auto w-full flex-grow">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-center p-4 md:px-6">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 w-full md:w-auto mb-4 md:mb-0">
+                    <div class="bg-gradient-to-br from-red-600 to-orange-600 text-white p-2.5 rounded-xl shadow-lg shadow-red-500/20">
+                        <i class="fa-solid fa-calculator text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-800 leading-tight" data-i18n="app_title">Pinduoduo Profit Calculator</h1>
+                        <p class="text-xs text-slate-400 font-medium" data-i18n="app_subtitle">Profit & ROI Calculation Tool</p>
+                    </div>
+                </div>
+
+                <!-- Language Selector -->
+                <div class="relative w-full sm:w-auto">
+                    <select id="lang-select" onchange="I18nModule.changeLanguage(this.value)" class="w-full sm:w-40 appearance-none bg-white border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 block p-2.5 cursor-pointer font-medium hover:border-red-300 transition shadow-sm">
+                        <option value="en">🇺🇸 English</option>
+                        <option value="zh-CN">🇨🇳 简体中文</option>
+                        <option value="zh-TW">🇭🇰 繁體中文</option>
+                        <option value="ja">🇯🇵 日本語</option>
+                        <option value="ru">🇷🇺 Русский</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+            <!-- Tabs Navigation -->
+            <div class="border-b border-slate-200">
+                <div class="flex overflow-x-auto">
+                    <button id="tab-product" onclick="switchTab('product')" class="tab-active px-6 py-4 whitespace-nowrap border-b-2 transition">
+                        <i class="fa-solid fa-box mr-2"></i><span data-i18n="tab_product">Product Model</span>
+                    </button>
+                    <button id="tab-monthly" onclick="switchTab('monthly')" class="px-6 py-4 whitespace-nowrap border-b-2 border-transparent transition">
+                        <i class="fa-solid fa-calendar mr-2"></i><span data-i18n="tab_monthly">Monthly Summary</span>
+                    </button>
+                    <button id="tab-analysis" onclick="switchTab('analysis')" class="px-6 py-4 whitespace-nowrap border-b-2 border-transparent transition">
+                        <i class="fa-solid fa-chart-line mr-2"></i><span data-i18n="tab_analysis">Break-even Analysis</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Product Model Tab -->
+            <div id="view-product" class="p-6 md:p-10 fade-in">
+                <h2 class="text-xl font-bold mb-6" data-i18n="product_model_title">Product Profit Calculation</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Input Form -->
+                    <div class="space-y-6">
+                        <div class="bg-red-50/50 p-6 rounded-2xl border border-red-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-red-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-input-text"></i></span>
+                                <span data-i18n="product_inputs">Product Information</span>
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="product_name">Product Name</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-tag"></i></div>
+                                        <input type="text" id="product-name" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="selling_price">Selling Price (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-yen-sign"></i></div>
+                                        <input type="number" id="selling-price" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="cost_price">Cost Price (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-boxes-stacked"></i></div>
+                                        <input type="number" id="cost-price" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="shipping_fee">Shipping Fee (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-truck"></i></div>
+                                        <input type="number" id="shipping-fee" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="platform_fee">Platform Fee (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-percent"></i></div>
+                                        <input type="number" id="platform-fee" step="0.01" min="0" max="100" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition bg-white text-slate-800 font-medium" value="5">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="promotion_cost">Promotion Cost (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-bullhorn"></i></div>
+                                        <input type="number" id="promotion-cost" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="return_rate">Return Rate (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-rotate-left"></i></div>
+                                        <input type="number" id="return-rate" step="0.01" min="0" max="100" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="refund_penalty">Refund Penalty Rate (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-exclamation-triangle"></i></div>
+                                        <input type="number" id="refund-penalty" step="0.01" min="0" max="100" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="quantity_sold">Quantity Sold</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-cart-shopping"></i></div>
+                                        <input type="number" id="quantity-sold" step="1" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <button onclick="ProductCalculator.calculate()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/40 transition-all transform active:scale-[0.98] mt-4 flex justify-center items-center gap-2 group">
+                                    <i class="fa-solid fa-calculator group-hover:animate-pulse"></i> <span data-i18n="calculate">Calculate Profit</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="space-y-6">
+                        <!-- Profit Summary -->
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-green-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-chart-pie"></i></span>
+                                <span data-i18n="profit_summary">Profit Summary</span>
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="gross_revenue">Gross Revenue</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="gross-revenue">¥0.00</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="total_cost">Total Cost</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="total-cost">¥0.00</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="platform_fee_total">Total Platform Fee</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="platform-fee-total">¥0.00</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="return_loss">Return Loss</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="return-loss">¥0.00</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 pt-6 border-t border-slate-200">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-slate-700" data-i18n="net_profit">Net Profit:</span>
+                                    <span class="text-3xl font-bold text-green-600" id="net-profit">¥0.00</span>
+                                </div>
+                                <div class="flex justify-between items-center mt-4">
+                                    <span class="font-bold text-slate-700" data-i18n="roi">ROI:</span>
+                                    <span class="text-2xl font-bold text-blue-600" id="roi">0.00%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Historical Data -->
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <span class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-history"></i></span>
+                                    <span data-i18n="history">Calculation History</span>
+                                </h3>
+                                <button onclick="ProductCalculator.clearHistory()" class="text-xs font-semibold text-red-500 hover:text-red-700 px-3 py-1 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                                    <i class="fa-regular fa-trash-can mr-1"></i> <span data-i18n="clear">Clear</span>
+                                </button>
+                            </div>
+                            
+                            <div class="overflow-auto max-h-60 custom-scroll">
+                                <table class="w-full text-sm text-left text-slate-600">
+                                    <thead class="text-xs text-slate-400 uppercase bg-slate-50 sticky top-0">
+                                        <tr>
+                                            <th class="px-3 py-2 font-semibold" data-i18n="product">Product</th>
+                                            <th class="px-3 py-2 font-semibold" data-i18n="qty">Qty</th>
+                                            <th class="px-3 py-2 font-semibold" data-i18n="profit">Profit</th>
+                                            <th class="px-3 py-2 font-semibold" data-i18n="date">Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="product-history" class="divide-y divide-slate-100">
+                                        <!-- History will be inserted here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Summary Tab -->
+            <div id="view-monthly" class="p-6 md:p-10 fade-in hidden">
+                <h2 class="text-xl font-bold mb-6" data-i18n="monthly_summary_title">Monthly Business Summary</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Input Form -->
+                    <div class="space-y-6">
+                        <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-calendar-check"></i></span>
+                                <span data-i18n="monthly_inputs">Monthly Data Input</span>
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="month">Month</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-calendar-month"></i></div>
+                                        <input type="month" id="summary-month" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="total_sales">Total Sales (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-yen-sign"></i></div>
+                                        <input type="number" id="total-sales" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="total_product_cost">Total Product Cost (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-boxes-stacked"></i></div>
+                                        <input type="number" id="total-product-cost" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="total_shipping">Total Shipping Cost (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-truck"></i></div>
+                                        <input type="number" id="total-shipping" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="total_platform_fees">Total Platform Fees (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-percent"></i></div>
+                                        <input type="number" id="total-platform-fees" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="total_promotion">Total Promotion Cost (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-bullhorn"></i></div>
+                                        <input type="number" id="total-promotion" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="staff_cost">Staff Cost (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-users"></i></div>
+                                        <input type="number" id="staff-cost" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="rent_cost">Rent & Utilities (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-building"></i></div>
+                                        <input type="number" id="rent-cost" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="other_expenses">Other Expenses (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-ellipsis-h"></i></div>
+                                        <input type="number" id="other-expenses" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <button onclick="MonthlyCalculator.calculate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all transform active:scale-[0.98] mt-4 flex justify-center items-center gap-2 group">
+                                    <i class="fa-solid fa-calculator group-hover:animate-pulse"></i> <span data-i18n="calculate_monthly">Calculate Monthly Profit</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="space-y-6">
+                        <!-- Monthly Summary -->
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-purple-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
+                                <span data-i18n="monthly_results">Monthly Results</span>
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="gross_profit">Gross Profit</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="monthly-gross-profit">¥0.00</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="operating_expenses">Operating Expenses</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="operating-expenses">¥0.00</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="net_profit_monthly">Net Monthly Profit</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="monthly-net-profit">¥0.00</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="profit_margin">Profit Margin</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="profit-margin">0.00%</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 pt-6 border-t border-slate-200">
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <h4 class="text-sm font-semibold mb-2" data-i18n="expense_breakdown">Expense Breakdown</h4>
+                                    <div class="h-48">
+                                        <canvas id="expense-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Monthly History -->
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <span class="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-calendar-days"></i></span>
+                                    <span data-i18n="monthly_history">Monthly History</span>
+                                </h3>
+                                <button onclick="MonthlyCalculator.clearHistory()" class="text-xs font-semibold text-red-500 hover:text-red-700 px-3 py-1 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                                    <i class="fa-regular fa-trash-can mr-1"></i> <span data-i18n="clear">Clear</span>
+                                </button>
+                            </div>
+                            
+                            <div class="overflow-auto max-h-60 custom-scroll">
+                                <table class="w-full text-sm text-left text-slate-600">
+                                    <thead class="text-xs text-slate-400 uppercase bg-slate-50 sticky top-0">
+                                        <tr>
+                                            <th class="px-3 py-2 font-semibold" data-i18n="month_year">Month/Year</th>
+                                            <th class="px-3 py-2 font-semibold" data-i18n="sales">Sales</th>
+                                            <th class="px-3 py-2 font-semibold" data-i18n="profit">Profit</th>
+                                            <th class="px-3 py-2 font-semibold" data-i18n="margin">Margin</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="monthly-history" class="divide-y divide-slate-100">
+                                        <!-- History will be inserted here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Break-even Analysis Tab -->
+            <div id="view-analysis" class="p-6 md:p-10 fade-in hidden">
+                <h2 class="text-xl font-bold mb-6" data-i18n="break_even_title">Break-even Point Analysis</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Input Form -->
+                    <div class="space-y-6">
+                        <div class="bg-green-50/50 p-6 rounded-2xl border border-green-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-green-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-balance-scale"></i></span>
+                                <span data-i18n="fixed_costs">Fixed Costs & Parameters</span>
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="monthly_staff">Monthly Staff Cost (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-users"></i></div>
+                                        <input type="number" id="analysis-staff" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="monthly_rent">Monthly Rent & Utilities (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-building"></i></div>
+                                        <input type="number" id="analysis-rent" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="other_fixed">Other Fixed Costs (¥)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-ellipsis-h"></i></div>
+                                        <input type="number" id="analysis-other-fixed" step="0.01" min="0" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="avg_gross_margin">Average Gross Margin (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-percent"></i></div>
+                                        <input type="number" id="avg-gross-margin" step="0.01" min="0" max="100" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" data-i18n="safety_margin">Safety Margin (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-shield"></i></div>
+                                        <input type="number" id="safety-margin" step="0.01" min="0" max="100" value="20" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition bg-white text-slate-800 font-medium">
+                                    </div>
+                                </div>
+
+                                <button onclick="BreakEvenCalculator.calculate()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-600/20 hover:shadow-green-600/40 transition-all transform active:scale-[0.98] mt-4 flex justify-center items-center gap-2 group">
+                                    <i class="fa-solid fa-calculator group-hover:animate-pulse"></i> <span data-i18n="calculate_break_even">Calculate Break-even Point</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="space-y-6">
+                        <!-- Break-even Results -->
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="bg-orange-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-chart-pie"></i></span>
+                                <span data-i18n="break_even_results">Break-even Analysis Results</span>
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="total_fixed_costs">Total Fixed Costs (¥)</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="total-fixed-costs">¥0.00</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="break_even_sales">Break-even Sales (¥)</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="break-even-sales">¥0.00</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="safety_sales">Safety Sales Level (¥)</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="safety-sales">¥0.00</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <p class="text-xs text-slate-500 mb-1" data-i18n="daily_sales_needed">Daily Sales Needed (¥)</p>
+                                    <p class="text-2xl font-bold text-slate-800" id="daily-sales-needed">¥0.00</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 pt-6 border-t border-slate-200">
+                                <div class="bg-white p-4 rounded-lg border border-slate-100">
+                                    <h4 class="text-sm font-semibold mb-2" data-i18n="break_even_chart">Break-even Chart</h4>
+                                    <div class="h-64">
+                                        <canvas id="break-even-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recommendations -->
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <span class="bg-teal-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fa-solid fa-lightbulb"></i></span>
+                                <span data-i18n="recommendations">Recommendations</span>
+                            </h3>
+                            
+                            <div id="recommendations-list" class="space-y-3 text-sm text-slate-700">
+                                <div class="bg-white p-3 rounded-lg border border-slate-100 flex items-start gap-2">
+                                    <i class="fa-solid fa-info-circle text-blue-500 mt-0.5"></i>
+                                    <p data-i18n="recommendation_1">Fill in your fixed costs and margin details to get personalized recommendations.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-6 text-slate-300 text-xs pb-4">
+            &copy; 2025 Pinduoduo Profit Calculator. All calculations are done locally.
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all views
+            document.getElementById('view-product').classList.add('hidden');
+            document.getElementById('view-monthly').classList.add('hidden');
+            document.getElementById('view-analysis').classList.add('hidden');
+            
+            // Deactivate all tabs
+            document.getElementById('tab-product').classList.remove('tab-active');
+            document.getElementById('tab-monthly').classList.remove('tab-active');
+            document.getElementById('tab-analysis').classList.remove('tab-active');
+            
+            // Show selected view and activate tab
+            document.getElementById('view-' + tabName).classList.remove('hidden');
+            document.getElementById('tab-' + tabName).classList.add('tab-active');
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+            toast.innerHTML = `<i class="fa-solid fa-${icon}"></i> ${message}`;
+            
+            container.appendChild(toast);
+            
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                toast.style.transition = 'opacity 0.3s, transform 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        /* --- I18N (Multi-language) Module --- */
+        const I18nModule = {
+            currentLang: 'en',
+            data: {
+                'en': {
+                    app_title: 'Pinduoduo Profit Calculator',
+                    app_subtitle: 'Profit & ROI Calculation Tool',
+                    tab_product: 'Product Model',
+                    tab_monthly: 'Monthly Summary',
+                    tab_analysis: 'Break-even Analysis',
+                    product_model_title: 'Product Profit Calculation',
+                    product_inputs: 'Product Information',
+                    product_name: 'Product Name',
+                    selling_price: 'Selling Price (¥)',
+                    cost_price: 'Cost Price (¥)',
+                    shipping_fee: 'Shipping Fee (¥)',
+                    platform_fee: 'Platform Fee (%)',
+                    promotion_cost: 'Promotion Cost (¥)',
+                    return_rate: 'Return Rate (%)',
+                    refund_penalty: 'Refund Penalty Rate (%)',
+                    quantity_sold: 'Quantity Sold',
+                    calculate: 'Calculate Profit',
+                    profit_summary: 'Profit Summary',
+                    gross_revenue: 'Gross Revenue',
+                    total_cost: 'Total Cost',
+                    platform_fee_total: 'Total Platform Fee',
+                    return_loss: 'Return Loss',
+                    net_profit: 'Net Profit',
+                    roi: 'ROI',
+                    history: 'Calculation History',
+                    clear: 'Clear',
+                    product: 'Product',
+                    qty: 'Qty',
+                    date: 'Date',
+                    monthly_summary_title: 'Monthly Business Summary',
+                    monthly_inputs: 'Monthly Data Input',
+                    month: 'Month',
+                    total_sales: 'Total Sales (¥)',
+                    total_product_cost: 'Total Product Cost (¥)',
+                    total_shipping: 'Total Shipping Cost (¥)',
+                    total_platform_fees: 'Total Platform Fees (¥)',
+                    total_promotion: 'Total Promotion Cost (¥)',
+                    staff_cost: 'Staff Cost (¥)',
+                    rent_cost: 'Rent & Utilities (¥)',
+                    other_expenses: 'Other Expenses (¥)',
+                    calculate_monthly: 'Calculate Monthly Profit',
+                    monthly_results: 'Monthly Results',
+                    gross_profit: 'Gross Profit',
+                    operating_expenses: 'Operating Expenses',
+                    net_profit_monthly: 'Net Monthly Profit',
+                    profit_margin: 'Profit Margin',
+                    expense_breakdown: 'Expense Breakdown',
+                    monthly_history: 'Monthly History',
+                    month_year: 'Month/Year',
+                    sales: 'Sales',
+                    margin: 'Margin',
+                    break_even_title: 'Break-even Point Analysis',
+                    fixed_costs: 'Fixed Costs & Parameters',
+                    monthly_staff: 'Monthly Staff Cost (¥)',
+                    monthly_rent: 'Monthly Rent & Utilities (¥)',
+                    other_fixed: 'Other Fixed Costs (¥)',
+                    avg_gross_margin: 'Average Gross Margin (%)',
+                    safety_margin: 'Safety Margin (%)',
+                    calculate_break_even: 'Calculate Break-even Point',
+                    break_even_results: 'Break-even Analysis Results',
+                    total_fixed_costs: 'Total Fixed Costs (¥)',
+                    break_even_sales: 'Break-even Sales (¥)',
+                    safety_sales: 'Safety Sales Level (¥)',
+                    daily_sales_needed: 'Daily Sales Needed (¥)',
+                    break_even_chart: 'Break-even Chart',
+                    recommendations: 'Recommendations',
+                    recommendation_1: 'Fill in your fixed costs and margin details to get personalized recommendations.',
+                    recommendation_2: 'Your business needs to generate at least {breakEven} in monthly sales to cover all fixed costs.',
+                    recommendation_3: 'To maintain a {safetyMargin}% safety margin, aim for {safetySales} in monthly sales.',
+                    recommendation_4: 'Increasing your average gross margin by 1% would reduce your break-even point by approximately {reduction}%.',
+                    toast_success: 'Calculation completed successfully',
+                    toast_error: 'Please fill in all required fields'
+                },
+                'zh-CN': {
+                    app_title: '拼多多利润计算器',
+                    app_subtitle: '利润与投产比计算工具',
+                    tab_product: '单品模型',
+                    tab_monthly: '月度汇总',
+                    tab_analysis: '盈亏平衡分析',
+                    product_model_title: '单品利润计算',
+                    product_inputs: '产品信息',
+                    product_name: '产品名称',
+                    selling_price: '售价 (¥)',
+                    cost_price: '成本价 (¥)',
+                    shipping_fee: '运费 (¥)',
+                    platform_fee: '平台佣金 (%)',
+                    promotion_cost: '推广费用 (¥)',
+                    return_rate: '退货率 (%)',
+                    refund_penalty: '仅退款罚款比例 (%)',
+                    quantity_sold: '销售数量',
+                    calculate: '计算利润',
+                    profit_summary: '利润摘要',
+                    gross_revenue: '总销售额',
+                    total_cost: '总成本',
+                    platform_fee_total: '平台总费用',
+                    return_loss: '退货损失',
+                    net_profit: '净利润',
+                    roi: '投资回报率',
+                    history: '计算历史',
+                    clear: '清空',
+                    product: '产品',
+                    qty: '数量',
+                    date: '日期',
+                    monthly_summary_title: '月度经营汇总',
+                    monthly_inputs: '月度数据输入',
+                    month: '月份',
+                    total_sales: '总销售额 (¥)',
+                    total_product_cost: '产品总成本 (¥)',
+                    total_shipping: '总运费 (¥)',
+                    total_platform_fees: '平台总费用 (¥)',
+                    total_promotion: '总推广费用 (¥)',
+                    staff_cost: '人员成本 (¥)',
+                    rent_cost: '房租水电 (¥)',
+                    other_expenses: '其他费用 (¥)',
+                    calculate_monthly: '计算月度利润',
+                    monthly_results: '月度结果',
+                    gross_profit: '毛利润',
+                    operating_expenses: '运营费用',
+                    net_profit_monthly: '月度净利润',
+                    profit_margin: '利润率',
+                    expense_breakdown: '费用明细',
+                    monthly_history: '月度历史',
+                    month_year: '年月',
+                    sales: '销售额',
+                    margin: '利润率',
+                    break_even_title: '盈亏平衡点分析',
+                    fixed_costs: '固定成本与参数',
+                    monthly_staff: '月度人员成本 (¥)',
+                    monthly_rent: '月度房租水电 (¥)',
+                    other_fixed: '其他固定成本 (¥)',
+                    avg_gross_margin: '平均毛利率 (%)',
+                    safety_margin: '安全边际 (%)',
+                    calculate_break_even: '计算盈亏平衡点',
+                    break_even_results: '盈亏平衡分析结果',
+                    total_fixed_costs: '总固定成本 (¥)',
+                    break_even_sales: '盈亏平衡销售额 (¥)',
+                    safety_sales: '安全销售额 (¥)',
+                    daily_sales_needed: '每日所需销售额 (¥)',
+                    break_even_chart: '盈亏平衡图表',
+                    recommendations: '建议',
+                    recommendation_1: '填写您的固定成本和利润率详情，获取个性化建议。',
+                    recommendation_2: '您的业务每月至少需要产生 {breakEven} 的销售额才能覆盖所有固定成本。',
+                    recommendation_3: '为保持 {safetyMargin}% 的安全边际，月度销售额应达到 {safetySales}。',
+                    recommendation_4: '平均毛利率每提高1%，盈亏平衡点将降低约 {reduction}%。',
+                    toast_success: '计算成功完成',
+                    toast_error: '请填写所有必填字段'
+                },
+                'zh-TW': {
+                    app_title: '拼多多利潤計算器',
+                    app_subtitle: '利潤與投產比計算工具',
+                    tab_product: '單品模型',
+                    tab_monthly: '月度彙總',
+                    tab_analysis: '盈虧平衡分析',
+                    product_model_title: '單品利潤計算',
+                    product_inputs: '產品信息',
+                    product_name: '產品名稱',
+                    selling_price: '售價 (¥)',
+                    cost_price: '成本價 (¥)',
+                    shipping_fee: '運費 (¥)',
+                    platform_fee: '平台傭金 (%)',
+                    promotion_cost: '推廣費用 (¥)',
+                    return_rate: '退貨率 (%)',
+                    refund_penalty: '僅退款罰款比例 (%)',
+                    quantity_sold: '銷售數量',
+                    calculate: '計算利潤',
+                    profit_summary: '利潤摘要',
+                    gross_revenue: '總銷售額',
+                    total_cost: '總成本',
+                    platform_fee_total: '平台總費用',
+                    return_loss: '退貨損失',
+                    net_profit: '淨利潤',
+                    roi: '投資回報率',
+                    history: '計算歷史',
+                    clear: '清空',
+                    product: '產品',
+                    qty: '數量',
+                    date: '日期',
+                    monthly_summary_title: '月度經營彙總',
+                    monthly_inputs: '月度數據輸入',
+                    month: '月份',
+                    total_sales: '總銷售額 (¥)',
+                    total_product_cost: '產品總成本 (¥)',
+                    total_shipping: '總運費 (¥)',
+                    total_platform_fees: '平台總費用 (¥)',
+                    total_promotion: '總推廣費用 (¥)',
+                    staff_cost: '人員成本 (¥)',
+                    rent_cost: '房租水電 (¥)',
+                    other_expenses: '其他費用 (¥)',
+                    calculate_monthly: '計算月度利潤',
+                    monthly_results: '月度結果',
+                    gross_profit: '毛利潤',
+                    operating_expenses: '運營費用',
+                    net_profit_monthly: '月度淨利潤',
+                    profit_margin: '利潤率',
+                    expense_breakdown: '費用明細',
+                    monthly_history: '月度歷史',
+                    month_year: '年月',
+                    sales: '銷售額',
+                    margin: '利潤率',
+                    break_even_title: '盈虧平衡點分析',
+                    fixed_costs: '固定成本與參數',
+                    monthly_staff: '月度人員成本 (¥)',
+                    monthly_rent: '月度房租水電 (¥)',
+                    other_fixed: '其他固定成本 (¥)',
+                    avg_gross_margin: '平均毛利率 (%)',
+                    safety_margin: '安全邊際 (%)',
+                    calculate_break_even: '計算盈虧平衡點',
+                    break_even_results: '盈虧平衡分析結果',
+                    total_fixed_costs: '總固定成本 (¥)',
+                    break_even_sales: '盈虧平衡銷售額 (¥)',
+                    safety_sales: '安全銷售額 (¥)',
+                    daily_sales_needed: '每日所需銷售額 (¥)',
+                    break_even_chart: '盈虧平衡圖表',
+                    recommendations: '建議',
+                    recommendation_1: '填寫您的固定成本和利潤率詳情，獲取個性化建議。',
+                    recommendation_2: '您的業務每月至少需要產生 {breakEven} 的銷售額才能覆蓋所有固定成本。',
+                    recommendation_3: '為保持 {safetyMargin}% 的安全邊際，月度銷售額應達到 {safetySales}。',
+                    recommendation_4: '平均毛利率每提高1%，盈虧平衡點將降低約 {reduction}%。',
+                    toast_success: '計算成功完成',
+                    toast_error: '請填寫所有必填字段'
+                },
+                'ja': {
+                    app_title: '拼多多利益計算機',
+                    app_subtitle: '利益とROI計算ツール',
+                    tab_product: '商品モデル',
+                    tab_monthly: '月次サマリー',
+                    tab_analysis: '損益分岐点分析',
+                    product_model_title: '商品利益計算',
+                    product_inputs: '商品情報',
+                    product_name: '商品名',
+                    selling_price: '販売価格 (¥)',
+                    cost_price: '原価 (¥)',
+                    shipping_fee: '配送料 (¥)',
+                    platform_fee: 'プラットフォーム手数料 (%)',
+                    promotion_cost: 'プロモーション費用 (¥)',
+                    return_rate: '返品率 (%)',
+                    refund_penalty: '返金ペナルティ率 (%)',
+                    quantity_sold: '販売数量',
+                    calculate: '利益を計算',
+                    profit_summary: '利益サマリー',
+                    gross_revenue: '総売上高',
+                    total_cost: '総原価',
+                    platform_fee_total: 'プラットフォーム総費用',
+                    return_loss: '返品損失',
+                    net_profit: '純利益',
+                    roi: 'ROI',
+                    history: '計算履歴',
+                    clear: 'クリア',
+                    product: '商品',
+                    qty: '数量',
+                    date: '日付',
+                    monthly_summary_title: '月次業務サマリー',
+                    monthly_inputs: '月次データ入力',
+                    month: '月',
+                    total_sales: '総売上高 (¥)',
+                    total_product_cost: '商品総原価 (¥)',
+                    total_shipping: '総配送料 (¥)',
+                    total_platform_fees: 'プラットフォーム総費用 (¥)',
+                    total_promotion: '総プロモーション費用 (¥)',
+                    staff_cost: 'スタッフコスト (¥)',
+                    rent_cost: '賃料と光熱費 (¥)',
+                    other_expenses: 'その他の費用 (¥)',
+                    calculate_monthly: '月次利益を計算',
+                    monthly_results: '月次結果',
+                    gross_profit: '粗利益',
+                    operating_expenses: '営業費用',
+                    net_profit_monthly: '月次純利益',
+                    profit_margin: '利益率',
+                    expense_breakdown: '費用内訳',
+                    monthly_history: '月次履歴',
+                    month_year: '月/年',
+                    sales: '売上',
+                    margin: 'マージン',
+                    break_even_title: '損益分岐点分析',
+                    fixed_costs: '固定費とパラメータ',
+                    monthly_staff: '月次スタッフコスト (¥)',
+                    monthly_rent: '月次賃料と光熱費 (¥)',
+                    other_fixed: 'その他の固定費 (¥)',
+                    avg_gross_margin: '平均粗利率 (%)',
+                    safety_margin: '安全余裕率 (%)',
+                    calculate_break_even: '損益分岐点を計算',
+                    break_even_results: '損益分岐点分析結果',
+                    total_fixed_costs: '総固定費 (¥)',
+                    break_even_sales: '損益分岐点売上高 (¥)',
+                    safety_sales: '安全売上高レベル (¥)',
+                    daily_sales_needed: '必要な毎日の売上高 (¥)',
+                    break_even_chart: '損益分岐点チャート',
+                    recommendations: '推奨事項',
+                    recommendation_1: '固定費とマージンの詳細を入力すると、個別の推奨事項が表示されます。',
+                    recommendation_2: 'すべての固定費をカバーするには、事業で毎月少なくとも {breakEven} の売上高を生み出す必要があります。',
+                    recommendation_3: '{safetyMargin}% の安全余裕率を維持するには、月間売上高を {safetySales} を目指してください。',
+                    recommendation_4: '平均粗利率が1%上がると、損益分岐点は約 {reduction}% 低下します。',
+                    toast_success: '計算が正常に完了しました',
+                    toast_error: 'すべての必須項目を入力してください'
+                },
+                'ru': {
+                    app_title: 'Калькулятор прибыли Pinduoduo',
+                    app_subtitle: 'Инструмент для расчета прибыли и ROI',
+                    tab_product: 'Модель товара',
+                    tab_monthly: 'Месячный свод',
+                    tab_analysis: 'Анализ точки безубыточности',
+                    product_model_title: 'Расчет прибыли от товара',
+                    product_inputs: 'Информация о товаре',
+                    product_name: 'Название товара',
+                    selling_price: 'Продажная цена (¥)',
+                    cost_price: ' Себестоимость (¥)',
+                    shipping_fee: 'Стоимость доставки (¥)',
+                    platform_fee: 'Плата за платформу (%)',
+                    promotion_cost: 'Стоимость продвижения (¥)',
+                    return_rate: 'Процент возвратов (%)',
+                    refund_penalty: 'Процент штрафа за возврат (%)',
+                    quantity_sold: 'Проданное количество',
+                    calculate: 'Рассчитать прибыль',
+                    profit_summary: 'Сводка прибыли',
+                    gross_revenue: 'Валовой доход',
+                    total_cost: 'Общие затраты',
+                    platform_fee_total: 'Общая плата за платформу',
+                    return_loss: 'Убыток от возвратов',
+                    net_profit: 'Чистая прибыль',
+                    roi: 'ROI',
+                    history: 'История расчетов',
+                    clear: 'Очистить',
+                    product: 'Товар',
+                    qty: 'Кол-во',
+                    date: 'Дата',
+                    monthly_summary_title: 'Месячный бизнес-анализ',
+                    monthly_inputs: 'Ввод месячных данных',
+                    month: 'Месяц',
+                    total_sales: 'Общие продажи (¥)',
+                    total_product_cost: 'Общая себестоимость товаров (¥)',
+                    total_shipping: 'Общая стоимость доставки (¥)',
+                    total_platform_fees: 'Общие платы за платформу (¥)',
+                    total_promotion: 'Общие расходы на продвижение (¥)',
+                    staff_cost: 'Зарплаты сотрудников (¥)',
+                    rent_cost: 'Аренда и коммунальные услуги (¥)',
+                    other_expenses: 'Прочие расходы (¥)',
+                    calculate_monthly: 'Рассчитать месячную прибыль',
+                    monthly_results: 'Месячные результаты',
+                    gross_profit: 'Валовая прибыль',
+                    operating_expenses: 'Операционные расходы',
+                    net_profit_monthly: 'Месячная чистая прибыль',
+                    profit_margin: 'Маржинальность',
+                    expense_breakdown: 'Структура расходов',
+                    monthly_history: 'Месячная история',
+                    month_year: 'Месяц/Год',
+                    sales: 'Продажи',
+                    margin: 'Маржинальность',
+                    break_even_title: 'Анализ точки безубыточности',
+                    fixed_costs: 'Постоянные расходы и параметры',
+                    monthly_staff: 'Ежемесячные затраты на персонал (¥)',
+                    monthly_rent: 'Ежемесячные затраты на аренду и коммунальные услуги (¥)',
+                    other_fixed: 'Прочие постоянные расходы (¥)',
+                    avg_gross_margin: 'Средняя валовая маржинальность (%)',
+                    safety_margin: 'Запас прочности (%)',
+                    calculate_break_even: 'Рассчитать точку безубыточности',
+                    break_even_results: 'Результаты анализа точки безубыточности',
+                    total_fixed_costs: 'Общие постоянные расходы (¥)',
+                    break_even_sales: 'Продажи при достижении точки безубыточности (¥)',
+                    safety_sales: 'Уровень безопасных продаж (¥)',
+                    daily_sales_needed: 'Необходимые ежедневные продажи (¥)',
+                    break_even_chart: 'Диаграмма точки безубыточности',
+                    recommendations: 'Рекомендации',
+                    recommendation_1: 'Заполните данные о постоянных расходах и маржинальности, чтобы получить индивидуальные рекомендации.',
+                    recommendation_2: 'Ваш бизнес должен генерировать не менее {breakEven} в месячных продажах, чтобы покрыть все постоянные расходы.',
+                    recommendation_3: 'Чтобы сохранить {safetyMargin}% запаса прочности, стремитесь к месячным продажам в размере {safetySales}.',
+                    recommendation_4: 'Увеличение средней валовой маржинальности на 1% уменьшит точку безубыточности примерно на {reduction}%.',
+                    toast_success: 'Расчет успешно завершен',
+                    toast_error: 'Пожалуйста, заполните все обязательные поля'
+                }
+            },
+            
+            init: function() {
+                // Try to get saved language from localStorage
+                const savedLang = localStorage.getItem('pinduoduoProfitLang');
+                if (savedLang && this.data[savedLang]) {
+                    this.currentLang = savedLang;
+                    document.getElementById('lang-select').value = savedLang;
+                }
+                this.updateTextContent();
+            },
+            
+            changeLanguage: function(lang) {
+                if (this.data[lang]) {
+                    this.currentLang = lang;
+                    localStorage.setItem('pinduoduoProfitLang', lang);
+                    this.updateTextContent();
+                }
+            },
+            
+            updateTextContent: function() {
+                const elements = document.querySelectorAll('[data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.data[this.currentLang][key]) {
+                        el.textContent = this.data[this.currentLang][key];
+                    }
+                });
+            },
+            
+            getText: function(key) {
+                return this.data[this.currentLang][key] || key;
+            }
+        };
+
+        /* --- Product Calculator Module --- */
+        const ProductCalculator = {
+            history: [],
+            
+            init: function() {
+                // Load history from localStorage
+                const saved = localStorage.getItem('pinduoduoProductHistory');
+                if (saved) {
+                    try {
+                        this.history = JSON.parse(saved);
+                        this.renderHistory();
+                    } catch (e) {
+                        console.error('Error loading product history:', e);
+                        this.history = [];
+                    }
+                }
+            },
+            
+            calculate: function() {
+                // Get input values
+                const productName = document.getElementById('product-name').value;
+                const sellingPrice = parseFloat(document.getElementById('selling-price').value) || 0;
+                const costPrice = parseFloat(document.getElementById('cost-price').value) || 0;
+                const shippingFee = parseFloat(document.getElementById('shipping-fee').value) || 0;
+                const platformFee = parseFloat(document.getElementById('platform-fee').value) || 0;
+                const promotionCost = parseFloat(document.getElementById('promotion-cost').value) || 0;
+                const returnRate = parseFloat(document.getElementById('return-rate').value) || 0;
+                const refundPenalty = parseFloat(document.getElementById('refund-penalty').value) || 0;
+                const quantitySold = parseInt(document.getElementById('quantity-sold').value) || 0;
+                
+                // Validate inputs
+                if (!productName || sellingPrice <= 0 || costPrice <= 0 || quantitySold <= 0) {
+                    showToast(I18nModule.getText('toast_error'), 'error');
+                    return;
+                }
+                
+                // Calculate values
+                const grossRevenue = sellingPrice * quantitySold;
+                const totalCost = costPrice * quantitySold;
+                const platformFeeTotal = grossRevenue * (platformFee / 100);
+                const returnLoss = (grossRevenue + shippingFee * quantitySold) * (returnRate / 100);
+                const refundPenaltyTotal = grossRevenue * (refundPenalty / 100);
+                const totalShipping = shippingFee * quantitySold;
+                
+                const totalExpenses = totalCost + totalShipping + platformFeeTotal + 
+                                    promotionCost + returnLoss + refundPenaltyTotal;
+                
+                const netProfit = grossRevenue - totalExpenses;
+                const roi = totalCost > 0 ? (netProfit / totalCost) * 100 : 0;
+                
+                // Update UI
+                document.getElementById('gross-revenue').textContent = `¥${grossRevenue.toFixed(2)}`;
+                document.getElementById('total-cost').textContent = `¥${totalCost.toFixed(2)}`;
+                document.getElementById('platform-fee-total').textContent = `¥${platformFeeTotal.toFixed(2)}`;
+                document.getElementById('return-loss').textContent = `¥${returnLoss.toFixed(2)}`;
+                document.getElementById('net-profit').textContent = `¥${netProfit.toFixed(2)}`;
+                document.getElementById('roi').textContent = `${roi.toFixed(2)}%`;
+                
+                // Add to history
+                const historyItem = {
+                    name: productName,
+                    quantity: quantitySold,
+                    profit: netProfit,
+                    date: new Date().toISOString(),
+                    formattedDate: new Date().toLocaleString()
+                };
+                
+                this.history.unshift(historyItem);
+                if (this.history.length > 10) this.history.pop();
+                
+                // Save and render history
+                localStorage.setItem('pinduoduoProductHistory', JSON.stringify(this.history));
+                this.renderHistory();
+                
+                showToast(I18nModule.getText('toast_success'));
+            },
+            
+            renderHistory: function() {
+                const container = document.getElementById('product-history');
+                container.innerHTML = '';
+                
+                this.history.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-slate-50 transition';
+                    row.innerHTML = `
+                        <td class="px-3 py-3">${item.name}</td>
+                        <td class="px-3 py-3">${item.quantity}</td>
+                        <td class="px-3 py-3 font-medium ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ¥${item.profit.toFixed(2)}
+                        </td>
+                        <td class="px-3 py-3 text-slate-500 text-sm">${item.formattedDate}</td>
+                    `;
+                    container.appendChild(row);
+                });
+            },
+            
+            clearHistory: function() {
+                this.history = [];
+                localStorage.removeItem('pinduoduoProductHistory');
+                this.renderHistory();
+                showToast(I18nModule.getText('toast_success'));
+            }
+        };
+
+        /* --- Monthly Calculator Module --- */
+        const MonthlyCalculator = {
+            history: [],
+            expenseChart: null,
+            
+            init: function() {
+                // Set default month to current month
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                document.getElementById('summary-month').value = `${year}-${month}`;
+                
+                // Load history from localStorage
+                const saved = localStorage.getItem('pinduoduoMonthlyHistory');
+                if (saved) {
+                    try {
+                        this.history = JSON.parse(saved);
+                        this.renderHistory();
+                    } catch (e) {
+                        console.error('Error loading monthly history:', e);
+                        this.history = [];
+                    }
+                }
+                
+                // Initialize chart
+                this.initChart();
+            },
+            
+            initChart: function() {
+                const ctx = document.getElementById('expense-chart').getContext('2d');
+                this.expenseChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: [
+                            I18nModule.getText('total_product_cost'),
+                            I18nModule.getText('total_shipping'),
+                            I18nModule.getText('total_platform_fees'),
+                            I18nModule.getText('total_promotion'),
+                            I18nModule.getText('staff_cost'),
+                            I18nModule.getText('rent_cost'),
+                            I18nModule.getText('other_expenses')
+                        ],
+                        datasets: [{
+                            data: [0, 0, 0, 0, 0, 0, 0],
+                            backgroundColor: [
+                                '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+                                '#8b5cf6', '#ec4899', '#64748b'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 12,
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            calculate: function() {
+                // Get input values
+                const month = document.getElementById('summary-month').value;
+                const totalSales = parseFloat(document.getElementById('total-sales').value) || 0;
+                const totalProductCost = parseFloat(document.getElementById('total-product-cost').value) || 0;
+                const totalShipping = parseFloat(document.getElementById('total-shipping').value) || 0;
+                const totalPlatformFees = parseFloat(document.getElementById('total-platform-fees').value) || 0;
+                const totalPromotion = parseFloat(document.getElementById('total-promotion').value) || 0;
+                const staffCost = parseFloat(document.getElementById('staff-cost').value) || 0;
+                const rentCost = parseFloat(document.getElementById('rent-cost').value) || 0;
+                const otherExpenses = parseFloat(document.getElementById('other-expenses').value) || 0;
+                
+                // Validate inputs
+                if (!month || totalSales <= 0) {
+                    showToast(I18nModule.getText('toast_error'), 'error');
+                    return;
+                }
+                
+                // Calculate values
+                const grossProfit = totalSales - totalProductCost - totalShipping - totalPlatformFees;
+                const operatingExpenses = totalPromotion + staffCost + rentCost + otherExpenses;
+                const netProfit = grossProfit - operatingExpenses;
+                const profitMargin = totalSales > 0 ? (netProfit / totalSales) * 100 : 0;
+                
+                // Update UI
+                document.getElementById('monthly-gross-profit').textContent = `¥${grossProfit.toFixed(2)}`;
+                document.getElementById('operating-expenses').textContent = `¥${operatingExpenses.toFixed(2)}`;
+                document.getElementById('monthly-net-profit').textContent = `¥${netProfit.toFixed(2)}`;
+                document.getElementById('profit-margin').textContent = `${profitMargin.toFixed(2)}%`;
+                
+                // Update chart
+                this.expenseChart.data.datasets[0].data = [
+                    totalProductCost, totalShipping, totalPlatformFees,
+                    totalPromotion, staffCost, rentCost, otherExpenses
+                ];
+                this.expenseChart.update();
+                
+                // Format month for display
+                const [year, monthNum] = month.split('-');
+                const formattedMonth = `${year}-${monthNum}`;
+                
+                // Add to history (replace if same month)
+                const existingIndex = this.history.findIndex(item => item.month === month);
+                const historyItem = {
+                    month,
+                    formattedMonth,
+                    sales: totalSales,
+                    profit: netProfit,
+                    margin: profitMargin,
+                    date: new Date().toISOString()
+                };
+                
+                if (existingIndex >= 0) {
+                    this.history[existingIndex] = historyItem;
+                } else {
+                    this.history.push(historyItem);
+                    // Sort by month (newest first)
+                    this.history.sort((a, b) => b.month.localeCompare(a.month));
+                }
+                
+                // Save and render history
+                localStorage.setItem('pinduoduoMonthlyHistory', JSON.stringify(this.history));
+                this.renderHistory();
+                
+                showToast(I18nModule.getText('toast_success'));
+            },
+            
+            renderHistory: function() {
+                const container = document.getElementById('monthly-history');
+                container.innerHTML = '';
+                
+                this.history.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-slate-50 transition';
+                    row.innerHTML = `
+                        <td class="px-3 py-3">${item.formattedMonth}</td>
+                        <td class="px-3 py-3">¥${item.sales.toFixed(2)}</td>
+                        <td class="px-3 py-3 font-medium ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ¥${item.profit.toFixed(2)}
+                        </td>
+                        <td class="px-3 py-3">${item.margin.toFixed(2)}%</td>
+                    `;
+                    container.appendChild(row);
+                });
+            },
+            
+            clearHistory: function() {
+                this.history = [];
+                localStorage.removeItem('pinduoduoMonthlyHistory');
+                this.renderHistory();
+                showToast(I18nModule.getText('toast_success'));
+            }
+        };
+
+        /* --- Break-even Calculator Module --- */
+        const BreakEvenCalculator = {
+            chart: null,
+            
+            init: function() {
+                // Initialize chart
+                const ctx = document.getElementById('break-even-chart').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 12}, (_, i) => (i + 1) * 1000),
+                        datasets: [
+                            {
+                                label: I18nModule.getText('total_fixed_costs'),
+                                data: Array.from({length: 12}, () => 0),
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.1
+                            },
+                            {
+                                label: I18nModule.getText('gross_profit'),
+                                data: Array.from({length: 12}, (_, i) => 0),
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: I18nModule.getText('total_cost')
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: I18nModule.getText('total_sales')
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            calculate: function() {
+                // Get input values
+                const staffCost = parseFloat(document.getElementById('analysis-staff').value) || 0;
+                const rentCost = parseFloat(document.getElementById('analysis-rent').value) || 0;
+                const otherFixed = parseFloat(document.getElementById('analysis-other-fixed').value) || 0;
+                const avgGrossMargin = parseFloat(document.getElementById('avg-gross-margin').value) || 0;
+                const safetyMargin = parseFloat(document.getElementById('safety-margin').value) || 0;
+                
+                // Validate inputs
+                if (avgGrossMargin <= 0) {
+                    showToast(I18nModule.getText('toast_error'), 'error');
+                    return;
+                }
+                
+                // Calculate values
+                const totalFixedCosts = staffCost + rentCost + otherFixed;
+                const breakEvenSales = totalFixedCosts / (avgGrossMargin / 100);
+                const safetySales = breakEvenSales * (1 + safetyMargin / 100);
+                const dailySalesNeeded = breakEvenSales / 30; // Assuming 30 days in month
+                const reductionPercentage = (1 / (1 + (avgGrossMargin / 100))) * 100;
+                
+                // Update UI
+                document.getElementById('total-fixed-costs').textContent = `¥${totalFixedCosts.toFixed(2)}`;
+                document.getElementById('break-even-sales').textContent = `¥${breakEvenSales.toFixed(2)}`;
+                document.getElementById('safety-sales').textContent = `¥${safetySales.toFixed(2)}`;
+                document.getElementById('daily-sales-needed').textContent = `¥${dailySalesNeeded.toFixed(2)}`;
+                
+                // Update chart
+                const salesLevels = Array.from({length: 12}, (_, i) => breakEvenSales * 0.5 * (i + 1));
+                const fixedCostsLine = Array.from({length: 12}, () => totalFixedCosts);
+                const grossProfitLine = salesLevels.map(sales => sales * (avgGrossMargin / 100));
+                
+                this.chart.data.labels = salesLevels.map(v => v.toFixed(0));
+                this.chart.data.datasets[0].data = fixedCostsLine;
+                this.chart.data.datasets[1].data = grossProfitLine;
+                this.chart.update();
+                
+                // Update recommendations
+                this.updateRecommendations(breakEvenSales, safetyMargin, safetySales, reductionPercentage);
+                
+                showToast(I18nModule.getText('toast_success'));
+            },
+            
+            updateRecommendations: function(breakEven, safetyMargin, safetySales, reduction) {
+                const container = document.getElementById('recommendations-list');
+                container.innerHTML = '';
+                
+                // Format currency values
+                const breakEvenFormatted = `¥${breakEven.toFixed(2)}`;
+                const safetySalesFormatted = `¥${safetySales.toFixed(2)}`;
+                
+                // Create recommendations
+                const recommendations = [
+                    I18nModule.getText('recommendation_2')
+                        .replace('{breakEven}', breakEvenFormatted),
+                    I18nModule.getText('recommendation_3')
+                        .replace('{safetyMargin}', safetyMargin.toFixed(0))
+                        .replace('{safetySales}', safetySalesFormatted),
+                    I18nModule.getText('recommendation_4')
+                        .replace('{reduction}', reduction.toFixed(1))
+                ];
+                
+                recommendations.forEach(text => {
+                    const item = document.createElement('div');
+                    item.className = 'bg-white p-3 rounded-lg border border-slate-100 flex items-start gap-2';
+                    item.innerHTML = `<i class="fa-solid fa-lightbulb text-yellow-500 mt-0.5"></i><p>${text}</p>`;
+                    container.appendChild(item);
+                });
+            }
+        };
+
+        // Initialize all modules when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            I18nModule.init();
+            ProductCalculator.init();
+            MonthlyCalculator.init();
+            BreakEvenCalculator.init();
+            
+            // Set current month as default
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            document.getElementById('summary-month').value = `${year}-${month}`;
+        });
+    </script>
+</body>
+</html>
