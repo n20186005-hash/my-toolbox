@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zener Diode Current Limiting Resistor Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="zener_resistor">
+    <meta name="category" content="electronics">
+    <meta name="icon" content="💡">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Zener Diode Current Limiting Resistor Calculator">
+    <meta name="description" content="Calculate the required current limiting resistor for a zener diode voltage regulator.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="稳压管限流电阻计算器">
+    <meta name="lang-description-zh-CN" content="计算稳压二极管稳压器所需的限流电阻。">
+    
+    <meta name="lang-title-zh-TW" content="穩壓管限流電阻計算器">
+    <meta name="lang-description-zh-TW" content="計算穩壓二極體穩壓器所需的限流電阻。">
+    
+    <meta name="lang-title-ja" content="ツェナーダイオード限流抵抗計算ツール">
+    <meta name="lang-description-ja" content="ツェナーダイオード電圧レギュレータに必要な限流抵抗を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор限流ного резистора для диода Зенера">
+    <meta name="lang-description-ru" content="Вычислите необходимый限流ный резистор для стабилизатора напряжения на диоде Зенера.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="zener_resistor" 
+         data-category="electronics" 
+         data-title="Zener Diode Current Limiting Resistor Calculator" 
+         data-icon="💡">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="zener-lang" onchange="ZenerCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">💡 Zener Diode Current Limiting Resistor Calculator</h2>
+        
+        <div class="space-y-4">
+            <div class="mb-4">
+                <label for="input-voltage" class="block text-gray-700 mb-2" data-i18n="input_voltage_label">Input Voltage (Vin, V)</label>
+                <input type="number" step="any" id="input-voltage" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div class="mb-4">
+                <label for="zener-voltage" class="block text-gray-700 mb-2" data-i18n="zener_voltage_label">Zener Voltage (Vz, V)</label>
+                <input type="number" step="any" id="zener-voltage" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div class="mb-4">
+                <label for="max-current" class="block text-gray-700 mb-2" data-i18n="max_current_label">Max Load Current (ILmax, mA)</label>
+                <input type="number" step="any" id="max-current" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div class="mb-4">
+                <label for="zener-current" class="block text-gray-700 mb-2" data-i18n="zener_current_label">Zener Current (Iz, mA)</label>
+                <input type="number" step="any" id="zener-current" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                <p class="text-xs text-gray-500 mt-1" data-i18n="zener_current_note">Typically 5-10mA for small zeners</p>
+            </div>
+            
+            <button onclick="ZenerCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Resistor</button>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="resistance_label">Required Resistance</div>
+                    <div id="required-resistance" class="text-2xl font-bold text-blue-800">-- Ω</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="power_label">Power Rating</div>
+                    <div id="power-rating" class="text-2xl font-bold text-green-800">-- W</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ZenerCalc = {
+            i18n: {
+                'en': {
+                    title: '💡 Zener Diode Current Limiting Resistor Calculator',
+                    input_voltage_label: 'Input Voltage (Vin, V)',
+                    zener_voltage_label: 'Zener Voltage (Vz, V)',
+                    max_current_label: 'Max Load Current (ILmax, mA)',
+                    zener_current_label: 'Zener Current (Iz, mA)',
+                    zener_current_note: 'Typically 5-10mA for small zeners',
+                    btn_calc: 'Calculate Resistor',
+                    resistance_label: 'Required Resistance',
+                    power_label: 'Power Rating',
+                    err_invalid_input: 'Please enter valid positive values',
+                    err_voltage_check: 'Input voltage must be greater than zener voltage'
+                },
+                'zh-CN': {
+                    title: '💡 稳压管限流电阻计算器',
+                    input_voltage_label: '输入电压 (Vin, V)',
+                    zener_voltage_label: '稳压管电压 (Vz, V)',
+                    max_current_label: '最大负载电流 (ILmax, mA)',
+                    zener_current_label: '稳压管电流 (Iz, mA)',
+                    zener_current_note: '小型稳压管通常为5-10mA',
+                    btn_calc: '计算电阻',
+                    resistance_label: '所需电阻值',
+                    power_label: '功率额定值',
+                    err_invalid_input: '请输入有效的正值',
+                    err_voltage_check: '输入电压必须大于稳压管电压'
+                },
+                'zh-TW': {
+                    title: '💡 穩壓管限流電阻計算器',
+                    input_voltage_label: '輸入電壓 (Vin, V)',
+                    zener_voltage_label: '穩壓管電壓 (Vz, V)',
+                    max_current_label: '最大負載電流 (ILmax, mA)',
+                    zener_current_label: '穩壓管電流 (Iz, mA)',
+                    zener_current_note: '小型穩壓管通常為5-10mA',
+                    btn_calc: '計算電阻',
+                    resistance_label: '所需電阻值',
+                    power_label: '功率額定值',
+                    err_invalid_input: '請輸入有效的正值',
+                    err_voltage_check: '輸入電壓必須大於穩壓管電壓'
+                },
+                'ja': {
+                    title: '💡 ツェナーダイオード限流抵抗計算ツール',
+                    input_voltage_label: '入力電圧 (Vin, V)',
+                    zener_voltage_label: 'ツェナー電圧 (Vz, V)',
+                    max_current_label: '最大負荷電流 (ILmax, mA)',
+                    zener_current_label: 'ツェナー電流 (Iz, mA)',
+                    zener_current_note: '小型ツェナーダイオードの場合は通常5-10mA',
+                    btn_calc: '抵抗を計算',
+                    resistance_label: '必要な抵抗値',
+                    power_label: '定格電力',
+                    err_invalid_input: '有効な正数を入力してください',
+                    err_voltage_check: '入力電圧はツェナー電圧より大きくなければなりません'
+                },
+                'ru': {
+                    title: '💡 Калькулятор限流ного резистора для диода Зенера',
+                    input_voltage_label: 'Входное напряжение (Vin, V)',
+                    zener_voltage_label: 'Напряжение Зенера (Vz, V)',
+                    max_current_label: 'Максимальный ток нагрузки (ILmax, мА)',
+                    zener_current_label: 'Ток диода Зенера (Iz, мА)',
+                    zener_current_note: 'Обычно 5-10 мА для небольших диодов Зенера',
+                    btn_calc: 'Вычислить резистор',
+                    resistance_label: 'Требуемое сопротивление',
+                    power_label: 'Номинальная мощность',
+                    err_invalid_input: 'Введите действительные положительные значения',
+                    err_voltage_check: 'Входное напряжение должно быть больше напряжения Зенера'
+                }
+            },
+
+            init: () => {
+                // 初始化操作
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('zener-lang').value;
+                const texts = ZenerCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="zener_resistor"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        el.innerText = texts[key];
+                    }
+                });
+
+                // 如果已有计算结果，重新计算
+                const result = document.getElementById('required-resistance').innerText;
+                if (result !== '-- Ω') {
+                    ZenerCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const lang = document.getElementById('zener-lang').value;
+                const texts = ZenerCalc.i18n[lang];
+                
+                // 获取输入值
+                const vin = parseFloat(document.getElementById('input-voltage').value);
+                const vz = parseFloat(document.getElementById('zener-voltage').value);
+                const ilmax = parseFloat(document.getElementById('max-current').value);
+                const iz = parseFloat(document.getElementById('zener-current').value);
+                
+                // 验证输入
+                if (isNaN(vin) || isNaN(vz) || isNaN(ilmax) || isNaN(iz) || 
+                    vin <= 0 || vz <= 0 || ilmax <= 0 || iz <= 0) {
+                    document.getElementById('required-resistance').innerText = texts.err_invalid_input;
+                    document.getElementById('power-rating').innerText = '';
+                    return;
+                }
+                
+                // 验证电压关系
+                if (vin <= vz) {
+                    document.getElementById('required-resistance').innerText = texts.err_voltage_check;
+                    document.getElementById('power-rating').innerText = '';
+                    return;
+                }
+                
+                // 计算限流电阻: R = (Vin - Vz) / (ILmax + Iz) 
+                // 注意：电流单位转换为安培 (mA -> A)
+                const totalCurrentA = (ilmax + iz) / 1000;
+                const resistance = (vin - vz) / totalCurrentA;
+                
+                // 计算功率: P = (Vin - Vz)² / R
+                const power = Math.pow(vin - vz, 2) / resistance;
+                
+                // 显示结果（电阻取整，功率保留两位小数）
+                document.getElementById('required-resistance').innerText = Math.ceil(resistance) + ' Ω';
+                document.getElementById('power-rating').innerText = power.toFixed(2) + ' W';
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', ZenerCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('zener-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    ZenerCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

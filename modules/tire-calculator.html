@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tire Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="tire_calc">
+    <meta name="category" content="automotive">
+    <meta name="icon" content="🚗">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Tire Calculator">
+    <meta name="description" content="Calculate tire size specifications and comparisons.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="轮胎计算器">
+    <meta name="lang-description-zh-CN" content="计算轮胎尺寸规格和比较。">
+    
+    <meta name="lang-title-zh-TW" content="輪胎計算器">
+    <meta name="lang-description-zh-TW" content="計算輪胎尺寸規格和比較。">
+    
+    <meta name="lang-title-ja" content="タイヤ計算ツール">
+    <meta name="lang-description-ja" content="タイヤサイズの仕様と比較を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор шин">
+    <meta name="lang-description-ru" content="Вычислите спецификации и сравнения размеров шин.">
+    
+    <meta name="lang-title-es" content="Calculadora de Neumáticos">
+    <meta name="lang-description-es" content="Calcule especificaciones y comparaciones de tamaños de neumáticos.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .tire-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; font-medium text-gray-700; }
+        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        .result-card { background: #f9f9f9; padding: 12px; border-radius: 6px; }
+        .result-card h4 { margin-top: 0; color: #444; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="tire_calc" 
+         data-category="automotive" 
+         data-title="Tire Calculator" 
+         data-icon="🚗">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="tire-lang" onchange="TireCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🚗 Tire Calculator</h2>
+        
+        <div class="space-y-4">
+            <p data-i18n="instructions">Enter tire dimensions in the format Width/Aspect Ratio/Rim Size (e.g., 205/55R16)</p>
+            
+            <div class="input-group">
+                <label data-i18n="tire_size">Tire Size</label>
+                <div class="tire-inputs">
+                    <div>
+                        <label data-i18n="width">Width (mm)</label>
+                        <input type="number" id="tire-width" class="focus:ring-2 focus:ring-blue-500 outline-none" value="205" min="100" max="500">
+                    </div>
+                    <div>
+                        <label data-i18n="aspect_ratio">Aspect Ratio (%)</label>
+                        <input type="number" id="aspect-ratio" class="focus:ring-2 focus:ring-blue-500 outline-none" value="55" min="30" max="90">
+                    </div>
+                    <div>
+                        <label data-i18n="rim_size">Rim Size (in)</label>
+                        <input type="number" id="rim-size" class="focus:ring-2 focus:ring-blue-500 outline-none" value="16" min="10" max="30">
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="TireCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Tire Specs</button>
+
+            <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="result_label">Tire Specifications</div>
+                
+                <div class="result-grid">
+                    <div class="result-card">
+                        <h4 data-i18n="overall_diameter">Overall Diameter</h4>
+                        <div id="tire-diameter" class="text-xl font-bold text-blue-800">-- mm</div>
+                    </div>
+                    <div class="result-card">
+                        <h4 data-i18n="section_height">Section Height</h4>
+                        <div id="section-height" class="text-xl font-bold text-blue-800">-- mm</div>
+                    </div>
+                    <div class="result-card">
+                        <h4 data-i18n="circumference">Circumference</h4>
+                        <div id="circumference" class="text-xl font-bold text-blue-800">-- mm</div>
+                    </div>
+                    <div class="result-card">
+                        <h4 data-i18n="revolutions">Revolutions per KM</h4>
+                        <div id="revolutions" class="text-xl font-bold text-blue-800">--</div>
+                    </div>
+                </div>
+                
+                <div id="error-message" class="text-red-600 mt-4 text-center" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TireCalc = {
+            i18n: {
+                'en': {
+                    title: '🚗 Tire Calculator',
+                    instructions: 'Enter tire dimensions in the format Width/Aspect Ratio/Rim Size (e.g., 205/55R16)',
+                    tire_size: 'Tire Size',
+                    width: 'Width (mm)',
+                    aspect_ratio: 'Aspect Ratio (%)',
+                    rim_size: 'Rim Size (in)',
+                    btn_calc: 'Calculate Tire Specs',
+                    result_label: 'Tire Specifications',
+                    overall_diameter: 'Overall Diameter',
+                    section_height: 'Section Height',
+                    circumference: 'Circumference',
+                    revolutions: 'Revolutions per KM',
+                    err_invalid: 'Please enter valid tire dimensions'
+                },
+                'zh-CN': {
+                    title: '🚗 轮胎计算器',
+                    instructions: '以宽度/扁平比/轮毂尺寸格式输入轮胎尺寸（例如，205/55R16）',
+                    tire_size: '轮胎尺寸',
+                    width: '宽度 (毫米)',
+                    aspect_ratio: '扁平比 (%)',
+                    rim_size: '轮毂尺寸 (英寸)',
+                    btn_calc: '计算轮胎规格',
+                    result_label: '轮胎规格',
+                    overall_diameter: '总直径',
+                    section_height: '截面高度',
+                    circumference: '周长',
+                    revolutions: '每公里转数',
+                    err_invalid: '请输入有效的轮胎尺寸'
+                },
+                'zh-TW': {
+                    title: '🚗 輪胎計算器',
+                    instructions: '以寬度/扁平比/輪轂尺寸格式輸入輪胎尺寸（例如，205/55R16）',
+                    tire_size: '輪胎尺寸',
+                    width: '寬度 (毫米)',
+                    aspect_ratio: '扁平比 (%)',
+                    rim_size: '輪轂尺寸 (英寸)',
+                    btn_calc: '計算輪胎規格',
+                    result_label: '輪胎規格',
+                    overall_diameter: '總直徑',
+                    section_height: '截面高度',
+                    circumference: '周長',
+                    revolutions: '每公里轉數',
+                    err_invalid: '請輸入有效的輪胎尺寸'
+                },
+                'ja': {
+                    title: '🚗 タイヤ計算ツール',
+                    instructions: '幅/アスペクト比/リムサイズ形式でタイヤ寸法を入力してください（例：205/55R16）',
+                    tire_size: 'タイヤサイズ',
+                    width: '幅 (mm)',
+                    aspect_ratio: 'アスペクト比 (%)',
+                    rim_size: 'リムサイズ (インチ)',
+                    btn_calc: 'タイヤ仕様を計算',
+                    result_label: 'タイヤ仕様',
+                    overall_diameter: '全直径',
+                    section_height: 'セクション高さ',
+                    circumference: '円周',
+                    revolutions: '1kmあたりの回転数',
+                    err_invalid: '有効なタイヤ寸法を入力してください'
+                },
+                'ru': {
+                    title: '🚗 Калькулятор шин',
+                    instructions: 'Введите размеры шины в формате Ширина/Профиль/Размер диска (например, 205/55R16)',
+                    tire_size: 'Размер шины',
+                    width: 'Ширина (мм)',
+                    aspect_ratio: 'Профиль (%)',
+                    rim_size: 'Размер диска (дюймы)',
+                    btn_calc: 'Вычислить спецификации шины',
+                    result_label: 'Спецификации шины',
+                    overall_diameter: 'Общий диаметр',
+                    section_height: 'Высота профиля',
+                    circumference: 'Окружность',
+                    revolutions: 'Оборотов на км',
+                    err_invalid: 'Пожалуйста, введите действительные размеры шины'
+                },
+                'es': {
+                    title: '🚗 Calculadora de Neumáticos',
+                    instructions: 'Ingrese las dimensiones del neumático en el formato Ancho/Relación de aspecto/Tamaño de llanta (ej: 205/55R16)',
+                    tire_size: 'Tamaño del neumático',
+                    width: 'Ancho (mm)',
+                    aspect_ratio: 'Relación de aspecto (%)',
+                    rim_size: 'Tamaño de llanta (pulgadas)',
+                    btn_calc: 'Calcular especificaciones',
+                    result_label: 'Especificaciones del neumático',
+                    overall_diameter: 'Diámetro total',
+                    section_height: 'Altura de sección',
+                    circumference: 'Circunferencia',
+                    revolutions: 'Revoluciones por KM',
+                    err_invalid: 'Por favor, ingrese dimensiones válidas del neumático'
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('tire-lang').value;
+                const texts = TireCalc.i18n[lang];
+                document.querySelectorAll('[data-id="tire_calc"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            calc: () => {
+                const lang = document.getElementById('tire-lang').value;
+                const texts = TireCalc.i18n[lang];
+                
+                // 获取输入值
+                const width = parseFloat(document.getElementById('tire-width').value);
+                const aspectRatio = parseFloat(document.getElementById('aspect-ratio').value);
+                const rimSize = parseFloat(document.getElementById('rim-size').value);
+                
+                // 验证输入
+                if (isNaN(width) || isNaN(aspectRatio) || isNaN(rimSize) || 
+                    width <= 0 || aspectRatio <= 0 || rimSize <= 0) {
+                    document.getElementById('error-message').innerText = texts.err_invalid;
+                    document.getElementById('error-message').style.display = 'block';
+                    return;
+                }
+                
+                // 隐藏错误消息
+                document.getElementById('error-message').style.display = 'none';
+                
+                // 计算轮胎规格
+                const sectionHeight = (width * aspectRatio) / 100; // 截面高度(mm)
+                const rimSizeMm = rimSize * 25.4; // 轮毂尺寸转换为毫米
+                const overallDiameter = sectionHeight * 2 + rimSizeMm; // 总直径(mm)
+                const circumference = overallDiameter * Math.PI; // 周长(mm)
+                const revolutions = 1000000 / circumference; // 每公里转数(1公里=1,000,000毫米)
+                
+                // 更新结果
+                document.getElementById('section-height').innerText = sectionHeight.toFixed(1) + ' mm';
+                document.getElementById('tire-diameter').innerText = overallDiameter.toFixed(1) + ' mm';
+                document.getElementById('circumference').innerText = circumference.toFixed(1) + ' mm';
+                document.getElementById('revolutions').innerText = revolutions.toFixed(1);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', TireCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('tire-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    TireCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

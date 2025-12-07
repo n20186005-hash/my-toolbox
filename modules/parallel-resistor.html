@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallel Resistor Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="parallel_resistor">
+    <meta name="category" content="electronics">
+    <meta name="icon" content="🔌">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Parallel Resistor Calculator">
+    <meta name="description" content="Calculate the equivalent resistance of parallel resistors.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="并联电阻计算器">
+    <meta name="lang-description-zh-CN" content="计算并联电阻的等效电阻值。">
+    
+    <meta name="lang-title-zh-TW" content="並聯電阻計算器">
+    <meta name="lang-description-zh-TW" content="計算並聯電阻的等效電阻值。">
+    
+    <meta name="lang-title-ja" content="並列抵抗計算ツール">
+    <meta name="lang-description-ja" content="並列抵抗の等価抵抗値を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор параллельных резисторов">
+    <meta name="lang-description-ru" content="Вычислите эквивалентное сопротивление параллельных резисторов.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .resistor-input { display: flex; gap: 10px; align-items: center; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="parallel_resistor" 
+         data-category="electronics" 
+         data-title="Parallel Resistor Calculator" 
+         data-icon="🔌">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="resistor-lang" onchange="ResistorCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔌 Parallel Resistor Calculator</h2>
+        
+        <div class="space-y-4">
+            <div id="resistor-inputs" class="space-y-3">
+                <div class="resistor-input">
+                    <input type="number" step="any" placeholder="Resistance (Ω)" class="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" data-i18n-placeholder="resistance_placeholder">
+                    <button type="button" onclick="ResistorCalc.removeInput(this)" class="text-red-500 hover:text-red-700">×</button>
+                </div>
+            </div>
+            
+            <button type="button" onclick="ResistorCalc.addInput()" class="w-full bg-gray-200 text-gray-800 py-2 rounded font-medium hover:bg-gray-300 transition mb-4" data-i18n="add_resistor">Add Resistor</button>
+            
+            <button onclick="ResistorCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Equivalent Resistance</button>
+
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="equivalent_label">Equivalent Resistance</div>
+                <div id="equivalent-resistance" class="text-2xl font-bold text-blue-800">-- Ω</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ResistorCalc = {
+            i18n: {
+                'en': {
+                    title: '🔌 Parallel Resistor Calculator',
+                    resistance_placeholder: 'Resistance (Ω)',
+                    add_resistor: 'Add Resistor',
+                    btn_calc: 'Calculate Equivalent Resistance',
+                    equivalent_label: 'Equivalent Resistance',
+                    err_no_values: 'Please enter at least one resistance value',
+                    err_invalid_value: 'Please enter valid positive numbers'
+                },
+                'zh-CN': {
+                    title: '🔌 并联电阻计算器',
+                    resistance_placeholder: '电阻值 (Ω)',
+                    add_resistor: '添加电阻',
+                    btn_calc: '计算等效电阻',
+                    equivalent_label: '等效电阻',
+                    err_no_values: '请至少输入一个电阻值',
+                    err_invalid_value: '请输入有效的正数'
+                },
+                'zh-TW': {
+                    title: '🔌 並聯電阻計算器',
+                    resistance_placeholder: '電阻值 (Ω)',
+                    add_resistor: '添加電阻',
+                    btn_calc: '計算等效電阻',
+                    equivalent_label: '等效電阻',
+                    err_no_values: '請至少輸入一個電阻值',
+                    err_invalid_value: '請輸入有效的正數'
+                },
+                'ja': {
+                    title: '🔌 並列抵抗計算ツール',
+                    resistance_placeholder: '抵抗値 (Ω)',
+                    add_resistor: '抵抗を追加',
+                    btn_calc: '等価抵抗を計算',
+                    equivalent_label: '等価抵抗',
+                    err_no_values: '少なくとも1つの抵抗値を入力してください',
+                    err_invalid_value: '有効な正数を入力してください'
+                },
+                'ru': {
+                    title: '🔌 Калькулятор параллельных резисторов',
+                    resistance_placeholder: 'Сопротивление (Ω)',
+                    add_resistor: 'Добавить резистор',
+                    btn_calc: 'Вычислить эквивалентное сопротивление',
+                    equivalent_label: 'Эквивалентное сопротивление',
+                    err_no_values: 'Введите хотя бы одно значение сопротивления',
+                    err_invalid_value: 'Введите действительные положительные числа'
+                }
+            },
+
+            init: () => {
+                // 初始添加两个电阻输入框
+                for (let i = 1; i < 2; i++) {
+                    ResistorCalc.addInput();
+                }
+                ResistorCalc.updatePlaceholders();
+            },
+
+            addInput: () => {
+                const container = document.getElementById('resistor-inputs');
+                const inputGroup = document.createElement('div');
+                inputGroup.className = 'resistor-input';
+                inputGroup.innerHTML = `
+                    <input type="number" step="any" placeholder="" class="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" data-i18n-placeholder="resistance_placeholder">
+                    <button type="button" onclick="ResistorCalc.removeInput(this)" class="text-red-500 hover:text-red-700">×</button>
+                `;
+                container.appendChild(inputGroup);
+                ResistorCalc.updatePlaceholders();
+            },
+
+            removeInput: (button) => {
+                const container = document.getElementById('resistor-inputs');
+                if (container.children.length > 1) {
+                    container.removeChild(button.parentElement);
+                }
+            },
+
+            updatePlaceholders: () => {
+                const lang = document.getElementById('resistor-lang').value;
+                const texts = ResistorCalc.i18n[lang];
+                const placeholders = document.querySelectorAll('[data-i18n-placeholder="resistance_placeholder"]');
+                placeholders.forEach(el => {
+                    el.placeholder = texts.resistance_placeholder;
+                });
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('resistor-lang').value;
+                const texts = ResistorCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="parallel_resistor"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        el.innerText = texts[key];
+                    }
+                });
+
+                ResistorCalc.updatePlaceholders();
+                
+                // 如果已有计算结果，重新计算
+                const result = document.getElementById('equivalent-resistance').innerText;
+                if (result !== '-- Ω') {
+                    ResistorCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const lang = document.getElementById('resistor-lang').value;
+                const texts = ResistorCalc.i18n[lang];
+                const inputs = document.querySelectorAll('#resistor-inputs input');
+                const values = [];
+                
+                // 收集有效电阻值
+                inputs.forEach(input => {
+                    const value = parseFloat(input.value);
+                    if (!isNaN(value) && value > 0) {
+                        values.push(value);
+                    }
+                });
+                
+                // 验证输入
+                if (values.length === 0) {
+                    document.getElementById('equivalent-resistance').innerText = texts.err_no_values;
+                    return;
+                }
+                
+                // 计算并联电阻：1/Rt = 1/R1 + 1/R2 + ... + 1/Rn
+                let reciprocalSum = 0;
+                values.forEach(r => {
+                    reciprocalSum += 1 / r;
+                });
+                const equivalent = 1 / reciprocalSum;
+                
+                // 显示结果（保留两位小数）
+                document.getElementById('equivalent-resistance').innerText = equivalent.toFixed(2) + ' Ω';
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', ResistorCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('resistor-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    ResistorCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

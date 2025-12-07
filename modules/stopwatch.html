@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="stopwatch">
+    <meta name="category" content="tools">
+    <meta name="icon" content="⏱️">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Online Stopwatch">
+    <meta name="description" content="A simple online stopwatch with start, stop, reset and lap functions.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="在线秒表">
+    <meta name="lang-description-zh-CN" content="一个简单的在线秒表，具有开始、停止、重置和计圈功能。">
+    
+    <meta name="lang-title-zh-TW" content="在線秒錶">
+    <meta name="lang-description-zh-TW" content="一個簡單的在線秒錶，具有開始、停止、重置和計圈功能。">
+    
+    <meta name="lang-title-ja" content="オンラインストップウォッチ">
+    <meta name="lang-description-ja" content="開始、停止、リセット、ラップ機能を備えたシンプルなオンラインストップウォッチ。">
+    
+    <meta name="lang-title-ru" content="Онлайн-стопватч">
+    <meta name="lang-description-ru" content="Простой онлайн-стопватч с функциями запуска, остановки, сброса и кругов.">
+    
+    <meta name="lang-title-es" content="Cronómetro en línea">
+    <meta name="lang-description-es" content="Un cronómetro en línea simple con funciones de inicio, parada, reinicio y vuelta.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .time-display { font-size: 4rem; text-align: center; font-family: monospace; margin: 30px 0; color: #333; }
+        .controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 30px; }
+        .control-btn { padding: 10px 20px; border-radius: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .laps { max-height: 200px; overflow-y: auto; margin-top: 20px; padding: 10px; border: 1px solid #eee; border-radius: 5px; }
+        .lap-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .lap-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="stopwatch" 
+         data-category="tools" 
+         data-title="Online Stopwatch" 
+         data-icon="⏱️">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="stopwatch-lang" onchange="Stopwatch.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">⏱️ Online Stopwatch</h2>
+        
+        <div class="space-y-4">
+            <div class="time-display" id="time-display">00:00:00.00</div>
+            
+            <div class="controls">
+                <button onclick="Stopwatch.start()" class="control-btn bg-green-600 text-white hover:bg-green-700" data-i18n="start">Start</button>
+                <button onclick="Stopwatch.stop()" class="control-btn bg-red-600 text-white hover:bg-red-700" data-i18n="stop" disabled>Stop</button>
+                <button onclick="Stopwatch.reset()" class="control-btn bg-gray-600 text-white hover:bg-gray-700" data-i18n="reset">Reset</button>
+                <button onclick="Stopwatch.lap()" class="control-btn bg-blue-600 text-white hover:bg-blue-700" data-i18n="lap" disabled>Lap</button>
+            </div>
+            
+            <div>
+                <div class="font-medium text-gray-700 mb-2" data-i18n="laps">Laps</div>
+                <div class="laps" id="laps-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const Stopwatch = {
+            startTime: null,
+            elapsedTime: 0,
+            timerInterval: null,
+            isRunning: false,
+            lapCount: 0,
+            
+            i18n: {
+                'en': {
+                    title: '⏱️ Online Stopwatch',
+                    start: 'Start',
+                    stop: 'Stop',
+                    reset: 'Reset',
+                    lap: 'Lap',
+                    laps: 'Laps',
+                    lap_label: 'Lap'
+                },
+                'zh-CN': {
+                    title: '⏱️ 在线秒表',
+                    start: '开始',
+                    stop: '停止',
+                    reset: '重置',
+                    lap: '计圈',
+                    laps: '圈数记录',
+                    lap_label: '圈'
+                },
+                'zh-TW': {
+                    title: '⏱️ 在線秒錶',
+                    start: '開始',
+                    stop: '停止',
+                    reset: '重置',
+                    lap: '計圈',
+                    laps: '圈數記錄',
+                    lap_label: '圈'
+                },
+                'ja': {
+                    title: '⏱️ オンラインストップウォッチ',
+                    start: '開始',
+                    stop: '停止',
+                    reset: 'リセット',
+                    lap: 'ラップ',
+                    laps: 'ラップ記録',
+                    lap_label: 'ラップ'
+                },
+                'ru': {
+                    title: '⏱️ Онлайн-стопватч',
+                    start: 'Старт',
+                    stop: 'Стоп',
+                    reset: 'Сброс',
+                    lap: 'Круг',
+                    laps: 'Круги',
+                    lap_label: 'Круг'
+                },
+                'es': {
+                    title: '⏱️ Cronómetro en línea',
+                    start: 'Iniciar',
+                    stop: 'Detener',
+                    reset: 'Reiniciar',
+                    lap: 'Vuelta',
+                    laps: 'Vueltas',
+                    lap_label: 'Vuelta'
+                }
+            },
+
+            init: () => {
+                // 初始化已在HTML中
+            },
+
+            start: () => {
+                if (Stopwatch.isRunning) return;
+                
+                Stopwatch.isRunning = true;
+                Stopwatch.startTime = Date.now() - Stopwatch.elapsedTime;
+                
+                Stopwatch.timerInterval = setInterval(() => {
+                    Stopwatch.elapsedTime = Date.now() - Stopwatch.startTime;
+                    Stopwatch.updateDisplay();
+                }, 10);
+                
+                // 更新按钮状态
+                document.querySelector('[onclick="Stopwatch.start()"]').disabled = true;
+                document.querySelector('[onclick="Stopwatch.stop()"]').disabled = false;
+                document.querySelector('[onclick="Stopwatch.lap()"]').disabled = false;
+            },
+            
+            stop: () => {
+                if (!Stopwatch.isRunning) return;
+                
+                Stopwatch.isRunning = false;
+                clearInterval(Stopwatch.timerInterval);
+                
+                // 更新按钮状态
+                document.querySelector('[onclick="Stopwatch.start()"]').disabled = false;
+                document.querySelector('[onclick="Stopwatch.stop()"]').disabled = true;
+            },
+            
+            reset: () => {
+                Stopwatch.isRunning = false;
+                clearInterval(Stopwatch.timerInterval);
+                Stopwatch.elapsedTime = 0;
+                Stopwatch.lapCount = 0;
+                Stopwatch.updateDisplay();
+                document.getElementById('laps-container').innerHTML = '';
+                
+                // 更新按钮状态
+                document.querySelector('[onclick="Stopwatch.start()"]').disabled = false;
+                document.querySelector('[onclick="Stopwatch.stop()"]').disabled = true;
+                document.querySelector('[onclick="Stopwatch.lap()"]').disabled = true;
+            },
+            
+            lap: () => {
+                if (!Stopwatch.isRunning) return;
+                
+                Stopwatch.lapCount++;
+                const lapsContainer = document.getElementById('laps-container');
+                const currentTime = Stopwatch.formatTime(Stopwatch.elapsedTime);
+                const lang = document.getElementById('stopwatch-lang').value;
+                const texts = Stopwatch.i18n[lang];
+                
+                const lapItem = document.createElement('div');
+                lapItem.className = 'lap-item';
+                lapItem.innerHTML = `
+                    <span>${texts.lap_label} ${Stopwatch.lapCount}</span>
+                    <span>${currentTime}</span>
+                `;
+                
+                lapsContainer.prepend(lapItem);
+            },
+            
+            formatTime: (timeMs) => {
+                const hours = Math.floor(timeMs / 3600000).toString().padStart(2, '0');
+                const minutes = Math.floor((timeMs % 3600000) / 60000).toString().padStart(2, '0');
+                const seconds = Math.floor((timeMs % 60000) / 1000).toString().padStart(2, '0');
+                const milliseconds = Math.floor((timeMs % 1000) / 10).toString().padStart(2, '0');
+                
+                return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+            },
+            
+            updateDisplay: () => {
+                const timeString = Stopwatch.formatTime(Stopwatch.elapsedTime);
+                document.getElementById('time-display').textContent = timeString;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('stopwatch-lang').value;
+                const texts = Stopwatch.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="stopwatch"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        el.innerText = texts[key];
+                    }
+                });
+                
+                // 更新圈数标签
+                const lapItems = document.querySelectorAll('.lap-item span:first-child');
+                lapItems.forEach((item, index) => {
+                    item.innerText = `${texts.lap_label} ${Stopwatch.lapCount - index}`;
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', Stopwatch.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('stopwatch-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    Stopwatch.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
