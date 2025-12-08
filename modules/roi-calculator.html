@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global E-Commerce Toolbox</title>
+        <!-- 自定义元标签 -->
+    <meta name="tool-id" content="roi_calculator">
+    <meta name="category" content="E-commerce Operations">
+    <meta name="icon" content="📊">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background-color: #f3f4f6; }
+        
+        /* 标签页样式 */
+        .nav-btn { position: relative; transition: all 0.3s; }
+        .nav-btn.active { color: #2563eb; background-color: #eff6ff; }
+        .nav-btn.active::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: #2563eb; border-radius: 3px 3px 0 0;
+        }
+
+        /* 动画 */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 输入框去箭头 */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* 表格滚动条 */
+        .custom-scroll::-webkit-scrollbar { height: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col">
+
+    <div class="max-w-6xl mx-auto w-full flex-grow">
+        
+        <!-- 顶部导航栏 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 sticky top-2 z-20">
+            <div class="flex flex-col md:flex-row justify-between items-center p-3 md:px-6">
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-3 mb-3 md:mb-0 w-full md:w-auto">
+                    <div class="bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-2.5 rounded-lg shadow-md">
+                        <i class="fa-solid fa-earth-americas text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-800 leading-tight" data-i18n="app_title">E-Commerce Toolbox</h1>
+                        <p class="text-xs text-gray-400" data-i18n="app_subtitle">Global Operations Assistant</p>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                    <!-- Tab Switcher (Mobile optimized) -->
+                    <div class="flex bg-gray-100 p-1 rounded-lg">
+                        <button onclick="App.switchTab('bid')" id="nav-bid" class="nav-btn active px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 flex items-center gap-2">
+                            <i class="fa-solid fa-calculator"></i> <span data-i18n="tab_bid">Bid Calc</span>
+                        </button>
+                        <button onclick="App.switchTab('roi')" id="nav-roi" class="nav-btn px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie"></i> <span data-i18n="tab_roi">ROI Sim</span>
+                        </button>
+                    </div>
+
+                    <!-- Language Selector -->
+                    <div class="relative group">
+                        <select id="lang-select" onchange="I18nModule.changeLanguage(this.value)" class="appearance-none bg-white border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 pr-8 cursor-pointer font-medium hover:border-blue-300 transition">
+                            <option value="zh-CN">🇨🇳 简体中文</option>
+                            <option value="zh-TW">🇭🇰 繁體中文</option>
+                            <option value="en">🇺🇸 English</option>
+                            <option value="ja">🇯🇵 日本語</option>
+                            <option value="ru">🇷🇺 Русский</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden min-h-[600px] relative">
+            
+            <!-- 模块 1: 关键词出价 (Bid Module) -->
+            <div id="view-bid" class="fade-in p-6 md:p-8">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+                    <!-- 左侧: 输入 -->
+                    <div class="lg:col-span-4 flex flex-col gap-6">
+                        <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-blue-500"></i> <span data-i18n="params_title">Parameters</span>
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="group">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="bid_label">Bid Amount</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-tag"></i></div>
+                                        <input type="number" id="bid-base" step="0.01" class="w-full pl-9 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="group">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="premium_label">Crowd Premium (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-users"></i></div>
+                                        <input type="number" id="bid-premium" step="1" class="w-full pl-9 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white" placeholder="0">
+                                    </div>
+                                </div>
+
+                                <div class="group">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="discount_label">Time Discount (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-clock"></i></div>
+                                        <input type="number" id="bid-discount" step="1" value="100" class="w-full pl-9 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white" placeholder="100">
+                                    </div>
+                                </div>
+
+                                <button onclick="BidModule.calculate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-blue-500/30 transition-all transform active:scale-95 mt-2 flex justify-center items-center gap-2 group">
+                                    <i class="fa-solid fa-bolt group-hover:animate-pulse"></i> <span data-i18n="btn_calc">Calculate</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 提示卡片 -->
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-xs text-gray-500 leading-relaxed">
+                            <i class="fa-solid fa-circle-info text-blue-400 mr-1"></i> <span data-i18n="bid_formula_hint">Formula: Final = Base * (1 + Premium%) * (Discount%)</span>
+                        </div>
+                    </div>
+
+                    <!-- 右侧: 列表 -->
+                    <div class="lg:col-span-8 flex flex-col h-full">
+                        <div class="flex justify-between items-end mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800" data-i18n="history_title">Calculation History</h3>
+                                <p class="text-sm text-gray-400 mt-1" data-i18n="history_subtitle">Local records, safe & private.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="App.exportCSV('bid')" class="text-xs font-medium text-blue-600 hover:text-blue-800 px-3 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition flex items-center gap-1">
+                                    <i class="fa-solid fa-download"></i> <span data-i18n="btn_export">Export</span>
+                                </button>
+                                <button onclick="App.clearData('bid')" class="text-xs font-medium text-red-500 hover:text-red-700 px-3 py-2 bg-red-50 rounded-lg hover:bg-red-100 transition flex items-center gap-1">
+                                    <i class="fa-regular fa-trash-can"></i> <span data-i18n="btn_clear">Clear</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow overflow-hidden rounded-xl border border-gray-200 bg-white relative">
+                            <div class="absolute inset-0 overflow-auto custom-scroll">
+                                <table class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-500 uppercase bg-gray-50/80 sticky top-0 backdrop-blur-sm z-10">
+                                        <tr>
+                                            <th class="px-5 py-3 font-semibold" data-i18n="col_base">Base Bid</th>
+                                            <th class="px-5 py-3 font-semibold" data-i18n="col_premium">Premium</th>
+                                            <th class="px-5 py-3 font-semibold" data-i18n="col_discount">Discount</th>
+                                            <th class="px-5 py-3 font-semibold text-blue-600" data-i18n="col_final">Final</th>
+                                            <th class="px-5 py-3 text-center" data-i18n="col_action">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="bid-list" class="divide-y divide-gray-100">
+                                        <!-- Data Injected Here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 模块 2: ROI 模拟 (ROI Module) -->
+            <div id="view-roi" class="fade-in hidden p-6 md:p-8">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+                    <!-- 左侧: 输入 -->
+                    <div class="lg:col-span-4 flex flex-col gap-6">
+                        <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+                                <i class="fa-solid fa-coins text-indigo-500"></i> <span data-i18n="cost_title">Cost Structure</span>
+                            </h3>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="roi_price">Selling Price</label>
+                                    <input type="number" id="roi-price" step="0.01" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-white" placeholder="0.00">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="roi_cost">Product Cost</label>
+                                    <input type="number" id="roi-cost" step="0.01" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-white" placeholder="0.00">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="roi_rate">Platform (%)</label>
+                                    <input type="number" id="roi-rate" step="0.1" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-white" placeholder="5.0">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="roi_misc">Misc/Pack</label>
+                                    <input type="number" id="roi-pack" step="0.01" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-white" placeholder="0.00">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="roi_ship">Shipping</label>
+                                    <input type="number" id="roi-ship" step="0.01" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-white" placeholder="0.00">
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="roi_gift">Gift Cost</label>
+                                    <input type="number" id="roi-gift" step="0.01" value="0" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-white" placeholder="0.00">
+                                </div>
+                            </div>
+
+                            <button onclick="RoiModule.calculate()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-indigo-500/30 transition-all transform active:scale-95 mt-6 flex justify-center items-center gap-2 group">
+                                <i class="fa-solid fa-wand-magic-sparkles group-hover:animate-spin-slow"></i> <span data-i18n="btn_simulate">Simulate</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 右侧: 列表 -->
+                    <div class="lg:col-span-8 flex flex-col h-full">
+                        <div class="flex justify-between items-end mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800" data-i18n="sim_result_title">Simulation Results</h3>
+                                <p class="text-sm text-gray-400 mt-1" data-i18n="sim_subtitle">Find your breakeven point.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="App.exportCSV('roi')" class="text-xs font-medium text-blue-600 hover:text-blue-800 px-3 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition flex items-center gap-1">
+                                    <i class="fa-solid fa-download"></i> <span data-i18n="btn_export">Export</span>
+                                </button>
+                                <button onclick="App.clearData('roi')" class="text-xs font-medium text-red-500 hover:text-red-700 px-3 py-2 bg-red-50 rounded-lg hover:bg-red-100 transition flex items-center gap-1">
+                                    <i class="fa-regular fa-trash-can"></i> <span data-i18n="btn_clear">Clear</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow overflow-hidden rounded-xl border border-gray-200 bg-white relative">
+                            <div class="absolute inset-0 overflow-auto custom-scroll">
+                                <table class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-500 uppercase bg-gray-50/80 sticky top-0 backdrop-blur-sm z-10">
+                                        <tr>
+                                            <th class="px-4 py-3 font-semibold" data-i18n="col_price">Price</th>
+                                            <th class="px-4 py-3 font-semibold" data-i18n="col_costs">Costs</th>
+                                            <th class="px-4 py-3 font-semibold" data-i18n="col_margin">Margin</th>
+                                            <th class="px-4 py-3 font-semibold text-indigo-600" data-i18n="col_breakeven">Breakeven ROI</th>
+                                            <th class="px-4 py-3 text-center" data-i18n="col_action">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="roi-list" class="divide-y divide-gray-100">
+                                        <!-- Data Injected -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="text-center mt-6 text-gray-400 text-xs">
+            &copy; 2024 Global E-Commerce Tools. All calculations are performed locally.
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 模块 1: 国际化 (I18N Module)
+         * 管理多语言数据和界面文本替换
+         */
+        const I18nModule = {
+            currentLang: 'zh-CN',
+            
+            data: {
+                'zh-CN': {
+                    app_title: '电商运营工具箱',
+                    app_subtitle: '全球电商运营辅助助手',
+                    tab_bid: '关键词出价',
+                    tab_roi: '保本ROI模拟',
+                    params_title: '参数设置',
+                    bid_label: '关键词出价',
+                    premium_label: '人群溢价 (%)',
+                    discount_label: '时间折扣 (%)',
+                    btn_calc: '开始计算',
+                    bid_formula_hint: '公式：最终出价 = 基础出价 × (1 + 溢价%) × (时间折扣%)',
+                    history_title: '计算记录',
+                    history_subtitle: '数据保存在本地浏览器中',
+                    btn_export: '导出表格',
+                    btn_clear: '清空',
+                    col_base: '基础出价',
+                    col_premium: '溢价',
+                    col_discount: '折扣',
+                    col_final: '最终出价',
+                    col_action: '操作',
+                    cost_title: '成本结构',
+                    roi_price: '销售价格',
+                    roi_cost: '产品成本',
+                    roi_rate: '平台扣点 (%)',
+                    roi_misc: '包装/杂费',
+                    roi_ship: '平均运费',
+                    roi_gift: '赠品成本',
+                    btn_simulate: '开始模拟',
+                    sim_result_title: '模拟结果',
+                    sim_subtitle: '寻找你的盈亏平衡点',
+                    col_price: '售价',
+                    col_costs: '总硬成本',
+                    col_margin: '毛利',
+                    col_breakeven: '保本ROI',
+                    empty_data: '暂无数据，请在左侧输入参数并计算。',
+                    loss_label: '亏损'
+                },
+                'zh-TW': {
+                    app_title: '電商運營工具箱',
+                    app_subtitle: '全球電商運營輔助助手',
+                    tab_bid: '關鍵字出價',
+                    tab_roi: '保本ROI模擬',
+                    params_title: '參數設置',
+                    bid_label: '關鍵字出價',
+                    premium_label: '人群溢價 (%)',
+                    discount_label: '時間折扣 (%)',
+                    btn_calc: '開始計算',
+                    bid_formula_hint: '公式：最終出價 = 基礎出價 × (1 + 溢價%) × (時間折扣%)',
+                    history_title: '計算記錄',
+                    history_subtitle: '數據保存在本地瀏覽器中',
+                    btn_export: '導出表格',
+                    btn_clear: '清空',
+                    col_base: '基礎出價',
+                    col_premium: '溢價',
+                    col_discount: '折扣',
+                    col_final: '最終出價',
+                    col_action: '操作',
+                    cost_title: '成本結構',
+                    roi_price: '銷售價格',
+                    roi_cost: '產品成本',
+                    roi_rate: '平台扣點 (%)',
+                    roi_misc: '包裝/雜費',
+                    roi_ship: '平均運費',
+                    roi_gift: '贈品成本',
+                    btn_simulate: '開始模擬',
+                    sim_result_title: '模擬結果',
+                    sim_subtitle: '尋找你的盈虧平衡點',
+                    col_price: '售價',
+                    col_costs: '總硬成本',
+                    col_margin: '毛利',
+                    col_breakeven: '保本ROI',
+                    empty_data: '暫無數據，請在左側輸入參數並計算。',
+                    loss_label: '虧損'
+                },
+                'en': {
+                    app_title: 'E-Commerce Toolbox',
+                    app_subtitle: 'Global Operations Assistant',
+                    tab_bid: 'Bid Calculator',
+                    tab_roi: 'ROI Simulator',
+                    params_title: 'Parameters',
+                    bid_label: 'Base Bid',
+                    premium_label: 'Crowd Premium (%)',
+                    discount_label: 'Time Discount (%)',
+                    btn_calc: 'Calculate',
+                    bid_formula_hint: 'Formula: Final = Base * (1 + Premium%) * (Discount%)',
+                    history_title: 'History',
+                    history_subtitle: 'Stored locally in your browser',
+                    btn_export: 'Export CSV',
+                    btn_clear: 'Clear',
+                    col_base: 'Base',
+                    col_premium: 'Premium',
+                    col_discount: 'Discount',
+                    col_final: 'Final Bid',
+                    col_action: 'Action',
+                    cost_title: 'Cost Structure',
+                    roi_price: 'Selling Price',
+                    roi_cost: 'Product Cost',
+                    roi_rate: 'Platform Fee (%)',
+                    roi_misc: 'Misc/Pack',
+                    roi_ship: 'Shipping',
+                    roi_gift: 'Gift Cost',
+                    btn_simulate: 'Simulate',
+                    sim_result_title: 'Results',
+                    sim_subtitle: 'Find your Breakeven Point',
+                    col_price: 'Price',
+                    col_costs: 'Total Cost',
+                    col_margin: 'Margin',
+                    col_breakeven: 'Breakeven ROI',
+                    empty_data: 'No data yet. Enter parameters to start.',
+                    loss_label: 'LOSS'
+                },
+                'ja': {
+                    app_title: 'EC運営ツールボックス',
+                    app_subtitle: 'グローバル運用アシスタント',
+                    tab_bid: '入札計算機',
+                    tab_roi: '損益ROI',
+                    params_title: 'パラメータ設定',
+                    bid_label: '基本入札額',
+                    premium_label: 'ターゲット割増 (%)',
+                    discount_label: '時間帯割引 (%)',
+                    btn_calc: '計算する',
+                    bid_formula_hint: '式：最終 = 基本 × (1 + 割増%) × (割引%)',
+                    history_title: '計算履歴',
+                    history_subtitle: 'データはブラウザに保存されます',
+                    btn_export: 'CSV出力',
+                    btn_clear: 'クリア',
+                    col_base: '基本額',
+                    col_premium: '割増',
+                    col_discount: '割引',
+                    col_final: '最終入札',
+                    col_action: '操作',
+                    cost_title: 'コスト構造',
+                    roi_price: '販売価格',
+                    roi_cost: '製品原価',
+                    roi_rate: '手数料 (%)',
+                    roi_misc: '梱包/雑費',
+                    roi_ship: '平均送料',
+                    roi_gift: 'ギフト原価',
+                    btn_simulate: 'シミュレーション',
+                    sim_result_title: '結果一覧',
+                    sim_subtitle: '損益分岐点を見つける',
+                    col_price: '価格',
+                    col_costs: '総コスト',
+                    col_margin: '粗利益',
+                    col_breakeven: '損益分岐ROI',
+                    empty_data: 'データなし。左側でパラメータを入力してください。',
+                    loss_label: '赤字'
+                },
+                'ru': {
+                    app_title: 'Инструменты E-Commerce',
+                    app_subtitle: 'Помощник для операций',
+                    tab_bid: 'Калькулятор ставок',
+                    tab_roi: 'Симулятор ROI',
+                    params_title: 'Параметры',
+                    bid_label: 'Базовая ставка',
+                    premium_label: 'Премиум аудитории (%)',
+                    discount_label: 'Временная скидка (%)',
+                    btn_calc: 'Рассчитать',
+                    bid_formula_hint: 'Формула: Итог = База * (1 + Прем%) * (Скидка%)',
+                    history_title: 'История',
+                    history_subtitle: 'Данные хранятся локально',
+                    btn_export: 'Экспорт',
+                    btn_clear: 'Очистить',
+                    col_base: 'База',
+                    col_premium: 'Премиум',
+                    col_discount: 'Скидка',
+                    col_final: 'Итог',
+                    col_action: 'Действие',
+                    cost_title: 'Структура расходов',
+                    roi_price: 'Цена продажи',
+                    roi_cost: 'Себестоимость',
+                    roi_rate: 'Комиссия (%)',
+                    roi_misc: 'Упаковка/Прочее',
+                    roi_ship: 'Доставка',
+                    roi_gift: 'Подарок',
+                    btn_simulate: 'Симуляция',
+                    sim_result_title: 'Результаты',
+                    sim_subtitle: 'Поиск точки безубыточности',
+                    col_price: 'Цена',
+                    col_costs: 'Расходы',
+                    col_margin: 'Маржа',
+                    col_breakeven: 'ROI (Безубыток)',
+                    empty_data: 'Нет данных. Введите параметры.',
+                    loss_label: 'Убыток'
+                }
+            },
+
+            init: () => {
+                // Auto detect or load saved
+                const saved = localStorage.getItem('app_lang');
+                if (saved && I18nModule.data[saved]) {
+                    I18nModule.currentLang = saved;
+                } else {
+                    const navLang = navigator.language;
+                    if (navLang.startsWith('zh')) I18nModule.currentLang = navLang.includes('TW') || navLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+                    else if (navLang.startsWith('ja')) I18nModule.currentLang = 'ja';
+                    else if (navLang.startsWith('ru')) I18nModule.currentLang = 'ru';
+                    else I18nModule.currentLang = 'en';
+                }
+                document.getElementById('lang-select').value = I18nModule.currentLang;
+                I18nModule.apply();
+            },
+
+            changeLanguage: (lang) => {
+                I18nModule.currentLang = lang;
+                localStorage.setItem('app_lang', lang);
+                I18nModule.apply();
+                // Re-render lists to update status text (like "Loss") if needed
+                BidModule.render();
+                RoiModule.render();
+            },
+
+            apply: () => {
+                const texts = I18nModule.data[I18nModule.currentLang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(texts[key]) {
+                        if (el.tagName === 'INPUT') el.placeholder = texts[key];
+                        else el.innerText = texts[key];
+                    }
+                });
+                document.documentElement.lang = I18nModule.currentLang;
+            },
+
+            t: (key) => {
+                return I18nModule.data[I18nModule.currentLang][key] || key;
+            }
+        };
+
+        /**
+         * 模块 2: 存储与状态 (Storage Module)
+         */
+        const StorageModule = {
+            get: (key) => JSON.parse(localStorage.getItem(key)) || [],
+            set: (key, data) => localStorage.setItem(key, JSON.stringify(data))
+        };
+
+        /**
+         * 模块 3: 出价计算 (Bid Module)
+         */
+        const BidModule = {
+            data: [],
+            
+            init: () => {
+                BidModule.data = StorageModule.get('bid_history');
+                BidModule.render();
+            },
+
+            calculate: () => {
+                const base = parseFloat(document.getElementById('bid-base').value);
+                const premium = parseFloat(document.getElementById('bid-premium').value) || 0;
+                const discount = parseFloat(document.getElementById('bid-discount').value);
+
+                if (isNaN(base)) return alert(I18nModule.t('empty_data')); // Simplified error
+                if (isNaN(discount)) return;
+
+                const final = base * (1 + premium / 100) * (discount / 100);
+
+                const record = {
+                    id: Date.now(),
+                    base: base.toFixed(2),
+                    premium: premium,
+                    discount: discount,
+                    final: final.toFixed(2)
+                };
+
+                BidModule.data.unshift(record);
+                if (BidModule.data.length > 50) BidModule.data.pop();
+                
+                StorageModule.set('bid_history', BidModule.data);
+                BidModule.render();
+            },
+
+            delete: (id) => {
+                BidModule.data = BidModule.data.filter(item => item.id !== id);
+                StorageModule.set('bid_history', BidModule.data);
+                BidModule.render();
+            },
+
+            clear: () => {
+                if(confirm(I18nModule.t('btn_clear') + "?")) {
+                    BidModule.data = [];
+                    StorageModule.set('bid_history', BidModule.data);
+                    BidModule.render();
+                }
+            },
+
+            render: () => {
+                const tbody = document.getElementById('bid-list');
+                if (BidModule.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">${I18nModule.t('empty_data')}</td></tr>`;
+                    return;
+                }
+                
+                tbody.innerHTML = BidModule.data.map(item => `
+                    <tr class="hover:bg-blue-50/50 transition border-b border-gray-50 last:border-0">
+                        <td class="px-5 py-3 font-mono">¥${item.base}</td>
+                        <td class="px-5 py-3 text-gray-500">${item.premium}%</td>
+                        <td class="px-5 py-3 text-gray-500">${item.discount}%</td>
+                        <td class="px-5 py-3 font-bold text-blue-600">¥${item.final}</td>
+                        <td class="px-5 py-3 text-center">
+                            <button onclick="BidModule.delete(${item.id})" class="text-gray-300 hover:text-red-500 transition px-2">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        };
+
+        /**
+         * 模块 4: ROI 计算 (ROI Module)
+         */
+        const RoiModule = {
+            data: [],
+            
+            init: () => {
+                RoiModule.data = StorageModule.get('roi_history');
+                RoiModule.render();
+            },
+
+            calculate: () => {
+                const inputs = ['roi-price', 'roi-cost', 'roi-rate', 'roi-pack', 'roi-ship', 'roi-gift'];
+                const vals = {};
+                for (let id of inputs) {
+                    vals[id] = parseFloat(document.getElementById(id).value) || 0;
+                }
+
+                if (vals['roi-price'] <= 0) return alert(I18nModule.t('empty_data'));
+
+                const fee = vals['roi-price'] * (vals['roi-rate'] / 100);
+                const totalCost = vals['roi-cost'] + fee + vals['roi-pack'] + vals['roi-ship'] + vals['roi-gift'];
+                const margin = vals['roi-price'] - totalCost;
+                
+                let roiDisplay = "";
+                let isLoss = false;
+
+                if (margin <= 0) {
+                    roiDisplay = I18nModule.t('loss_label');
+                    isLoss = true;
+                } else {
+                    const roi = vals['roi-price'] / margin;
+                    roiDisplay = roi.toFixed(2);
+                }
+
+                const record = {
+                    id: Date.now(),
+                    price: vals['roi-price'].toFixed(2),
+                    cost: totalCost.toFixed(2), // Storing Total Hard Cost for simple display
+                    margin: margin.toFixed(2),
+                    roi: roiDisplay,
+                    isLoss: isLoss
+                };
+
+                RoiModule.data.unshift(record);
+                if (RoiModule.data.length > 50) RoiModule.data.pop();
+
+                StorageModule.set('roi_history', RoiModule.data);
+                RoiModule.render();
+            },
+
+            delete: (id) => {
+                RoiModule.data = RoiModule.data.filter(item => item.id !== id);
+                StorageModule.set('roi_history', RoiModule.data);
+                RoiModule.render();
+            },
+
+            clear: () => {
+                if(confirm(I18nModule.t('btn_clear') + "?")) {
+                    RoiModule.data = [];
+                    StorageModule.set('roi_history', RoiModule.data);
+                    RoiModule.render();
+                }
+            },
+
+            render: () => {
+                const tbody = document.getElementById('roi-list');
+                if (RoiModule.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">${I18nModule.t('empty_data')}</td></tr>`;
+                    return;
+                }
+
+                const lossText = I18nModule.t('loss_label');
+
+                tbody.innerHTML = RoiModule.data.map(item => {
+                    // Handle translated text for existing records if language changed
+                    const displayRoi = item.isLoss ? lossText : item.roi;
+                    const roiClass = item.isLoss ? 'text-red-500 bg-red-50 px-2 py-1 rounded' : 'text-indigo-600 font-bold';
+
+                    return `
+                    <tr class="hover:bg-indigo-50/50 transition border-b border-gray-50 last:border-0">
+                        <td class="px-4 py-3 font-medium">¥${item.price}</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">¥${item.cost}</td>
+                        <td class="px-4 py-3 ${item.margin > 0 ? 'text-green-600' : 'text-red-400'}">¥${item.margin}</td>
+                        <td class="px-4 py-3"><span class="${roiClass}">${displayRoi}</span></td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="RoiModule.delete(${item.id})" class="text-gray-300 hover:text-red-500 transition px-2">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `}).join('');
+            }
+        };
+
+        /**
+         * 模块 5: 主程序 (App Module)
+         * UI 交互与统筹
+         */
+        const App = {
+            init: () => {
+                I18nModule.init();
+                BidModule.init();
+                RoiModule.init();
+            },
+
+            switchTab: (tab) => {
+                // UI
+                document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+                document.getElementById(`nav-${tab}`).classList.add('active');
+
+                // View
+                document.getElementById('view-bid').classList.add('hidden');
+                document.getElementById('view-roi').classList.add('hidden');
+                
+                const view = document.getElementById(`view-${tab}`);
+                view.classList.remove('hidden');
+                view.classList.add('fade-in');
+            },
+
+            exportCSV: (type) => {
+                const list = type === 'bid' ? BidModule.data : RoiModule.data;
+                if (list.length === 0) return alert(I18nModule.t('empty_data'));
+
+                let csv = "data:text/csv;charset=utf-8,\uFEFF";
+                
+                if (type === 'bid') {
+                    csv += `Base,Premium,Discount,Final\n`;
+                    list.forEach(i => csv += `${i.base},${i.premium},${i.discount},${i.final}\n`);
+                } else {
+                    csv += `Price,TotalCost,Margin,ROI\n`;
+                    list.forEach(i => csv += `${i.price},${i.cost},${i.margin},${i.isLoss ? 'LOSS' : i.roi}\n`);
+                }
+
+                const link = document.createElement("a");
+                link.href = encodeURI(csv);
+                link.download = `export_${type}_${Date.now()}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+            
+            clearData: (type) => {
+                if (type === 'bid') BidModule.clear();
+                else RoiModule.clear();
+            }
+        };
+
+        // 启动应用
+        document.addEventListener('DOMContentLoaded', App.init);
+
+    </script>
+</body>
+</html>
