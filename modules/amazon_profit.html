@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="E-commerce Operations">
+    <meta name="icon" content="🛍️">
+    <title>Amazon Profit Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #a7f3d0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #1e3a8a; }
+        .result-value { font-weight: 600; color: #065f46; }
+        .profit-positive { color: #059669; }
+        .profit-negative { color: #dc2626; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .rules-panel { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e5e7eb; }
+        .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 4px; }
+        .rules-header { font-size: 0.75rem; color: #6b7280; font-weight: bold; text-align: center; margin-bottom: 4px; }
+        .rule-input { padding: 4px 8px; font-size: 0.85rem; height: 30px; }
+        .rule-toggle-btn { font-size: 0.8rem; color: #2563eb; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="amazon-profit-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="AmazonProfit.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">💰 Amazon Profit Calculator</h2>
+
+        <div class="space-y-6">
+            <!-- Product Cost -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="product_cost">Product Cost Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label data-i18n="product_name">Product Name</label>
+                        <input type="text" id="product_name" value="Bluetooth Speaker" placeholder="Enter product name" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="unit_cost">Unit Cost (¥)</label>
+                        <input type="number" id="unit_cost" value="150" step="0.01" oninput="AmazonProfit.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="shipping_cost">Shipping Cost (¥/unit)</label>
+                        <input type="number" id="shipping_cost" value="30" step="0.01" oninput="AmazonProfit.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="other_costs">Other Costs (¥/unit)</label>
+                        <input type="number" id="other_costs" value="20" step="0.01" oninput="AmazonProfit.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selling Information -->
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="selling_info">Selling Information</h3>
+                    <span class="rule-toggle-btn" onclick="AmazonProfit.toggleRules('fee-rules')" data-i18n="edit_fees">Edit Fee Rates</span>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label data-i18n="selling_price">Selling Price (¥)</label>
+                        <input type="number" id="selling_price" value="499" step="0.01" oninput="AmazonProfit.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="expected_sales">Expected Monthly Sales</label>
+                        <input type="number" id="expected_sales" value="50" min="1" oninput="AmazonProfit.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- Fee Rules Panel -->
+                <div id="fee-rules" class="rules-panel hidden">
+                    <div class="rules-grid">
+                        <div class="rules-header" data-i18n="amazon_commission">Amazon Commission Rate (%)</div>
+                        <div class="rules-header" data-i18n="fba_fee">FBA Fee Rate (%)</div>
+                    </div>
+                    <div class="rules-grid">
+                        <input type="number" id="commission_rate" class="rule-input" value="15" step="0.1" oninput="AmazonProfit.calculate()">
+                        <input type="number" id="fba_rate" class="rule-input" value="8" step="0.1" oninput="AmazonProfit.calculate()">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="AmazonProfit.calculate()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Profit</button>
+
+            <!-- Results -->
+            <div class="summary-section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">Profit Calculation</h3>
+                <div class="result-card">
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="total_revenue">Total Monthly Revenue</span>
+                        <span class="result-value" id="res_revenue">¥0</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="amazon_fees">Total Amazon Fees</span>
+                        <span class="result-value" id="res_fees">¥0</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="total_costs">Total Product Costs</span>
+                        <span class="result-value" id="res_costs">¥0</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="unit_profit">Profit per Unit</span>
+                        <span class="result-value" id="res_unit_profit">¥0</span>
+                    </div>
+                    <div class="result-row border-t border-gray-300 mt-2 pt-2">
+                        <span class="result-label font-bold text-gray-900" data-i18n="monthly_profit">Total Monthly Profit</span>
+                        <span class="result-value font-bold text-xl" id="res_monthly_profit">¥0</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label font-bold text-gray-900" data-i18n="profit_margin">Profit Margin</span>
+                        <span class="result-value font-bold text-xl" id="res_margin">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">About This Tool</h3>
+                <p data-i18n="intro_text">This Amazon profit calculator helps sellers estimate potential profitability for products. It calculates revenue, fees, costs, and profit margins based on your product costs, selling price, and expected sales volume. You can adjust fee rates to match different product categories.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AmazonProfit = {
+            i18n: {
+                'en': {
+                    title: '💰 Amazon Profit Calculator',
+                    product_cost: 'Product Cost Information',
+                    product_name: 'Product Name',
+                    unit_cost: 'Unit Cost (¥)',
+                    shipping_cost: 'Shipping Cost (¥/unit)',
+                    other_costs: 'Other Costs (¥/unit)',
+                    selling_info: 'Selling Information',
+                    edit_fees: 'Edit Fee Rates',
+                    selling_price: 'Selling Price (¥)',
+                    expected_sales: 'Expected Monthly Sales',
+                    amazon_commission: 'Amazon Commission Rate (%)',
+                    fba_fee: 'FBA Fee Rate (%)',
+                    btn_calc: 'Calculate Profit',
+                    results: 'Profit Calculation',
+                    total_revenue: 'Total Monthly Revenue',
+                    amazon_fees: 'Total Amazon Fees',
+                    total_costs: 'Total Product Costs',
+                    unit_profit: 'Profit per Unit',
+                    monthly_profit: 'Total Monthly Profit',
+                    profit_margin: 'Profit Margin',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This Amazon profit calculator helps sellers estimate potential profitability for products. It calculates revenue, fees, costs, and profit margins based on your product costs, selling price, and expected sales volume. You can adjust fee rates to match different product categories.'
+                },
+                'zh-CN': {
+                    title: '💰 亚马逊卖家选品利润计算器',
+                    product_cost: '产品成本信息',
+                    product_name: '产品名称',
+                    unit_cost: '单位成本 (¥)',
+                    shipping_cost: '运输成本 (¥/单位)',
+                    other_costs: '其他成本 (¥/单位)',
+                    selling_info: '销售信息',
+                    edit_fees: '修改费率',
+                    selling_price: '销售价格 (¥)',
+                    expected_sales: '预计月销量',
+                    amazon_commission: '亚马逊佣金率 (%)',
+                    fba_fee: 'FBA费率 (%)',
+                    btn_calc: '计算利润',
+                    results: '利润计算结果',
+                    total_revenue: '月总销售额',
+                    amazon_fees: '亚马逊总费用',
+                    total_costs: '产品总成本',
+                    unit_profit: '单位产品利润',
+                    monthly_profit: '月总利润',
+                    profit_margin: '利润率',
+                    intro_title: '关于本工具',
+                    intro_text: '这款亚马逊利润计算器帮助卖家估算产品的潜在盈利能力。它根据产品成本、销售价格和预期销量计算收入、费用、成本和利润率。您可以调整费率以匹配不同的产品类别。'
+                },
+                'zh-TW': {
+                    title: '💰 亞馬遜賣家選品利潤計算器',
+                    product_cost: '產品成本資訊',
+                    product_name: '產品名稱',
+                    unit_cost: '單位成本 (¥)',
+                    shipping_cost: '運輸成本 (¥/單位)',
+                    other_costs: '其他成本 (¥/單位)',
+                    selling_info: '銷售資訊',
+                    edit_fees: '修改費率',
+                    selling_price: '銷售價格 (¥)',
+                    expected_sales: '預計月銷量',
+                    amazon_commission: '亞馬遜傭金率 (%)',
+                    fba_fee: 'FBA費率 (%)',
+                    btn_calc: '計算利潤',
+                    results: '利潤計算結果',
+                    total_revenue: '月總銷售額',
+                    amazon_fees: '亞馬遜總費用',
+                    total_costs: '產品總成本',
+                    unit_profit: '單位產品利潤',
+                    monthly_profit: '月總利潤',
+                    profit_margin: '利潤率',
+                    intro_title: '關於本工具',
+                    intro_text: '這款亞馬遜利潤計算器幫助賣家估算產品的潛在盈利能力。它根據產品成本、銷售價格和預期銷量計算收入、費用、成本和利潤率。您可以調整費率以匹配不同的產品類別。'
+                },
+                'ja': {
+                    title: '💰 Amazon利益計算機',
+                    product_cost: '製品コスト情報',
+                    product_name: '製品名',
+                    unit_cost: '単位コスト (¥)',
+                    shipping_cost: '配送コスト (¥/単位)',
+                    other_costs: 'その他コスト (¥/単位)',
+                    selling_info: '販売情報',
+                    edit_fees: '手数料率を編集',
+                    selling_price: '販売価格 (¥)',
+                    expected_sales: '月間予想販売数',
+                    amazon_commission: 'Amazon手数料率 (%)',
+                    fba_fee: 'FBA手数料率 (%)',
+                    btn_calc: '利益を計算',
+                    results: '利益計算結果',
+                    total_revenue: '月間総売上',
+                    amazon_fees: 'Amazon総手数料',
+                    total_costs: '製品総コスト',
+                    unit_profit: '単位当たり利益',
+                    monthly_profit: '月間総利益',
+                    profit_margin: '利益率',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このAmazon利益計算ツールは、売り手が製品の潜在的な収益性を見積もるのに役立ちます。製品コスト、販売価格、予想販売量に基づいて、収益、手数料、コスト、利益率を計算します。さまざまな製品カテゴリに合わせて手数料率を調整できます。'
+                },
+                'ru': {
+                    title: '💰 Калькулятор прибыли для продавцов Amazon',
+                    product_cost: 'Информация о себестоимости продукта',
+                    product_name: 'Название продукта',
+                    unit_cost: ' Себестоимость за единицу (¥)',
+                    shipping_cost: 'Стоимость доставки (¥/шт)',
+                    other_costs: 'Прочие расходы (¥/шт)',
+                    selling_info: 'Информация о продажах',
+                    edit_fees: 'Редактировать ставки комиссий',
+                    selling_price: 'Продажная цена (¥)',
+                    expected_sales: 'Ожидаемые месячные продажи',
+                    amazon_commission: 'Ставка комиссии Amazon (%)',
+                    fba_fee: 'Ставка FBA (%)',
+                    btn_calc: 'Рассчитать прибыль',
+                    results: 'Расчет прибыли',
+                    total_revenue: 'Общий месячный доход',
+                    amazon_fees: 'Общие комиссии Amazon',
+                    total_costs: 'Общие затраты на продукт',
+                    unit_profit: 'Прибыль на единицу',
+                    monthly_profit: 'Общая месячная прибыль',
+                    profit_margin: 'Маржинальность прибыли',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Этот калькулятор прибыли Amazon помогает продавцам оценивать потенциальную рентабельность продуктов. Он рассчитывает доход, комиссии, расходы и маржинальность прибыли на основе себестоимости продукта, цены продажи и предполагаемого объема продаж. Вы можете регулировать ставки комиссий для разных категорий продуктов.'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                this.calculate();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('lang', lang);
+                window.history.pushState({}, '', newUrl);
+                const texts = this.i18n[lang];
+                if (!texts) return;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                this.calculate(); 
+            },
+
+            toggleRules: function(id) {
+                const el = document.getElementById(id);
+                el.classList.toggle('hidden');
+            },
+
+            calculate: function() {
+                // Get input values
+                const unitCost = parseFloat(document.getElementById('unit_cost').value) || 0;
+                const shippingCost = parseFloat(document.getElementById('shipping_cost').value) || 0;
+                const otherCosts = parseFloat(document.getElementById('other_costs').value) || 0;
+                const sellingPrice = parseFloat(document.getElementById('selling_price').value) || 0;
+                const expectedSales = parseInt(document.getElementById('expected_sales').value) || 0;
+                const commissionRate = parseFloat(document.getElementById('commission_rate').value) || 0;
+                const fbaRate = parseFloat(document.getElementById('fba_rate').value) || 0;
+
+                // Calculate values
+                const totalRevenue = sellingPrice * expectedSales;
+                const commissionFee = sellingPrice * (commissionRate / 100);
+                const fbaFee = sellingPrice * (fbaRate / 100);
+                const totalFeesPerUnit = commissionFee + fbaFee;
+                const totalFees = totalFeesPerUnit * expectedSales;
+                const totalCostPerUnit = unitCost + shippingCost + otherCosts;
+                const totalCosts = totalCostPerUnit * expectedSales;
+                const unitProfit = sellingPrice - totalCostPerUnit - totalFeesPerUnit;
+                const monthlyProfit = unitProfit * expectedSales;
+                const profitMargin = sellingPrice > 0 ? (unitProfit / sellingPrice) * 100 : 0;
+
+                // Update UI
+                document.getElementById('res_revenue').innerText = '¥' + totalRevenue.toFixed(2);
+                document.getElementById('res_fees').innerText = '¥' + totalFees.toFixed(2);
+                document.getElementById('res_costs').innerText = '¥' + totalCosts.toFixed(2);
+                document.getElementById('res_unit_profit').innerText = '¥' + unitProfit.toFixed(2);
+                
+                const monthlyProfitEl = document.getElementById('res_monthly_profit');
+                monthlyProfitEl.innerText = '¥' + monthlyProfit.toFixed(2);
+                monthlyProfitEl.className = `result-value font-bold text-xl ${monthlyProfit >= 0 ? 'profit-positive' : 'profit-negative'}`;
+                
+                const marginEl = document.getElementById('res_margin');
+                marginEl.innerText = profitMargin.toFixed(1) + '%';
+                marginEl.className = `result-value font-bold text-xl ${profitMargin >= 0 ? 'profit-positive' : 'profit-negative'}`;
+            }
+        };
+
+        window.onload = function() { AmazonProfit.init(); };
+    </script>
+</body>
+</html>

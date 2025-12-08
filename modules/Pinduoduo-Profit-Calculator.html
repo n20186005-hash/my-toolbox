@@ -7,6 +7,8 @@
     <meta name="icon" content="🛍️">
     <title>Pinduoduo Profit Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Moved Chart.js to head to ensure earlier loading -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Meiryo', sans-serif; background-color: #f8fafc; }
@@ -953,9 +955,10 @@
             init: function() {
                 const params = new URLSearchParams(window.location.search);
                 const lang = params.get('lang');
-                if (lang && this.i18n[lang]) {
-                    document.getElementById('lang-selector').value = lang;
-                    this.changeLang();
+                // FIXED: Use this.data and correct ID and method name
+                if (lang && this.data[lang]) {
+                    document.getElementById('lang-select').value = lang;
+                    this.changeLanguage(lang);
                     return;
                 }
                 // Try to get saved language from localStorage
@@ -963,6 +966,14 @@
                 if (savedLang && this.data[savedLang]) {
                     this.currentLang = savedLang;
                     document.getElementById('lang-select').value = savedLang;
+                    // Also update URL for consistency if loaded from storage, though optional
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', savedLang);
+                        window.history.replaceState({}, '', newUrl);
+                    } catch (e) {
+                         console.warn('History API not supported in this environment', e);
+                    }
                 }
                 this.updateTextContent();
             },
@@ -971,6 +982,16 @@
                 if (this.data[lang]) {
                     this.currentLang = lang;
                     localStorage.setItem('pinduoduoProfitLang', lang);
+                    
+                    // ADDED: Update URL parameter
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {
+                        console.warn('History API not supported in this environment', e);
+                    }
+
                     this.updateTextContent();
                 }
             },
@@ -1123,6 +1144,10 @@
             },
             
             initChart: function() {
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js not loaded');
+                    return;
+                }
                 const ctx = document.getElementById('expense-chart').getContext('2d');
                 this.expenseChart = new Chart(ctx, {
                     type: 'pie',
@@ -1261,6 +1286,10 @@
             chart: null,
             
             init: function() {
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js not loaded');
+                    return;
+                }
                 // Initialize chart
                 const ctx = document.getElementById('break-even-chart').getContext('2d');
                 this.chart = new Chart(ctx, {

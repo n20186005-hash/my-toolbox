@@ -77,7 +77,6 @@
                         <label for="revenue" data-i18n="revenue">Total Revenue (¥)</label>
                         <input type="number" id="revenue" min="0" step="100" value="10000" class="focus:ring-2 focus:ring-green-500 outline-none">
                     </div>
-                    <!-- 删除了全局 sales quantity 和 price，因为这通常是基于产品的 -->
                     <div class="form-group">
                         <label for="return_rate" data-i18n="return_rate">Return Rate (%)</label>
                         <input type="number" id="return_rate" min="0" max="100" step="0.1" value="5" class="focus:ring-2 focus:ring-green-500 outline-none">
@@ -699,15 +698,17 @@
             },
 
             init: function() {
+                // 1. 先初始化基本数据（无论是否有语言参数，都要加载下拉框等）
+                this.updateTaxRates();
+                this.loadSavedDataSets();
+
+                // 2. 读取 URL 语言参数
                 const params = new URLSearchParams(window.location.search);
                 const lang = params.get('lang');
                 if (lang && this.i18n[lang]) {
-                    document.getElementById('lang-selector').value = lang;
+                    document.getElementById('ecom-lang').value = lang; // 注意：这里的ID是 ecom-lang
                     this.changeLang();
-                    return;
                 }
-                this.updateTaxRates();
-                this.loadSavedDataSets();
             },
 
             // 根据纳税人类型更新税率
@@ -731,8 +732,13 @@
             // 切换语言
             changeLang: function() {
                 const lang = document.getElementById('ecom-lang').value;
-                const texts = this.i18n[lang];
                 
+                // 【核心修改】更新 URL
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('lang', lang);
+                window.history.pushState({}, '', newUrl);
+
+                const texts = this.i18n[lang];
                 if (!texts) return;
 
                 // 更新所有带data-i18n属性的元素
@@ -740,10 +746,8 @@
                 elements.forEach(el => {
                     const key = el.getAttribute('data-i18n');
                     if (texts[key]) {
-                        // 检查如果是 input 占位符
                         if (el.tagName === 'INPUT' && el.type === 'text') {
-                             // 对于输入框，如果是 data-i18n 且没有 value 的时候可以用 placeholder
-                             // 但这里我们主要处理标签文本
+                             // 对于输入框，不做处理或只处理 placeholder
                         } else {
                              el.innerText = texts[key];
                         }
@@ -1118,11 +1122,7 @@
                 const totalPlatformCosts = platformFees + refundPenalty;
                 const totalExpenses = productTotalCost + laborTotal + socialSecurity + operatingTotal + totalPlatformCosts + totalTax;
                 
-                const netProfit = revenue - totalExpenses; // 使用总营收减去所有支出（含退货损失隐含在其中，如果按照Effective Revenue算，支出里就要减去退货产品的成本，这里简化模型：Revenue - All Outflows）
-                
-                // 修正逻辑：更精确的净利 = 实际营收 - (除去退货产品成本外的产品成本) - 运营 - 人工 - 税...
-                // 鉴于用户输入的是“销售数量”，假设这是实际成交数量，或者总发货数量。
-                // 保持保守估计：Revenue(Total) - Expenses(Total). 
+                const netProfit = revenue - totalExpenses; // 使用总营收减去所有支出
                 
                 const profitRate = revenue > 0 ? (netProfit / revenue) * 100 : 0;
 
