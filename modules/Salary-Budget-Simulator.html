@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="E-commerce Operations">
+    <meta name="icon" content="🛍️">
+    <title>Salary Budget Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #a7f3d0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #1e3a8a; }
+        .result-value { font-weight: 600; color: #065f46; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .highlight-row { background-color: #dcfce7 !important; transition: background-color 0.3s; }
+        table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+        th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: center; vertical-align: middle; }
+        th { background: #f3f4f6; color: #374151; }
+        
+        /* Input styles for table */
+        .tbl-input { width: 100%; padding: 4px; border: 1px solid transparent; background: transparent; text-align: center; border-radius: 4px; }
+        .tbl-input:hover, .tbl-input:focus { border-color: #cbd5e1; background: white; outline: none; }
+        .range-group { display: flex; align-items: center; gap: 4px; justify-content: center; }
+        .range-input { width: 80px; padding: 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: center; font-size: 0.8rem; }
+        
+        .btn-del { color: #ef4444; cursor: pointer; padding: 4px; border-radius: 4px; }
+        .btn-del:hover { background-color: #fee2e2; }
+        .btn-add { display: inline-flex; align-items: center; gap: 4px; color: #10b981; font-weight: 500; cursor: pointer; padding: 8px; font-size: 0.9rem; }
+        .btn-add:hover { color: #059669; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="budget-tool">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="BudgetCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">📊 Salary Budget Simulator</h2>
+
+        <div class="space-y-6">
+            <!-- Simulation Inputs -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="sim_settings">Simulation Settings</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label data-i18n="target_revenue">Target Monthly Revenue (¥)</label>
+                        <input type="number" id="sim_revenue" value="800000" oninput="BudgetCalc.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none font-bold text-green-700">
+                    </div>
+                </div>
+                <p class="text-sm text-gray-500 mt-2" data-i18n="hint">Enter revenue to auto-match Level and calculate costs.</p>
+            </div>
+
+            <!-- Reference Table -->
+            <div class="section overflow-x-auto">
+                <div class="flex justify-between items-end mb-2">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="ref_table">Commission Rules Table</h3>
+                </div>
+                
+                <table id="rules-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="th_level" width="15%">Level</th>
+                            <th data-i18n="th_range" width="40%">Monthly Range (¥) (Min - Max)</th>
+                            <th data-i18n="th_base" width="20%">Base (¥)</th>
+                            <th data-i18n="th_rate" width="15%">Commission %</th>
+                            <th width="10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="rules-body">
+                        <!-- Rows will be populated by JS -->
+                    </tbody>
+                </table>
+                <div onclick="BudgetCalc.addRow()" class="btn-add">
+                    <span>+</span> <span data-i18n="btn_add_level">Add Level</span>
+                </div>
+            </div>
+
+            <button onclick="BudgetCalc.calculate()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Budget</button>
+
+            <!-- Results -->
+            <div class="summary-section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">Budget Analysis</h3>
+                <div class="result-card">
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="matched_level">Matched Level</span>
+                        <span class="result-value text-blue-600 text-lg" id="res_level">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="res_base">Base Salary</span>
+                        <span class="result-value" id="res_base_val">¥0</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="res_commission">Est. Commission</span>
+                        <span class="result-value" id="res_comm_val">¥0</span>
+                    </div>
+                    <div class="result-row border-t border-gray-300 mt-2 pt-2">
+                        <span class="result-label font-bold text-gray-900" data-i18n="res_total">Total Monthly Cost</span>
+                        <span class="result-value font-bold text-xl text-green-700" id="res_total_val">¥0</span>
+                    </div>
+                    <div class="result-row mt-2">
+                        <span class="result-label" data-i18n="res_ratio">Labor Cost Ratio</span>
+                        <span class="result-value" id="res_ratio_val">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">About This Tool</h3>
+                <p data-i18n="intro_text">This tool simulates salary budgets for operations teams based on revenue targets. It automatically matches the target revenue to a P-Level (P2-P7) and calculates the estimated total labor cost (Base + Commission) and the labor cost ratio, aiding in financial planning.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BudgetCalc = {
+            // Initial default data
+            defaultLevels: [
+                { name: 'P2', min: 100000, max: 500000, base: 6000, rate: 0.6 },
+                { name: 'P3', min: 500000, max: 1000000, base: 8000, rate: 0.8 },
+                { name: 'P4', min: 1000000, max: 2000000, base: 9000, rate: 0.8 },
+                { name: 'P5', min: 2000000, max: 3000000, base: 11000, rate: 1.0 },
+                { name: 'P6', min: 3000000, max: 5000000, base: 15000, rate: 1.0 },
+                { name: 'P7', min: 5000000, max: 10000000, base: 20000, rate: 1.0 }
+            ],
+
+            i18n: {
+                'en': {
+                    title: '📊 Salary Budget Simulator',
+                    sim_settings: 'Simulation Settings',
+                    target_revenue: 'Target Monthly Revenue (¥)',
+                    hint: 'Enter revenue to auto-match Level and calculate costs.',
+                    ref_table: 'Commission Rules Table (Editable)',
+                    th_level: 'Level',
+                    th_range: 'Monthly Range (¥) (Min - Max)',
+                    th_base: 'Base (¥)',
+                    th_rate: 'Commission %',
+                    btn_calc: 'Calculate Budget',
+                    results: 'Budget Analysis',
+                    matched_level: 'Matched Level',
+                    res_base: 'Base Salary',
+                    res_commission: 'Est. Commission',
+                    res_total: 'Total Monthly Cost',
+                    res_ratio: 'Labor Cost Ratio (Cost/Rev)',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool simulates salary budgets for operations teams based on revenue targets. It matches revenue to a P-Level and calculates estimated total labor cost.',
+                    btn_add_level: 'Add Level',
+                    err_overlap: 'Warning: Revenue ranges might overlap or have gaps.'
+                },
+                'zh-CN': {
+                    title: '📊 运营工资预算推演',
+                    sim_settings: '推演设置',
+                    target_revenue: '目标月度业绩 (¥)',
+                    hint: '输入业绩自动匹配下方表格中的职级并计算成本。',
+                    ref_table: '提成规则表 (可编辑)',
+                    th_level: '级别',
+                    th_range: '月度区间 (¥) (Min - Max)',
+                    th_base: '底薪 (¥)',
+                    th_rate: '提成点数 (%)',
+                    btn_calc: '开始推演',
+                    results: '预算分析',
+                    matched_level: '匹配级别',
+                    res_base: '基本底薪',
+                    res_commission: '预估提成',
+                    res_total: '月度总人力成本',
+                    res_ratio: '费效比 (成本/业绩)',
+                    intro_title: '工具介绍',
+                    intro_text: '本工具用于根据业绩目标推演运营薪资预算。自动将输入业绩匹配至下方自定义职级，计算包含底薪与提成的总人力成本及费效比。',
+                    btn_add_level: '添加职级',
+                    err_overlap: '注意：业绩区间可能存在重叠或断档。'
+                },
+                'zh-TW': {
+                    title: '📊 運營工資預算推演',
+                    sim_settings: '推演設置',
+                    target_revenue: '目標月度業績 (¥)',
+                    hint: '輸入業績自動匹配下方表格中的職級並計算成本。',
+                    ref_table: '提成規則表 (可編輯)',
+                    th_level: '級別',
+                    th_range: '月度區間 (¥) (Min - Max)',
+                    th_base: '底薪 (¥)',
+                    th_rate: '提成點數 (%)',
+                    btn_calc: '開始推演',
+                    results: '預算分析',
+                    matched_level: '匹配級別',
+                    res_base: '基本底薪',
+                    res_commission: '預估提成',
+                    res_total: '月度總人力成本',
+                    res_ratio: '費效比 (成本/業績)',
+                    intro_title: '工具介紹',
+                    intro_text: '本工具用於根據業績目標推演運營薪資預算。自動將輸入業績匹配至下方自定義職級，計算包含底薪與提成的總人力成本及費效比。',
+                    btn_add_level: '添加職級',
+                    err_overlap: '注意：業績區間可能存在重疊或斷檔。'
+                },
+                'ja': {
+                    title: '📊 給与予算シミュレーター',
+                    sim_settings: 'シミュレーション設定',
+                    target_revenue: '目標月間売上 (¥)',
+                    hint: '売上を入力するとレベルが自動一致しコスト計算します。',
+                    ref_table: 'コミッションルール表 (編集可能)',
+                    th_level: 'レベル',
+                    th_range: '月間範囲 (¥) (Min - Max)',
+                    th_base: '基本給 (¥)',
+                    th_rate: 'コミッション %',
+                    btn_calc: '計算する',
+                    results: '予算分析',
+                    matched_level: '一致レベル',
+                    res_base: '基本給',
+                    res_commission: '推定コミッション',
+                    res_total: '月間総人件費',
+                    res_ratio: '人件費率 (コスト/売上)',
+                    intro_title: 'ツール紹介',
+                    intro_text: '売上目標に基づいて運営チームの給与予算をシミュレーションします。売上をレベルに一致させ、推定総人件費を計算します。',
+                    btn_add_level: 'レベル追加',
+                    err_overlap: '警告：範囲が重複しているかギャップがあります。'
+                },
+                'ru': {
+                    title: '📊 Симулятор бюджета зарплаты',
+                    sim_settings: 'Настройки симуляции',
+                    target_revenue: 'Целевая месячная выручка (¥)',
+                    hint: 'Введите выручку для авто-подбора уровня и расчета.',
+                    ref_table: 'Таблица правил (Редактируемая)',
+                    th_level: 'Уровень',
+                    th_range: 'Месячный диапазон (¥) (Мин - Макс)',
+                    th_base: 'Оклад (¥)',
+                    th_rate: 'Комиссия %',
+                    btn_calc: 'Рассчитать',
+                    results: 'Анализ бюджета',
+                    matched_level: 'Уровень',
+                    res_base: 'Базовый оклад',
+                    res_commission: 'Ожид. комиссия',
+                    res_total: 'Общие расходы',
+                    res_ratio: 'Доля ФОТ',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Инструмент симулирует бюджет зарплаты на основе целевой выручки. Автоматически подбирает уровень и рассчитывает общие затраты на персонал.',
+                    btn_add_level: 'Добавить уровень',
+                    err_overlap: 'Внимание: диапазоны могут пересекаться.'
+                }
+            },
+
+            init: function() {
+                this.renderTable();
+                this.calculate();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const texts = this.i18n[lang];
+                if (!texts) return;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            renderTable: function() {
+                const tbody = document.getElementById('rules-body');
+                tbody.innerHTML = '';
+                
+                this.defaultLevels.forEach((level, index) => {
+                    this.appendRow(level);
+                });
+            },
+
+            appendRow: function(data = { name: 'New', min: 0, max: 0, base: 0, rate: 0 }) {
+                const tbody = document.getElementById('rules-body');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" class="tbl-input font-bold" value="${data.name}" placeholder="Name"></td>
+                    <td>
+                        <div class="range-group">
+                            <input type="number" class="range-input min-val" value="${data.min}" oninput="BudgetCalc.calculate()"> 
+                            <span class="text-gray-400">-</span>
+                            <input type="number" class="range-input max-val" value="${data.max}" oninput="BudgetCalc.calculate()">
+                        </div>
+                    </td>
+                    <td><input type="number" class="tbl-input base-val" value="${data.base}" oninput="BudgetCalc.calculate()"></td>
+                    <td><input type="number" class="tbl-input rate-val" value="${data.rate}" step="0.1" oninput="BudgetCalc.calculate()"></td>
+                    <td>
+                        <button class="btn-del" onclick="BudgetCalc.deleteRow(this)" title="Remove">✕</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            },
+
+            addRow: function() {
+                // Determine smart defaults based on last row
+                const rows = document.querySelectorAll('#rules-body tr');
+                let newMin = 0;
+                let newMax = 100000;
+                let newName = 'Px';
+                
+                if (rows.length > 0) {
+                    const lastRow = rows[rows.length - 1];
+                    const lastMax = parseFloat(lastRow.querySelector('.max-val').value) || 0;
+                    const lastName = lastRow.querySelector('input[type="text"]').value;
+                    
+                    newMin = lastMax;
+                    newMax = lastMax * 1.5; // Guess next step
+                    
+                    // Try to increment P number
+                    const match = lastName.match(/(\d+)$/);
+                    if (match) {
+                        const num = parseInt(match[1]) + 1;
+                        newName = lastName.replace(/\d+$/, num);
+                    }
+                }
+
+                this.appendRow({ name: newName, min: newMin, max: newMax, base: 0, rate: 1.0 });
+                this.calculate(); // Re-run calc immediately
+            },
+
+            deleteRow: function(btn) {
+                const row = btn.closest('tr');
+                row.remove();
+                this.calculate();
+            },
+
+            getLevelsFromDOM: function() {
+                const levels = [];
+                const rows = document.querySelectorAll('#rules-body tr');
+                
+                rows.forEach(tr => {
+                    const name = tr.querySelector('input[type="text"]').value;
+                    const min = parseFloat(tr.querySelector('.min-val').value) || 0;
+                    const max = parseFloat(tr.querySelector('.max-val').value) || 0;
+                    const base = parseFloat(tr.querySelector('.base-val').value) || 0;
+                    const rate = parseFloat(tr.querySelector('.rate-val').value) || 0;
+                    
+                    levels.push({ element: tr, name, min, max, base, rate: rate / 100 }); // Convert input 1.0 to 0.01 internally
+                });
+                return levels;
+            },
+
+            calculate: function() {
+                const revenue = parseFloat(document.getElementById('sim_revenue').value) || 0;
+                const levels = this.getLevelsFromDOM();
+                
+                // Clear highlights
+                document.querySelectorAll('tr').forEach(tr => tr.classList.remove('highlight-row'));
+
+                let matched = null;
+                
+                // Find matching level
+                for (let lvl of levels) {
+                    // Check if revenue falls strictly within min (inclusive) and max (exclusive)
+                    // Note: For the last bucket, we might want inclusive max or open ended. 
+                    // Current logic: min <= revenue < max
+                    // Exception: If it's the very last configured level and revenue > max, we might capture it or tell user to extend.
+                    // Let's stick to strict range for clarity.
+                    
+                    if (revenue >= lvl.min && revenue < lvl.max) {
+                        matched = lvl;
+                        break;
+                    }
+                }
+
+                // Fallback: If revenue is higher than the highest Max, use the highest level?
+                // Or if revenue equals Max of one and Min of another (overlap edge case).
+                // Let's handle "Over max" case by matching the highest level if revenue > highest max
+                if (!matched && levels.length > 0) {
+                    const highestLvl = levels[levels.length - 1];
+                    if (revenue >= highestLvl.max) {
+                        matched = highestLvl; // Assumption: Top level captures everything above
+                    }
+                }
+                
+                if (matched) {
+                    matched.element.classList.add('highlight-row');
+                    
+                    const commission = revenue * matched.rate;
+                    const totalCost = matched.base + commission;
+                    const ratio = revenue > 0 ? (totalCost / revenue) * 100 : 0;
+
+                    document.getElementById('res_level').innerText = matched.name;
+                    document.getElementById('res_base_val').innerText = '¥' + matched.base;
+                    document.getElementById('res_comm_val').innerText = '¥' + commission.toFixed(2);
+                    document.getElementById('res_total_val').innerText = '¥' + totalCost.toFixed(2);
+                    document.getElementById('res_ratio_val').innerText = ratio.toFixed(2) + '%';
+                } else {
+                    document.getElementById('res_level').innerText = 'Out of Range / 超出範圍';
+                    document.getElementById('res_base_val').innerText = '-';
+                    document.getElementById('res_comm_val').innerText = '-';
+                    document.getElementById('res_total_val').innerText = '-';
+                    document.getElementById('res_ratio_val').innerText = '-';
+                }
+            }
+        };
+
+        window.onload = function() { BudgetCalc.init(); };
+    </script>
+</body>
+</html>

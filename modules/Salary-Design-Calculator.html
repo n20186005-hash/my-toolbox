@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="E-commerce Operations">
+    <meta name="icon" content="🛍️">
+    <title>Operation Position Salary Designer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #a7f3d0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #1e3a8a; }
+        .result-value { font-weight: 600; color: #065f46; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        .badge-s { background: #dcfce7; color: #166534; }
+        .badge-a { background: #dbeafe; color: #1e40af; }
+        .badge-b { background: #fef9c3; color: #854d0e; }
+        .badge-c { background: #fee2e2; color: #991b1b; }
+        
+        /* New styles for dynamic rules */
+        .rules-panel { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e5e7eb; }
+        .rules-grid { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 4px; }
+        .rules-header { font-size: 0.75rem; color: #6b7280; font-weight: bold; text-align: center; margin-bottom: 4px; }
+        .rule-input { padding: 4px 8px; font-size: 0.85rem; height: 30px; }
+        .rule-label { font-weight: bold; text-align: center; font-size: 0.85rem; }
+        .rule-toggle-btn { font-size: 0.8rem; color: #2563eb; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="salary-design-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="SalaryDesign.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">💰 Operation Position Salary Design</h2>
+
+        <div class="space-y-6">
+            
+            <!-- Basic Settings -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="basic_settings">Basic Settings</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label data-i18n="position_level">Position Level Name</label>
+                        <!-- Updated to Input text -->
+                        <input type="text" id="position_level" value="Senior Operation Specialist" placeholder="e.g. Manager" class="focus:ring-2 focus:ring-green-500 outline-none font-semibold text-gray-700">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="base_salary">Base Salary (¥)</label>
+                        <input type="number" id="base_salary" value="5000" oninput="SalaryDesign.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="position_allowance">Position Allowance (¥)</label>
+                        <input type="number" id="position_allowance" value="1000" oninput="SalaryDesign.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="overtime_pay">Overtime Pay (¥)</label>
+                        <input type="number" id="overtime_pay" value="2500" oninput="SalaryDesign.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Inputs -->
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="performance_metrics">Performance Metrics</h3>
+                    <span class="text-xs text-gray-400">Edit rules below to customize logic</span>
+                </div>
+                
+                <!-- Metric 1: New Product -->
+                <div class="bg-gray-50 p-4 rounded mb-4 border border-gray-200">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-800" data-i18n="metric_new_product">1. New Product Success Count</h4>
+                        <span class="rule-toggle-btn" onclick="SalaryDesign.toggleRules('rules-new-prod')" data-i18n="edit_rules">Edit Rules</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label data-i18n="actual_count">Actual Count</label>
+                            <input type="number" id="perf_new_product_val" value="8" oninput="SalaryDesign.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none bg-white">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="achieved_grade">Achieved Grade</label>
+                            <div id="grade_new_product" class="font-bold text-lg text-blue-600 mt-1">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Rules Panel 1 -->
+                    <div id="rules-new-prod" class="rules-panel hidden">
+                        <div class="rules-grid">
+                            <div></div>
+                            <div class="rules-header" data-i18n="hdr_min">Min Value (≥)</div>
+                            <div class="rules-header" data-i18n="hdr_bonus">Bonus (¥)</div>
+                        </div>
+                        <!-- S Grade -->
+                        <div class="rules-grid">
+                            <div class="rule-label text-green-700">S</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="np" data-grade="S" value="10" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="np" data-grade="S" value="1000" oninput="SalaryDesign.calculate()">
+                        </div>
+                        <!-- A Grade -->
+                        <div class="rules-grid">
+                            <div class="rule-label text-blue-700">A</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="np" data-grade="A" value="8" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="np" data-grade="A" value="800" oninput="SalaryDesign.calculate()">
+                        </div>
+                        <!-- B Grade -->
+                        <div class="rules-grid">
+                            <div class="rule-label text-yellow-700">B</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="np" data-grade="B" value="5" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="np" data-grade="B" value="500" oninput="SalaryDesign.calculate()">
+                        </div>
+                        <!-- C Grade -->
+                        <div class="rules-grid">
+                            <div class="rule-label text-red-700">C</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="np" data-grade="C" value="1" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="np" data-grade="C" value="200" oninput="SalaryDesign.calculate()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metric 2: Growth -->
+                <div class="bg-gray-50 p-4 rounded mb-4 border border-gray-200">
+                     <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-800" data-i18n="metric_growth">2. Existing Product Growth Rate (%)</h4>
+                        <span class="rule-toggle-btn" onclick="SalaryDesign.toggleRules('rules-growth')" data-i18n="edit_rules">Edit Rules</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label data-i18n="actual_rate">Actual Rate (%)</label>
+                            <input type="number" id="perf_growth_val" value="40" oninput="SalaryDesign.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none bg-white">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="achieved_grade">Achieved Grade</label>
+                            <div id="grade_growth" class="font-bold text-lg text-blue-600 mt-1">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Rules Panel 2 -->
+                    <div id="rules-growth" class="rules-panel hidden">
+                        <div class="rules-grid">
+                            <div></div>
+                            <div class="rules-header" data-i18n="hdr_min">Min Value (≥)</div>
+                            <div class="rules-header" data-i18n="hdr_bonus">Bonus (¥)</div>
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-green-700">S</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="gr" data-grade="S" value="100" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="gr" data-grade="S" value="1000" oninput="SalaryDesign.calculate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-blue-700">A</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="gr" data-grade="A" value="50" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="gr" data-grade="A" value="800" oninput="SalaryDesign.calculate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-yellow-700">B</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="gr" data-grade="B" value="30" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="gr" data-grade="B" value="500" oninput="SalaryDesign.calculate()">
+                        </div>
+                         <div class="rules-grid">
+                            <div class="rule-label text-red-700">C</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="gr" data-grade="C" value="10" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="gr" data-grade="C" value="200" oninput="SalaryDesign.calculate()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metric 3: Margin -->
+                <div class="bg-gray-50 p-4 rounded mb-4 border border-gray-200">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-800" data-i18n="metric_margin">3. Gross Profit Margin (%)</h4>
+                        <span class="rule-toggle-btn" onclick="SalaryDesign.toggleRules('rules-margin')" data-i18n="edit_rules">Edit Rules</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label data-i18n="actual_margin">Actual Margin (%)</label>
+                            <input type="number" id="perf_margin_val" value="22" oninput="SalaryDesign.calculate()" class="focus:ring-2 focus:ring-green-500 outline-none bg-white">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="achieved_grade">Achieved Grade</label>
+                            <div id="grade_margin" class="font-bold text-lg text-blue-600 mt-1">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Rules Panel 3 -->
+                    <div id="rules-margin" class="rules-panel hidden">
+                        <div class="rules-grid">
+                            <div></div>
+                            <div class="rules-header" data-i18n="hdr_min">Min Value (≥)</div>
+                            <div class="rules-header" data-i18n="hdr_bonus">Bonus (¥)</div>
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-green-700">S</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="mg" data-grade="S" value="25" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="mg" data-grade="S" value="2000" oninput="SalaryDesign.calculate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-blue-700">A</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="mg" data-grade="A" value="20" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="mg" data-grade="A" value="1000" oninput="SalaryDesign.calculate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-yellow-700">B</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="mg" data-grade="B" value="15" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="mg" data-grade="B" value="500" oninput="SalaryDesign.calculate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-red-700">C</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="mg" data-grade="C" value="10" oninput="SalaryDesign.calculate()">
+                            <input type="number" class="rule-input rule-bonus" data-metric="mg" data-grade="C" value="200" oninput="SalaryDesign.calculate()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="SalaryDesign.calculate()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Total Salary</button>
+
+            <!-- Results -->
+            <div class="summary-section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">Salary Breakdown</h3>
+                <div class="result-card">
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="res_fixed">Fixed Income (Base+Allowance+Overtime)</span>
+                        <span class="result-value" id="res_fixed_val">¥0</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="res_perf">Total Performance Bonus</span>
+                        <span class="result-value" id="res_perf_val">¥0</span>
+                    </div>
+                    <div class="result-row border-t border-gray-300 mt-2 pt-2">
+                        <span class="result-label font-bold text-lg text-gray-900" data-i18n="res_total">Total Estimated Salary</span>
+                        <span class="result-value font-bold text-xl text-green-700" id="res_total_val">¥0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">About This Tool</h3>
+                <p data-i18n="intro_text">This tool is designed to structure and calculate salaries for e-commerce operation roles. It combines fixed salary components with customizable dynamic performance modules. You can edit the rules (Thresholds and Bonuses) for S/A/B/C grades to fit your specific company policy.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SalaryDesign = {
+            i18n: {
+                'en': {
+                    title: '💰 Operation Position Salary Designer',
+                    basic_settings: 'Basic Settings',
+                    position_level: 'Position Level Name',
+                    base_salary: 'Base Salary (¥)',
+                    position_allowance: 'Position Allowance (¥)',
+                    overtime_pay: 'Overtime Pay (¥)',
+                    performance_metrics: 'Performance Metrics',
+                    edit_rules: 'Edit Rules',
+                    hdr_min: 'Min Value (≥)',
+                    hdr_bonus: 'Bonus (¥)',
+                    metric_new_product: '1. New Product Success Count',
+                    actual_count: 'Actual Count',
+                    achieved_grade: 'Achieved Grade & Bonus',
+                    metric_growth: '2. Existing Product Growth Rate (%)',
+                    actual_rate: 'Actual Rate (%)',
+                    metric_margin: '3. Gross Profit Margin (%)',
+                    actual_margin: 'Actual Margin (%)',
+                    btn_calc: 'Calculate Total Salary',
+                    results: 'Salary Breakdown',
+                    res_fixed: 'Fixed Income',
+                    res_perf: 'Total Performance Bonus',
+                    res_total: 'Total Estimated Salary',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool is designed to structure and calculate salaries for e-commerce operation roles. It combines fixed salary components with customizable dynamic performance modules. You can edit the rules (Thresholds and Bonuses) for S/A/B/C grades to fit your specific company policy.'
+                },
+                'zh-CN': {
+                    title: '💰 运营岗位工资设计计算器',
+                    basic_settings: '基础设置',
+                    position_level: '岗位级别名称',
+                    base_salary: '基本底薪 (¥)',
+                    position_allowance: '岗位补贴 (¥)',
+                    overtime_pay: '加班/全勤工资 (¥)',
+                    performance_metrics: '绩效考核指标',
+                    edit_rules: '修改规则',
+                    hdr_min: '达标门槛 (≥)',
+                    hdr_bonus: '奖金金额 (¥)',
+                    metric_new_product: '1. 新品打爆款成功个数',
+                    actual_count: '实际个数',
+                    achieved_grade: '获得等级 & 奖金',
+                    metric_growth: '2. 老品业绩增长率 (%)',
+                    actual_rate: '实际增长率 (%)',
+                    metric_margin: '3. 毛利率 (%)',
+                    actual_margin: '实际毛利率 (%)',
+                    btn_calc: '计算总工资',
+                    results: '薪资构成详情',
+                    res_fixed: '固定收入 (底薪+补贴+加班)',
+                    res_perf: '绩效奖金总额',
+                    res_total: '预估总工资',
+                    intro_title: '工具介绍',
+                    intro_text: '本工具用于电商运营岗位的工资结构设计与计算。結合了固定薪资模块与可自定义的动态绩效模块。您可以点击“修改规则”来调整S/A/B/C各等级的达标门槛和奖金金额，以匹配公司的具体政策。'
+                },
+                'zh-TW': {
+                    title: '💰 運營崗位工資設計計算器',
+                    basic_settings: '基礎設置',
+                    position_level: '崗位級別名稱',
+                    base_salary: '基本底薪 (¥)',
+                    position_allowance: '崗位補貼 (¥)',
+                    overtime_pay: '加班/全勤工資 (¥)',
+                    performance_metrics: '績效考核指標',
+                    edit_rules: '修改規則',
+                    hdr_min: '達標門檻 (≥)',
+                    hdr_bonus: '獎金金額 (¥)',
+                    metric_new_product: '1. 新產品打爆款成功個數',
+                    actual_count: '實際個數',
+                    achieved_grade: '獲得等級 & 獎金',
+                    metric_growth: '2. 老產品業績增長率 (%)',
+                    actual_rate: '實際增長率 (%)',
+                    metric_margin: '3. 毛利率 (%)',
+                    actual_margin: '實際毛利率 (%)',
+                    btn_calc: '計算總工資',
+                    results: '薪資構成詳情',
+                    res_fixed: '固定收入 (底薪+補貼+加班)',
+                    res_perf: '績效獎金總額',
+                    res_total: '預估總工資',
+                    intro_title: '工具介紹',
+                    intro_text: '本工具用於電商運營崗位的工資結構設計與計算。結合了固定薪資模組與可自定義的動態績效模組。您可以點擊“修改規則”來調整S/A/B/C各等級的達標門檻和獎金金額，以匹配公司的具體政策。'
+                },
+                'ja': {
+                    title: '💰 運営職給与デザイン計算機',
+                    basic_settings: '基本設定',
+                    position_level: '役職名',
+                    base_salary: '基本給 (¥)',
+                    position_allowance: '役職手当 (¥)',
+                    overtime_pay: '残業/皆勤手当 (¥)',
+                    performance_metrics: 'パフォーマンス指標',
+                    edit_rules: 'ルール編集',
+                    hdr_min: '閾値 (≥)',
+                    hdr_bonus: 'ボーナス (¥)',
+                    metric_new_product: '1. 新製品ヒット成功数',
+                    actual_count: '実績数',
+                    achieved_grade: '獲得ランク & ボーナス',
+                    metric_growth: '2. 既存製品成長率 (%)',
+                    actual_rate: '実績成長率 (%)',
+                    metric_margin: '3. 粗利率 (%)',
+                    actual_margin: '実績粗利率 (%)',
+                    btn_calc: '総給与を計算',
+                    results: '給与内訳',
+                    res_fixed: '固定収入',
+                    res_perf: 'パフォーマンスボーナス総額',
+                    res_total: '推定総給与',
+                    intro_title: 'ツール紹介',
+                    intro_text: 'EC運営職の給与構造を設計・計算するツールです。固定給とカスタマイズ可能な動的パフォーマンスモジュールを組み合わせています。「ルール編集」をクリックして、各ランクの閾値とボーナス額を調整できます。'
+                },
+                'ru': {
+                    title: '💰 Калькулятор зарплаты операционного персонала',
+                    basic_settings: 'Основные настройки',
+                    position_level: 'Название должности',
+                    base_salary: 'Базовый оклад (¥)',
+                    position_allowance: 'Надбавка за должность (¥)',
+                    overtime_pay: 'Оплата переработок (¥)',
+                    performance_metrics: 'Показатели эффективности',
+                    edit_rules: 'Изм. правила',
+                    hdr_min: 'Порог (≥)',
+                    hdr_bonus: 'Бонус (¥)',
+                    metric_new_product: '1. Успешный запуск новых продуктов',
+                    actual_count: 'Фактическое кол-во',
+                    achieved_grade: 'Класс и Бонус',
+                    metric_growth: '2. Рост старых продуктов (%)',
+                    actual_rate: 'Фактический рост (%)',
+                    metric_margin: '3. Валовая прибыль (%)',
+                    actual_margin: 'Фактическая прибыль (%)',
+                    btn_calc: 'Рассчитать итог',
+                    results: 'Детализация зарплаты',
+                    res_fixed: 'Фиксированный доход',
+                    res_perf: 'Итого бонусы',
+                    res_total: 'Ожидаемая зарплата',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Инструмент для проектирования и расчета зарплаты в E-commerce. Позволяет настраивать пороги и бонусы для каждого класса (S/A/B/C) в соответствии с политикой компании.'
+                }
+            },
+
+            init: function() {
+                this.calculate();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const texts = this.i18n[lang];
+                if (!texts) return;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                this.calculate(); 
+            },
+
+            toggleRules: function(id) {
+                const el = document.getElementById(id);
+                el.classList.toggle('hidden');
+            },
+
+            // Helper to get rule values from DOM
+            getRuleConfig: function(metricCode) {
+                // Collect inputs with data-metric="{metricCode}"
+                // data-grade="S", "A", etc.
+                const rules = [];
+                const grades = ['S', 'A', 'B', 'C'];
+                
+                grades.forEach(grade => {
+                    const threshInput = document.querySelector(`.rule-threshold[data-metric="${metricCode}"][data-grade="${grade}"]`);
+                    const bonusInput = document.querySelector(`.rule-bonus[data-metric="${metricCode}"][data-grade="${grade}"]`);
+                    
+                    if (threshInput && bonusInput) {
+                        rules.push({
+                            grade: grade,
+                            min: parseFloat(threshInput.value) || 0,
+                            bonus: parseFloat(bonusInput.value) || 0
+                        });
+                    }
+                });
+                return rules;
+            },
+
+            getGradeAndBonus: function(metricCode, value) {
+                const rules = this.getRuleConfig(metricCode);
+                // Sort rules descending by min threshold to find highest match first
+                rules.sort((a, b) => b.min - a.min);
+
+                for (let rule of rules) {
+                    if (value >= rule.min) {
+                        let css = 'text-gray-600';
+                        if(rule.grade === 'S') css = 'badge badge-s';
+                        if(rule.grade === 'A') css = 'badge badge-a';
+                        if(rule.grade === 'B') css = 'badge badge-b';
+                        if(rule.grade === 'C') css = 'badge badge-c';
+                        
+                        return { grade: rule.grade, bonus: rule.bonus, css: css };
+                    }
+                }
+
+                return { grade: 'D/E', bonus: 0, css: 'text-gray-400' };
+            },
+
+            calculate: function() {
+                // Fixed
+                const base = parseFloat(document.getElementById('base_salary').value) || 0;
+                const allow = parseFloat(document.getElementById('position_allowance').value) || 0;
+                const overtime = parseFloat(document.getElementById('overtime_pay').value) || 0;
+                const fixedTotal = base + allow + overtime;
+
+                // Perf 1: New Product (code 'np')
+                const val1 = parseFloat(document.getElementById('perf_new_product_val').value) || 0;
+                const res1 = this.getGradeAndBonus('np', val1);
+                const el1 = document.getElementById('grade_new_product');
+                el1.innerHTML = `<span class="${res1.css}">${res1.grade}</span> <span class="text-sm ml-2">¥${res1.bonus}</span>`;
+
+                // Perf 2: Growth (code 'gr')
+                const val2 = parseFloat(document.getElementById('perf_growth_val').value) || 0;
+                const res2 = this.getGradeAndBonus('gr', val2);
+                const el2 = document.getElementById('grade_growth');
+                el2.innerHTML = `<span class="${res2.css}">${res2.grade}</span> <span class="text-sm ml-2">¥${res2.bonus}</span>`;
+
+                // Perf 3: Margin (code 'mg')
+                const val3 = parseFloat(document.getElementById('perf_margin_val').value) || 0;
+                const res3 = this.getGradeAndBonus('mg', val3);
+                const el3 = document.getElementById('grade_margin');
+                el3.innerHTML = `<span class="${res3.css}">${res3.grade}</span> <span class="text-sm ml-2">¥${res3.bonus}</span>`;
+
+                const perfTotal = res1.bonus + res2.bonus + res3.bonus;
+                const total = fixedTotal + perfTotal;
+
+                // Update UI
+                document.getElementById('res_fixed_val').innerText = '¥' + fixedTotal;
+                document.getElementById('res_perf_val').innerText = '¥' + perfTotal;
+                document.getElementById('res_total_val').innerText = '¥' + total;
+            }
+        };
+
+        window.onload = function() { SalaryDesign.init(); };
+    </script>
+</body>
+</html>
