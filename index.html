@@ -26,6 +26,8 @@
         body.modal-active { overflow: hidden; }
         .footer-link { cursor: pointer; transition: color 0.2s; }
         .footer-link:hover { color: #0ea5e9; text-decoration: underline; }
+        /* 增加横向滚动支持，防止分类太多时手机端换行太长 */
+        .category-scroll { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col md:flex-row">
@@ -45,8 +47,9 @@
         </div>
 
         <div id="category-container" class="p-2 border-b border-gray-100 hidden md:block">
-            <div class="text-xs font-medium text-gray-500 mb-1 px-2" data-i18n="category_title">Categories</div>
-            <div class="flex flex-wrap gap-1" id="category-btns-sidebar"></div>
+            <div class="text-xs font-medium text-gray-500 mb-2 px-2" data-i18n="category_title">Categories</div>
+            <div class="category-scroll" id="category-btns-sidebar">
+                </div>
         </div>
 
         <div id="menu-container" class="flex-1 overflow-y-auto p-2 space-y-1 hidden md:block">
@@ -62,8 +65,8 @@
                         <h1 class="text-2xl font-bold text-gray-800 mb-2" data-i18n="welcome_title_seo">Free Online Utility Tools & Calculators</h1>
                         <p class="text-gray-500" data-i18n="welcome_desc">Please click the cards below to open tools.</p>
                         <div class="mt-4 md:hidden">
-                            <div class="text-xs font-medium text-gray-500 mb-1" data-i18n="category_title">Categories</div>
-                            <div class="flex flex-wrap gap-1" id="category-btns-mobile"></div>
+                            <div class="text-xs font-medium text-gray-500 mb-2" data-i18n="category_title">Categories</div>
+                            <div class="category-scroll" id="category-btns-mobile"></div>
                         </div>
                     </div>
                     
@@ -124,11 +127,22 @@
                 welcome_desc: "Please click the cards below to open tools.",
                 close: "Close",
                 
-                // Categories
-                category_all: "All", category_ecommerce: "E-commerce", category_health: "Health",
-                category_finance: "Finance", category_math: "Math", category_tools: "Tools",
-                category_dev: "Dev", category_date: "Date", category_life: "Life", 
-                category_time: "Time", category_security: "Security",
+                // Categories (If a category from JSON is not found here, it will auto-capitalize)
+                category_all: "All", 
+                category_other: "Other",
+                category_math: "Math",
+                category_statistics: "Statistics",
+                category_finance: "Finance",
+                category_date_time: "Date & Time",
+                category_health: "Health",
+                category_construction: "Construction",
+                category_chemistry: "Chemistry",
+                category_physics: "Physics",
+                category_conversion: "Conversion",
+                category_dev: "Developer",
+                category_network: "Network",
+                category_security: "Security",
+                category_life: "Life",
 
                 // Footer Links & Modals
                 about: "About Us", sitemap: "Site Map", terms: "Terms of Use", 
@@ -147,11 +161,27 @@
                 welcome_title_seo: "免费在线实用工具和计算器", welcome_desc: "请点击下方卡片打开。",
                 close: "关闭",
 
-                // Categories
-                category_all: "全部", category_ecommerce: "电商", category_health: "健康",
-                category_finance: "金融", category_math: "数学", category_tools: "工具",
-                category_dev: "开发", category_date: "日期", category_life: "生活", 
-                category_time: "时间", category_security: "安全",
+                // Categories (此处定义 JSON 中 category 字段对应的中文显示)
+                category_all: "全部", 
+                category_other: "其他工具",
+                category_math: "数学计算",
+                category_statistics: "统计分析",
+                category_finance: "金融商业",
+                category_date_time: "日期时间",
+                category_health: "健康医疗",
+                category_construction: "工程建筑",
+                category_chemistry: "化学化工",
+                category_physics: "物理计算",
+                category_conversion: "单位转换",
+                category_dev: "开发运维",
+                category_network: "网络工具",
+                category_security: "密码安全",
+                category_life: "生活日常",
+                // 针对您JSON中一些比较杂的分类做个简单的映射（可选）
+                category_transportation: "交通运输",
+                category_fun: "趣味娱乐",
+                category_electronics: "电子电工",
+                category_games: "游戏辅助",
 
                 // Footer Links & Modals
                 about: "关于我们", sitemap: "网站地图", terms: "使用条款", 
@@ -166,7 +196,8 @@
             }
         };
 
-        const categoryKeys = ['all', 'ecommerce', 'health', 'finance', 'math', 'tools', 'dev', 'date', 'life', 'time', 'security'];
+        // 移除了原本的 categoryKeys 数组，完全由 toolsData 动态决定
+
         let currentLang = localStorage.getItem('app_lang') || 'en';
         let toolsData = []; 
 
@@ -175,13 +206,12 @@
                 document.getElementById('year').textContent = new Date().getFullYear();
                 document.getElementById('lang-selector').value = currentLang;
                 
-                App.renderCategoryButtons();
                 App.applyLanguage(currentLang);
                 
-                // 加载数据
+                // 1. 加载数据
                 await App.loadToolsData();
 
-                // 绑定搜索
+                // 2. 绑定搜索
                 document.getElementById('search-input').addEventListener('input', (e) => App.filterTools(e.target.value));
             },
 
@@ -194,14 +224,54 @@
                     
                     console.log("Loaded " + toolsData.length + " tools successfully.");
                     document.getElementById('tool-count').innerText = toolsData.length;
+                    
+                    // 【核心改动】数据加载成功后，自动生成分类按钮
+                    App.renderCategoryButtons();
+                    
+                    // 然后渲染内容
                     App.renderDynamicContent();
                     
                 } catch (e) {
                     console.error("Error loading tools:", e);
                     // 兜底逻辑
-                    const staticCount = document.querySelectorAll('.tool-card').length;
-                    document.getElementById('tool-count').innerText = staticCount;
+                    document.getElementById('tool-count').innerText = "0";
                 }
+            },
+
+            // 【核心改动】动态生成分类按钮
+            renderCategoryButtons: () => {
+                const t = translations[currentLang] || translations['en'];
+                
+                // 1. 从数据中提取所有的 category 字段，去重
+                // 使用 Set 自动去重，filter(Boolean) 去除空值
+                const rawCategories = new Set(toolsData.map(tool => tool.category).filter(Boolean));
+                
+                // 2. 转为数组并排序 (按字母顺序)
+                let categories = Array.from(rawCategories).sort();
+                
+                // 3. 将 'all' 放到最前面
+                categories = ['all', ...categories];
+
+                // 4. 生成 HTML
+                const html = categories.map(c => {
+                    // 尝试获取翻译
+                    let label = t[`category_${c}`];
+                    
+                    // 如果翻译里没定义这个分类，自动格式化显示 (例如: "number_conversion" -> "Number Conversion")
+                    if (!label) {
+                        label = c.split(/[ _/-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                    }
+
+                    // 默认 'all' 是选中状态
+                    const isAll = c === 'all';
+                    const activeClass = isAll ? 'bg-primary-500 text-white border-primary-500' : 'bg-white text-gray-600 hover:bg-gray-50';
+
+                    return `<button class="category-btn px-3 py-1 text-xs font-medium rounded-full border border-gray-200 ${activeClass} transition-all shadow-sm whitespace-nowrap" data-category="${c}" onclick="App.handleCatClick(this)">${label}</button>`;
+                }).join('');
+
+                // 5. 插入到页面
+                document.getElementById('category-btns-sidebar').innerHTML = html;
+                document.getElementById('category-btns-mobile').innerHTML = html;
             },
 
             renderDynamicContent: () => {
@@ -216,13 +286,19 @@
                          else linkPath = '/modules/' + linkPath;
                     }
 
+                    // 如果分类有翻译则显示翻译，没有则显示原文字
+                    let catLabel = t[`category_${tool.category}`];
+                    if (!catLabel) {
+                        catLabel = tool.category ? tool.category.charAt(0).toUpperCase() + tool.category.slice(1) : 'Tool';
+                    }
+
                     return `
-                    <a href="${linkPath}" class="tool-card bg-white p-5 rounded-xl border border-gray-100 group flex flex-col h-full" data-category="${tool.category || 'tools'}">
+                    <a href="${linkPath}" class="tool-card bg-white p-5 rounded-xl border border-gray-100 group flex flex-col h-full" data-category="${tool.category || 'other'}">
                         <div class="flex items-center gap-3 mb-3">
                             <span class="text-3xl bg-gray-50 p-2 rounded-lg group-hover:bg-primary-50 transition">${tool.icon || '🔧'}</span>
                             <div>
                                 <h3 class="font-bold text-gray-800 group-hover:text-primary-600 transition">${tool.title}</h3>
-                                <span class="text-xs text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">${t[`category_${tool.category}`] || tool.category}</span>
+                                <span class="text-xs text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">${catLabel}</span>
                             </div>
                         </div>
                         <p class="text-sm text-gray-500 line-clamp-2">${tool.desc}</p>
@@ -236,7 +312,7 @@
                          else linkPath = '/modules/' + linkPath;
                     }
                     return `
-                    <a href="${linkPath}" class="sidebar-item p-2 rounded-lg text-sm text-gray-600 flex items-center gap-3 hover:bg-gray-100 transition" data-category="${tool.category || 'tools'}">
+                    <a href="${linkPath}" class="sidebar-item p-2 rounded-lg text-sm text-gray-600 flex items-center gap-3 hover:bg-gray-100 transition" data-category="${tool.category || 'other'}">
                         <span>${tool.icon || '🔧'}</span><span>${tool.title}</span>
                     </a>`;
                 }).join('');
@@ -249,20 +325,14 @@
                 App.filterTools(searchVal, activeCat);
             },
 
-            renderCategoryButtons: () => {
-                const t = translations[currentLang] || translations['en'];
-                const html = categoryKeys.map(c => 
-                    `<button class="category-btn px-2 py-1 text-xs rounded ${c==='all'?'bg-primary-500 text-white':'bg-gray-200 text-gray-700'} transition" data-category="${c}" onclick="App.handleCatClick(this)">${t[`category_${c}`]||c}</button>`
-                ).join('');
-                document.getElementById('category-btns-sidebar').innerHTML = html;
-                document.getElementById('category-btns-mobile').innerHTML = html;
-            },
-
             handleCatClick: (btn) => {
+                // 样式重置
                 document.querySelectorAll('.category-btn').forEach(b => {
-                    b.className = b.className.replace('bg-primary-500 text-white', 'bg-gray-200 text-gray-700');
+                    b.className = b.className.replace('bg-primary-500 text-white border-primary-500', 'bg-white text-gray-600 hover:bg-gray-50');
                 });
-                btn.className = btn.className.replace('bg-gray-200 text-gray-700', 'bg-primary-500 text-white');
+                // 选中样式
+                btn.className = btn.className.replace('bg-white text-gray-600 hover:bg-gray-50', 'bg-primary-500 text-white border-primary-500');
+                
                 App.filterTools(document.getElementById('search-input').value, btn.getAttribute('data-category'));
             },
 
@@ -271,7 +341,8 @@
                 const key = keyword.toLowerCase();
                 const els = document.querySelectorAll('.tool-card, .sidebar-item');
                 els.forEach(el => {
-                    const catMatch = activeCat === 'all' || el.getAttribute('data-category') === activeCat;
+                    const elCat = el.getAttribute('data-category');
+                    const catMatch = activeCat === 'all' || elCat === activeCat;
                     const textMatch = el.innerText.toLowerCase().includes(key);
                     el.style.display = (catMatch && textMatch) ? (el.classList.contains('sidebar-item')?'flex':'flex') : 'none';
                 });
@@ -298,7 +369,6 @@
                 
                 const bodyEl = document.getElementById('modal-body');
                 
-                // 特殊处理 Sitemap
                 if (type === 'sitemap') {
                     let listHtml = `<p class="mb-2 font-bold">${t.txt_sitemap || 'Tools List:'}</p><ul class="grid grid-cols-1 md:grid-cols-2 gap-2 list-disc list-inside space-y-1">`;
                     if (toolsData.length === 0) {
@@ -306,7 +376,6 @@
                     } else {
                         toolsData.forEach(tool => {
                             let linkPath = tool.file;
-                             // 简单的路径显示逻辑
                             if (!linkPath.startsWith('/') && !linkPath.startsWith('http')) {
                                 linkPath = (linkPath.startsWith('modules/') ? '/' : '/modules/') + linkPath;
                             }
@@ -316,9 +385,7 @@
                     listHtml += `</ul>`;
                     bodyEl.innerHTML = listHtml;
                 } else {
-                    // 普通文本内容 (About, Privacy, Contact 等)
                     const content = t['txt_'+type] || "Content not available.";
-                    // 将换行符转换为 <br>
                     bodyEl.innerHTML = content.replace(/\n/g, '<br>');
                 }
 
