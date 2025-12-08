@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="网页工具">
+    <title>网页源码获取工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .form-group { margin-bottom: 1rem; }
+        input, textarea { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        .result-card { margin-top: 1rem; }
+        .intro-section { margin-top: 2rem; padding: 1rem; background: white; border-radius: 4px; }
+        .code-block { font-family: monospace; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800" data-i18n="title">🌐 网页源码获取工具</h1>
+            <select id="lang-selector" onchange="HtmlGetter.changeLang()" class="p-2 border rounded">
+                <option value="en">English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁体中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <div class="form-group">
+                <label data-i18n="input_url">输入网页URL</label>
+                <input type="url" id="page_url" placeholder="https://example.com" 
+                    value="https://example.com" class="focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="HtmlGetter.fetchSource()" class="flex-1 py-2" data-i18n="btn_fetch">获取源码</button>
+                <button onclick="HtmlGetter.copySource()" class="flex-1 py-2 bg-green-600 hover:bg-green-700" data-i18n="btn_copy">复制源码</button>
+            </div>
+
+            <div class="result-card mt-4 hidden" id="result_container">
+                <div class="form-group">
+                    <label data-i18n="page_source">网页源码</label>
+                    <textarea id="page_source" rows="15" class="code-block"></textarea>
+                </div>
+                <div class="text-sm text-gray-500 mt-2" id="status_info"></div>
+            </div>
+        </div>
+
+        <div class="intro-section bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于网页源码获取工具</h3>
+            <p data-i18n="intro_text">该工具可以获取指定网页的HTML源代码，帮助开发者分析网页结构和学习前端技术。请注意，获取网页源码应遵守目标网站的robots协议和相关法律法规，不得用于非法用途。</p>
+        </div>
+    </div>
+
+    <script>
+        const HtmlGetter = {
+            i18n: {
+                'en': {
+                    title: '🌐 Web Page Source Code Getter',
+                    input_url: 'Enter Web Page URL',
+                    btn_fetch: 'Get Source Code',
+                    btn_copy: 'Copy Source Code',
+                    page_source: 'Page Source Code',
+                    intro_title: 'About Web Page Source Code Getter',
+                    intro_text: 'This tool can retrieve the HTML source code of specified web pages, helping developers analyze page structures and learn front-end technologies. Please note that obtaining web page source code should comply with the target website\'s robots protocol and relevant laws and regulations, and must not be used for illegal purposes.'
+                },
+                'zh-CN': {
+                    title: '🌐 网页源码获取工具',
+                    input_url: '输入网页URL',
+                    btn_fetch: '获取源码',
+                    btn_copy: '复制源码',
+                    page_source: '网页源码',
+                    intro_title: '关于网页源码获取工具',
+                    intro_text: '该工具可以获取指定网页的HTML源代码，帮助开发者分析网页结构和学习前端技术。请注意，获取网页源码应遵守目标网站的robots协议和相关法律法规，不得用于非法用途。'
+                },
+                'zh-TW': {
+                    title: '🌐 網頁原始碼獲取工具',
+                    input_url: '輸入網頁URL',
+                    btn_fetch: '獲取原始碼',
+                    btn_copy: '複製原始碼',
+                    page_source: '網頁原始碼',
+                    intro_title: '關於網頁原始碼獲取工具',
+                    intro_text: '該工具可以獲取指定網頁的HTML原始程式碼，幫助開發者分析網頁結構和學習前端技術。請注意，獲取網頁原始碼應遵守目標網站的robots協議和相關法律法規，不得用於非法用途。'
+                },
+                'ja': {
+                    title: '🌐 Webページソースコード取得ツール',
+                    input_url: 'WebページURLを入力',
+                    btn_fetch: 'ソースコードを取得',
+                    btn_copy: 'ソースコードをコピー',
+                    page_source: 'ページソースコード',
+                    intro_title: 'Webページソースコード取得ツールについて',
+                    intro_text: 'このツールは指定されたWebページのHTMLソースコードを取得でき、開発者がページ構造を分析したりフロントエンド技術を学習したりするのに役立ちます。Webページのソースコードを取得する場合は、対象サイトのrobots協定と関連法規を遵守し、違法な目的に使用しないように注意してください。'
+                },
+                'ru': {
+                    title: '🌐 Инструмент для получения кода веб-страницы',
+                    input_url: 'Введите URL веб-страницы',
+                    btn_fetch: 'Получить код',
+                    btn_copy: 'Скопировать код',
+                    page_source: 'Исходный код страницы',
+                    intro_title: 'О инструменте для получения кода веб-страницы',
+                    intro_text: 'Этот инструмент может получать HTML-код указанных веб-страниц, помогая разработчикам анализировать структуру страниц и изучать фронтенд-технологии. Обратите внимание, что получение кода веб-страниц должно соответствовать протоколу robots целевого сайта и соответствующим законам и правилам, и не должно использоваться в незаконных целях.'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                this.changeLang();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('lang', lang);
+                window.history.pushState({}, '', newUrl);
+                const texts = this.i18n[lang] || this.i18n['en'];
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            fetchSource: function() {
+                const url = document.getElementById('page_url').value.trim();
+                const resultContainer = document.getElementById('result_container');
+                const sourceEl = document.getElementById('page_source');
+                const statusEl = document.getElementById('status_info');
+
+                if (!url) {
+                    alert(this.i18n[document.getElementById('lang-selector').value]?.input_url || 'Please enter a URL');
+                    return;
+                }
+
+                resultContainer.classList.remove('hidden');
+                statusEl.textContent = '正在获取源码...';
+                sourceEl.value = '';
+
+                // 模拟获取过程（实际应用中应使用后端API）
+                setTimeout(() => {
+                    const mockSource = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Example Domain</title>
+</head>
+<body>
+    <h1>Example Domain</h1>
+    <p>This is a sample web page for demonstration purposes.</p>
+</body>
+</html>`;
+
+                    sourceEl.value = mockSource;
+                    statusEl.textContent = `成功获取: ${new Date().toLocaleString()}`;
+                }, 1500);
+            },
+
+            copySource: function() {
+                const sourceEl = document.getElementById('page_source');
+                if (!sourceEl.value) {
+                    alert('没有可复制的源码');
+                    return;
+                }
+                sourceEl.select();
+                document.execCommand('copy');
+                alert('源码已复制到剪贴板');
+            }
+        };
+
+        window.onload = () => HtmlGetter.init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Productivity">
+    <meta name="icon" content="⏱️">
+    <title>Pomodoro Timer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .timer-display { font-size: 4rem; font-weight: bold; text-align: center; margin: 30px 0; color: #166534; }
+        .timer-controls { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .timer-btn { padding: 10px 20px; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .start-btn { background: #22c55e; color: white; border: none; }
+        .start-btn:hover { background: #16a34a; }
+        .reset-btn { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+        .reset-btn:hover { background: #e5e7eb; }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+    </style>
+</head>
+<body>
+    <div class="tool-module" id="pomodoro-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Pomodoro.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">⏱️ Pomodoro Timer</h2>
+
+        <div class="space-y-6">
+            <!-- Timer Display -->
+            <div class="section">
+                <div class="timer-display" id="timer">25:00</div>
+                <div class="timer-controls">
+                    <button id="start-btn" class="timer-btn start-btn" onclick="Pomodoro.toggleTimer()" data-i18n="start">Start</button>
+                    <button class="timer-btn reset-btn" onclick="Pomodoro.resetTimer()" data-i18n="reset">Reset</button>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="settings">Timer Settings (minutes)</h3>
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label data-i18n="work_time">Work Time</label>
+                        <input type="number" id="work_time" value="25" min="1" onchange="Pomodoro.updateTimer('work')" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="short_break">Short Break</label>
+                        <input type="number" id="short_break" value="5" min="1" onchange="Pomodoro.updateTimer('short')" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="long_break">Long Break</label>
+                        <input type="number" id="long_break" value="15" min="1" onchange="Pomodoro.updateTimer('long')" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="cycles">Cycles Until Long Break</label>
+                        <input type="number" id="cycles" value="4" min="1" onchange="Pomodoro.updateCycles()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="status">Current Status</h3>
+                <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                    <div id="status-text" class="text-center font-medium text-gray-800" data-i18n="status_ready">Ready to start working</div>
+                    <div class="flex justify-center mt-3 gap-2">
+                        <div class="flex gap-1" id="cycle-indicators">
+                            <div class="w-3 h-3 rounded-full bg-gray-300"></div>
+                            <div class="w-3 h-3 rounded-full bg-gray-300"></div>
+                            <div class="w-3 h-3 rounded-full bg-gray-300"></div>
+                            <div class="w-3 h-3 rounded-full bg-gray-300"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">About Pomodoro Technique</h3>
+                <p data-i18n="intro_text">The Pomodoro Technique is a time management method that uses a timer to break work into intervals (usually 25 minutes) separated by short breaks. After completing several work intervals, take a longer break. This tool helps you implement this productivity method effectively.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const Pomodoro = {
+            i18n: {
+                'en': {
+                    title: '⏱️ Pomodoro Timer',
+                    start: 'Start',
+                    reset: 'Reset',
+                    settings: 'Timer Settings (minutes)',
+                    work_time: 'Work Time',
+                    short_break: 'Short Break',
+                    long_break: 'Long Break',
+                    cycles: 'Cycles Until Long Break',
+                    status: 'Current Status',
+                    status_ready: 'Ready to start working',
+                    status_working: 'Working time!',
+                    status_short_break: 'Short break time',
+                    status_long_break: 'Long break time',
+                    intro_title: 'About Pomodoro Technique',
+                    intro_text: 'The Pomodoro Technique is a time management method that uses a timer to break work into intervals (usually 25 minutes) separated by short breaks. After completing several work intervals, take a longer break. This tool helps you implement this productivity method effectively.'
+                },
+                'zh-CN': {
+                    title: '⏱️ 番茄工作法计时器',
+                    start: '开始',
+                    reset: '重置',
+                    settings: '计时器设置（分钟）',
+                    work_time: '工作时间',
+                    short_break: '短休息',
+                    long_break: '长休息',
+                    cycles: '长休息前的周期数',
+                    status: '当前状态',
+                    status_ready: '准备开始工作',
+                    status_working: '工作时间！',
+                    status_short_break: '短休息时间',
+                    status_long_break: '长休息时间',
+                    intro_title: '关于番茄工作法',
+                    intro_text: '番茄工作法是一种时间管理方法，使用计时器将工作分解为多个间隔（通常25分钟），间隔之间有短暂休息。完成若干个工作间隔后，进行一次较长时间的休息。本工具可帮助您有效实施这种提高 productivity 的方法。'
+                },
+                'zh-TW': {
+                    title: '⏱️ 番茄工作法計時器',
+                    start: '開始',
+                    reset: '重置',
+                    settings: '計時器設置（分鐘）',
+                    work_time: '工作時間',
+                    short_break: '短休息',
+                    long_break: '長休息',
+                    cycles: '長休息前的周期數',
+                    status: '當前狀態',
+                    status_ready: '準備開始工作',
+                    status_working: '工作時間！',
+                    status_short_break: '短休息時間',
+                    status_long_break: '長休息時間',
+                    intro_title: '關於番茄工作法',
+                    intro_text: '番茄工作法是一種時間管理方法，使用計時器將工作分解為多個間隔（通常25分鐘），間隔之間有短暫休息。完成若干個工作間隔後，進行一次較長時間的休息。本工具可幫助您有效實施這種提高 productivity 的方法。'
+                },
+                'ja': {
+                    title: '⏱️ ポモドーロタイマー',
+                    start: '開始',
+                    reset: 'リセット',
+                    settings: 'タイマー設定（分）',
+                    work_time: '作業時間',
+                    short_break: '短い休憩',
+                    long_break: '長い休憩',
+                    cycles: '長い休憩までのサイクル数',
+                    status: '現在の状態',
+                    status_ready: '作業開始準備完了',
+                    status_working: '作業時間！',
+                    status_short_break: '短い休憩時間',
+                    status_long_break: '長い休憩時間',
+                    intro_title: 'ポモドーロテクニックについて',
+                    intro_text: 'ポモドーロテクニックは、タイマーを使って作業を一定の間隔（通常25分）に分割し、短い休憩を挟む時間管理法です。数回の作業間隔を完了後、長い休憩を取ります。このツールは、この生産性向上法を効果的に実践するのに役立ちます。'
+                },
+                'ru': {
+                    title: '⏱️ Помидоро Таймер',
+                    start: 'Старт',
+                    reset: 'Сброс',
+                    settings: 'Настройки таймера (минуты)',
+                    work_time: 'Время работы',
+                    short_break: 'Короткий перерыв',
+                    long_break: 'Длинный перерыв',
+                    cycles: 'Циклов до длинного перерыва',
+                    status: 'Текущий статус',
+                    status_ready: 'Готов к работе',
+                    status_working: 'Время работы!',
+                    status_short_break: 'Короткий перерыв',
+                    status_long_break: 'Длинный перерыв',
+                    intro_title: 'О технике помидоро',
+                    intro_text: 'Техника помидоро — это метод управления временем, который использует таймер для разделения работы на интервалы (обычно 25 минут) с короткими перерывами между ними. После завершения нескольких рабочих интервалов делается более длительный перерыв. Этот инструмент поможет эффективно применять этот метод повышения продуктивности.'
+                }
+            },
+
+            timer: null,
+            isRunning: false,
+            mode: 'work', // work, short_break, long_break
+            timeLeft: 25 * 60,
+            cyclesCompleted: 0,
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                }
+                this.updateTimerDisplay();
+                this.updateCycleIndicators();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('lang', lang);
+                window.history.pushState({}, '', newUrl);
+                const texts = this.i18n[lang];
+                if (!texts) return;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                this.updateStatusText();
+            },
+
+            toggleTimer: function() {
+                if (this.isRunning) {
+                    clearInterval(this.timer);
+                    document.getElementById('start-btn').innerText = this.i18n[document.getElementById('lang-selector').value].start || 'Start';
+                } else {
+                    this.timer = setInterval(() => this.countdown(), 1000);
+                    document.getElementById('start-btn').innerText = 'Pause';
+                }
+                this.isRunning = !this.isRunning;
+            },
+
+            resetTimer: function() {
+                clearInterval(this.timer);
+                this.isRunning = false;
+                this.mode = 'work';
+                this.timeLeft = parseInt(document.getElementById('work_time').value) * 60;
+                this.updateTimerDisplay();
+                document.getElementById('start-btn').innerText = this.i18n[document.getElementById('lang-selector').value].start || 'Start';
+                this.updateStatusText();
+            },
+
+            countdown: function() {
+                if (this.timeLeft > 0) {
+                    this.timeLeft--;
+                    this.updateTimerDisplay();
+                } else {
+                    this.completeInterval();
+                }
+            },
+
+            completeInterval: function() {
+                clearInterval(this.timer);
+                this.isRunning = false;
+                document.getElementById('start-btn').innerText = this.i18n[document.getElementById('lang-selector').value].start || 'Start';
+                
+                if (this.mode === 'work') {
+                    this.cyclesCompleted++;
+                    this.updateCycleIndicators();
+                    
+                    const totalCycles = parseInt(document.getElementById('cycles').value);
+                    if (this.cyclesCompleted % totalCycles === 0) {
+                        this.mode = 'long_break';
+                        this.timeLeft = parseInt(document.getElementById('long_break').value) * 60;
+                    } else {
+                        this.mode = 'short_break';
+                        this.timeLeft = parseInt(document.getElementById('short_break').value) * 60;
+                    }
+                } else {
+                    this.mode = 'work';
+                    this.timeLeft = parseInt(document.getElementById('work_time').value) * 60;
+                }
+                
+                this.updateTimerDisplay();
+                this.updateStatusText();
+                this.playAlarm();
+            },
+
+            playAlarm: function() {
+                const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAzMzMzMzMzMwAAAAA=');
+                audio.play().catch(e => console.log('Audio play prevented:', e));
+            },
+
+            updateTimerDisplay: function() {
+                const minutes = Math.floor(this.timeLeft / 60).toString().padStart(2, '0');
+                const seconds = (this.timeLeft % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${minutes}:${seconds}`;
+            },
+
+            updateTimer: function(type) {
+                const minutes = parseInt(document.getElementById(`${type}_time`).value) || 1;
+                if (this.mode === type) {
+                    this.timeLeft = minutes * 60;
+                    this.updateTimerDisplay();
+                }
+            },
+
+            updateCycles: function() {
+                this.cyclesCompleted = 0;
+                this.updateCycleIndicators();
+            },
+
+            updateCycleIndicators: function() {
+                const totalCycles = parseInt(document.getElementById('cycles').value) || 1;
+                let indicators = '';
+                
+                for (let i = 0; i < totalCycles; i++) {
+                    const isCompleted = i < this.cyclesCompleted % totalCycles;
+                    const color = isCompleted ? 'bg-green-500' : 'bg-gray-300';
+                    indicators += `<div class="w-3 h-3 rounded-full ${color}"></div>`;
+                }
+                
+                document.getElementById('cycle-indicators').innerHTML = indicators;
+            },
+
+            updateStatusText: function() {
+                const lang = document.getElementById('lang-selector').value;
+                let statusKey = '';
+                
+                switch (this.mode) {
+                    case 'work':
+                        statusKey = 'status_working';
+                        break;
+                    case 'short_break':
+                        statusKey = 'status_short_break';
+                        break;
+                    case 'long_break':
+                        statusKey = 'status_long_break';
+                        break;
+                    default:
+                        statusKey = 'status_ready';
+                }
+                
+                document.getElementById('status-text').innerText = this.i18n[lang][statusKey] || this.i18n['en'][statusKey];
+            }
+        };
+
+        window.onload = function() { Pomodoro.init(); };
+    </script>
+</body>
+</html>

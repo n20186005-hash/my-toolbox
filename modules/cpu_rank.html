@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Hardware">
+    <meta name="icon" content="💻">
+    <title>CPU Ranking Chart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Changed to cdnjs for better stability in some environments -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <style>
+        body { padding: 20px; background: #f5f5f4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1200px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .result-card { background: #f5f5f4; border: 1px solid #e7e5e4; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .cpu-list { margin-top: 15px; }
+        .cpu-item { padding: 10px; border-bottom: 1px solid #e7e5e4; display: flex; justify-content: space-between; align-items: center; }
+        .cpu-item:last-child { border-bottom: none; }
+        .cpu-rank { font-weight: bold; color: #78350f; width: 40px; text-align: center; }
+        .cpu-name { flex-grow: 1; margin: 0 15px; }
+        .cpu-score { font-weight: bold; color: #78350f; }
+        .chart-container { height: 600px; margin: 20px 0; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="cpu-rank-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="CPUTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">💻 CPU Ranking Chart</h2>
+
+        <div class="space-y-6">
+            <!-- Filter Options -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="filter">Filter Options</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label data-i18n="cpu_type">CPU Type</label>
+                        <select id="cpu_type" onchange="CPUTool.updateRanking()" class="focus:ring-2 focus:ring-amber-500 outline-none">
+                            <option value="all" selected data-i18n="all">All Types</option>
+                            <option value="desktop" data-i18n="desktop">Desktop</option>
+                            <option value="mobile" data-i18n="mobile">Mobile</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="manufacturer">Manufacturer</label>
+                        <select id="manufacturer" onchange="CPUTool.updateRanking()" class="focus:ring-2 focus:ring-amber-500 outline-none">
+                            <option value="all" selected data-i18n="all">All Manufacturers</option>
+                            <option value="intel">Intel</option>
+                            <option value="amd">AMD</option>
+                            <option value="apple">Apple</option>
+                            <option value="qualcomm">Qualcomm</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="top_n">Show Top N</label>
+                        <select id="top_n" onchange="CPUTool.updateRanking()" class="focus:ring-2 focus:ring-amber-500 outline-none">
+                            <option value="10">Top 10</option>
+                            <option value="20" selected>Top 20</option>
+                            <option value="30">Top 30</option>
+                            <option value="50">Top 50</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CPU Ranking Chart -->
+            <div class="summary-section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="ranking">CPU Performance Ranking</h3>
+                <div class="result-card">
+                    <div class="chart-container">
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+                    
+                    <div class="cpu-list" id="cpu_list">
+                        <!-- CPU items will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">About This Tool</h3>
+                <p data-i18n="intro_text">This CPU ranking tool displays the performance ranking of various processors based on benchmark scores. You can filter by CPU type, manufacturer, and the number of top CPUs to display. The data is regularly updated to include the latest processor models.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CPUTool = {
+            // Updated Data based on PassMark Multi-Thread Benchmarks (Late 2024/Early 2025 Data)
+            cpuData: [
+                // Desktop - High End
+                { rank: 1, name: 'Intel Core Ultra 9 285K', score: 67481, type: 'desktop', manufacturer: 'intel' },
+                { rank: 2, name: 'AMD Ryzen 9 9950X', score: 65850, type: 'desktop', manufacturer: 'amd' },
+                { rank: 3, name: 'AMD Ryzen 9 7950X', score: 63000, type: 'desktop', manufacturer: 'amd' },
+                { rank: 4, name: 'AMD Ryzen 9 7950X3D', score: 62322, type: 'desktop', manufacturer: 'amd' },
+                { rank: 5, name: 'Intel Core i9-14900KS', score: 61500, type: 'desktop', manufacturer: 'intel' },
+                { rank: 6, name: 'Intel Core i9-13900KS', score: 59000, type: 'desktop', manufacturer: 'intel' },
+                { rank: 7, name: 'Intel Core Ultra 7 265K', score: 58780, type: 'desktop', manufacturer: 'intel' },
+                { rank: 8, name: 'Intel Core i9-14900K', score: 58547, type: 'desktop', manufacturer: 'intel' },
+                { rank: 9, name: 'Intel Core i9-13900K', score: 58361, type: 'desktop', manufacturer: 'intel' },
+                { rank: 10, name: 'Intel Core i7-14700K', score: 52212, type: 'desktop', manufacturer: 'intel' },
+                { rank: 11, name: 'AMD Ryzen 9 7900X', score: 51330, type: 'desktop', manufacturer: 'amd' },
+                { rank: 12, name: 'Apple M2 Ultra (Desktop)', score: 47500, type: 'desktop', manufacturer: 'apple' },
+                { rank: 13, name: 'AMD Ryzen 9 5950X', score: 45355, type: 'desktop', manufacturer: 'amd' },
+                { rank: 14, name: 'Intel Core i9-12900KS', score: 44500, type: 'desktop', manufacturer: 'intel' },
+                
+                // Mobile / High End Laptop / Upper Mid Desktop
+                { rank: 15, name: 'Apple M4 Max (16-core)', score: 43989, type: 'mobile', manufacturer: 'apple' },
+                { rank: 16, name: 'Intel Core i9-12900K', score: 41800, type: 'desktop', manufacturer: 'intel' },
+                { rank: 17, name: 'Apple M3 Max (16-core)', score: 41258, type: 'mobile', manufacturer: 'apple' },
+                { rank: 18, name: 'AMD Ryzen 9 5900X', score: 38954, type: 'desktop', manufacturer: 'amd' },
+                { rank: 19, name: 'Apple M4 Max (14-core)', score: 38565, type: 'mobile', manufacturer: 'apple' },
+                { rank: 20, name: 'Intel Core i5-14600K', score: 38500, type: 'desktop', manufacturer: 'intel' },
+                { rank: 21, name: 'Apple M4 Pro (14-core)', score: 38126, type: 'mobile', manufacturer: 'apple' },
+                { rank: 22, name: 'AMD Ryzen AI 9 HX 370', score: 37699, type: 'mobile', manufacturer: 'amd' },
+                { rank: 23, name: 'Intel Core i5-13600K', score: 37649, type: 'desktop', manufacturer: 'intel' },
+                { rank: 24, name: 'AMD Ryzen 7 9700X', score: 37134, type: 'desktop', manufacturer: 'amd' },
+                { rank: 25, name: 'AMD Ryzen 7 7700X', score: 35604, type: 'desktop', manufacturer: 'amd' },
+                { rank: 26, name: 'AMD Ryzen 7 7800X3D', score: 34309, type: 'desktop', manufacturer: 'amd' },
+                { rank: 27, name: 'Intel Core i7-12700K', score: 34349, type: 'desktop', manufacturer: 'intel' },
+                
+                // Mid Range / High Performance Mobile
+                { rank: 28, name: 'Intel Core Ultra 9 185H', score: 29800, type: 'mobile', manufacturer: 'intel' },
+                { rank: 29, name: 'AMD Ryzen 7 5800X3D', score: 29500, type: 'desktop', manufacturer: 'amd' },
+                { rank: 30, name: 'Intel Core i5-12600K', score: 27800, type: 'desktop', manufacturer: 'intel' },
+                { rank: 31, name: 'Apple M3 Pro (12-core)', score: 27000, type: 'mobile', manufacturer: 'apple' },
+                { rank: 32, name: 'Apple M2 Max', score: 26800, type: 'mobile', manufacturer: 'apple' },
+                { rank: 33, name: 'AMD Ryzen 5 7600X', score: 26500, type: 'desktop', manufacturer: 'amd' },
+                { rank: 34, name: 'Qualcomm Snapdragon X Elite (X1E-84)', score: 23272, type: 'mobile', manufacturer: 'qualcomm' },
+                { rank: 35, name: 'Apple M2 Pro', score: 22500, type: 'mobile', manufacturer: 'apple' },
+                { rank: 36, name: 'Apple M1 Max', score: 22147, type: 'mobile', manufacturer: 'apple' },
+                { rank: 37, name: 'AMD Ryzen 5 5600X', score: 22000, type: 'desktop', manufacturer: 'amd' },
+                { rank: 38, name: 'Apple M3 (8-core)', score: 19800, type: 'mobile', manufacturer: 'apple' },
+                { rank: 39, name: 'Intel Core i5-12400F', score: 19538, type: 'desktop', manufacturer: 'intel' },
+                { rank: 40, name: 'Apple M2 (8-core)', score: 18900, type: 'mobile', manufacturer: 'apple' }
+            ],
+            chart: null,
+
+            i18n: {
+                'en': {
+                    title: '💻 CPU Ranking Chart',
+                    filter: 'Filter Options',
+                    cpu_type: 'CPU Type',
+                    all: 'All',
+                    desktop: 'Desktop',
+                    mobile: 'Mobile',
+                    manufacturer: 'Manufacturer',
+                    top_n: 'Show Top N',
+                    ranking: 'CPU Performance Ranking',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This CPU ranking tool displays the performance ranking of various processors based on benchmark scores (PassMark Multi-Thread). You can filter by CPU type, manufacturer, and the number of top CPUs to display. Updated with 2024/2025 data.',
+                    // Chart specific
+                    chart_score: 'Score',
+                    chart_axis: 'Benchmark Score',
+                    chart_perf: 'Performance Score'
+                },
+                'zh-CN': {
+                    title: '💻 CPU 天梯图',
+                    filter: '筛选选项',
+                    cpu_type: 'CPU类型',
+                    all: '全部',
+                    desktop: '桌面级',
+                    mobile: '移动级',
+                    manufacturer: '制造商',
+                    top_n: '显示前N名',
+                    ranking: 'CPU性能排名',
+                    intro_title: '关于本工具',
+                    intro_text: '本CPU天梯图工具根据PassMark多核基准测试分数显示各种处理器的性能排名。您可以按CPU类型、制造商和显示的顶级CPU数量进行筛选。数据已更新至2024/2025年最新型号（包括Intel Ultra, AMD Ryzen 9000, Apple M4等）。',
+                    // Chart specific
+                    chart_score: '分数',
+                    chart_axis: '基准分数',
+                    chart_perf: '性能分数'
+                },
+                'zh-TW': {
+                    title: '💻 CPU 天梯圖',
+                    filter: '篩選選項',
+                    cpu_type: 'CPU類型',
+                    all: '全部',
+                    desktop: '桌面級',
+                    mobile: '移動級',
+                    manufacturer: '製造商',
+                    top_n: '顯示前N名',
+                    ranking: 'CPU性能排名',
+                    intro_title: '關於本工具',
+                    intro_text: '本CPU天梯圖工具根據PassMark多核基準測試分數顯示各種處理器的性能排名。您可以按CPU類型、製造商和顯示的頂級CPU數量進行篩選。數據已更新至2024/2025年最新型號（包括Intel Ultra, AMD Ryzen 9000, Apple M4等）。',
+                    // Chart specific
+                    chart_score: '分數',
+                    chart_axis: '基準分數',
+                    chart_perf: '性能分數'
+                },
+                'ja': {
+                    title: '💻 CPUランキングチャート',
+                    filter: 'フィルターオプション',
+                    cpu_type: 'CPUタイプ',
+                    all: 'すべて',
+                    desktop: 'デスクトップ',
+                    mobile: 'モバイル',
+                    manufacturer: 'メーカー',
+                    top_n: '上位N件を表示',
+                    ranking: 'CPU性能ランキング',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このCPUランキングツールは、PassMarkマルチスレッドベンチマークスコアに基づいてさまざまなプロセッサの性能ランキングを表示します。CPUタイプ、メーカー、表示する上位CPUの数でフィルタリングできます。2024/2025年の最新データ（Intel Ultra、AMD Ryzen 9000、Apple M4など）に更新されています。',
+                    // Chart specific
+                    chart_score: 'スコア',
+                    chart_axis: 'ベンチマークスコア',
+                    chart_perf: 'パフォーマンススコア'
+                },
+                'ru': {
+                    title: '💻 Рейтинг процессоров',
+                    filter: 'Фильтры',
+                    cpu_type: 'Тип CPU',
+                    all: 'Все',
+                    desktop: 'Настольные',
+                    mobile: 'Мобильные',
+                    manufacturer: 'Производитель',
+                    top_n: 'Показать топ N',
+                    ranking: 'Рейтинг производительности CPU',
+                    intro_title: 'О этом инструменте',
+                    intro_text: 'Этот инструмент отображает рейтинг производительности процессоров на основе многопоточных тестов PassMark. Вы можете фильтровать по типу CPU, производителю и количеству. Данные обновлены до моделей 2024/2025 года.',
+                    // Chart specific
+                    chart_score: 'Очки',
+                    chart_axis: 'Оценка производительности',
+                    chart_perf: 'Оценка производительности'
+                }
+            },
+
+            init() {
+                // Check if Chart.js is loaded
+                if (typeof Chart === 'undefined') {
+                    console.log('Chart.js not loaded yet, retrying...');
+                    setTimeout(() => this.init(), 200); // Retry every 200ms
+                    return;
+                }
+
+                // Initialize language
+                let lang = 'en';
+                try {
+                    const savedLang = localStorage.getItem('cpu-rank-lang');
+                    const params = new URLSearchParams(window.location.search);
+                    // Updated priority: URL params > localStorage > default
+                    lang = params.get('lang') || savedLang || 'en';
+                } catch (e) {
+                    console.warn('Cannot access localStorage or URL params', e);
+                }
+
+                const langSelector = document.getElementById('lang-selector');
+                if (this.i18n[lang]) {
+                    langSelector.value = lang;
+                }
+
+                this.updateRanking();
+                this.updateTranslations();
+            },
+
+            changeLang() {
+                this.updateTranslations(true);
+                // Force update ranking to redraw chart with new language labels
+                this.updateRanking();
+            },
+
+            updateTranslations(saveToStorage = false) {
+                const lang = document.getElementById('lang-selector').value;
+                
+                if (saveToStorage) {
+                    // 1. Try to update URL params (User requested feature)
+                    // We use try-catch to prevent crash if browser security policy blocks it in iframe
+                    try {
+                        const url = new URL(window.location);
+                        url.searchParams.set('lang', lang);
+                        window.history.replaceState({}, '', url);
+                    } catch (e) {
+                        console.log('URL update prevented by sandbox policy');
+                    }
+
+                    // 2. Save to localStorage
+                     try {
+                        localStorage.setItem('cpu-rank-lang', lang);
+                    } catch (e) {
+                        console.warn('LocalStorage not available');
+                    }
+                }
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+
+            updateRanking() {
+                const type = document.getElementById('cpu_type').value;
+                const manufacturer = document.getElementById('manufacturer').value;
+                const topN = parseInt(document.getElementById('top_n').value);
+                
+                // Filter data
+                let filtered = this.cpuData.sort((a, b) => b.score - a.score);
+                
+                // Filter logic
+                if (type !== 'all') filtered = filtered.filter(cpu => cpu.type === type);
+                if (manufacturer !== 'all') filtered = filtered.filter(cpu => cpu.manufacturer === manufacturer);
+                
+                // Slice top N
+                const sliced = filtered.slice(0, topN);
+                
+                // Update list and chart
+                this.updateCPUList(sliced);
+                this.updateChart(sliced);
+            },
+
+            updateCPUList(cpus) {
+                const listEl = document.getElementById('cpu_list');
+                listEl.innerHTML = '';
+                
+                cpus.forEach((cpu, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'cpu-item';
+                    item.innerHTML = `
+                        <div class="cpu-rank">#${index + 1}</div>
+                        <div class="cpu-name">${cpu.name}</div>
+                        <div class="cpu-score">${cpu.score.toLocaleString()}</div>
+                    `;
+                    listEl.appendChild(item);
+                });
+            },
+
+            updateChart(cpus) {
+                // Safety check before updating chart
+                if (typeof Chart === 'undefined') return;
+
+                // Get current language for localized chart text
+                const lang = document.getElementById('lang-selector').value || 'en';
+                const texts = this.i18n[lang] || this.i18n['en'];
+
+                const ctx = document.getElementById('cpuChart').getContext('2d');
+                const labels = cpus.map(cpu => cpu.name);
+                const data = cpus.map(cpu => cpu.score);
+                
+                // Dynamic colors based on brand
+                const colors = cpus.map(cpu => {
+                    if (cpu.manufacturer === 'intel') return 'rgba(0, 113, 197, 0.7)'; // Intel Blue
+                    if (cpu.manufacturer === 'amd') return 'rgba(237, 28, 36, 0.7)'; // AMD Red
+                    if (cpu.manufacturer === 'apple') return 'rgba(96, 96, 96, 0.7)'; // Apple Grey
+                    if (cpu.manufacturer === 'qualcomm') return 'rgba(50, 85, 164, 0.7)'; // Qualcomm Blue-ish
+                    return 'rgba(150, 150, 150, 0.7)';
+                });
+                
+                if (this.chart) {
+                    this.chart.destroy();
+                }
+                
+                this.chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: texts.chart_perf,
+                            data: data,
+                            backgroundColor: colors,
+                            borderColor: colors.map(c => c.replace('0.7', '1')),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        maintainAspectRatio: false,
+                        responsive: true,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: texts.chart_axis
+                                },
+                                grid: { color: '#e5e7eb' }
+                            },
+                            y: {
+                                grid: { display: false }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${texts.chart_score}: ${context.raw.toLocaleString()}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        // Initialize when page loads
+        window.onload = () => CPUTool.init();
+    </script>
+</body>
+</html>
