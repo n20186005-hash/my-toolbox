@@ -127,7 +127,6 @@
                 welcome_desc: "Please click the cards below to open tools.",
                 close: "Close",
                 
-                // Categories (If a category from JSON is not found here, it will auto-capitalize)
                 category_all: "All", 
                 category_other: "Other",
                 category_math: "Math",
@@ -144,7 +143,6 @@
                 category_security: "Security",
                 category_life: "Life",
 
-                // Footer Links & Modals
                 about: "About Us", sitemap: "Site Map", terms: "Terms of Use", 
                 privacy: "Privacy Policy", disclaimer: "Disclaimer", contact: "Contact Us",
                 
@@ -161,7 +159,6 @@
                 welcome_title_seo: "免费在线实用工具和计算器", welcome_desc: "请点击下方卡片打开。",
                 close: "关闭",
 
-                // Categories (此处定义 JSON 中 category 字段对应的中文显示)
                 category_all: "全部", 
                 category_other: "其他工具",
                 category_math: "数学计算",
@@ -177,13 +174,11 @@
                 category_network: "网络工具",
                 category_security: "密码安全",
                 category_life: "生活日常",
-                // 针对您JSON中一些比较杂的分类做个简单的映射（可选）
                 category_transportation: "交通运输",
                 category_fun: "趣味娱乐",
                 category_electronics: "电子电工",
                 category_games: "游戏辅助",
 
-                // Footer Links & Modals
                 about: "关于我们", sitemap: "网站地图", terms: "使用条款", 
                 privacy: "隐私政策", disclaimer: "免责声明", contact: "联系我们",
 
@@ -196,8 +191,6 @@
             }
         };
 
-        // 移除了原本的 categoryKeys 数组，完全由 toolsData 动态决定
-
         let currentLang = localStorage.getItem('app_lang') || 'en';
         let toolsData = []; 
 
@@ -208,10 +201,8 @@
                 
                 App.applyLanguage(currentLang);
                 
-                // 1. 加载数据
                 await App.loadToolsData();
 
-                // 2. 绑定搜索
                 document.getElementById('search-input').addEventListener('input', (e) => App.filterTools(e.target.value));
             },
 
@@ -225,51 +216,38 @@
                     console.log("Loaded " + toolsData.length + " tools successfully.");
                     document.getElementById('tool-count').innerText = toolsData.length;
                     
-                    // 【核心改动】数据加载成功后，自动生成分类按钮
                     App.renderCategoryButtons();
-                    
-                    // 然后渲染内容
                     App.renderDynamicContent();
                     
                 } catch (e) {
                     console.error("Error loading tools:", e);
-                    // 兜底逻辑
                     document.getElementById('tool-count').innerText = "0";
                 }
             },
 
-            // 【核心改动】动态生成分类按钮
             renderCategoryButtons: () => {
                 const t = translations[currentLang] || translations['en'];
                 
-                // 1. 从数据中提取所有的 category 字段，去重
-                // 使用 Set 自动去重，filter(Boolean) 去除空值
                 const rawCategories = new Set(toolsData.map(tool => tool.category).filter(Boolean));
-                
-                // 2. 转为数组并排序 (按字母顺序)
                 let categories = Array.from(rawCategories).sort();
-                
-                // 3. 将 'all' 放到最前面
                 categories = ['all', ...categories];
 
-                // 4. 生成 HTML
                 const html = categories.map(c => {
-                    // 尝试获取翻译
                     let label = t[`category_${c}`];
                     
-                    // 如果翻译里没定义这个分类，自动格式化显示 (例如: "number_conversion" -> "Number Conversion")
                     if (!label) {
                         label = c.split(/[ _/-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                     }
 
-                    // 默认 'all' 是选中状态
+                    // 默认不加高亮类，由 handleCatClick 或初始化逻辑控制
+                    // 初始加载时 all 高亮，但如果是切换语言重绘，则会被后续逻辑覆盖
                     const isAll = c === 'all';
+                    // 初始默认 all 为激活态
                     const activeClass = isAll ? 'bg-primary-500 text-white border-primary-500' : 'bg-white text-gray-600 hover:bg-gray-50';
 
                     return `<button class="category-btn px-3 py-1 text-xs font-medium rounded-full border border-gray-200 ${activeClass} transition-all shadow-sm whitespace-nowrap" data-category="${c}" onclick="App.handleCatClick(this)">${label}</button>`;
                 }).join('');
 
-                // 5. 插入到页面
                 document.getElementById('category-btns-sidebar').innerHTML = html;
                 document.getElementById('category-btns-mobile').innerHTML = html;
             },
@@ -286,14 +264,14 @@
                          else linkPath = '/modules/' + linkPath;
                     }
 
-                    // 如果分类有翻译则显示翻译，没有则显示原文字
                     let catLabel = t[`category_${tool.category}`];
                     if (!catLabel) {
                         catLabel = tool.category ? tool.category.charAt(0).toUpperCase() + tool.category.slice(1) : 'Tool';
                     }
 
+                    // 【核心修改1】 增加 target="_blank"
                     return `
-                    <a href="${linkPath}" class="tool-card bg-white p-5 rounded-xl border border-gray-100 group flex flex-col h-full" data-category="${tool.category || 'other'}">
+                    <a href="${linkPath}" target="_blank" class="tool-card bg-white p-5 rounded-xl border border-gray-100 group flex flex-col h-full" data-category="${tool.category || 'other'}">
                         <div class="flex items-center gap-3 mb-3">
                             <span class="text-3xl bg-gray-50 p-2 rounded-lg group-hover:bg-primary-50 transition">${tool.icon || '🔧'}</span>
                             <div>
@@ -311,8 +289,9 @@
                          if (linkPath.startsWith('modules/')) linkPath = '/' + linkPath;
                          else linkPath = '/modules/' + linkPath;
                     }
+                    // 【核心修改1】 增加 target="_blank"
                     return `
-                    <a href="${linkPath}" class="sidebar-item p-2 rounded-lg text-sm text-gray-600 flex items-center gap-3 hover:bg-gray-100 transition" data-category="${tool.category || 'other'}">
+                    <a href="${linkPath}" target="_blank" class="sidebar-item p-2 rounded-lg text-sm text-gray-600 flex items-center gap-3 hover:bg-gray-100 transition" data-category="${tool.category || 'other'}">
                         <span>${tool.icon || '🔧'}</span><span>${tool.title}</span>
                     </a>`;
                 }).join('');
@@ -320,20 +299,26 @@
                 container.innerHTML = cardsHtml;
                 menuContainer.innerHTML = menuHtml;
                 
+                // 确保筛选器生效
                 const activeCat = document.querySelector('.category-btn.bg-primary-500')?.getAttribute('data-category');
                 const searchVal = document.getElementById('search-input').value;
                 App.filterTools(searchVal, activeCat);
             },
 
             handleCatClick: (btn) => {
-                // 样式重置
                 document.querySelectorAll('.category-btn').forEach(b => {
                     b.className = b.className.replace('bg-primary-500 text-white border-primary-500', 'bg-white text-gray-600 hover:bg-gray-50');
                 });
-                // 选中样式
-                btn.className = btn.className.replace('bg-white text-gray-600 hover:bg-gray-50', 'bg-primary-500 text-white border-primary-500');
                 
-                App.filterTools(document.getElementById('search-input').value, btn.getAttribute('data-category'));
+                // 处理侧边栏和移动端两组按钮的同步高亮
+                const cat = btn.getAttribute('data-category');
+                const targetBtns = document.querySelectorAll(`.category-btn[data-category="${cat}"]`);
+                
+                targetBtns.forEach(b => {
+                    b.className = b.className.replace('bg-white text-gray-600 hover:bg-gray-50', 'bg-primary-500 text-white border-primary-500');
+                });
+                
+                App.filterTools(document.getElementById('search-input').value, cat);
             },
 
             filterTools: (keyword, category) => {
@@ -348,10 +333,30 @@
                 });
             },
 
+            // 【核心修改2】 切换语言不再刷新页面，而是原地更新
             setLanguage: (lang) => {
                 localStorage.setItem('app_lang', lang);
                 currentLang = lang;
-                location.reload(); 
+                
+                // 1. 获取当前选中的分类，防止重置
+                const activeBtn = document.querySelector('.category-btn.bg-primary-500');
+                const currentCat = activeBtn ? activeBtn.getAttribute('data-category') : 'all';
+
+                // 2. 更新静态文本
+                App.applyLanguage(lang);
+
+                // 3. 重新渲染按钮（为了更新按钮上的中文/英文标签）
+                App.renderCategoryButtons();
+                
+                // 4. 重新渲染内容卡片（为了更新卡片上的分类标签）
+                App.renderDynamicContent();
+
+                // 5. 还原刚才选中的分类状态
+                const newBtns = document.querySelectorAll(`.category-btn[data-category="${currentCat}"]`);
+                if(newBtns.length > 0) {
+                    // 只需触发其中一个的点击事件，或者手动调用逻辑
+                    App.handleCatClick(newBtns[0]);
+                }
             },
 
             applyLanguage: (lang) => {
@@ -379,7 +384,8 @@
                             if (!linkPath.startsWith('/') && !linkPath.startsWith('http')) {
                                 linkPath = (linkPath.startsWith('modules/') ? '/' : '/modules/') + linkPath;
                             }
-                            listHtml += `<li class="text-gray-600 truncate"><a href="${linkPath}" class="hover:text-primary-600 hover:underline"><span class="font-medium">${tool.title}</span></a></li>`;
+                            // 【核心修改1】 Sitemap 里的链接也加个 target="_blank"
+                            listHtml += `<li class="text-gray-600 truncate"><a href="${linkPath}" target="_blank" class="hover:text-primary-600 hover:underline"><span class="font-medium">${tool.title}</span></a></li>`;
                         });
                     }
                     listHtml += `</ul>`;
