@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce Tax & Cost Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #a7f3d0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #1e3a8a; }
+        .result-value { font-weight: 600; color: #065f46; }
+        .summary-section { background: #eff6ff; border-radius: 8px; padding: 15px; margin-top: 20px; }
+        .btn { padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; border: none; transition: background 0.2s; }
+        .btn-add { background-color: #22c55e; color: white; }
+        .btn-add:hover { background-color: #16a34a; }
+        .btn-remove { background-color: #ef4444; color: white; }
+        .btn-remove:hover { background-color: #dc2626; }
+        .btn-save { background-color: #3b82f6; color: white; }
+        .btn-save:hover { background-color: #2563eb; }
+        .btn-load { background-color: #f59e0b; color: white; }
+        .btn-load:hover { background-color: #d97706; }
+        .data-set-controls { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .product-group, .employee-group { padding: 15px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 10px; background: #fdfdfd; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         id="main-tool-container"
+         data-id="ecom_tax_calc" 
+         data-category="business" 
+         data-title="E-commerce Tax & Cost Calculator" 
+         data-icon="💼">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="ecom-lang" onchange="EcomCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">💼 E-commerce Tax & Cost Calculator</h2>
+        
+        <div class="space-y-6">
+            <!-- 纳税人类型选择 -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="taxpayer_type">Taxpayer Type</h3>
+                <div class="form-group">
+                    <select id="taxpayer-type" onchange="EcomCalc.updateTaxRates()" class="p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none">
+                        <option value="individual" data-i18n="individual_business">Individual Business</option>
+                        <option value="small_scale" data-i18n="small_scale">Small-scale Taxpayer</option>
+                        <option value="general" data-i18n="general_taxpayer">General Taxpayer</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 销售数据 -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="sales_data">Sales Data</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="revenue" data-i18n="revenue">Total Revenue (¥)</label>
+                        <input type="number" id="revenue" min="0" step="100" value="10000" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <!-- 删除了全局 sales quantity 和 price，因为这通常是基于产品的 -->
+                    <div class="form-group">
+                        <label for="return_rate" data-i18n="return_rate">Return Rate (%)</label>
+                        <input type="number" id="return_rate" min="0" max="100" step="0.1" value="5" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="refund_fee" data-i18n="refund_fee">Refund Penalty Rate (%)</label>
+                        <input type="number" id="refund_fee" min="0" max="100" step="0.1" value="1" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="platform_fee" data-i18n="platform_fee">Platform Commission Rate (%)</label>
+                        <input type="number" id="platform_fee" min="0" max="100" step="0.1" value="5" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="platform_fine" data-i18n="platform_fine">Platform Fine Amount (¥)</label>
+                        <input type="number" id="platform_fine" min="0" step="10" value="0" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="other_expenses" data-i18n="other_expenses">Other Miscellaneous Fees (¥)</label>
+                        <input type="number" id="other_expenses" min="0" step="10" value="0" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品成本 -->
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="product_costs">Product Costs</h3>
+                    <button onclick="EcomCalc.addProduct()" class="btn btn-add" data-i18n="add_product">Add Product</button>
+                </div>
+                <div id="products-container">
+                    <div class="product-group" data-product-id="1">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label data-i18n="product_name">Product Name</label>
+                                <input type="text" class="product-name" value="Product 1" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="product_quantity">Quantity Sold</label>
+                                <input type="number" class="product-quantity" min="1" value="100" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="product_cost">Unit Cost (¥)</label>
+                                <input type="number" class="product-cost" min="0" step="0.01" value="50" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="packaging">Packaging (¥/unit)</label>
+                                <input type="number" class="product-packaging" min="0" step="0.01" value="2" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="shipping">Shipping (¥/unit)</label>
+                                <input type="number" class="product-shipping" min="0" step="0.01" value="8" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="gift">Gift Cost (¥/unit)</label>
+                                <input type="number" class="product-gift" min="0" step="0.01" value="3" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                        </div>
+                        <button onclick="EcomCalc.removeProduct(this)" class="btn btn-remove mt-2" data-i18n="remove_product">Remove Product</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 运营成本 -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="op_costs">Operating Costs</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="rent" data-i18n="rent">Monthly Rent (¥)</label>
+                        <input type="number" id="rent" min="0" step="100" value="3000" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="property" data-i18n="property_fee">Property Management Fee (¥)</label>
+                        <input type="number" id="property" min="0" step="100" value="500" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="utilities" data-i18n="utilities">Utilities (Electricity/Water) (¥)</label>
+                        <input type="number" id="utilities" min="0" step="100" value="800" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="internet" data-i18n="internet">Internet/Telecom (¥)</label>
+                        <input type="number" id="internet" min="0" step="10" value="200" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="marketing" data-i18n="marketing">Marketing Expenses (¥)</label>
+                        <input type="number" id="marketing" min="0" step="100" value="2000" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 人工成本 -->
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="labor_costs">Labor Costs</h3>
+                    <button onclick="EcomCalc.addEmployee()" class="btn btn-add" data-i18n="add_employee">Add Employee</button>
+                </div>
+                <div id="employees-container">
+                    <div class="employee-group" data-employee-id="1">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label data-i18n="employee_name">Employee Name</label>
+                                <input type="text" class="employee-name" value="Employee 1" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="base_salary">Basic Salary (¥)</label>
+                                <input type="number" class="base-salary" min="0" step="100" value="5000" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="overtime_pay">Overtime Pay (¥)</label>
+                                <input type="number" class="overtime-pay" min="0" step="100" value="1000" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="position_allowance">Position Allowance (¥)</label>
+                                <input type="number" class="position-allowance" min="0" step="100" value="500" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="performance_bonus">Performance Bonus (¥)</label>
+                                <input type="number" class="performance-bonus" min="0" step="100" value="1500" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="commission">Commission (¥)</label>
+                                <input type="number" class="commission" min="0" step="100" value="2000" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                        </div>
+                        <button onclick="EcomCalc.removeEmployee(this)" class="btn btn-remove mt-2" data-i18n="remove_employee">Remove Employee</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 税费设置 -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="tax_settings">Tax Settings</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="tax_rate" data-i18n="tax_rate">Tax Rate (%)</label>
+                        <input type="number" id="tax_rate" min="0" max="100" step="0.1" value="3" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="surtax_rate" data-i18n="surtax_rate">Surtax Rate (%)</label>
+                        <input type="number" id="surtax_rate" min="0" max="100" step="0.1" value="12" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="social_security" data-i18n="social_security">Social Security & Provident Fund (¥)</label>
+                        <input type="number" id="social_security" min="0" step="100" value="2500" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据保存与加载 -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="data_management">Data Management</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="data-set-name" data-i18n="data_set_name">Data Set Name (e.g. Jan, Feb, Set1)</label>
+                        <input type="text" id="data-set-name" value="Set1" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label for="saved-data-sets" data-i18n="saved_data_sets">Saved Data Sets</label>
+                        <select id="saved-data-sets" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="" data-i18n="select_data_set">Select a data set</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="data-set-controls">
+                    <button onclick="EcomCalc.saveDataSet()" class="btn btn-save" data-i18n="save_data">Save Current Data</button>
+                    <button onclick="EcomCalc.loadDataSet()" class="btn btn-load" data-i18n="load_data">Load Selected Data</button>
+                    <button onclick="EcomCalc.deleteDataSet()" class="btn btn-remove" data-i18n="delete_data">Delete Selected Data</button>
+                </div>
+            </div>
+
+            <button onclick="EcomCalc.calculate()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="calculate_btn">Calculate Results</button>
+
+            <!-- 计算结果 -->
+            <div class="summary-section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">Calculation Results</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 税费结果 -->
+                    <div class="result-card">
+                        <h4 class="font-medium mb-3 text-gray-800" data-i18n="tax_results">Tax Results</h4>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="taxable_income">Taxable Income</span>
+                            <span class="result-value" id="taxable_income">¥0</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="main_tax">Main Tax</span>
+                            <span class="result-value" id="main_tax">¥0</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="surtax">Surtax</span>
+                            <span class="result-value" id="surtax">¥0</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="total_tax">Total Tax</span>
+                            <span class="result-value font-bold" id="total_tax">¥0</span>
+                        </div>
+                    </div>
+
+                    <!-- 成本结果 -->
+                    <div class="result-card">
+                        <h4 class="font-medium mb-3 text-gray-800" data-i18n="cost_results">Cost Results</h4>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="product_total">Total Product Costs</span>
+                            <span class="result-value" id="product_total">¥0</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="labor_total">Total Labor Costs</span>
+                            <span class="result-value" id="labor_total">¥0</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="op_total">Total Operating Costs</span>
+                            <span class="result-value" id="op_total">¥0</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="platform_fee_total">Platform Fees</span>
+                            <span class="result-value" id="platform_fee_total">¥0</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="social_security">Social Security</span>
+                            <span class="result-value" id="ss_total">¥0</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label" data-i18n="total_cost">Total Costs</span>
+                            <span class="result-value font-bold" id="total_cost">¥0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 利润结果 -->
+                <div class="result-card mt-6">
+                    <h4 class="font-medium mb-3 text-gray-800" data-i18n="profit_results">Profit Results</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="result-row flex-col items-start border-0">
+                            <span class="result-label" data-i18n="effective_revenue">Effective Revenue (After Returns)</span>
+                            <span class="result-value text-xl" id="effective_revenue">¥0</span>
+                        </div>
+                        <div class="result-row flex-col items-start border-0">
+                            <span class="result-label" data-i18n="net_profit">Net Profit</span>
+                            <span class="result-value text-xl" id="net_profit">¥0</span>
+                        </div>
+                        <div class="result-row flex-col items-start border-0">
+                            <span class="result-label" data-i18n="profit_rate">Net Profit Margin</span>
+                            <span class="result-value text-xl" id="profit_rate">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 计算器介绍 -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="about_calculator">About This Calculator</h3>
+                <p data-i18n="intro_text">This calculator helps businesses of all types (individual, small-scale, general) accurately calculate taxes, costs, and profits. Supports multiple products, detailed labor breakdowns, and local data saving.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EcomCalc = {
+            i18n: {
+                'en': {
+                    title: '💼 E-commerce Tax & Cost Calculator',
+                    taxpayer_type: 'Taxpayer Type',
+                    individual_business: 'Individual Business',
+                    small_scale: 'Small-scale Taxpayer',
+                    general_taxpayer: 'General Taxpayer',
+                    sales_data: 'Sales Data',
+                    revenue: 'Total Revenue (Gross ¥)',
+                    sales_quantity: 'Sales Quantity',
+                    unit_price: 'Unit Price (¥)',
+                    return_rate: 'Return Rate (%)',
+                    refund_fee: 'Refund Penalty Rate (%)',
+                    platform_fee: 'Platform Commission Rate (%)',
+                    platform_fine: 'Platform Fine Amount (¥)',
+                    other_expenses: 'Other Miscellaneous Fees (¥)',
+                    product_costs: 'Product Costs',
+                    add_product: 'Add Product',
+                    remove_product: 'Remove Product',
+                    product_name: 'Product Name',
+                    product_quantity: 'Quantity Sold',
+                    product_selling_price: 'Selling Price (¥/unit)',
+                    product_cost: 'Unit Product Cost (¥)',
+                    packaging: 'Packaging (¥/unit)',
+                    shipping: 'Shipping (¥/unit)',
+                    gift: 'Gift Cost (¥/unit)',
+                    op_costs: 'Operating Costs',
+                    rent: 'Monthly Rent (¥)',
+                    property_fee: 'Property Management Fee (¥)',
+                    utilities: 'Utilities (Electricity/Water) (¥)',
+                    internet: 'Internet/Telecom (¥)',
+                    marketing: 'Marketing Expenses (¥)',
+                    labor_costs: 'Labor Costs',
+                    add_employee: 'Add Employee',
+                    remove_employee: 'Remove Employee',
+                    employee_name: 'Employee Name',
+                    base_salary: 'Basic Salary (¥)',
+                    overtime_pay: 'Overtime Pay (¥)',
+                    position_allowance: 'Position Allowance (¥)',
+                    performance_bonus: 'Performance Bonus (¥)',
+                    commission: 'Commission (¥)',
+                    tax_settings: 'Tax Settings',
+                    tax_rate: 'Tax Rate (%)',
+                    surtax_rate: 'Surtax Rate (%)',
+                    social_security: 'Social Security & Provident Fund (¥)',
+                    calculate_btn: 'Calculate Results',
+                    results: 'Calculation Results',
+                    tax_results: 'Tax Results',
+                    taxable_income: 'Taxable Income',
+                    main_tax: 'Main Tax',
+                    surtax: 'Surtax',
+                    total_tax: 'Total Tax',
+                    cost_results: 'Cost Results',
+                    product_total: 'Total Product Costs',
+                    labor_total: 'Total Labor Costs',
+                    op_total: 'Total Operating Costs',
+                    platform_fee_total: 'Platform Fees',
+                    total_cost: 'Total Expenses',
+                    profit_results: 'Profit Results',
+                    effective_revenue: 'Effective Revenue (After Returns)',
+                    net_profit: 'Net Profit',
+                    profit_rate: 'Net Profit Margin',
+                    err_no_data: 'Please enter valid data',
+                    data_management: 'Data Management',
+                    data_set_name: 'Data Set Name',
+                    saved_data_sets: 'Saved Data Sets',
+                    select_data_set: 'Select a data set',
+                    save_data: 'Save Data',
+                    load_data: 'Load Data',
+                    delete_data: 'Delete Data',
+                    about_calculator: 'About This Calculator',
+                    intro_text: 'This calculator helps businesses of all types (individual, small-scale, general) accurately calculate taxes, costs, and profits. Supports multiple products, detailed labor breakdowns, and local data saving.'
+                },
+                'zh-CN': {
+                    title: '💼 电商税费及成本核算计算器',
+                    taxpayer_type: '纳税人类型',
+                    individual_business: '个体工商户',
+                    small_scale: '小规模纳税人',
+                    general_taxpayer: '一般纳税人',
+                    sales_data: '销售数据',
+                    revenue: '总营业额 (¥)',
+                    sales_quantity: '销售数量',
+                    unit_price: '单价 (¥)',
+                    return_rate: '退货率 (%)',
+                    refund_fee: '仅退款罚款比例 (%)',
+                    platform_fee: '平台佣金比例 (%)',
+                    platform_fine: '平台罚款金额 (¥)',
+                    other_expenses: '其他杂费 (¥)',
+                    product_costs: '产品成本',
+                    add_product: '添加产品',
+                    remove_product: '删除产品',
+                    product_name: '产品名称',
+                    product_quantity: '销售数量',
+                    product_selling_price: '产品售价 (¥/单位)',
+                    product_cost: '单位产品成本 (¥)',
+                    packaging: '包装杂费 (¥/单位)',
+                    shipping: '运费 (¥/单位)',
+                    gift: '赠品成本 (¥/单位)',
+                    op_costs: '运营成本',
+                    rent: '月租金 (¥)',
+                    property_fee: '物业费 (¥)',
+                    utilities: '水电费用 (¥)',
+                    internet: '宽带电信费 (¥)',
+                    marketing: '推广费用 (¥)',
+                    labor_costs: '人工成本',
+                    add_employee: '添加员工',
+                    remove_employee: '删除员工',
+                    employee_name: '员工姓名',
+                    base_salary: '综合底薪 (¥)',
+                    overtime_pay: '加班工资 (¥)',
+                    position_allowance: '岗位补贴 (¥)',
+                    performance_bonus: '绩效奖金 (¥)',
+                    commission: '提成 (¥)',
+                    tax_settings: '税费设置',
+                    tax_rate: '税率 (%)',
+                    surtax_rate: '附加税费率 (%)',
+                    social_security: '社保公积金 (¥)',
+                    calculate_btn: '计算结果',
+                    results: '核算结果',
+                    tax_results: '税费结果',
+                    taxable_income: '应纳税所得额',
+                    main_tax: '主税金额',
+                    surtax: '附加税金额',
+                    total_tax: '总税费',
+                    cost_results: '成本结果',
+                    product_total: '产品总成本',
+                    labor_total: '人工总成本',
+                    op_total: '运营总成本',
+                    platform_fee_total: '平台佣金总额',
+                    total_cost: '总支出',
+                    profit_results: '利润结果',
+                    effective_revenue: '实际营收 (扣除退货)',
+                    net_profit: '净利润',
+                    profit_rate: '净利率',
+                    err_no_data: '请输入有效的数据',
+                    data_management: '数据管理',
+                    data_set_name: '数据集名称',
+                    saved_data_sets: '已保存数据集',
+                    select_data_set: '选择数据集',
+                    save_data: '保存数据',
+                    load_data: '加载数据',
+                    delete_data: '删除数据',
+                    about_calculator: '关于本计算器',
+                    intro_text: '本电商税费及成本核算计算器帮助各类商家（个体工商户、小规模纳税人和一般纳税人）准确计算税费、成本和利润。支持多产品录入和详细的人工成本细分，并允许保存多个数据集进行对比分析。所有数据存储在本地浏览器中。'
+                },
+                'zh-TW': {
+                    title: '💼 電商稅費及成本核算計算器',
+                    taxpayer_type: '納稅人類型',
+                    individual_business: '個體工商戶',
+                    small_scale: '小規模納稅人',
+                    general_taxpayer: '一般納稅人',
+                    sales_data: '銷售數據',
+                    revenue: '總營業額 (¥)',
+                    sales_quantity: '銷售數量',
+                    unit_price: '單價 (¥)',
+                    return_rate: '退貨率 (%)',
+                    refund_fee: '僅退款罰款比例 (%)',
+                    platform_fee: '平台傭金比例 (%)',
+                    platform_fine: '平台罰款金額 (¥)',
+                    other_expenses: '其他雜費 (¥)',
+                    product_costs: '產品成本',
+                    add_product: '添加產品',
+                    remove_product: '刪除產品',
+                    product_name: '產品名稱',
+                    product_quantity: '銷售數量',
+                    product_selling_price: '產品售價 (¥/單位)',
+                    product_cost: '單位產品成本 (¥)',
+                    packaging: '包裝雜費 (¥/單位)',
+                    shipping: '運費 (¥/單位)',
+                    gift: '贈品成本 (¥/單位)',
+                    op_costs: '運營成本',
+                    rent: '月租金 (¥)',
+                    property_fee: '物業費 (¥)',
+                    utilities: '水電費用 (¥)',
+                    internet: '寬帶電信費 (¥)',
+                    marketing: '推廣費用 (¥)',
+                    labor_costs: '人工成本',
+                    add_employee: '添加員工',
+                    remove_employee: '刪除員工',
+                    employee_name: '員工姓名',
+                    base_salary: '綜合底薪 (¥)',
+                    overtime_pay: '加班工資 (¥)',
+                    position_allowance: '崗位補貼 (¥)',
+                    performance_bonus: '績效獎金 (¥)',
+                    commission: '提成 (¥)',
+                    tax_settings: '稅費設置',
+                    tax_rate: '稅率 (%)',
+                    surtax_rate: '附加稅率 (%)',
+                    social_security: '社保公積金 (¥)',
+                    calculate_btn: '計算結果',
+                    results: '核算結果',
+                    tax_results: '稅費結果',
+                    taxable_income: '應納稅所得額',
+                    main_tax: '主稅金額',
+                    surtax: '附加稅金額',
+                    total_tax: '總稅費',
+                    cost_results: '成本結果',
+                    product_total: '產品總成本',
+                    labor_total: '人工總成本',
+                    op_total: '運營總成本',
+                    platform_fee_total: '平台傭金總額',
+                    total_cost: '總支出',
+                    profit_results: '利潤結果',
+                    effective_revenue: '實際營收 (扣除退貨)',
+                    net_profit: '淨利潤',
+                    profit_rate: '淨利率',
+                    err_no_data: '請輸入有效的數據',
+                    data_management: '數據管理',
+                    data_set_name: '數據集名稱',
+                    saved_data_sets: '已保存數據集',
+                    select_data_set: '選擇數據集',
+                    save_data: '保存數據',
+                    load_data: '加載數據',
+                    delete_data: '刪除數據',
+                    about_calculator: '關於本計算器',
+                    intro_text: '本電商稅費及成本核算計算器幫助各類商家（個體工商戶、小規模納稅人和一般納稅人）準確計算稅費、成本和利潤。支持多產品錄入和詳細的人工成本細分，並允許保存多個數據集進行對比分析。所有數據存儲在本地瀏覽器中。'
+                },
+                'ja': {
+                    title: '💼 EC税務・コスト計算ツール',
+                    taxpayer_type: '納税者タイプ',
+                    individual_business: '個人事業主',
+                    small_scale: '小規模納税者',
+                    general_taxpayer: '一般納税者',
+                    sales_data: '販売データ',
+                    revenue: '総売上高 (¥)',
+                    sales_quantity: '販売数量',
+                    unit_price: '単価 (¥)',
+                    return_rate: '返品率 (%)',
+                    refund_fee: '返金ペナルティ率 (%)',
+                    platform_fee: 'PF手数料率 (%)',
+                    platform_fine: 'PF罰金額 (¥)',
+                    other_expenses: 'その他諸経費 (¥)',
+                    product_costs: '製品コスト',
+                    add_product: '製品を追加',
+                    remove_product: '製品を削除',
+                    product_name: '製品名',
+                    product_quantity: '販売数量',
+                    product_selling_price: '製品販売価格 (¥/単位)',
+                    product_cost: '単位製品コスト (¥)',
+                    packaging: '包装費用 (¥/単位)',
+                    shipping: '配送料 (¥/単位)',
+                    gift: 'ギフトコスト (¥/単位)',
+                    op_costs: '運営コスト',
+                    rent: '月額家賃 (¥)',
+                    property_fee: '管理費 (¥)',
+                    utilities: '水道・電気代 (¥)',
+                    internet: '通信費 (¥)',
+                    marketing: '広告宣伝費 (¥)',
+                    labor_costs: '人件費',
+                    add_employee: '従業員を追加',
+                    remove_employee: '従業員を削除',
+                    employee_name: '従業員名',
+                    base_salary: '基本給 (¥)',
+                    overtime_pay: '残業代 (¥)',
+                    position_allowance: '職位手当 (¥)',
+                    performance_bonus: '業績ボーナス (¥)',
+                    commission: '手数料 (¥)',
+                    tax_settings: '税務設定',
+                    tax_rate: '税率 (%)',
+                    surtax_rate: '附加税率 (%)',
+                    social_security: '社会保険・積立金 (¥)',
+                    calculate_btn: '結果を計算',
+                    results: '計算結果',
+                    tax_results: '税務結果',
+                    taxable_income: '課税所得',
+                    main_tax: '主税額',
+                    surtax: '附加税額',
+                    total_tax: '総税額',
+                    cost_results: 'コスト結果',
+                    product_total: '製品総コスト',
+                    labor_total: '総人件費',
+                    op_total: '運営総コスト',
+                    platform_fee_total: 'PF手数料総額',
+                    total_cost: '総支出',
+                    profit_results: '利益結果',
+                    effective_revenue: '実質売上 (返品控除後)',
+                    net_profit: '純利益',
+                    profit_rate: '純利益率',
+                    err_no_data: '有効なデータを入力してください',
+                    data_management: 'データ管理',
+                    data_set_name: 'データセット名',
+                    saved_data_sets: '保存済みデータ',
+                    select_data_set: '選択してください',
+                    save_data: '保存',
+                    load_data: '読み込み',
+                    delete_data: '削除',
+                    about_calculator: 'このツールについて',
+                    intro_text: '個人事業主から一般納税者まで、EC事業の税金、コスト、利益を正確に計算します。'
+                },
+                'ru': {
+                    title: '💼 Калькулятор налогов E-com',
+                    taxpayer_type: 'Тип плательщика',
+                    individual_business: 'ИП',
+                    small_scale: 'Малый бизнес',
+                    general_taxpayer: 'Общий режим',
+                    sales_data: 'Продажи',
+                    revenue: 'Выручка (¥)',
+                    sales_quantity: 'Кол-во продаж',
+                    unit_price: 'Цена (¥)',
+                    return_rate: 'Возврат (%)',
+                    refund_fee: 'Штраф за возврат (%)',
+                    platform_fee: 'Комиссия платформы (%)',
+                    platform_fine: 'Штрафы платформы (¥)',
+                    other_expenses: 'Прочие (¥)',
+                    product_costs: 'Расходы на товар',
+                    add_product: 'Добавить товар',
+                    remove_product: 'Удалить',
+                    product_name: 'Название',
+                    product_quantity: 'Продано шт.',
+                    product_selling_price: 'Цена продажи',
+                    product_cost: 'Себестоимость (¥)',
+                    packaging: 'Упаковка (¥)',
+                    shipping: 'Доставка (¥)',
+                    gift: 'Подарки (¥)',
+                    op_costs: 'Операционные',
+                    rent: 'Аренда (¥)',
+                    property_fee: 'ЖКХ (¥)',
+                    utilities: 'Свет/Вода (¥)',
+                    internet: 'Интернет (¥)',
+                    marketing: 'Маркетинг (¥)',
+                    labor_costs: 'Персонал',
+                    add_employee: 'Добавить',
+                    remove_employee: 'Удалить',
+                    employee_name: 'Имя',
+                    base_salary: 'Оклад (¥)',
+                    overtime_pay: 'Переработки (¥)',
+                    position_allowance: 'Надбавки (¥)',
+                    performance_bonus: 'Бонусы (¥)',
+                    commission: 'Комиссия (¥)',
+                    tax_settings: 'Налоги',
+                    tax_rate: 'Налог (%)',
+                    surtax_rate: 'Доп. налог (%)',
+                    social_security: 'Соц. взносы (¥)',
+                    calculate_btn: 'Рассчитать',
+                    results: 'Результаты',
+                    tax_results: 'Налоги',
+                    taxable_income: 'Налог. база',
+                    main_tax: 'Осн. налог',
+                    surtax: 'Доп. налог',
+                    total_tax: 'Итого налог',
+                    cost_results: 'Расходы',
+                    product_total: 'Товары',
+                    labor_total: 'Персонал',
+                    op_total: 'Операционные',
+                    platform_fee_total: 'Комиссии',
+                    total_cost: 'Все расходы',
+                    profit_results: 'Прибыль',
+                    effective_revenue: 'Факт. выручка',
+                    net_profit: 'Чистая прибыль',
+                    profit_rate: 'Рентабельность',
+                    err_no_data: 'Введите данные',
+                    data_management: 'Управление',
+                    data_set_name: 'Имя набора',
+                    saved_data_sets: 'Сохраненные',
+                    select_data_set: 'Выбрать',
+                    save_data: 'Сохранить',
+                    load_data: 'Загрузить',
+                    delete_data: 'Удалить',
+                    about_calculator: 'О калькуляторе',
+                    intro_text: 'Расчет налогов и прибыли для E-commerce.'
+                }
+            },
+
+            init: function() {
+                this.updateTaxRates();
+                this.loadSavedDataSets();
+            },
+
+            // 根据纳税人类型更新税率
+            updateTaxRates: function() {
+                const type = document.getElementById('taxpayer-type').value;
+                const taxRateInput = document.getElementById('tax_rate');
+                
+                switch(type) {
+                    case 'individual':
+                        taxRateInput.value = 3; 
+                        break;
+                    case 'small_scale':
+                        taxRateInput.value = 3; 
+                        break;
+                    case 'general':
+                        taxRateInput.value = 13; 
+                        break;
+                }
+            },
+
+            // 切换语言
+            changeLang: function() {
+                const lang = document.getElementById('ecom-lang').value;
+                const texts = this.i18n[lang];
+                
+                if (!texts) return;
+
+                // 更新所有带data-i18n属性的元素
+                const elements = document.querySelectorAll('[data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        // 检查如果是 input 占位符
+                        if (el.tagName === 'INPUT' && el.type === 'text') {
+                             // 对于输入框，如果是 data-i18n 且没有 value 的时候可以用 placeholder
+                             // 但这里我们主要处理标签文本
+                        } else {
+                             el.innerText = texts[key];
+                        }
+                    }
+                });
+                
+                // 更新下拉选项
+                document.querySelectorAll('#taxpayer-type option').forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        option.innerText = texts[key];
+                    }
+                });
+            },
+
+            // 添加产品
+            addProduct: function() {
+                const container = document.getElementById('products-container');
+                const productCount = container.children.length + 1;
+                
+                const productGroup = document.createElement('div');
+                productGroup.className = 'product-group';
+                productGroup.setAttribute('data-product-id', productCount);
+                
+                productGroup.innerHTML = `
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label data-i18n="product_name">Product Name</label>
+                            <input type="text" class="product-name" value="Product ${productCount}" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="product_quantity">Quantity Sold</label>
+                            <input type="number" class="product-quantity" min="1" value="100" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="product_cost">Unit Cost (¥)</label>
+                            <input type="number" class="product-cost" min="0" step="0.01" value="50" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="packaging">Packaging (¥/unit)</label>
+                            <input type="number" class="product-packaging" min="0" step="0.01" value="2" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="shipping">Shipping (¥/unit)</label>
+                            <input type="number" class="product-shipping" min="0" step="0.01" value="8" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="gift">Gift Cost (¥/unit)</label>
+                            <input type="number" class="product-gift" min="0" step="0.01" value="3" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                    </div>
+                    <button onclick="EcomCalc.removeProduct(this)" class="btn btn-remove mt-2" data-i18n="remove_product">Remove Product</button>
+                `;
+                
+                container.appendChild(productGroup);
+                this.changeLang(); // 重新应用当前语言
+            },
+
+            // 删除产品
+            removeProduct: function(element) {
+                const container = document.getElementById('products-container');
+                if (container.children.length > 1) {
+                    element.closest('.product-group').remove();
+                    this.renumberProducts();
+                } else {
+                    alert('At least one product required / 至少保留一个产品');
+                }
+            },
+
+            // 重新编号产品
+            renumberProducts: function() {
+                const container = document.getElementById('products-container');
+                const products = container.getElementsByClassName('product-group');
+                
+                for (let i = 0; i < products.length; i++) {
+                    products[i].setAttribute('data-product-id', i + 1);
+                    const nameInput = products[i].querySelector('.product-name');
+                    if (nameInput && nameInput.value.startsWith('Product ')) {
+                       // 可选：重命名默认名称，但不强制用户修改的名称
+                    }
+                }
+                this.changeLang();
+            },
+
+            // 添加员工
+            addEmployee: function() {
+                const container = document.getElementById('employees-container');
+                const employeeCount = container.children.length + 1;
+                
+                const employeeGroup = document.createElement('div');
+                employeeGroup.className = 'employee-group';
+                employeeGroup.setAttribute('data-employee-id', employeeCount);
+                
+                employeeGroup.innerHTML = `
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label data-i18n="employee_name">Employee Name</label>
+                            <input type="text" class="employee-name" value="Employee ${employeeCount}" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="base_salary">Basic Salary (¥)</label>
+                            <input type="number" class="base-salary" min="0" step="100" value="5000" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="overtime_pay">Overtime Pay (¥)</label>
+                            <input type="number" class="overtime-pay" min="0" step="100" value="1000" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="position_allowance">Position Allowance (¥)</label>
+                            <input type="number" class="position-allowance" min="0" step="100" value="500" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="performance_bonus">Performance Bonus (¥)</label>
+                            <input type="number" class="performance-bonus" min="0" step="100" value="1500" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="commission">Commission (¥)</label>
+                            <input type="number" class="commission" min="0" step="100" value="2000" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                    </div>
+                    <button onclick="EcomCalc.removeEmployee(this)" class="btn btn-remove mt-2" data-i18n="remove_employee">Remove Employee</button>
+                `;
+                
+                container.appendChild(employeeGroup);
+                this.changeLang();
+            },
+
+            // 删除员工
+            removeEmployee: function(element) {
+                const container = document.getElementById('employees-container');
+                if (container.children.length > 1) {
+                    element.closest('.employee-group').remove();
+                    this.renumberEmployees();
+                } else {
+                    alert('At least one employee required / 至少保留一个员工');
+                }
+            },
+
+            renumberEmployees: function() {
+                const container = document.getElementById('employees-container');
+                const employees = container.getElementsByClassName('employee-group');
+                for (let i = 0; i < employees.length; i++) {
+                    employees[i].setAttribute('data-employee-id', i + 1);
+                }
+                this.changeLang();
+            },
+
+            // 保存数据集
+            saveDataSet: function() {
+                const dataSetName = document.getElementById('data-set-name').value.trim();
+                if (!dataSetName) {
+                    alert('Please enter a data set name / 请输入数据集名称');
+                    return;
+                }
+                
+                const formData = {
+                    taxpayerType: document.getElementById('taxpayer-type').value,
+                    revenue: document.getElementById('revenue').value,
+                    returnRate: document.getElementById('return_rate').value,
+                    refundFee: document.getElementById('refund_fee').value,
+                    platformFee: document.getElementById('platform_fee').value,
+                    platformFine: document.getElementById('platform_fine').value,
+                    otherExpenses: document.getElementById('other_expenses').value,
+                    
+                    products: Array.from(document.getElementsByClassName('product-group')).map(group => ({
+                        name: group.querySelector('.product-name').value,
+                        quantity: group.querySelector('.product-quantity').value,
+                        cost: group.querySelector('.product-cost').value,
+                        packaging: group.querySelector('.product-packaging').value,
+                        shipping: group.querySelector('.product-shipping').value,
+                        gift: group.querySelector('.product-gift').value
+                    })),
+                    
+                    rent: document.getElementById('rent').value,
+                    property: document.getElementById('property').value,
+                    utilities: document.getElementById('utilities').value,
+                    internet: document.getElementById('internet').value,
+                    marketing: document.getElementById('marketing').value,
+                    
+                    employees: Array.from(document.getElementsByClassName('employee-group')).map(group => ({
+                        name: group.querySelector('.employee-name').value,
+                        baseSalary: group.querySelector('.base-salary').value,
+                        overtimePay: group.querySelector('.overtime-pay').value,
+                        positionAllowance: group.querySelector('.position-allowance').value,
+                        performanceBonus: group.querySelector('.performance-bonus').value,
+                        commission: group.querySelector('.commission').value
+                    })),
+                    
+                    taxRate: document.getElementById('tax_rate').value,
+                    surtaxRate: document.getElementById('surtax_rate').value,
+                    socialSecurity: document.getElementById('social_security').value
+                };
+                
+                let savedData = JSON.parse(localStorage.getItem('ecomCalcData') || '{}');
+                savedData[dataSetName] = formData;
+                localStorage.setItem('ecomCalcData', JSON.stringify(savedData));
+                
+                this.loadSavedDataSets();
+                alert('Saved / 已保存');
+            },
+
+            // 加载保存的数据集列表
+            loadSavedDataSets: function() {
+                const select = document.getElementById('saved-data-sets');
+                const firstOption = select.firstElementChild;
+                select.innerHTML = '';
+                select.appendChild(firstOption);
+                
+                const savedData = JSON.parse(localStorage.getItem('ecomCalcData') || '{}');
+                
+                Object.keys(savedData).forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = key;
+                    select.appendChild(option);
+                });
+            },
+
+            // 加载选中的数据集
+            loadDataSet: function() {
+                const dataSetName = document.getElementById('saved-data-sets').value;
+                if (!dataSetName) return;
+                
+                const savedData = JSON.parse(localStorage.getItem('ecomCalcData') || '{}');
+                const data = savedData[dataSetName];
+                if (!data) return;
+                
+                // 填充基础数据
+                document.getElementById('taxpayer-type').value = data.taxpayerType || 'individual';
+                document.getElementById('revenue').value = data.revenue || 0;
+                document.getElementById('return_rate').value = data.returnRate || 0;
+                document.getElementById('refund_fee').value = data.refundFee || 0;
+                document.getElementById('platform_fee').value = data.platformFee || 0;
+                document.getElementById('platform_fine').value = data.platformFine || 0;
+                document.getElementById('other_expenses').value = data.otherExpenses || 0;
+                
+                document.getElementById('rent').value = data.rent || 0;
+                document.getElementById('property').value = data.property || 0;
+                document.getElementById('utilities').value = data.utilities || 0;
+                document.getElementById('internet').value = data.internet || 0;
+                document.getElementById('marketing').value = data.marketing || 0;
+                
+                document.getElementById('tax_rate').value = data.taxRate || 0;
+                document.getElementById('surtax_rate').value = data.surtaxRate || 0;
+                document.getElementById('social_security').value = data.socialSecurity || 0;
+                
+                // 重建产品列表
+                const productsContainer = document.getElementById('products-container');
+                productsContainer.innerHTML = ''; // 清空
+                
+                if (data.products && data.products.length > 0) {
+                    data.products.forEach((prodData, index) => {
+                        // 临时使用addProduct然后填充数据
+                        this.addProduct();
+                        const newGroup = productsContainer.lastElementChild;
+                        newGroup.querySelector('.product-name').value = prodData.name;
+                        newGroup.querySelector('.product-quantity').value = prodData.quantity;
+                        newGroup.querySelector('.product-cost').value = prodData.cost;
+                        newGroup.querySelector('.product-packaging').value = prodData.packaging;
+                        newGroup.querySelector('.product-shipping').value = prodData.shipping;
+                        newGroup.querySelector('.product-gift').value = prodData.gift;
+                    });
+                } else {
+                    this.addProduct(); // 至少一个
+                }
+
+                // 重建员工列表
+                const empContainer = document.getElementById('employees-container');
+                empContainer.innerHTML = '';
+                
+                if (data.employees && data.employees.length > 0) {
+                    data.employees.forEach(empData => {
+                        this.addEmployee();
+                        const newGroup = empContainer.lastElementChild;
+                        newGroup.querySelector('.employee-name').value = empData.name;
+                        newGroup.querySelector('.base-salary').value = empData.baseSalary;
+                        newGroup.querySelector('.overtime-pay').value = empData.overtimePay;
+                        newGroup.querySelector('.position-allowance').value = empData.positionAllowance;
+                        newGroup.querySelector('.performance-bonus').value = empData.performanceBonus;
+                        newGroup.querySelector('.commission').value = empData.commission;
+                    });
+                } else {
+                    this.addEmployee();
+                }
+
+                alert('Loaded / 已加载');
+            },
+            
+            deleteDataSet: function() {
+                const dataSetName = document.getElementById('saved-data-sets').value;
+                if(!dataSetName) return;
+                if(confirm('Delete?')) {
+                     let savedData = JSON.parse(localStorage.getItem('ecomCalcData') || '{}');
+                     delete savedData[dataSetName];
+                     localStorage.setItem('ecomCalcData', JSON.stringify(savedData));
+                     this.loadSavedDataSets();
+                }
+            },
+
+            // 计算核心逻辑
+            calculate: function() {
+                // 1. 基础收入
+                const revenue = parseFloat(document.getElementById('revenue').value) || 0;
+                const returnRate = parseFloat(document.getElementById('return_rate').value) / 100 || 0;
+                const refundFeeRate = parseFloat(document.getElementById('refund_fee').value) / 100 || 0;
+                
+                // 实际营收 = 总营业额 * (1 - 退货率)
+                // 退货率影响的是“无效销售”，这里假设退货全额退款
+                const effectiveRevenue = revenue * (1 - returnRate);
+                
+                // 2. 平台与罚款成本
+                const platformFeeRate = parseFloat(document.getElementById('platform_fee').value) / 100 || 0;
+                const platformFine = parseFloat(document.getElementById('platform_fine').value) || 0;
+                
+                // 平台佣金通常基于总销售额（即使退货，有些平台也不退佣金，这里假设按总额算保守估计）
+                const platformFees = revenue * platformFeeRate;
+                
+                // 仅退款罚款 = 总营业额 * 退货率 * 罚款比例 (假设)
+                const refundPenalty = (revenue * returnRate) * refundFeeRate;
+                
+                const otherExpenses = parseFloat(document.getElementById('other_expenses').value) || 0;
+
+                // 3. 产品成本汇总
+                let productTotalCost = 0;
+                const products = document.getElementsByClassName('product-group');
+                Array.from(products).forEach(product => {
+                    const qty = parseFloat(product.querySelector('.product-quantity').value) || 0;
+                    const cost = parseFloat(product.querySelector('.product-cost').value) || 0;
+                    const packaging = parseFloat(product.querySelector('.product-packaging').value) || 0;
+                    const shipping = parseFloat(product.querySelector('.product-shipping').value) || 0;
+                    const gift = parseFloat(product.querySelector('.product-gift').value) || 0;
+                    
+                    // 单个产品总成本 = (成本+包装+运费+赠品) * 数量
+                    productTotalCost += qty * (cost + packaging + shipping + gift);
+                });
+
+                // 4. 运营成本
+                const rent = parseFloat(document.getElementById('rent').value) || 0;
+                const property = parseFloat(document.getElementById('property').value) || 0;
+                const utilities = parseFloat(document.getElementById('utilities').value) || 0;
+                const internet = parseFloat(document.getElementById('internet').value) || 0;
+                const marketing = parseFloat(document.getElementById('marketing').value) || 0;
+                
+                const operatingTotal = rent + property + utilities + internet + marketing + platformFine + otherExpenses;
+
+                // 5. 人工成本
+                let laborTotal = 0;
+                const employees = document.getElementsByClassName('employee-group');
+                Array.from(employees).forEach(employee => {
+                    const base = parseFloat(employee.querySelector('.base-salary').value) || 0;
+                    const overtime = parseFloat(employee.querySelector('.overtime-pay').value) || 0;
+                    const position = parseFloat(employee.querySelector('.position-allowance').value) || 0;
+                    const bonus = parseFloat(employee.querySelector('.performance-bonus').value) || 0;
+                    const commission = parseFloat(employee.querySelector('.commission').value) || 0;
+                    
+                    laborTotal += (base + overtime + position + bonus + commission);
+                });
+
+                const socialSecurity = parseFloat(document.getElementById('social_security').value) || 0;
+                
+                // 6. 税费计算
+                const taxRate = parseFloat(document.getElementById('tax_rate').value) / 100 || 0;
+                const surtaxRate = parseFloat(document.getElementById('surtax_rate').value) / 100 || 0;
+                
+                // 简单税费模型：按总营收计算主税，再计算附加税
+                // 实际一般纳税人是销项-进项，这里简化为综合税率估算
+                const mainTax = revenue * taxRate; 
+                const surtax = mainTax * surtaxRate;
+                const totalTax = mainTax + surtax;
+
+                // 7. 汇总
+                const totalPlatformCosts = platformFees + refundPenalty;
+                const totalExpenses = productTotalCost + laborTotal + socialSecurity + operatingTotal + totalPlatformCosts + totalTax;
+                
+                const netProfit = revenue - totalExpenses; // 使用总营收减去所有支出（含退货损失隐含在其中，如果按照Effective Revenue算，支出里就要减去退货产品的成本，这里简化模型：Revenue - All Outflows）
+                
+                // 修正逻辑：更精确的净利 = 实际营收 - (除去退货产品成本外的产品成本) - 运营 - 人工 - 税...
+                // 鉴于用户输入的是“销售数量”，假设这是实际成交数量，或者总发货数量。
+                // 保持保守估计：Revenue(Total) - Expenses(Total). 
+                
+                const profitRate = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+
+                // 8. 更新UI
+                document.getElementById('taxable_income').innerText = '¥' + revenue.toFixed(2);
+                document.getElementById('main_tax').innerText = '¥' + mainTax.toFixed(2);
+                document.getElementById('surtax').innerText = '¥' + surtax.toFixed(2);
+                document.getElementById('total_tax').innerText = '¥' + totalTax.toFixed(2);
+
+                document.getElementById('product_total').innerText = '¥' + productTotalCost.toFixed(2);
+                document.getElementById('labor_total').innerText = '¥' + laborTotal.toFixed(2);
+                document.getElementById('op_total').innerText = '¥' + operatingTotal.toFixed(2);
+                document.getElementById('platform_fee_total').innerText = '¥' + totalPlatformCosts.toFixed(2);
+                document.getElementById('ss_total').innerText = '¥' + socialSecurity.toFixed(2);
+                document.getElementById('total_cost').innerText = '¥' + totalExpenses.toFixed(2);
+
+                document.getElementById('effective_revenue').innerText = '¥' + effectiveRevenue.toFixed(2);
+                document.getElementById('net_profit').innerText = '¥' + netProfit.toFixed(2);
+                
+                const rateEl = document.getElementById('profit_rate');
+                rateEl.innerText = profitRate.toFixed(2) + '%';
+                
+                if(profitRate < 0) {
+                    rateEl.style.color = 'red';
+                } else if (profitRate > 20) {
+                    rateEl.style.color = 'green';
+                } else {
+                    rateEl.style.color = '#065f46';
+                }
+            }
+        };
+
+        // 初始化
+        window.onload = function() {
+            EcomCalc.init();
+        };
+    </script>
+</body>
+</html>

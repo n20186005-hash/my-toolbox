@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Type Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="blood_type_calc">
+    <meta name="category" content="health">
+    <meta name="icon" content="🅱️">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Blood Type Calculator">
+    <meta name="description" content="Calculate possible blood types for your child based on parents' blood types.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="血型计算器">
+    <meta name="lang-description-zh-CN" content="根据父母的血型计算孩子可能的血型。">
+    
+    <meta name="lang-title-zh-TW" content="血型計算器">
+    <meta name="lang-description-zh-TW" content="根據父母的血型計算孩子可能的血型。">
+    
+    <meta name="lang-title-ja" content="血液型計算ツール">
+    <meta name="lang-description-ja" content="父母の血液型に基づいて子供の可能性のある血液型を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор группы крови">
+    <meta name="lang-description-ru" content="Вычислите возможные группы крови ребенка по группам крови родителей.">
+    
+    <meta name="lang-title-es" content="Calculadora de grupo sanguíneo">
+    <meta name="lang-description-es" content="Calcula los posibles grupos sanguíneos de tu hijo según los grupos sanguíneos de los padres.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .input-group { margin-bottom: 16px; }
+        .result-card { transition: all 0.3s ease; }
+        .blood-type { display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background: #e0f2fe; color: #0369a1; text-align: center; font-size: 1.2rem; font-weight: bold; margin: 0 8px; }
+        .probability { font-size: 0.9rem; color: #666; margin-top: 4px; }
+        .parent-container { display: flex; justify-content: space-around; margin: 20px 0; }
+        .parent { text-align: center; }
+        .plus-sign { align-self: center; font-size: 2rem; color: #666; }
+        .intro-section { margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="blood_type_calc" 
+         data-category="health" 
+         data-title="Blood Type Calculator" 
+         data-icon="🅱️">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="blood-lang" onchange="BloodTypeCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🅱️ Blood Type Calculator</h2>
+        
+        <div class="space-y-6">
+            <!-- 输入区域 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="father_label">Father's Blood Type</label>
+                    <select id="father-type" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none">
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="AB">AB</option>
+                        <option value="O">O</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="mother_label">Mother's Blood Type</label>
+                    <select id="mother-type" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none">
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="AB">AB</option>
+                        <option value="O">O</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button onclick="BloodTypeCalc.calculate()" 
+                    class="w-full bg-red-600 text-white py-3 rounded font-bold hover:bg-red-700 transition" 
+                    data-i18n="btn_calculate">Calculate Child's Possible Blood Types</button>
+            
+            <!-- 结果区域 -->
+            <div class="bg-red-50 p-6 rounded-lg border border-red-100 result-card">
+                <div class="parent-container">
+                    <div class="parent">
+                        <div data-i18n="father">Father</div>
+                        <div id="father-display" class="blood-type">A</div>
+                    </div>
+                    <div class="plus-sign">+</div>
+                    <div class="parent">
+                        <div data-i18n="mother">Mother</div>
+                        <div id="mother-display" class="blood-type">A</div>
+                    </div>
+                    <div class="plus-sign">=</div>
+                    <div class="parent">
+                        <div data-i18n="child">Child</div>
+                        <div id="child-display" class="flex justify-center flex-wrap">
+                            <div class="blood-type">?</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="possibilities">Possible Blood Types</div>
+                    <div id="result-text" class="text-lg font-medium text-red-800">--</div>
+                </div>
+            </div>
+            
+            <!-- 介绍部分 -->
+            <div class="intro-section">
+                <h3 class="font-medium text-gray-800 mb-2" data-i18n="intro_title">About Blood Type Inheritance</h3>
+                <p class="text-sm text-gray-600" data-i18n="intro_text">Blood type is determined by genetic factors. Each parent passes one allele to their child. This calculator shows the possible blood types a child could inherit based on the parents' blood types, along with the probability of each type.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BloodTypeCalc = {
+            // 血型遗传规则映射表
+            bloodTypeMap: {
+                'A': ['AA', 'AO'],
+                'B': ['BB', 'BO'],
+                'AB': ['AB'],
+                'O': ['OO']
+            },
+            
+            i18n: {
+                'en': {
+                    title: '🅱️ Blood Type Calculator',
+                    father_label: "Father's Blood Type",
+                    mother_label: "Mother's Blood Type",
+                    btn_calculate: "Calculate Child's Possible Blood Types",
+                    father: 'Father',
+                    mother: 'Mother',
+                    child: 'Child',
+                    possibilities: 'Possible Blood Types',
+                    probability: 'Probability',
+                    intro_title: 'About Blood Type Inheritance',
+                    intro_text: 'Blood type is determined by genetic factors. Each parent passes one allele to their child. This calculator shows the possible blood types a child could inherit based on the parents\' blood types, along with the probability of each type.'
+                },
+                'zh-CN': {
+                    title: '🅱️ 血型计算器',
+                    father_label: '父亲的血型',
+                    mother_label: '母亲的血型',
+                    btn_calculate: '计算孩子可能的血型',
+                    father: '父亲',
+                    mother: '母亲',
+                    child: '孩子',
+                    possibilities: '可能的血型',
+                    probability: '概率',
+                    intro_title: '关于血型遗传',
+                    intro_text: '血型由遗传因素决定。父母各将一个等位基因传递给孩子。该计算器根据父母的血型显示孩子可能继承的血型，以及每种血型的概率。'
+                },
+                'zh-TW': {
+                    title: '🅱️ 血型計算器',
+                    father_label: '父親的血型',
+                    mother_label: '母親的血型',
+                    btn_calculate: '計算孩子可能的血型',
+                    father: '父親',
+                    mother: '母親',
+                    child: '孩子',
+                    possibilities: '可能的血型',
+                    probability: '概率',
+                    intro_title: '關於血型遺傳',
+                    intro_text: '血型由遺傳因素決定。父母各將一個等位基因傳遞給孩子。該計算器根據父母的血型顯示孩子可能繼承的血型，以及每種血型的概率。'
+                },
+                'ja': {
+                    title: '🅱️ 血液型計算ツール',
+                    father_label: '父親の血液型',
+                    mother_label: '母親の血液型',
+                    btn_calculate: '子供の可能性のある血液型を計算',
+                    father: '父親',
+                    mother: '母親',
+                    child: '子供',
+                    possibilities: '可能性のある血液型',
+                    probability: '確率',
+                    intro_title: '血液型の遺伝について',
+                    intro_text: '血液型は遺伝的要因によって決まります。各親は子供に1つの対立遺伝子を渡します。この計算機は、親の血液型に基づいて子供が受け継ぐ可能性のある血液型と、それぞれの確率を示します。'
+                },
+                'ru': {
+                    title: '🅱️ Калькулятор группы крови',
+                    father_label: 'Группа крови отца',
+                    mother_label: 'Группа крови матери',
+                    btn_calculate: 'Вычислить возможные группы крови ребенка',
+                    father: 'Отец',
+                    mother: 'Мать',
+                    child: 'Ребенок',
+                    possibilities: 'Возможные группы крови',
+                    probability: 'Вероятность',
+                    intro_title: 'О наследственности группы крови',
+                    intro_text: 'Группа крови определяется генетическими факторами. Каждый родитель передает ребенку один аллель. Этот калькулятор показывает возможные группы крови, которые ребенок может унаследовать по группам крови родителей, а также вероятность каждой группы.'
+                },
+                'es': {
+                    title: '🅱️ Calculadora de grupo sanguíneo',
+                    father_label: 'Grupo sanguíneo del padre',
+                    mother_label: 'Grupo sanguíneo de la madre',
+                    btn_calculate: 'Calcular posibles grupos sanguíneos del niño',
+                    father: 'Padre',
+                    mother: 'Madre',
+                    child: 'Niño',
+                    possibilities: 'Posibles grupos sanguíneos',
+                    probability: 'Probabilidad',
+                    intro_title: 'Acerca de la herencia del grupo sanguíneo',
+                    intro_text: 'El grupo sanguíneo está determinado por factores genéticos. Cada padre transmite un alelo a su hijo. Esta calculadora muestra los posibles grupos sanguíneos que un niño podría heredar según los grupos sanguíneos de los padres, junto con la probabilidad de cada tipo.'
+                }
+            },
+
+            init: () => {
+                // 初始化显示父母血型
+                BloodTypeCalc.updateDisplay();
+            },
+            
+            calculate: () => {
+                const fatherType = document.getElementById('father-type').value;
+                const motherType = document.getElementById('mother-type').value;
+                
+                // 更新显示
+                BloodTypeCalc.updateDisplay();
+                
+                // 获取父母可能的等位基因组合
+                const fatherGenes = BloodTypeCalc.bloodTypeMap[fatherType];
+                const motherGenes = BloodTypeCalc.bloodTypeMap[motherType];
+                
+                // 计算所有可能的组合
+                const allCombinations = [];
+                fatherGenes.forEach(father => {
+                    motherGenes.forEach(mother => {
+                        // 每个父母提供一个等位基因
+                        const f1 = father[0], f2 = father[1];
+                        const m1 = mother[0], m2 = mother[1];
+                        
+                        // 所有可能的组合
+                        allCombinations.push(f1 + m1);
+                        allCombinations.push(f1 + m2);
+                        allCombinations.push(f2 + m1);
+                        allCombinations.push(f2 + m2);
+                    });
+                });
+                
+                // 转换为血型并计算概率
+                const typeCounts = {};
+                allCombinations.forEach(combination => {
+                    // 排序以便正确比较 (如 AO 和 OA 都是 A 型)
+                    const sorted = combination.split('').sort().join('');
+                    let type;
+                    
+                    if (sorted === 'AA' || sorted === 'AO') type = 'A';
+                    else if (sorted === 'BB' || sorted === 'BO') type = 'B';
+                    else if (sorted === 'AB') type = 'AB';
+                    else if (sorted === 'OO') type = 'O';
+                    
+                    typeCounts[type] = (typeCounts[type] || 0) + 1;
+                });
+                
+                // 计算概率并排序
+                const total = allCombinations.length;
+                const result = [];
+                Object.keys(typeCounts).forEach(type => {
+                    const probability = Math.round((typeCounts[type] / total) * 100);
+                    result.push({ type, probability });
+                });
+                
+                // 显示结果
+                BloodTypeCalc.displayResult(result);
+            },
+            
+            updateDisplay: () => {
+                const fatherType = document.getElementById('father-type').value;
+                const motherType = document.getElementById('mother-type').value;
+                
+                document.getElementById('father-display').textContent = fatherType;
+                document.getElementById('mother-display').textContent = motherType;
+            },
+            
+            displayResult: (results) => {
+                const childDisplay = document.getElementById('child-display');
+                const resultText = document.getElementById('result-text');
+                const lang = document.getElementById('blood-lang').value;
+                const texts = BloodTypeCalc.i18n[lang];
+                
+                // 清空现有内容
+                childDisplay.innerHTML = '';
+                
+                // 显示血型图标
+                results.forEach(item => {
+                    const typeEl = document.createElement('div');
+                    typeEl.className = 'blood-type';
+                    typeEl.textContent = item.type;
+                    typeEl.title = `${item.probability}%`;
+                    childDisplay.appendChild(typeEl);
+                });
+                
+                // 显示文字结果
+                let text = '';
+                results.forEach((item, index) => {
+                    text += `${item.type} (${item.probability}%)`;
+                    if (index < results.length - 1) text += ', ';
+                });
+                resultText.textContent = text;
+            },
+            
+            changeLang: () => {
+                const lang = document.getElementById('blood-lang').value;
+                const texts = BloodTypeCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="blood_type_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        el.innerText = texts[key];
+                    }
+                });
+                
+                // 如果已有计算结果，重新显示以更新文本
+                if (document.getElementById('result-text').textContent !== '--') {
+                    BloodTypeCalc.calculate();
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', BloodTypeCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('blood-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    BloodTypeCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
