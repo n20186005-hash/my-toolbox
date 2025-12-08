@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Income Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="income_calc">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💰">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Income Calculator">
+    <meta name="description" content="Calculate your income and see how much you earn over time.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="窝烂费计算器">
+    <meta name="lang-description-zh-CN" content="计算您的收入并查看您随时间赚取的金额。">
+    
+    <meta name="lang-title-zh-TW" content="收入計算器">
+    <meta name="lang-description-zh-TW" content="計算您的收入並查看您隨時間賺取的金額。">
+    
+    <meta name="lang-title-ja" content="収入計算ツール">
+    <meta name="lang-description-ja" content="収入を計算し、時間経過とともにどれだけ稼いでいるかを確認します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор доходов">
+    <meta name="lang-description-ru" content="Вычислите ваш доход и посмотрите, сколько вы зарабатываете со временем.">
+    
+    <meta name="lang-title-es" content="Calculadora de ingresos">
+    <meta name="lang-description-es" content="Calcula tus ingresos y ve cuánto ganas con el tiempo.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .input-group { margin-bottom: 16px; }
+        .result-card { transition: all 0.3s ease; }
+        .time-earned { font-size: 0.9rem; color: #666; }
+        .purchase-info { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="income_calc" 
+         data-category="finance" 
+         data-title="Income Calculator" 
+         data-icon="💰">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="income-lang" onchange="IncomeCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">💰 Income Calculator</h2>
+        
+        <div class="space-y-6">
+            <!-- 输入区域 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="amount_label">Amount</label>
+                    <input type="number" id="income-amount" min="0" step="any" value="50000" 
+                           class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+                
+                <div class="input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="period_label">Payment Period</label>
+                    <select id="income-period" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none">
+                        <option value="yearly" data-i18n="period_yearly">Yearly</option>
+                        <option value="monthly" data-i18n="period_monthly">Monthly</option>
+                        <option value="weekly" data-i18n="period_weekly">Weekly</option>
+                        <option value="hourly" data-i18n="period_hourly">Hourly</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="currency_label">Currency</label>
+                    <select id="income-currency" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none">
+                        <option value="USD">USD ($)</option>
+                        <option value="CNY">CNY (¥)</option>
+                        <option value="JPY">JPY (¥)</option>
+                        <option value="RUB">RUB (₽)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="hours_label">Weekly Hours (if hourly)</label>
+                    <input type="number" id="weekly-hours" min="1" max="168" value="40" 
+                           class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+            </div>
+            
+            <button onclick="IncomeCalc.startCalculation()" 
+                    class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition" 
+                    data-i18n="btn_start">Start Calculation</button>
+            
+            <!-- 结果区域 -->
+            <div class="bg-green-50 p-6 rounded-lg border border-green-100 text-center result-card">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="current_rate">Current Rate</div>
+                <div id="current-rate" class="text-2xl font-bold text-green-800 mb-4">--</div>
+                
+                <div class="text-sm text-gray-500 mb-2" data-i18n="earned_since">Earned Since Start</div>
+                <div id="earned-amount" class="text-3xl font-bold text-green-800 mb-2">--</div>
+                
+                <!-- 修复部分：将文字标签和动态时间数值分开，避免替换失败 -->
+                <div class="time-earned">
+                    <span data-i18n="time_prefix">Time elapsed: </span>
+                    <span id="elapsed-time-value">0s</span>
+                </div>
+            </div>
+            
+            <!-- 购买力信息 -->
+            <div class="purchase-info">
+                <h3 class="font-medium text-gray-800 mb-2" data-i18n="purchase_title">What can you buy with this income?</h3>
+                <ul class="text-sm text-gray-600 space-y-1" id="purchase-items">
+                    <li data-i18n="purchase_example1">Example: With an annual income of $50,000, you could buy a new car after about 6 months.</li>
+                    <li data-i18n="purchase_example2">Example: This is equivalent to about 4,166 cups of coffee per month.</li>
+                    <li data-i18n="purchase_example3">Example: You could afford a nice dinner out about 166 times per month.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const IncomeCalc = {
+            startTime: null,
+            timer: null,
+            hourlyRate: 0,
+            currencySymbols: {
+                'USD': '$',
+                'CNY': '¥',
+                'JPY': '¥',
+                'RUB': '₽',
+                'EUR': '€',
+                'GBP': '£'
+            },
+            
+            i18n: {
+                'en': {
+                    title: '💰 Income Calculator',
+                    amount_label: 'Amount',
+                    period_label: 'Payment Period',
+                    period_yearly: 'Yearly',
+                    period_monthly: 'Monthly',
+                    period_weekly: 'Weekly',
+                    period_hourly: 'Hourly',
+                    currency_label: 'Currency',
+                    hours_label: 'Weekly Hours (if hourly)',
+                    btn_start: 'Start Calculation',
+                    current_rate: 'Current Rate',
+                    earned_since: 'Earned Since Start',
+                    time_prefix: 'Time elapsed: ', // 移除了 '0s'
+                    purchase_title: 'What can you buy with this income?',
+                    purchase_example1: 'Example: With an annual income of $50,000, you could buy a new car after about 6 months.',
+                    purchase_example2: 'Example: This is equivalent to about 4,166 cups of coffee per month.',
+                    purchase_example3: 'Example: You could afford a nice dinner out about 166 times per month.',
+                    per_hour: 'per hour',
+                    per_minute: 'per minute',
+                    per_second: 'per second'
+                },
+                'zh-CN': {
+                    title: '💰 窝烂费计算器',
+                    amount_label: '金额',
+                    period_label: '支付周期',
+                    period_yearly: '年薪',
+                    period_monthly: '月薪',
+                    period_weekly: '周薪',
+                    period_hourly: '时薪',
+                    currency_label: '货币单位',
+                    hours_label: '每周工作小时数（如果是时薪）',
+                    btn_start: '开始计算',
+                    current_rate: '当前速率',
+                    earned_since: '自开始以来赚取',
+                    time_prefix: '已过去时间：', // 移除了 '0秒'
+                    purchase_title: '这个收入可以买什么？',
+                    purchase_example1: '示例：年薪50,000元，大约6个月后可以买一辆新车。',
+                    purchase_example2: '示例：这相当于每月约4,166杯咖啡。',
+                    purchase_example3: '示例：每月可以负担约166次不错的外出晚餐。',
+                    per_hour: '每小时',
+                    per_minute: '每分钟',
+                    per_second: '每秒'
+                },
+                'zh-TW': {
+                    title: '💰 收入計算器',
+                    amount_label: '金額',
+                    period_label: '支付周期',
+                    period_yearly: '年薪',
+                    period_monthly: '月薪',
+                    period_weekly: '周薪',
+                    period_hourly: '時薪',
+                    currency_label: '貨幣單位',
+                    hours_label: '每周工作小時數（如果是時薪）',
+                    btn_start: '開始計算',
+                    current_rate: '當前速率',
+                    earned_since: '自開始以來賺取',
+                    time_prefix: '已過去時間：', // 移除了 '0秒'
+                    purchase_title: '這個收入可以買什麼？',
+                    purchase_example1: '示例：年薪50,000元，大約6個月後可以買一輛新車。',
+                    purchase_example2: '示例：這相當於每月約4,166杯咖啡。',
+                    purchase_example3: '示例：每月可以負擔約166次不錯的外出晚餐。',
+                    per_hour: '每小時',
+                    per_minute: '每分鐘',
+                    per_second: '每秒'
+                },
+                'ja': {
+                    title: '💰 収入計算ツール',
+                    amount_label: '金額',
+                    period_label: '支払い期間',
+                    period_yearly: '年収',
+                    period_monthly: '月収',
+                    period_weekly: '週収',
+                    period_hourly: '時給',
+                    currency_label: '通貨単位',
+                    hours_label: '週当たりの労働時間（時給の場合）',
+                    btn_start: '計算を開始',
+                    current_rate: '現在のレート',
+                    earned_since: '開始以来の収入',
+                    time_prefix: '経過時間：', // 移除了 '0秒'
+                    purchase_title: 'この収入で何が買えますか？',
+                    purchase_example1: '例：年収50,000円の場合、約6か月で新車を購入できます。',
+                    purchase_example2: '例：これは月に約4,166杯のコーヒーに相当します。',
+                    purchase_example3: '例：月に約166回、おいしい外食が可能です。',
+                    per_hour: '毎時間',
+                    per_minute: '毎分',
+                    per_second: '毎秒'
+                },
+                'ru': {
+                    title: '💰 Калькулятор доходов',
+                    amount_label: 'Сумма',
+                    period_label: 'Период оплаты',
+                    period_yearly: 'Годовой',
+                    period_monthly: 'Месячный',
+                    period_weekly: 'Еженедельный',
+                    period_hourly: 'Почасовой',
+                    currency_label: 'Валюта',
+                    hours_label: 'Часы в неделю (для почасовой оплаты)',
+                    btn_start: 'Начать расчет',
+                    current_rate: 'Текущий тариф',
+                    earned_since: 'Заработано с начала',
+                    time_prefix: 'Прошедшее время: ', // 移除了 '0с'
+                    purchase_title: 'Что можно купить с этим доходом?',
+                    purchase_example1: 'Пример: С годовым доходом 50 000 рублей можно купить новую машину примерно через 6 месяцев.',
+                    purchase_example2: 'Пример: Это эквивалентно примерно 4166 чашек кофе в месяц.',
+                    purchase_example3: 'Пример: Вы можете позволить себе хороший ужин вне дома примерно 166 раз в месяц.',
+                    per_hour: 'в час',
+                    per_minute: 'в минуту',
+                    per_second: 'в секунду'
+                },
+                'es': {
+                    title: '💰 Calculadora de ingresos',
+                    amount_label: 'Cantidad',
+                    period_label: 'Periodo de pago',
+                    period_yearly: 'Anual',
+                    period_monthly: 'Mensual',
+                    period_weekly: 'Semanal',
+                    period_hourly: 'Por hora',
+                    currency_label: 'Moneda',
+                    hours_label: 'Horas semanales (si es por hora)',
+                    btn_start: 'Iniciar cálculo',
+                    current_rate: 'Tasa actual',
+                    earned_since: 'Ganado desde el inicio',
+                    time_prefix: 'Tiempo transcurrido: ', // 移除了 '0s'
+                    purchase_title: '¿Qué puedes comprar con este ingreso?',
+                    purchase_example1: 'Ejemplo: Con un ingreso anual de 50.000 USD, podrías comprar un coche nuevo después de大约 6 meses.',
+                    purchase_example2: 'Ejemplo: Esto es equivalente a大约 4.166 tazas de café por mes.',
+                    purchase_example3: 'Ejemplo: Podrías permitirte una buena cena fuera大约 166 veces al mes.',
+                    per_hour: 'por hora',
+                    per_minute: 'por minuto',
+                    per_second: 'por segundo'
+                }
+            },
+
+            init: () => {
+                // 初始化页面
+            },
+
+            calculateHourlyRate: () => {
+                const amount = parseFloat(document.getElementById('income-amount').value) || 0;
+                const period = document.getElementById('income-period').value;
+                const weeklyHours = parseFloat(document.getElementById('weekly-hours').value) || 40;
+                
+                // 根据不同周期计算时薪
+                switch(period) {
+                    case 'yearly':
+                        // 按每年52周计算
+                        return amount / (52 * weeklyHours);
+                    case 'monthly':
+                        // 按每月4.333周计算
+                        return amount / (4.333 * weeklyHours);
+                    case 'weekly':
+                        return amount / weeklyHours;
+                    case 'hourly':
+                    default:
+                        return amount;
+                }
+            },
+            
+            startCalculation: () => {
+                // 清除之前的计时器
+                if (IncomeCalc.timer) {
+                    clearInterval(IncomeCalc.timer);
+                }
+                
+                // 计算时薪
+                IncomeCalc.hourlyRate = IncomeCalc.calculateHourlyRate();
+                IncomeCalc.startTime = new Date().getTime();
+                
+                // 更新显示
+                IncomeCalc.updateDisplay();
+                
+                // 设置定时器每秒更新
+                IncomeCalc.timer = setInterval(IncomeCalc.updateDisplay, 1000);
+                
+                // 更新购买力信息
+                IncomeCalc.updatePurchaseInfo();
+            },
+            
+            updateDisplay: () => {
+                const now = new Date().getTime();
+                const elapsedSeconds = (now - IncomeCalc.startTime) / 1000;
+                const earned = IncomeCalc.hourlyRate * (elapsedSeconds / 3600);
+                
+                const currency = document.getElementById('income-currency').value;
+                const symbol = IncomeCalc.currencySymbols[currency] || currency;
+                const lang = document.getElementById('income-lang').value;
+                const texts = IncomeCalc.i18n[lang];
+                
+                // 格式化数字显示
+                const formatNumber = (num) => {
+                    return num.toLocaleString(undefined, { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                    });
+                };
+                
+                // 更新当前速率显示
+                const perHour = formatNumber(IncomeCalc.hourlyRate);
+                const perMinute = formatNumber(IncomeCalc.hourlyRate / 60);
+                const perSecond = formatNumber(IncomeCalc.hourlyRate / 3600);
+                
+                document.getElementById('current-rate').innerHTML = 
+                    `${symbol}${perHour} ${texts.per_hour} / ${symbol}${perMinute} ${texts.per_minute} / ${symbol}${perSecond} ${texts.per_second}`;
+                
+                // 更新赚取金额
+                document.getElementById('earned-amount').textContent = `${symbol}${formatNumber(earned)}`;
+                
+                // 更新 elapsed time
+                const seconds = Math.floor(elapsedSeconds);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                
+                let timeStr = '';
+                if (hours > 0) {
+                    timeStr += `${hours}h `;
+                }
+                if (minutes > 0 || hours > 0) {
+                    timeStr += `${minutes % 60}m `;
+                }
+                timeStr += `${seconds % 60}s`;
+                
+                // 修复核心：直接设置数值，不再依赖 replace
+                document.getElementById('elapsed-time-value').textContent = timeStr;
+            },
+            
+            updatePurchaseInfo: () => {
+                const amount = parseFloat(document.getElementById('income-amount').value) || 0;
+                const period = document.getElementById('income-period').value;
+                const currency = document.getElementById('income-currency').value;
+                const symbol = IncomeCalc.currencySymbols[currency] || currency;
+                const lang = document.getElementById('income-lang').value;
+                const texts = IncomeCalc.i18n[lang];
+                
+                // 转换为月薪用于示例计算
+                let monthlyIncome;
+                switch(period) {
+                    case 'yearly':
+                        monthlyIncome = amount / 12;
+                        break;
+                    case 'monthly':
+                        monthlyIncome = amount;
+                        break;
+                    case 'weekly':
+                        monthlyIncome = amount * 4.333;
+                        break;
+                    case 'hourly':
+                        const weeklyHours = parseFloat(document.getElementById('weekly-hours').value) || 40;
+                        monthlyIncome = amount * weeklyHours * 4.333;
+                        break;
+                }
+                
+                // 格式化数字
+                const format = (num) => num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                
+                // 更新示例文本
+                const examples = document.querySelectorAll('#purchase-items li');
+                examples[0].textContent = texts.purchase_example1
+                    .replace('50,000', format(amount))
+                    .replace('$', symbol);
+                
+                // 咖啡杯数 (假设每杯5单位货币)
+                const coffeeCups = Math.round(monthlyIncome / 5);
+                examples[1].textContent = texts.purchase_example2
+                    .replace('4,166', format(coffeeCups))
+                    .replace('$', symbol);
+                
+                // 晚餐次数 (假设每次30单位货币)
+                const dinners = Math.round(monthlyIncome / 30);
+                examples[2].textContent = texts.purchase_example3
+                    .replace('166', format(dinners))
+                    .replace('$', symbol);
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('income-lang').value;
+                const texts = IncomeCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="income_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        el.innerText = texts[key];
+                    }
+                });
+                
+                // 更新下拉选项文本
+                Object.keys(texts).forEach(key => {
+                    if (key.startsWith('period_')) {
+                        const option = document.querySelector(`option[value="${key.replace('period_', '')}"]`);
+                        if (option) option.innerText = texts[key];
+                    }
+                });
+                
+                // 如果正在计算中，更新显示
+                if (IncomeCalc.timer) {
+                    IncomeCalc.updateDisplay();
+                    IncomeCalc.updatePurchaseInfo();
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', IncomeCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('income-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    IncomeCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
