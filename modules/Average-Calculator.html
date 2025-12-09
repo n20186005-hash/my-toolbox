@@ -5,332 +5,391 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Average Calculator</title>
     
-    <!-- 基础信息 -->
-    <meta name="tool-id" content="average_calc">
+    <!-- 工具元数据 (Tool Metadata) -->
+    <meta name="tool-id" content="average_calc_v2">
     <meta name="category" content="Math">
     <meta name="icon" content="📊">
     
-    <!-- 默认英文内容 -->
+    <!-- 默认SEO信息 (Default SEO) -->
     <meta name="title" content="Average Calculator">
-    <meta name="description" content="Calculate the average (mean) of a set of numbers.">
+    <meta name="description" content="Calculate the average (mean), sum, and count of a set of numbers. Support for English, Chinese, Japanese, and Russian.">
     
-    <!-- 多语言配置 -->
+    <!-- 多语言SEO配置 (Multilingual SEO) -->
     <meta name="lang-title-zh-CN" content="平均值计算器">
-    <meta name="lang-description-zh-CN" content="计算一组数字的平均值（均值）。">
+    <meta name="lang-description-zh-CN" content="在线平均值计算器，快速计算一组数字的平均数、总和、最大/最小值。支持多语言。">
     
     <meta name="lang-title-zh-TW" content="平均值計算器">
-    <meta name="lang-description-zh-TW" content="計算一組數字的平均值（均值）。">
+    <meta name="lang-description-zh-TW" content="在線平均值計算器，快速計算一組數字的平均數、總和、最大/最小值。支持多語言。">
     
     <meta name="lang-title-ja" content="平均値計算ツール">
-    <meta name="lang-description-ja" content="数値のセットの平均値（平均）を計算します。">
+    <meta name="lang-description-ja" content="数値セットの平均値（平均）、合計、個数を計算します。多言語対応。">
     
     <meta name="lang-title-ru" content="Калькулятор среднего значения">
-    <meta name="lang-description-ru" content="Вычислите среднее значение (среднюю) набора чисел.">
-    
-    <meta name="lang-title-es" content="Calculadora de Promedio">
-    <meta name="lang-description-es" content="Calcule el promedio (media) de un conjunto de números.">
+    <meta name="lang-description-ru" content="Вычислите среднее значение, сумму и количество чисел. Поддержка нескольких языков.">
 
+    <!-- 样式库 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
-        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
-        .numbers-container { display: flex; flex-wrap: gap; gap: 10px; margin-bottom: 15px; }
-        .number-input { flex: 1; min-width: 60px; }
-        .stat-item { margin: 8px 0; padding: 8px; background: #f8fafc; border-radius: 4px; }
+        body { background: #f0f9ff; font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .tool-container { max-width: 800px; margin: 40px auto; padding: 0 15px; }
+        .tool-card { background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .tool-header { background: linear-gradient(to right, #3b82f6, #2563eb); padding: 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .tool-body { padding: 30px; }
+        .result-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-top: 20px; }
+        .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid #eef2ff; padding: 12px 0; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label { color: #64748b; font-weight: 500; }
+        .stat-value { color: #1e293b; font-weight: 700; font-family: monospace; font-size: 1.1em; }
+        .intro-section { margin-top: 30px; background: white; padding: 25px; border-radius: 10px; color: #475569; line-height: 1.6; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        
+        /* 动态输入框动画 */
+        .input-animate { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <div class="tool-module active" 
-         data-id="average_calc" 
-         data-category="math" 
-         data-title="Average Calculator" 
-         data-icon="📊">
+    <div class="tool-container">
         
-        <!-- 语言选择器 -->
-        <div class="absolute top-4 right-4">
-            <select id="avg-lang" onchange="AverageCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
-                <option value="en" selected>English</option>
-                <option value="zh-CN">简体中文</option>
-                <option value="zh-TW">繁體中文</option>
-                <option value="ja">日本語</option>
-                <option value="ru">Русский</option>
-                <option value="es">Español</option>
-            </select>
-        </div>
-
-        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📊 Average Calculator</h2>
-        
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="numbers_label">Enter numbers (separated by commas or spaces)</label>
-            <textarea id="avg-numbers" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" rows="3" placeholder="e.g. 1, 2, 3, 4, 5 or 1 2 3 4 5"></textarea>
+        <!-- 主工具卡片 -->
+        <div class="tool-card">
             
-            <div class="flex justify-between mt-3">
-                <button onclick="AverageCalc.addInputField()" class="bg-gray-200 text-gray-800 py-1 px-3 rounded text-sm hover:bg-gray-300 transition" data-i18n="btn_add_field">Add input field</button>
-                <button onclick="AverageCalc.clearAll()" class="bg-gray-200 text-gray-800 py-1 px-3 rounded text-sm hover:bg-gray-300 transition" data-i18n="btn_clear">Clear all</button>
-            </div>
-            
-            <div id="additional-fields" class="numbers-container mt-3">
-                <!-- 动态添加的输入框将在这里显示 -->
-            </div>
-        </div>
-
-        <button onclick="AverageCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Average</button>
-
-        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
-            <div class="text-sm text-gray-500 mb-2" data-i18n="results_label">Results</div>
-            
-            <div id="avg-results" class="space-y-2">
-                <div class="stat-item">
-                    <span data-i18n="average_label" class="font-medium">Average:</span>
-                    <span id="avg-average" class="ml-2 text-blue-800 font-bold">--</span>
-                </div>
-                <div class="stat-item">
-                    <span data-i18n="sum_label" class="font-medium">Sum:</span>
-                    <span id="avg-sum" class="ml-2 text-blue-800">--</span>
-                </div>
-                <div class="stat-item">
-                    <span data-i18n="count_label" class="font-medium">Count:</span>
-                    <span id="avg-count" class="ml-2 text-blue-800">--</span>
-                </div>
-                <div class="stat-item">
-                    <span data-i18n="min_label" class="font-medium">Minimum:</span>
-                    <span id="avg-min" class="ml-2 text-blue-800">--</span>
-                </div>
-                <div class="stat-item">
-                    <span data-i18n="max_label" class="font-medium">Maximum:</span>
-                    <span id="avg-max" class="ml-2 text-blue-800">--</span>
+            <!-- 头部与语言切换 -->
+            <div class="tool-header">
+                <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
+                    <span>📊</span> <span data-i18n="title">Average Calculator</span>
+                </h1>
+                
+                <div class="relative">
+                    <select id="lang-selector" onchange="App.changeLang(this.value)" class="appearance-none bg-blue-700 text-white border border-blue-500 hover:bg-blue-600 px-3 py-1 pr-8 rounded focus:outline-none text-sm font-medium cursor-pointer transition-colors">
+                        <option value="en">English</option>
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="ja">日本語</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
                 </div>
             </div>
-            
-            <div id="avg-error" class="mt-4 text-red-600 hidden"></div>
+
+            <!-- 工具主体 -->
+            <div class="tool-body">
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2" data-i18n="input_label">Enter numbers (comma or space separated)</label>
+                    <textarea id="input-numbers" 
+                        class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm text-gray-700 font-mono" 
+                        rows="4" 
+                        placeholder="10, 20, 30.5, 40..."></textarea>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <button onclick="App.addInputField()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-1">
+                            <span class="text-green-600 font-bold">+</span> <span data-i18n="btn_add">Add Field</span>
+                        </button>
+                        <button onclick="App.clearAll()" class="bg-gray-100 hover:bg-red-50 text-red-600 px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-1 ml-auto">
+                            <span>🗑️</span> <span data-i18n="btn_clear">Clear</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 动态输入区域 -->
+                    <div id="dynamic-inputs" class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3"></div>
+                </div>
+
+                <!-- 计算按钮 -->
+                <button onclick="App.calculate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition transform active:scale-95 flex justify-center items-center gap-2">
+                    <span>🧮</span> <span data-i18n="btn_calc">Calculate</span>
+                </button>
+
+                <!-- 错误提示 -->
+                <div id="error-msg" class="hidden mt-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded text-center text-sm"></div>
+
+                <!-- 结果展示 -->
+                <div id="result-section" class="result-box hidden">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2" data-i18n="result_title">Results</h3>
+                    
+                    <div class="stat-row">
+                        <span class="stat-label" data-i18n="lbl_average">Average (Mean)</span>
+                        <span id="res-avg" class="stat-value text-blue-600">--</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label" data-i18n="lbl_sum">Sum</span>
+                        <span id="res-sum" class="stat-value">--</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label" data-i18n="lbl_count">Count</span>
+                        <span id="res-count" class="stat-value">--</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label" data-i18n="lbl_min">Minimum</span>
+                        <span id="res-min" class="stat-value">--</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label" data-i18n="lbl_max">Maximum</span>
+                        <span id="res-max" class="stat-value">--</span>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <!-- 功能介绍区域 -->
+        <div class="intro-section">
+            <h2 class="text-lg font-bold text-gray-800 mb-3" data-i18n="intro_title">About this Tool</h2>
+            <p data-i18n="intro_text" class="text-sm md:text-base">
+                This simple and efficient Average Calculator allows you to quickly determine the mean value of a dataset. 
+                Whether you are a student checking grades, a researcher analyzing data, or just need to do some quick math, 
+                this tool helps you calculate the Average, Sum, Count, Maximum, and Minimum values instantly. 
+                Simply enter your numbers and let the tool do the rest.
+            </p>
+        </div>
+
     </div>
 
     <script>
-        const AverageCalc = {
+        const App = {
+            // 语言包配置
             i18n: {
                 'en': {
-                    title: '📊 Average Calculator',
-                    numbers_label: 'Enter numbers (separated by commas or spaces)',
-                    btn_add_field: 'Add input field',
-                    btn_clear: 'Clear all',
-                    btn_calc: 'Calculate Average',
-                    results_label: 'Results',
-                    average_label: 'Average (Mean):',
-                    sum_label: 'Sum:',
-                    count_label: 'Count of numbers:',
-                    min_label: 'Minimum value:',
-                    max_label: 'Maximum value:',
-                    err_no_numbers: 'Please enter valid numbers',
-                    err_not_enough: 'Please enter at least one number'
+                    title: 'Average Calculator',
+                    input_label: 'Enter numbers (comma or space separated)',
+                    placeholder: 'e.g. 10, 20, 30.5...',
+                    btn_add: 'Add Field',
+                    btn_clear: 'Clear All',
+                    btn_calc: 'Calculate',
+                    result_title: 'Calculation Results',
+                    lbl_average: 'Average (Mean)',
+                    lbl_sum: 'Sum',
+                    lbl_count: 'Count',
+                    lbl_min: 'Minimum',
+                    lbl_max: 'Maximum',
+                    err_empty: 'Please enter at least one number.',
+                    err_invalid: 'Some inputs contain invalid characters.',
+                    intro_title: 'About this Tool',
+                    intro_text: 'This simple and efficient Average Calculator allows you to quickly determine the mean value of a dataset. Whether you are a student checking grades, a researcher analyzing data, or just need to do some quick math, this tool helps you calculate the Average, Sum, Count, Maximum, and Minimum values instantly.'
                 },
                 'zh-CN': {
-                    title: '📊 平均值计算器',
-                    numbers_label: '输入数字（用逗号或空格分隔）',
-                    btn_add_field: '添加输入框',
-                    btn_clear: '全部清除',
-                    btn_calc: '计算平均值',
-                    results_label: '结果',
-                    average_label: '平均值：',
-                    sum_label: '总和：',
-                    count_label: '数字数量：',
-                    min_label: '最小值：',
-                    max_label: '最大值：',
-                    err_no_numbers: '请输入有效的数字',
-                    err_not_enough: '请至少输入一个数字'
+                    title: '平均值计算器',
+                    input_label: '输入数字（用逗号或空格分隔）',
+                    placeholder: '例如：10, 20, 30.5...',
+                    btn_add: '添加输入框',
+                    btn_clear: '清空所有',
+                    btn_calc: '开始计算',
+                    result_title: '计算结果',
+                    lbl_average: '平均值 (Mean)',
+                    lbl_sum: '总和 (Sum)',
+                    lbl_count: '个数 (Count)',
+                    lbl_min: '最小值 (Min)',
+                    lbl_max: '最大值 (Max)',
+                    err_empty: '请至少输入一个数字。',
+                    err_invalid: '部分输入包含无效字符，请检查。',
+                    intro_title: '关于本工具',
+                    intro_text: '这是一个简单高效的平均值计算器，可以帮助您快速计算一组数据的平均值。无论您是计算成绩的学生、分析数据的研究人员，还是日常需要快速计算，本工具都能帮您瞬间得出平均值、总和、数量、最大值和最小值。'
                 },
                 'zh-TW': {
-                    title: '📊 平均值計算器',
-                    numbers_label: '輸入數字（用逗號或空格分隔）',
-                    btn_add_field: '添加輸入框',
-                    btn_clear: '全部清除',
-                    btn_calc: '計算平均值',
-                    results_label: '結果',
-                    average_label: '平均值：',
-                    sum_label: '總和：',
-                    count_label: '數字數量：',
-                    min_label: '最小值：',
-                    max_label: '最大值：',
-                    err_no_numbers: '請輸入有效的數字',
-                    err_not_enough: '請至少輸入一個數字'
+                    title: '平均值計算器',
+                    input_label: '輸入數字（用逗號或空格分隔）',
+                    placeholder: '例如：10, 20, 30.5...',
+                    btn_add: '添加輸入框',
+                    btn_clear: '清空所有',
+                    btn_calc: '開始計算',
+                    result_title: '計算結果',
+                    lbl_average: '平均值 (Mean)',
+                    lbl_sum: '總和 (Sum)',
+                    lbl_count: '個數 (Count)',
+                    lbl_min: '最小值 (Min)',
+                    lbl_max: '最大值 (Max)',
+                    err_empty: '請至少輸入一個數字。',
+                    err_invalid: '部分輸入包含無效字符，請檢查。',
+                    intro_title: '關於本工具',
+                    intro_text: '這是一個簡單高效的平均值計算器，可以幫助您快速計算一組數據的平均值。無論您是計算成績的學生、分析數據的研究人員，還是日常需要快速計算，本工具都能幫您瞬間得出平均值、總和、數量、最大值和最小值。'
                 },
                 'ja': {
-                    title: '📊 平均値計算ツール',
-                    numbers_label: '数値を入力してください（カンマまたはスペースで区切って）',
-                    btn_add_field: '入力フィールドを追加',
-                    btn_clear: 'すべて消去',
-                    btn_calc: '平均を計算',
-                    results_label: '結果',
-                    average_label: '平均値：',
-                    sum_label: '合計：',
-                    count_label: '数値の数：',
-                    min_label: '最小値：',
-                    max_label: '最大値：',
-                    err_no_numbers: '有効な数値を入力してください',
-                    err_not_enough: '少なくとも1つの数値を入力してください'
+                    title: '平均値計算ツール',
+                    input_label: '数値を入力（カンマまたはスペース区切り）',
+                    placeholder: '例：10, 20, 30.5...',
+                    btn_add: '入力欄を追加',
+                    btn_clear: 'すべてクリア',
+                    btn_calc: '計算する',
+                    result_title: '計算結果',
+                    lbl_average: '平均値 (Average)',
+                    lbl_sum: '合計 (Sum)',
+                    lbl_count: '個数 (Count)',
+                    lbl_min: '最小値 (Min)',
+                    lbl_max: '最大値 (Max)',
+                    err_empty: '少なくとも1つの数値を入力してください。',
+                    err_invalid: '無効な文字が含まれています。',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このシンプルで効率的な平均値計算ツールを使用すると、データセットの平均値をすばやく求めることができます。成績を確認する学生、データを分析する研究者、または日常の計算が必要な方など、誰でも瞬時に平均、合計、個数、最大値、最小値を計算できます。'
                 },
                 'ru': {
-                    title: '📊 Калькулятор среднего значения',
-                    numbers_label: 'Введите числа (разделенные запятыми или пробелами)',
-                    btn_add_field: 'Добавить поле ввода',
-                    btn_clear: 'Очистить все',
-                    btn_calc: 'Вычислить среднее',
-                    results_label: 'Результаты',
-                    average_label: 'Среднее значение:',
-                    sum_label: 'Сумма:',
-                    count_label: 'Количество чисел:',
-                    min_label: 'Минимальное значение:',
-                    max_label: 'Максимальное значение:',
-                    err_no_numbers: 'Введите действительные числа',
-                    err_not_enough: 'Введите хотя бы одно число'
-                },
-                'es': {
-                    title: '📊 Calculadora de Promedio',
-                    numbers_label: 'Ingrese números (separados por comas o espacios)',
-                    btn_add_field: 'Agregar campo de entrada',
-                    btn_clear: 'Limpiar todo',
-                    btn_calc: 'Calcular Promedio',
-                    results_label: 'Resultados',
-                    average_label: 'Promedio (Media):',
-                    sum_label: 'Suma:',
-                    count_label: 'Recuento de números:',
-                    min_label: 'Valor mínimo:',
-                    max_label: 'Valor máximo:',
-                    err_no_numbers: 'Por favor, ingrese números válidos',
-                    err_not_enough: 'Por favor, ingrese al menos un número'
+                    title: 'Калькулятор среднего',
+                    input_label: 'Введите числа (через запятую или пробел)',
+                    placeholder: 'Например: 10, 20, 30.5...',
+                    btn_add: 'Добавить поле',
+                    btn_clear: 'Очистить',
+                    btn_calc: 'Рассчитать',
+                    result_title: 'Результаты',
+                    lbl_average: 'Среднее (Average)',
+                    lbl_sum: 'Сумма (Sum)',
+                    lbl_count: 'Количество',
+                    lbl_min: 'Минимум',
+                    lbl_max: 'Максимум',
+                    err_empty: 'Пожалуйста, введите хотя бы одно число.',
+                    err_invalid: 'Некоторые входные данные содержат недопустимые символы.',
+                    intro_title: 'Об этом инструменте',
+                    intro_text: 'Этот простой и эффективный калькулятор среднего значения позволяет быстро определить среднее арифметическое набора данных. Будь то студент, проверяющий оценки, исследователь, анализирующий данные, или просто быстрый расчет, этот инструмент поможет мгновенно вычислить среднее значение, сумму, количество, максимум и минимум.'
                 }
             },
 
-            changeLang: () => {
-                const lang = document.getElementById('avg-lang').value;
-                const texts = AverageCalc.i18n[lang];
-                const elements = document.querySelectorAll('[data-id="average_calc"] [data-i18n]');
-                
-                elements.forEach(el => {
+            // 当前语言
+            currentLang: 'en',
+
+            // 初始化
+            init: () => {
+                // 1. 优先从URL参数获取语言
+                const urlParams = new URLSearchParams(window.location.search);
+                let lang = urlParams.get('lang');
+
+                // 2. 如果URL没有，则检测浏览器语言
+                if (!lang) {
+                    const navLang = navigator.language || navigator.userLanguage;
+                    if (navLang.startsWith('zh')) {
+                        lang = (navLang.includes('TW') || navLang.includes('HK')) ? 'zh-TW' : 'zh-CN';
+                    } else if (navLang.startsWith('ja')) {
+                        lang = 'ja';
+                    } else if (navLang.startsWith('ru')) {
+                        lang = 'ru';
+                    } else {
+                        lang = 'en';
+                    }
+                }
+
+                // 3. 验证语言是否支持，不支持则回退到英文
+                if (!App.i18n[lang]) lang = 'en';
+
+                // 4. 应用语言
+                document.getElementById('lang-selector').value = lang;
+                App.changeLang(lang, false); // 初始化时不强制推入历史记录，避免覆盖初始状态
+            },
+
+            // 切换语言
+            changeLang: (lang, updateUrl = true) => {
+                App.currentLang = lang;
+                const texts = App.i18n[lang];
+
+                // 更新所有带有 data-i18n 属性的元素文本
+                document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
-                    if (texts[key]) el.innerText = texts[key];
-                });
-
-                // 重新计算以更新结果语言
-                const currentAvg = document.getElementById('avg-average').innerText;
-                if (currentAvg !== '--') {
-                    AverageCalc.calc();
-                }
-            },
-
-            addInputField: () => {
-                const container = document.getElementById('additional-fields');
-                const inputCount = container.children.length + 1;
-                
-                const inputDiv = document.createElement('div');
-                inputDiv.className = 'number-input';
-                
-                const input = document.createElement('input');
-                input.type = 'number';
-                input.className = 'w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none';
-                input.placeholder = `Number ${inputCount}`;
-                input.id = `avg-num-${inputCount}`;
-                
-                const removeBtn = document.createElement('button');
-                removeBtn.type = 'button';
-                removeBtn.className = 'mt-1 text-red-500 text-xs hover:text-red-700';
-                removeBtn.innerText = '×';
-                removeBtn.onclick = () => container.removeChild(inputDiv);
-                
-                inputDiv.appendChild(input);
-                inputDiv.appendChild(removeBtn);
-                container.appendChild(inputDiv);
-            },
-
-            clearAll: () => {
-                document.getElementById('avg-numbers').value = '';
-                document.getElementById('additional-fields').innerHTML = '';
-                document.getElementById('avg-average').innerText = '--';
-                document.getElementById('avg-sum').innerText = '--';
-                document.getElementById('avg-count').innerText = '--';
-                document.getElementById('avg-min').innerText = '--';
-                document.getElementById('avg-max').innerText = '--';
-                document.getElementById('avg-error').classList.add('hidden');
-            },
-
-            calc: () => {
-                const lang = document.getElementById('avg-lang').value;
-                const texts = AverageCalc.i18n[lang];
-                const errorEl = document.getElementById('avg-error');
-                
-                // 重置错误状态
-                errorEl.classList.add('hidden');
-                errorEl.innerText = '';
-                
-                // 收集所有数字
-                let numbers = [];
-                
-                // 从文本区域收集数字
-                const textArea = document.getElementById('avg-numbers').value.trim();
-                if (textArea) {
-                    // 用逗号或空格分割
-                    const textNumbers = textArea.split(/[,\s]+/).map(num => parseFloat(num));
-                    numbers = numbers.concat(textNumbers.filter(num => !isNaN(num)));
-                }
-                
-                // 从额外的输入框收集数字
-                const extraInputs = document.querySelectorAll('#additional-fields input');
-                extraInputs.forEach(input => {
-                    const num = parseFloat(input.value);
-                    if (!isNaN(num)) {
-                        numbers.push(num);
+                    if (texts[key]) {
+                        el.innerText = texts[key];
                     }
                 });
-                
-                // 验证
-                if (numbers.length === 0) {
-                    errorEl.innerText = texts.err_not_enough;
-                    errorEl.classList.remove('hidden');
-                    return;
+
+                // 更新 Placeholder
+                document.getElementById('input-numbers').placeholder = texts.placeholder;
+
+                // 更新页面 Title
+                document.title = texts.title;
+
+                // 更新 URL 参数 (?lang=xx)
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
                 }
                 
-                // 计算统计数据
-                const sum = numbers.reduce((acc, num) => acc + num, 0);
-                const average = sum / numbers.length;
-                const count = numbers.length;
+                // 如果已有结果，重新计算以刷新可能的格式（虽然数字格式通用，但这是一个好习惯）
+                const resultSection = document.getElementById('result-section');
+                if (!resultSection.classList.contains('hidden')) {
+                    App.calculate();
+                }
+            },
+
+            // 添加单独的输入框
+            addInputField: () => {
+                const container = document.getElementById('dynamic-inputs');
+                const div = document.createElement('div');
+                div.className = 'relative input-animate';
+                div.innerHTML = `
+                    <input type="number" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" placeholder="#">
+                    <button onclick="this.parentElement.remove()" class="absolute right-2 top-2 text-gray-400 hover:text-red-500 font-bold">×</button>
+                `;
+                container.appendChild(div);
+            },
+
+            // 清除所有内容
+            clearAll: () => {
+                document.getElementById('input-numbers').value = '';
+                document.getElementById('dynamic-inputs').innerHTML = '';
+                document.getElementById('result-section').classList.add('hidden');
+                document.getElementById('error-msg').classList.add('hidden');
+            },
+
+            // 核心计算逻辑
+            calculate: () => {
+                const texts = App.i18n[App.currentLang];
+                const errorEl = document.getElementById('error-msg');
+                const resultSection = document.getElementById('result-section');
+                
+                errorEl.classList.add('hidden');
+                
+                let numbers = [];
+
+                // 1. 解析大文本框
+                const rawText = document.getElementById('input-numbers').value;
+                // 支持逗号、空格、换行符分隔
+                const splitText = rawText.split(/[\s,，\n]+/);
+                
+                splitText.forEach(str => {
+                    if (str.trim() !== '') {
+                        const num = parseFloat(str);
+                        if (!isNaN(num)) {
+                            numbers.push(num);
+                        }
+                    }
+                });
+
+                // 2. 解析动态输入框
+                const dynamicInputs = document.querySelectorAll('#dynamic-inputs input');
+                dynamicInputs.forEach(input => {
+                    if (input.value.trim() !== '') {
+                        const num = parseFloat(input.value);
+                        if (!isNaN(num)) {
+                            numbers.push(num);
+                        }
+                    }
+                });
+
+                // 3. 验证
+                if (numbers.length === 0) {
+                    errorEl.textContent = texts.err_empty;
+                    errorEl.classList.remove('hidden');
+                    resultSection.classList.add('hidden');
+                    return;
+                }
+
+                // 4. 计算
+                const sum = numbers.reduce((a, b) => a + b, 0);
+                const avg = sum / numbers.length;
                 const min = Math.min(...numbers);
                 const max = Math.max(...numbers);
-                
-                // 显示结果
-                document.getElementById('avg-average').innerText = average.toFixed(4);
-                document.getElementById('avg-sum').innerText = sum.toFixed(4);
-                document.getElementById('avg-count').innerText = count;
-                document.getElementById('avg-min').innerText = min;
-                document.getElementById('avg-max').innerText = max;
+
+                // 5. 显示结果
+                // 使用 Intl.NumberFormat 来处理本地化的数字显示（可选，这里保持简单小数）
+                document.getElementById('res-avg').innerText = Number.isInteger(avg) ? avg : avg.toFixed(4).replace(/\.?0+$/, "");
+                document.getElementById('res-sum').innerText = Number.isInteger(sum) ? sum : sum.toFixed(4).replace(/\.?0+$/, "");
+                document.getElementById('res-count').innerText = numbers.length;
+                document.getElementById('res-min').innerText = min;
+                document.getElementById('res-max').innerText = max;
+
+                resultSection.classList.remove('hidden');
             }
         };
 
-        // 页面加载时初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            // 自动匹配浏览器语言
-            const userLang = navigator.language || navigator.userLanguage;
-            let targetLang = 'en'; 
-            if (userLang.startsWith('zh')) {
-                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
-            } else if (userLang.startsWith('ja')) {
-                targetLang = 'ja';
-            } else if (userLang.startsWith('ru')) {
-                targetLang = 'ru';
-            } else if (userLang.startsWith('es')) {
-                targetLang = 'es';
-            }
-            
-            if (targetLang !== 'en') {
-                const langSelect = document.getElementById('avg-lang');
-                if(langSelect) {
-                    langSelect.value = targetLang;
-                    AverageCalc.changeLang();
-                }
-            }
-        });
+        // 启动应用
+        document.addEventListener('DOMContentLoaded', App.init);
     </script>
-
 </body>
-
 </html>
