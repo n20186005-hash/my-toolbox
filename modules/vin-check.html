@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="auto">
+    <meta name="icon" content="🚗">
+    <title>汽车VIN码/车架号查询</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        input:focus { border-color: #22c55e; outline: none; box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2); }
+        .result-section { margin-top: 20px; padding: 15px; background-color: #f8fafc; border-radius: 6px; display: none; }
+        .result-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb; }
+        .result-label { font-weight: 600; color: #4b5563; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+        .footer { margin-top: 30px; text-align: center; color: #6b7280; font-size: 0.9rem; }
+        .vin-format-hint { font-size: 0.85rem; color: #6b7280; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🚗 汽车VIN码/车架号查询</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">查询VIN码信息</h3>
+                <div class="form-group">
+                    <label data-i18n="vin_input">VIN码/车架号</label>
+                    <input type="text" id="vin-input" maxlength="17" placeholder="输入17位VIN码..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                    <div class="vin-format-hint" data-i18n="vin_hint">VIN码由17位字母和数字组成，是汽车唯一识别代码</div>
+                </div>
+                <button onclick="Tool.checkVin()" data-i18n="check_button">查询</button>
+                <button onclick="Tool.clearInput()" data-i18n="clear_button">清空</button>
+            </div>
+
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="result_title">查询结果</h3>
+                <div id="result-container" class="result-section">
+                    <div class="result-item">
+                        <span class="result-label" data-i18n="vin_code">VIN码：</span>
+                        <span id="result-vin"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label" data-i18n="country">生产国家：</span>
+                        <span id="result-country"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label" data-i18n="manufacturer">制造商：</span>
+                        <span id="result-manufacturer"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label" data-i18n="year">生产年份：</span>
+                        <span id="result-year"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label" data-i18n="plant">装配厂：</span>
+                        <span id="result-plant"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label" data-i18n="serial">生产序列号：</span>
+                        <span id="result-serial"></span>
+                    </div>
+                    <div class="mt-4">
+                        <button onclick="Tool.copyResult()" data-i18n="copy_result">复制结果</button>
+                    </div>
+                </div>
+                <div id="no-result" style="display: none; color: #dc2626;" data-i18n="no_result">请输入有效的17位VIN码进行查询</div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于VIN码查询工具</h3>
+                <p data-i18n="intro_text">VIN码（车辆识别号码）是一个17位的唯一编码，用于识别每一辆汽车。通过本工具可以解析VIN码包含的信息，如生产国家、制造商、生产年份等。查询结果仅供参考，具体信息请以车辆实际情况为准。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>
+            <span data-i18n="footer_prefix">更多工具可访问：</span>
+            <a href="https://toolboxpro.top" target="_blank" class="text-green-600 hover:underline">toolboxpro.top</a>
+        </p>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '🚗 Vehicle VIN Check',
+                    search: 'Check VIN Information',
+                    'vin_input': 'VIN Number',
+                    'vin_hint': 'VIN consists of 17 letters and numbers, a unique identifier for vehicles',
+                    'check_button': 'Check',
+                    'clear_button': 'Clear',
+                    'result_title': 'Check Result',
+                    'vin_code': 'VIN Code:',
+                    'country': 'Country of Manufacture:',
+                    'manufacturer': 'Manufacturer:',
+                    'year': 'Year of Manufacture:',
+                    'plant': 'Assembly Plant:',
+                    'serial': 'Production Serial Number:',
+                    'copy_result': 'Copy Result',
+                    'no_result': 'Please enter a valid 17-digit VIN for checking',
+                    'copied': 'Copied!',
+                    'intro_title': 'About VIN Check Tool',
+                    'intro_text': 'VIN (Vehicle Identification Number) is a 17-character unique code used to identify each vehicle. This tool can parse information contained in the VIN, such as country of manufacture, manufacturer, year of production, etc. The results are for reference only; please refer to the actual vehicle for specific information.',
+                    'footer_prefix': 'More tools at: '
+                },
+                'zh-CN': {
+                    title: '🚗 汽车VIN码/车架号查询',
+                    search: '查询VIN码信息',
+                    'vin_input': 'VIN码/车架号',
+                    'vin_hint': 'VIN码由17位字母和数字组成，是汽车唯一识别代码',
+                    'check_button': '查询',
+                    'clear_button': '清空',
+                    'result_title': '查询结果',
+                    'vin_code': 'VIN码：',
+                    'country': '生产国家：',
+                    'manufacturer': '制造商：',
+                    'year': '生产年份：',
+                    'plant': '装配厂：',
+                    'serial': '生产序列号：',
+                    'copy_result': '复制结果',
+                    'no_result': '请输入有效的17位VIN码进行查询',
+                    'copied': '已复制！',
+                    'intro_title': '关于VIN码查询工具',
+                    'intro_text': 'VIN码（车辆识别号码）是一个17位的唯一编码，用于识别每一辆汽车。通过本工具可以解析VIN码包含的信息，如生产国家、制造商、生产年份等。查询结果仅供参考，具体信息请以车辆实际情况为准。',
+                    'footer_prefix': '更多工具可访问：'
+                },
+                'zh-TW': {
+                    title: '🚗 汽車VIN碼/車架號查詢',
+                    search: '查詢VIN碼信息',
+                    'vin_input': 'VIN碼/車架號',
+                    'vin_hint': 'VIN碼由17位字母和數字組成，是汽車唯一識別代碼',
+                    'check_button': '查詢',
+                    'clear_button': '清空',
+                    'result_title': '查詢結果',
+                    'vin_code': 'VIN碼：',
+                    'country': '生產國家：',
+                    'manufacturer': '製造商：',
+                    'year': '生產年份：',
+                    'plant': '裝配廠：',
+                    'serial': '生產序列號：',
+                    'copy_result': '複製結果',
+                    'no_result': '請輸入有效的17位VIN碼進行查詢',
+                    'copied': '已複製！',
+                    'intro_title': '關於VIN碼查詢工具',
+                    'intro_text': 'VIN碼（車輛識別號碼）是一個17位的唯一編碼，用於識別每一輛汽車。通過本工具可以解析VIN碼包含的信息，如生產國家、製造商、生產年份等。查詢結果僅供參考，具體信息請以車輛實際情況為準。',
+                    'footer_prefix': '更多工具可訪問：'
+                },
+                'ja': {
+                    title: '🚗 車両VINコード検索',
+                    search: 'VINコード情報を検索',
+                    'vin_input': 'VINコード/車台番号',
+                    'vin_hint': 'VINコードは17文字の英数字で構成され、車両の唯一の識別コードです',
+                    'check_button': '検索',
+                    'clear_button': 'クリア',
+                    'result_title': '検索結果',
+                    'vin_code': 'VINコード：',
+                    'country': '生産国：',
+                    'manufacturer': 'メーカー：',
+                    'year': '生産年：',
+                    'plant': '組立工場：',
+                    'serial': '生産シリアル番号：',
+                    'copy_result': '結果をコピー',
+                    'no_result': '有効な17桁のVINコードを入力して検索してください',
+                    'copied': 'コピーしました！',
+                    'intro_title': 'VINコード検索ツールについて',
+                    'intro_text': 'VINコード（車両識別番号）は17桁の一意のコードで、各車両を識別するために使用されます。このツールを使用すると、生産国、メーカー、生産年など、VINコードに含まれる情報を解析できます。検索結果は参考用です。具体的な情報は車両の実際の状況を基にしてください。',
+                    'footer_prefix': 'その他のツール：'
+                },
+                'ru': {
+                    title: '🚗 Проверка VIN автомобиля',
+                    search: 'Проверка информации по VIN',
+                    'vin_input': 'VIN-код/номер кузова',
+                    'vin_hint': 'VIN-код состоит из 17 букв и цифр, является уникальным идентификатором автомобиля',
+                    'check_button': 'Проверить',
+                    'clear_button': 'Очистить',
+                    'result_title': 'Результат проверки',
+                    'vin_code': 'VIN-код：',
+                    'country': 'Страна производства：',
+                    'manufacturer': 'Производитель：',
+                    'year': 'Год производства：',
+                    'plant': 'Завод сборки：',
+                    'serial': 'Серийный номер производства：',
+                    'copy_result': 'Скопировать результат',
+                    'no_result': 'Введите действительный 17-значный VIN-код для проверки',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О инструменте проверки VIN',
+                    'intro_text': 'VIN-код (идентификационный номер транспортного средства) — это уникальный 17-символьный код, используемый для идентификации каждого автомобиля. С помощью этого инструмента можно разобрать информацию, содержащуюся в VIN-коде, такую как страна производства, производитель, год выпуска и т.д. Результаты предназначены только для справки; для получения точной информации обращайтесь к фактическим данным о транспортном средстве.',
+                    'footer_prefix': 'Больше инструментов: '
+                }
+            },
+
+            // VIN码解析数据
+            vinData: {
+                // 国家代码映射
+                countryCodes: {
+                    '1': '美国', '4': '美国', '5': '美国',
+                    '2': '加拿大',
+                    '3': '墨西哥',
+                    'J': '日本',
+                    'K': '韩国',
+                    'L': '中国',
+                    'V': '法国',
+                    'W': '德国',
+                    'X': '俄罗斯',
+                    'Z': '意大利'
+                },
+                // 制造商代码映射
+                manufacturerCodes: {
+                    'A': '阿尔法·罗密欧', 'B': '宝马', 'C': '克莱斯勒',
+                    'D': '道奇', 'F': '福特', 'G': '通用', 'H': '本田',
+                    'J': '捷豹', 'L': '路虎', 'M': '奔驰', 'N': '日产',
+                    'P': '标致', 'R': '雷诺', 'S': '斯巴鲁', 'T': '丰田',
+                    'V': '大众', 'Y': '沃尔沃'
+                },
+                // 年份代码映射
+                yearCodes: {
+                    'A': 2010, 'B': 2011, 'C': 2012, 'D': 2013, 'E': 2014,
+                    'F': 2015, 'G': 2016, 'H': 2017, 'J': 2018, 'K': 2019,
+                    'L': 2020, 'M': 2021, 'N': 2022, 'P': 2023, 'R': 2024,
+                    'S': 2025, 'T': 2026, 'V': 2027, 'W': 2028, 'X': 2029,
+                    'Y': 2030, '1': 2001, '2': 2002, '3': 2003, '4': 2004,
+                    '5': 2005, '6': 2006, '7': 2007, '8': 2008, '9': 2009
+                }
+            },
+
+            init: function() {
+                // 从URL获取语言参数
+                let lang = 'zh-CN';
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    lang = urlParams.get('lang') || 'zh-CN';
+                } catch (e) {
+                    console.log('Unable to access URL params:', e);
+                }
+                
+                // 设置语言选择器
+                document.getElementById('lang-selector').value = lang;
+                
+                // 初始化翻译
+                this.changeLang();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                
+                // 更新URL参数
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('lang', lang);
+                    window.history.replaceState(null, null, '?' + urlParams.toString());
+                } catch (e) {
+                    console.warn('History API not supported in this environment');
+                }
+                
+                // 应用翻译
+                document.querySelectorAll('[data-i18n]').forEach(element => {
+                    const key = element.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        element.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 更新占位符
+                if(this.i18n[lang] && this.i18n[lang]['vin_placeholder']) {
+                    document.getElementById('vin-input').placeholder = this.i18n[lang]['vin_placeholder'] || '输入17位VIN码...';
+                }
+            },
+
+            checkVin: function() {
+                const vin = document.getElementById('vin-input').value.trim().toUpperCase();
+                const resultContainer = document.getElementById('result-container');
+                const noResult = document.getElementById('no-result');
+                
+                // 验证VIN码格式
+                if (vin.length !== 17 || !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) {
+                    resultContainer.style.display = 'none';
+                    noResult.style.display = 'block';
+                    return;
+                }
+                
+                // 解析VIN码
+                const countryCode = vin.charAt(0);
+                const manufacturerCode = vin.charAt(1);
+                const yearCode = vin.charAt(9);
+                const plantCode = vin.charAt(10);
+                const serialNumber = vin.substring(11);
+                
+                // 获取解析结果
+                const country = this.getCountryName(countryCode);
+                const manufacturer = this.getManufacturerName(manufacturerCode);
+                const year = this.getYear(yearCode);
+                const plant = this.getPlantName(plantCode);
+                
+                // 显示结果
+                document.getElementById('result-vin').textContent = vin;
+                document.getElementById('result-country').textContent = country;
+                document.getElementById('result-manufacturer').textContent = manufacturer;
+                document.getElementById('result-year').textContent = year;
+                document.getElementById('result-plant').textContent = plant || plantCode;
+                document.getElementById('result-serial').textContent = serialNumber;
+                
+                // 显示结果区域，隐藏无结果提示
+                resultContainer.style.display = 'block';
+                noResult.style.display = 'none';
+            },
+
+            clearInput: function() {
+                document.getElementById('vin-input').value = '';
+                document.getElementById('result-container').style.display = 'none';
+                document.getElementById('no-result').style.display = 'none';
+            },
+
+            copyResult: function() {
+                const lang = this.getCurrentLang();
+                const vin = document.getElementById('result-vin').textContent;
+                const country = document.getElementById('result-country').textContent;
+                const manufacturer = document.getElementById('result-manufacturer').textContent;
+                const year = document.getElementById('result-year').textContent;
+                const plant = document.getElementById('result-plant').textContent;
+                const serial = document.getElementById('result-serial').textContent;
+                
+                let resultText = '';
+                resultText += this.i18n[lang]['vin_code'] + ' ' + vin + '\n';
+                resultText += this.i18n[lang]['country'] + ' ' + country + '\n';
+                resultText += this.i18n[lang]['manufacturer'] + ' ' + manufacturer + '\n';
+                resultText += this.i18n[lang]['year'] + ' ' + year + '\n';
+                resultText += this.i18n[lang]['plant'] + ' ' + plant + '\n';
+                resultText += this.i18n[lang]['serial'] + ' ' + serial;
+                
+                navigator.clipboard.writeText(resultText).then(() => {
+                    this.showNotification();
+                }).catch(() => {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = resultText;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    this.showNotification();
+                });
+            },
+
+            showNotification: function() {
+                const notification = document.getElementById('copy-notification');
+                notification.style.opacity = '1';
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, 2000);
+            },
+
+            getCurrentLang: function() {
+                return document.getElementById('lang-selector').value || 'zh-CN';
+            },
+
+            getCountryName: function(code) {
+                const lang = this.getCurrentLang();
+                const baseCountry = this.vinData.countryCodes[code] || this.i18n[lang]['unknown'] || '未知';
+                
+                // 根据当前语言翻译国家名称
+                const countryTranslations = {
+                    '美国': { 'en': 'United States', 'zh-CN': '美国', 'zh-TW': '美國', 'ja': 'アメリカ', 'ru': 'США' },
+                    '加拿大': { 'en': 'Canada', 'zh-CN': '加拿大', 'zh-TW': '加拿大', 'ja': 'カナダ', 'ru': 'Канада' },
+                    '墨西哥': { 'en': 'Mexico', 'zh-CN': '墨西哥', 'zh-TW': '墨西哥', 'ja': 'メキシコ', 'ru': 'Мексика' },
+                    '日本': { 'en': 'Japan', 'zh-CN': '日本', 'zh-TW': '日本', 'ja': '日本', 'ru': 'Япония' },
+                    '韩国': { 'en': 'South Korea', 'zh-CN': '韩国', 'zh-TW': '韓國', 'ja': '韓国', 'ru': 'Южная Корея' },
+                    '中国': { 'en': 'China', 'zh-CN': '中国', 'zh-TW': '中國', 'ja': '中国', 'ru': 'Китай' },
+                    '法国': { 'en': 'France', 'zh-CN': '法国', 'zh-TW': '法國', 'ja': 'フランス', 'ru': 'Франция' },
+                    '德国': { 'en': 'Germany', 'zh-CN': '德国', 'zh-TW': '德國', 'ja': 'ドイツ', 'ru': 'Германия' },
+                    '俄罗斯': { 'en': 'Russia', 'zh-CN': '俄罗斯', 'zh-TW': '俄羅斯', 'ja': 'ロシア', 'ru': 'Россия' },
+                    '意大利': { 'en': 'Italy', 'zh-CN': '意大利', 'zh-TW': '義大利', 'ja': 'イタリア', 'ru': 'Италия' },
+                    '未知': { 'en': 'Unknown', 'zh-CN': '未知', 'zh-TW': '未知', 'ja': '不明', 'ru': 'Неизвестно' }
+                };
+                
+                return countryTranslations[baseCountry] ? countryTranslations[baseCountry][lang] : baseCountry;
+            },
+
+            getManufacturerName: function(code) {
+                const lang = this.getCurrentLang();
+                const baseManufacturer = this.vinData.manufacturerCodes[code] || this.i18n[lang]['unknown'] || '未知';
+                
+                // 制造商多语言翻译
+                const manufacturerTranslations = {
+                    '阿尔法·罗密欧': { 'en': 'Alfa Romeo', 'zh-CN': '阿尔法·罗密欧', 'zh-TW': '阿爾法·羅密歐', 'ja': 'アルファロメオ', 'ru': 'Алфа Ромео' },
+                    '宝马': { 'en': 'BMW', 'zh-CN': '宝马', 'zh-TW': '寶馬', 'ja': 'BMW', 'ru': 'БМВ' },
+                    '克莱斯勒': { 'en': 'Chrysler', 'zh-CN': '克莱斯勒', 'zh-TW': '克萊斯勒', 'ja': 'クライスラー', 'ru': 'Крайслер' },
+                    '道奇': { 'en': 'Dodge', 'zh-CN': '道奇', 'zh-TW': '道奇', 'ja': 'ドッジ', 'ru': 'Додж' },
+                    '福特': { 'en': 'Ford', 'zh-CN': '福特', 'zh-TW': '福特', 'ja': 'フォード', 'ru': 'Форд' },
+                    '通用': { 'en': 'General Motors', 'zh-CN': '通用', 'zh-TW': '通用', 'ja': 'ジェネラルモーターズ', 'ru': 'Джентральные Моторы' },
+                    '本田': { 'en': 'Honda', 'zh-CN': '本田', 'zh-TW': '本田', 'ja': '本田', 'ru': 'Хонда' },
+                    '捷豹': { 'en': 'Jaguar', 'zh-CN': '捷豹', 'zh-TW': '捷豹', 'ja': 'ジャガー', 'ru': 'Джагуар' },
+                    '路虎': { 'en': 'Land Rover', 'zh-CN': '路虎', 'zh-TW': '路虎', 'ja': 'ランドローバー', 'ru': 'Ленд Ровер' },
+                    '奔驰': { 'en': 'Mercedes-Benz', 'zh-CN': '奔驰', 'zh-TW': '賓士', 'ja': 'メルセデス・ベンツ', 'ru': 'Мерседес-Бенц' },
+                    '日产': { 'en': 'Nissan', 'zh-CN': '日产', 'zh-TW': '日產', 'ja': '日産', 'ru': 'Ниссан' },
+                    '标致': { 'en': 'Peugeot', 'zh-CN': '标致', 'zh-TW': '標緻', 'ja': 'プジョー', 'ru': 'Пежо' },
+                    '雷诺': { 'en': 'Renault', 'zh-CN': '雷诺', 'zh-TW': '雷諾', 'ja': 'ルノー', 'ru': 'Рено' },
+                    '斯巴鲁': { 'en': 'Subaru', 'zh-CN': '斯巴鲁', 'zh-TW': '速霸陸', 'ja': 'スバル', 'ru': 'Субару' },
+                    '丰田': { 'en': 'Toyota', 'zh-CN': '丰田', 'zh-TW': '豐田', 'ja': 'トヨタ', 'ru': 'Тойота' },
+                    '大众': { 'en': 'Volkswagen', 'zh-CN': '大众', 'zh-TW': '大眾', 'ja': 'フォルクスワーゲン', 'ru': 'Фольксваген' },
+                    '沃尔沃': { 'en': 'Volvo', 'zh-CN': '沃尔沃', 'zh-TW': '福斯', 'ja': 'ボルボ', 'ru': 'Вольво' },
+                    '未知': { 'en': 'Unknown', 'zh-CN': '未知', 'zh-TW': '未知', 'ja': '不明', 'ru': 'Неизвестно' }
+                };
+                
+                return manufacturerTranslations[baseManufacturer] ? manufacturerTranslations[baseManufacturer][lang] : baseManufacturer;
+            },
+
+            getYear: function(code) {
+                return this.vinData.yearCodes[code] || this.i18n[this.getCurrentLang()]['unknown'] || '未知';
+            },
+
+            getPlantName: function(code) {
+                // 简化的工厂代码解析，实际应用中可扩展
+                const lang = this.getCurrentLang();
+                const plantNames = {
+                    'A': { 'en': 'Plant A', 'zh-CN': 'A工厂', 'zh-TW': 'A工廠', 'ja': '工場A', 'ru': 'Завод A' },
+                    'B': { 'en': 'Plant B', 'zh-CN': 'B工厂', 'zh-TW': 'B工廠', 'ja': '工場B', 'ru': 'Завод B' },
+                    'C': { 'en': 'Plant C', 'zh-CN': 'C工厂', 'zh-TW': 'C工廠', 'ja': '工場C', 'ru': 'Завод C' }
+                };
+                
+                return plantNames[code] ? plantNames[code][lang] : null;
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            Tool.init();
+        });
+    </script>
+</body>
+</html>
