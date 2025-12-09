@@ -7,7 +7,7 @@
     
     <!-- 基础信息 -->
     <meta name="tool-id" content="sudoku_solver">
-    <meta name="category" content="puzzle">
+    <meta name="category" content="fun">
     <meta name="icon" content="🧩">
     
     <!-- 默认英文内容 -->
@@ -204,7 +204,29 @@
             },
 
             init: () => {
+                SudokuSolver.loadLangFromUrl();
                 SudokuSolver.createGrid();
+            },
+
+            // 从URL参数加载语言设置
+            loadLangFromUrl: () => {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                const langSelect = document.getElementById('sudoku-lang');
+                
+                if (lang && SudokuSolver.i18n[lang]) {
+                    langSelect.value = lang;
+                    SudokuSolver.changeLang(false); // 不更新URL参数
+                }
+            },
+
+            // 更新URL参数
+            updateUrlWithLang: (lang) => {
+                const params = new URLSearchParams(window.location.search);
+                params.set('lang', lang);
+                
+                // 更新URL而不刷新页面
+                window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
             },
 
             createGrid: () => {
@@ -428,7 +450,8 @@
                 }, 300);
             },
 
-            changeLang: () => {
+            // 添加updateUrl参数控制是否更新URL
+            changeLang: (updateUrl = true) => {
                 const lang = document.getElementById('sudoku-lang').value;
                 const texts = SudokuSolver.i18n[lang];
                 const elements = document.querySelectorAll('[data-id="sudoku_solver"] [data-i18n]');
@@ -437,6 +460,11 @@
                     const key = el.getAttribute('data-i18n');
                     if (texts[key]) el.innerText = texts[key];
                 });
+                
+                // 如果需要更新URL，则调用updateUrlWithLang方法
+                if (updateUrl) {
+                    SudokuSolver.updateUrlWithLang(lang);
+                }
             }
         };
 
@@ -445,6 +473,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // 先检查URL中是否有语言参数，如果有则不再自动匹配浏览器语言
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('lang')) {
+                return;
+            }
+            
             // 自动匹配浏览器语言
             const userLang = navigator.language || navigator.userLanguage;
             let targetLang = 'en'; 
@@ -460,7 +494,7 @@
                 const langSelect = document.getElementById('sudoku-lang');
                 if(langSelect) {
                     langSelect.value = targetLang;
-                    SudokuSolver.changeLang();
+                    SudokuSolver.changeLang(); // 会更新URL参数
                 }
             }
         });
