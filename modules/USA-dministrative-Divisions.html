@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="地理行政区划参考工具">
+    <meta name="icon" content="🗺️">
+    <title>美国行政区划 - 地理参考工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1200px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .search-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background-color: #f8fafc; font-weight: 600; color: #4b5563; }
+        tr:hover { background-color: #f0fdf4; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+        .count-display { text-align: right; color: #6b7280; font-size: 0.9rem; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🗺️ 美国行政区划</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">搜索行政区划</h3>
+                <div class="search-container">
+                    <div class="form-group">
+                        <label data-i18n="state">州</label>
+                        <input type="text" id="state-input" onkeyup="Tool.search()" placeholder="输入州名..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="capital">首府</label>
+                        <input type="text" id="capital-input" onkeyup="Tool.search()" placeholder="输入首府名..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="results">行政区划列表</h3>
+                    <span class="text-sm text-gray-500" id="count-display"></span>
+                </div>
+                <div id="results-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-i18n="state">州</th>
+                                <th data-i18n="abbreviation">缩写</th>
+                                <th data-i18n="capital">首府</th>
+                                <th data-i18n="population">人口(约)</th>
+                                <th data-i18n="area">面积(km²)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="states-table-body">
+                            <!-- 数据将通过JS动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于美国行政区划</h3>
+                <p data-i18n="intro_text">美国由50个州、1个联邦直辖区（哥伦比亚特区）和若干海外领地组成。本工具提供美国各州的基本信息，包括州名、缩写、首府、人口和面积等参考数据，方便快速查询和使用。数据来源参考自公开地理信息。</p>
+                <p class="mt-2" data-i18n="source">信息来源: <a href="" target="_blank"></a></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '🗺️ U.S. Administrative Divisions',
+                    search: 'Search Divisions',
+                    'state': 'State',
+                    'capital': 'Capital',
+                    'abbreviation': 'Abbreviation',
+                    'population': 'Population',
+                    'area': 'Area (km²)',
+                    'results': 'Divisions List',
+                    'copied': 'Copied!',
+                    'intro_title': 'About U.S. Administrative Divisions',
+                    'intro_text': 'The United States consists of 50 states, 1 federal district (District of Columbia) and several overseas territories. This tool provides basic information about U.S. states, including state name, abbreviation, capital, population and area for quick reference.',
+                    'source': 'Source: <a href="" target="_blank"></a>'
+                },
+                'zh-CN': {
+                    title: '🗺️ 美国行政区划',
+                    search: '搜索行政区划',
+                    'state': '州',
+                    'capital': '首府',
+                    'abbreviation': '缩写',
+                    'population': '人口(约)',
+                    'area': '面积(km²)',
+                    'results': '行政区划列表',
+                    'copied': '已复制！',
+                    'intro_title': '关于美国行政区划',
+                    'intro_text': '美国由50个州、1个联邦直辖区（哥伦比亚特区）和若干海外领地组成。本工具提供美国各州的基本信息，包括州名、缩写、首府、人口和面积等参考数据，方便快速查询和使用。',
+                    'source': '信息来源: <a href="" target="_blank"></a>'
+                },
+                'zh-TW': {
+                    title: '🗺️ 美國行政區劃',
+                    search: '搜尋行政區劃',
+                    'state': '州',
+                    'capital': '首府',
+                    'abbreviation': '縮寫',
+                    'population': '人口(約)',
+                    'area': '面積(km²)',
+                    'results': '行政區劃列表',
+                    'copied': '已複製！',
+                    'intro_title': '關於美國行政區劃',
+                    'intro_text': '美國由50個州、1個聯邦直轄區（哥倫比亞特區）和若干海外領地組成。本工具提供美國各州的基本資訊，包括州名、縮寫、首府、人口和面積等參考數據，方便快速查詢和使用。',
+                    'source': '資訊來源: <a href="" target="_blank"></a>'
+                },
+                'ja': {
+                    title: '🗺️ 米国行政区分',
+                    search: '行政区分を検索',
+                    'state': '州',
+                    'capital': '州都',
+                    'abbreviation': '略称',
+                    'population': '人口(約)',
+                    'area': '面積(km²)',
+                    'results': '行政区分一覧',
+                    'copied': 'コピーしました！',
+                    'intro_title': '米国行政区分について',
+                    'intro_text': '米国は50州、1つの連邦直轄区（コロンビア特別区）およびいくつかの海外領土で構成されています。このツールでは、州名、略称、州都、人口、面積など、米国各州の基本情報を提供しています。',
+                    'source': '情報源: <a href="" target="_blank"></a>'
+                },
+                'ru': {
+                    title: '🗺️ Административные подразделения США',
+                    search: 'Поиск подразделений',
+                    'state': 'Штат',
+                    'capital': 'Столица',
+                    'abbreviation': 'Аббревиатура',
+                    'population': 'Население',
+                    'area': 'Площадь (км²)',
+                    'results': 'Список подразделений',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О административных подразделениях США',
+                    'intro_text': 'США состоят из 50 штатов, 1 федерального округа (Колумбия) и нескольких заморских территорий. Этот инструмент предоставляет базовую информацию о штатах США, включая название штата, аббревиатуру, столицу, население и площадь для быстрого ознакомления.',
+                    'source': 'Источник: <a href="" target="_blank"></a>'
+                }
+            },
+
+            // 美国行政区划数据
+            usaData: [
+                { state: "亚拉巴马州", state_en: "Alabama", abbreviation: "AL", capital: "蒙哥马利", capital_en: "Montgomery", population: "490万", area: 135767 },
+                { state: "阿拉斯加州", state_en: "Alaska", abbreviation: "AK", capital: "朱诺", capital_en: "Juneau", population: "73万", area: 1717854 },
+                { state: "亚利桑那州", state_en: "Arizona", abbreviation: "AZ", capital: "菲尼克斯", capital_en: "Phoenix", population: "737万", area: 295254 },
+                { state: "阿肯色州", state_en: "Arkansas", abbreviation: "AR", capital: "小石城", capital_en: "Little Rock", population: "303万", area: 137539 },
+                { state: "加利福尼亚州", state_en: "California", abbreviation: "CA", capital: "萨克拉门托", capital_en: "Sacramento", population: "3951万", area: 423970 },
+                { state: "科罗拉多州", state_en: "Colorado", abbreviation: "CO", capital: "丹佛", capital_en: "Denver", population: "575万", area: 269601 },
+                { state: "康涅狄格州", state_en: "Connecticut", abbreviation: "CT", capital: "哈特福德", capital_en: "Hartford", population: "356万", area: 14357 },
+                { state: "特拉华州", state_en: "Delaware", abbreviation: "DE", capital: "多佛", capital_en: "Dover", population: "97万", area: 6447 },
+                { state: "佛罗里达州", state_en: "Florida", abbreviation: "FL", capital: "塔拉哈西", capital_en: "Tallahassee", population: "2147万", area: 170312 },
+                { state: "佐治亚州", state_en: "Georgia", abbreviation: "GA", capital: "亚特兰大", capital_en: "Atlanta", population: "1062万", area: 153909 },
+                { state: "夏威夷州", state_en: "Hawaii", abbreviation: "HI", capital: "火奴鲁鲁", capital_en: "Honolulu", population: "141万", area: 28311 },
+                { state: "爱达荷州", state_en: "Idaho", abbreviation: "ID", capital: "博伊西", capital_en: "Boise", population: "178万", area: 216446 },
+                { state: "伊利诺伊州", state_en: "Illinois", abbreviation: "IL", capital: "斯普林菲尔德", capital_en: "Springfield", population: "1267万", area: 149995 },
+                { state: "印第安纳州", state_en: "Indiana", abbreviation: "IN", capital: "印第安纳波利斯", capital_en: "Indianapolis", population: "673万", area: 94321 },
+                { state: "艾奥瓦州", state_en: "Iowa", abbreviation: "IA", capital: "得梅因", capital_en: "Des Moines", population: "316万", area: 145743 },
+                { state: "堪萨斯州", state_en: "Kansas", abbreviation: "KS", capital: "托皮卡", capital_en: "Topeka", population: "291万", area: 213096 },
+                { state: "肯塔基州", state_en: "Kentucky", abbreviation: "KY", capital: "法兰克福", capital_en: "Frankfort", population: "447万", area: 104659 },
+                { state: "路易斯安那州", state_en: "Louisiana", abbreviation: "LA", capital: "巴吞鲁日", capital_en: "Baton Rouge", population: "465万", area: 135382 },
+                { state: "缅因州", state_en: "Maine", abbreviation: "ME", capital: "奥古斯塔", capital_en: "Augusta", population: "134万", area: 91646 },
+                { state: "马里兰州", state_en: "Maryland", abbreviation: "MD", capital: "安纳波利斯", capital_en: "Annapolis", population: "604万", area: 32133 },
+                { state: "马萨诸塞州", state_en: "Massachusetts", abbreviation: "MA", capital: "波士顿", capital_en: "Boston", population: "694万", area: 27336 },
+                { state: "密歇根州", state_en: "Michigan", abbreviation: "MI", capital: "兰辛", capital_en: "Lansing", population: "998万", area: 250493 },
+                { state: "明尼苏达州", state_en: "Minnesota", abbreviation: "MN", capital: "圣保罗", capital_en: "Saint Paul", population: "564万", area: 225163 },
+                { state: "密西西比州", state_en: "Mississippi", abbreviation: "MS", capital: "杰克逊", capital_en: "Jackson", population: "297万", area: 125434 },
+                { state: "密苏里州", state_en: "Missouri", abbreviation: "MO", capital: "杰斐逊城", capital_en: "Jefferson City", population: "613万", area: 180533 },
+                { state: "蒙大拿州", state_en: "Montana", abbreviation: "MT", capital: "海伦娜", capital_en: "Helena", population: "106万", area: 380831 },
+                { state: "内布拉斯加州", state_en: "Nebraska", abbreviation: "NE", capital: "林肯", capital_en: "Lincoln", population: "193万", area: 200345 },
+                { state: "内华达州", state_en: "Nevada", abbreviation: "NV", capital: "卡森城", capital_en: "Carson City", population: "308万", area: 286380 },
+                { state: "新罕布什尔州", state_en: "New Hampshire", abbreviation: "NH", capital: "康科德", capital_en: "Concord", population: "136万", area: 24214 },
+                { state: "新泽西州", state_en: "New Jersey", abbreviation: "NJ", capital: "特伦顿", capital_en: "Trenton", population: "888万", area: 22591 },
+                { state: "新墨西哥州", state_en: "New Mexico", abbreviation: "NM", capital: "圣菲", capital_en: "Santa Fe", population: "209万", area: 314917 },
+                { state: "纽约州", state_en: "New York", abbreviation: "NY", capital: "奥尔巴尼", capital_en: "Albany", population: "1945万", area: 141297 },
+                { state: "北卡罗来纳州", state_en: "North Carolina", abbreviation: "NC", capital: "罗利", capital_en: "Raleigh", population: "1049万", area: 139391 },
+                { state: "北达科他州", state_en: "North Dakota", abbreviation: "ND", capital: "俾斯麦", capital_en: "Bismarck", population: "76万", area: 183112 },
+                { state: "俄亥俄州", state_en: "Ohio", abbreviation: "OH", capital: "哥伦布", capital_en: "Columbus", population: "1169万", area: 106056 },
+                { state: "俄克拉何马州", state_en: "Oklahoma", abbreviation: "OK", capital: "俄克拉何马城", capital_en: "Oklahoma City", population: "395万", area: 181035 },
+                { state: "俄勒冈州", state_en: "Oregon", abbreviation: "OR", capital: "塞勒姆", capital_en: "Salem", population: "421万", area: 254805 },
+                { state: "宾夕法尼亚州", state_en: "Pennsylvania", abbreviation: "PA", capital: "哈里斯堡", capital_en: "Harrisburg", population: "1280万", area: 119283 },
+                { state: "罗得岛州", state_en: "Rhode Island", abbreviation: "RI", capital: "普罗维登斯", capital_en: "Providence", population: "105万", area: 3140 },
+                { state: "南卡罗来纳州", state_en: "South Carolina", abbreviation: "SC", capital: "哥伦比亚", capital_en: "Columbia", population: "514万", area: 82932 },
+                { state: "南达科他州", state_en: "South Dakota", abbreviation: "SD", capital: "皮尔", capital_en: "Pierre", population: "88万", area: 199731 },
+                { state: "田纳西州", state_en: "Tennessee", abbreviation: "TN", capital: "纳什维尔", capital_en: "Nashville", population: "683万", area: 109151 },
+                { state: "得克萨斯州", state_en: "Texas", abbreviation: "TX", capital: "奥斯汀", capital_en: "Austin", population: "2900万", area: 695662 },
+                { state: "犹他州", state_en: "Utah", abbreviation: "UT", capital: "盐湖城", capital_en: "Salt Lake City", population: "320万", area: 219882 },
+                { state: "佛蒙特州", state_en: "Vermont", abbreviation: "VT", capital: "蒙彼利埃", capital_en: "Montpelier", population: "62万", area: 24906 },
+                { state: "弗吉尼亚州", state_en: "Virginia", abbreviation: "VA", capital: "里士满", capital_en: "Richmond", population: "853万", area: 110787 },
+                { state: "华盛顿州", state_en: "Washington", abbreviation: "WA", capital: "奥林匹亚", capital_en: "Olympia", population: "761万", area: 184661 },
+                { state: "西弗吉尼亚州", state_en: "West Virginia", abbreviation: "WV", capital: "查尔斯顿", capital_en: "Charleston", population: "179万", area: 62755 },
+                { state: "威斯康星州", state_en: "Wisconsin", abbreviation: "WI", capital: "麦迪逊", capital_en: "Madison", population: "582万", area: 169639 },
+                { state: "怀俄明州", state_en: "Wyoming", abbreviation: "WY", capital: "夏延", capital_en: "Cheyenne", population: "58万", area: 253335 },
+                { state: "哥伦比亚特区", state_en: "District of Columbia", abbreviation: "DC", capital: "-", capital_en: "-", population: "70万", area: 177 }
+            ],
+
+            // 初始化
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang') || 'zh-CN';
+                
+                // 设置语言选择器
+                document.getElementById('lang-selector').value = lang;
+                
+                // 应用语言
+                this.applyLang(lang);
+                
+                // 加载数据
+                this.renderTable(this.usaData);
+                
+                // 更新计数
+                this.updateCount(this.usaData.length);
+            },
+
+            // 切换语言
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                
+                // 更新URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, '', `${window.location.pathname}?${urlParams}`);
+                
+                // 应用语言
+                this.applyLang(lang);
+            },
+
+            // 应用语言
+            applyLang: function(lang) {
+                // 确保语言存在
+                if (!this.i18n[lang]) lang = 'en';
+                
+                // 更新所有翻译元素
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.innerHTML = this.i18n[lang][key];
+                    }
+                });
+                
+                // 重新搜索以更新表格内容
+                this.search();
+            },
+
+            // 搜索功能
+            search: function() {
+                const stateInput = document.getElementById('state-input').value.toLowerCase();
+                const capitalInput = document.getElementById('capital-input').value.toLowerCase();
+                const lang = document.getElementById('lang-selector').value;
+                
+                // 过滤数据
+                const filtered = this.usaData.filter(item => {
+                    // 根据当前语言选择搜索字段
+                    const stateToCheck = lang === 'en' ? item.state_en.toLowerCase() : item.state.toLowerCase();
+                    const capitalToCheck = lang === 'en' ? item.capital_en.toLowerCase() : item.capital.toLowerCase();
+                    
+                    return (stateToCheck.includes(stateInput) || stateInput === '') &&
+                           (capitalToCheck.includes(capitalInput) || capitalInput === '');
+                });
+                
+                // 渲染过滤后的表格
+                this.renderTable(filtered);
+                
+                // 更新计数
+                this.updateCount(filtered.length);
+            },
+
+            // 渲染表格
+            renderTable: function(data) {
+                const tableBody = document.getElementById('states-table-body');
+                tableBody.innerHTML = '';
+                
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.state}</td>
+                        <td><span class="emoji-code">${item.abbreviation}</span></td>
+                        <td>${item.capital}</td>
+                        <td>${item.population}</td>
+                        <td>${item.area}</td>
+                    `;
+                    
+                    // 添加复制功能
+                    const codeElement = row.querySelector('.emoji-code');
+                    codeElement.style.cursor = 'pointer';
+                    codeElement.title = this.i18n[document.getElementById('lang-selector').value]['copied'];
+                    codeElement.addEventListener('click', () => {
+                        this.copyToClipboard(item.abbreviation);
+                    });
+                    
+                    tableBody.appendChild(row);
+                });
+            },
+
+            // 更新计数显示
+            updateCount: function(count) {
+                const lang = document.getElementById('lang-selector').value;
+                const messages = {
+                    'en': `${count} results`,
+                    'zh-CN': `共 ${count} 条结果`,
+                    'zh-TW': `共 ${count} 條結果`,
+                    'ja': `${count} 件の結果`,
+                    'ru': `${count} результатов`
+                };
+                document.getElementById('count-display').textContent = messages[lang] || `${count} results`;
+            },
+
+            // 复制到剪贴板
+            copyToClipboard: function(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const notification = document.getElementById('copy-notification');
+                    notification.style.opacity = '1';
+                    setTimeout(() => {
+                        notification.style.opacity = '0';
+                    }, 2000);
+                });
+            }
+        };
+
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', () => Tool.init());
+    </script>
+</body>
+</html>

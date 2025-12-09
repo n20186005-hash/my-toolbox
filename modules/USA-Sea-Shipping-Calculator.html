@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="E-commerce Operations">
+    <title>美国海派渠道运费计算器 - ToolBoxPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        .brand-bg { background-color: #0f172a; } 
+        .accent-color { color: #2563eb; }
+        .btn-primary { background-color: #2563eb; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        /* 简单的输入框样式覆盖 */
+        .edit-input { width: 100%; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px; font-size: 0.875rem; }
+        .edit-input:focus { outline: 2px solid #2563eb; border-color: transparent; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="brand-bg text-white shadow-md">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center mb-4 md:mb-0">
+                <i class="fa-solid fa-plane-departure text-2xl mr-3 text-blue-400"></i>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide" id="app-title">美国海派渠道运费计算器</h1>
+                    <a href="https://toolboxpro.top" target="_blank" class="text-xs text-blue-300 hover:text-white transition">toolboxpro.top</a>
+                </div>
+            </div>
+            <div>
+                <select id="lang-select" class="bg-gray-700 text-white text-sm rounded border border-gray-600 focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none transition-colors">
+                    <option value="zh-CN">🇨🇳 简体中文</option>
+                    <option value="zh-TW">🇹🇼 繁體中文</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 flex-grow max-w-5xl">
+        
+        <!-- 1. Calculator Section -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center border-b pb-3">
+                <i class="fa-solid fa-calculator mr-3 accent-color"></i>
+                <span id="calc-title">运费计算</span>
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Form -->
+                <form id="calculator-form" onsubmit="event.preventDefault(); calculateFreight();" class="space-y-5">
+                    <!-- Channel -->
+                    <div>
+                        <label for="channel" class="block mb-2 text-sm font-semibold text-gray-700" id="lbl-channel">运输渠道</label>
+                        <select id="channel" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <option value="matson_regular">美森正班 (Matson CLX)</option>
+                            <option value="matson_extra">美森加班 (Matson CLX+)</option>
+                            <option value="common_boat">普通快船 (Regular)</option>
+                        </select>
+                    </div>
+
+                    <!-- Address Type -->
+                    <div>
+                        <label for="addressType" class="block mb-2 text-sm font-semibold text-gray-700" id="lbl-addressType">派送地址类型</label>
+                        <select id="addressType" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <option value="amazon">亚马逊地址 (Amazon)</option>
+                            <option value="commercial">商业地址 (Commercial)</option>
+                            <option value="private">私人地址 (Private)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Zip Code -->
+                        <div>
+                            <label for="zipCode" class="block mb-2 text-sm font-semibold text-gray-700" id="lbl-zipFirstDigit">美国邮编首位</label>
+                            <input type="number" id="zipCode" min="0" max="9" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="0-9" required>
+                        </div>
+                        <!-- Weight -->
+                        <div>
+                            <label for="weight" class="block mb-2 text-sm font-semibold text-gray-700" id="lbl-weight">货物重量 (KG)</label>
+                            <input type="number" id="weight" step="0.01" min="0" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="0.00" required>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button type="submit" class="flex-1 btn-primary text-white font-medium rounded-lg text-sm px-5 py-3 text-center transition shadow-md hover:shadow-lg" id="btn-calculate">
+                            <i class="fa-solid fa-search mr-2"></i> <span id="btn-calc-text">计算运费</span>
+                        </button>
+                        <button type="button" onclick="resetForm()" class="w-24 text-gray-700 bg-gray-100 border border-gray-300 hover:bg-gray-200 font-medium rounded-lg text-sm px-5 py-3 text-center transition" id="btn-reset">
+                            重置
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Result Panel -->
+                <div class="flex flex-col justify-center">
+                    <!-- Default State -->
+                    <div id="result-placeholder" class="text-center text-gray-400 py-10">
+                        <i class="fa-solid fa-box-open text-4xl mb-3 opacity-30"></i>
+                        <p class="text-sm">请输入信息以获取报价</p>
+                    </div>
+
+                    <!-- Active Result State -->
+                    <div id="result-area" class="hidden bg-blue-50 border border-blue-100 rounded-xl p-6 relative overflow-hidden shadow-sm">
+                        <div class="absolute top-0 right-0 bg-blue-600 text-white text-xs px-3 py-1 rounded-bl-lg font-bold" id="res-zone-badge">Zone 0</div>
+                        
+                        <h3 class="text-lg font-bold text-gray-800 mb-4" id="lbl-resultTitle">计算结果</h3>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center border-b border-blue-100 pb-2">
+                                <span class="text-gray-600 text-sm" id="lbl-chargedWeight">计费重量</span>
+                                <span class="font-bold text-gray-900 text-lg"><span id="res-weight">0</span> <span class="text-xs text-gray-500">KG</span></span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center border-b border-blue-100 pb-2">
+                                <span class="text-gray-600 text-sm" id="lbl-unitPrice">适用单价</span>
+                                <div class="text-right">
+                                    <span class="font-bold text-gray-900 text-lg"><span id="res-price">0</span> <span class="text-xs text-gray-500">CNY/KG</span></span>
+                                    <div id="tier-badge" class="text-[10px] text-white bg-green-500 px-1.5 py-0.5 rounded inline-block ml-1">101KG+</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-center pt-2">
+                                <span class="text-gray-800 font-bold" id="lbl-totalFee">预估总运费</span>
+                                <span class="font-bold text-blue-700 text-2xl"><span id="res-total">0</span> <span class="text-sm">CNY</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Warnings/Notes -->
+                        <div class="mt-4 space-y-1">
+                            <div id="private-surcharge-note" class="hidden flex items-start text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-100">
+                                <i class="fa-solid fa-circle-exclamation mt-0.5 mr-1.5"></i>
+                                <span id="lbl-privateNote">包含私人地址附加费 +1 CNY/KG</span>
+                            </div>
+                            <div id="min-weight-note" class="hidden flex items-start text-xs text-blue-600 bg-blue-100/50 p-2 rounded border border-blue-100">
+                                <i class="fa-solid fa-info-circle mt-0.5 mr-1.5"></i>
+                                <span id="lbl-minWeightNote">不足最低起运重，已按最低标准计费</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Error Message -->
+                    <div id="error-area" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-center">
+                        <p class="text-red-600 text-sm font-medium" id="error-msg"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Introduction -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fa-regular fa-file-lines mr-2 accent-color"></i>
+                <span id="lbl-introTitle">服务介绍</span>
+            </h3>
+            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                <p id="lbl-introContent">
+                    美国海派渠道包含美森正班快船海派、美森加班快船海派、普通快船海派三个渠道，按美国邮编首位分区计费。支持亚马逊地址、商业地址、私人地址派送。报价为普货价格，特殊货物需咨询客服确认附加费。
+                </p>
+                
+                <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-100">
+                    <h4 class="font-bold text-yellow-800 text-sm mb-2" id="lbl-note">备注说明：</h4>
+                    <ul class="list-disc list-inside text-xs text-yellow-800/90 space-y-1">
+                        <li id="lbl-note1">亚马逊地址13公斤起收，其他商业/私人地址101公斤起收</li>
+                        <li id="lbl-note2">私人地址单价 +1 CNY/KG，偏远地址收取偏远附加费</li>
+                        <li id="lbl-note3">单件不足12公斤按12公斤计费，单票不足101KG按101KG计费</li>
+                        <li id="lbl-note4">超长超重限制：2宽+2高+1长≤260CM，最长边≤110CM，单件重量≤22KG</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Full Rate Table (Editable) -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 bg-gray-50 flex flex-wrap justify-between items-center gap-4">
+                <div class="flex items-center">
+                    <h3 class="font-bold text-gray-800 mr-4" id="lbl-tableTitle">完整报价表格</h3>
+                    <button id="btn-edit-mode" onclick="toggleEditMode()" class="text-xs px-3 py-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors flex items-center">
+                        <i class="fa-solid fa-pen-to-square mr-1.5"></i> <span id="btn-edit-text">修改报价</span>
+                    </button>
+                    <button id="btn-save-mode" onclick="saveRates()" class="hidden text-xs px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors flex items-center ml-2 shadow-sm">
+                        <i class="fa-solid fa-floppy-disk mr-1.5"></i> <span id="btn-save-text">保存设置</span>
+                    </button>
+                    <button id="btn-reset-default" onclick="resetDefaultRates()" class="hidden text-xs px-3 py-1.5 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors flex items-center ml-2">
+                        <i class="fa-solid fa-rotate-left mr-1.5"></i> <span id="btn-reset-text">恢复默认</span>
+                    </button>
+                </div>
+                <span class="text-xs text-gray-400">Data Source: toolboxpro.top</span>
+            </div>
+            
+            <div class="overflow-x-auto relative">
+                <!-- 保存成功的提示 -->
+                <div id="save-toast" class="absolute top-2 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded shadow-lg text-sm opacity-0 transition-opacity duration-300 pointer-events-none z-10">
+                    <i class="fa-solid fa-check mr-2"></i> 保存成功！
+                </div>
+
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 whitespace-nowrap" id="th-channel">渠道</th>
+                            <th scope="col" class="px-4 py-3 whitespace-nowrap text-center" id="th-zone">邮编首位</th>
+                            <th scope="col" class="px-4 py-3 text-center bg-blue-50 text-blue-700">≥101KG</th>
+                            <th scope="col" class="px-4 py-3 text-center bg-green-50 text-green-700">213KG+ (Amazon)</th>
+                            <th scope="col" class="px-4 py-3 text-center bg-green-50 text-green-700">272KG+ (Amazon)</th>
+                            <th scope="col" class="px-4 py-3 whitespace-nowrap text-gray-500 font-normal" id="th-timings">参考时效 / 备注</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rate-table-body">
+                        <!-- JS Generated Rows -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-4 text-xs text-gray-400 text-center bg-gray-50 border-t border-gray-100">
+                * <span id="lbl-disclaimer">表格数据仅供参考，实际价格以出货时为准。</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="font-medium text-lg mb-1">toolboxpro.top</p>
+            <p class="text-xs opacity-50">© 2023 All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. 数据管理 (Data Management) ---
+        
+        const STORAGE_KEY = 'shipping_calculator_rates_v1';
+        let currentLang = 'zh-CN';
+        let isEditMode = false;
+        let ratesData = {}; // 会被加载的数据填充
+
+        // 默认的基础价格配置 (用于生成默认数据)
+        const defaultBasePrices = {
+            'matson_regular': { start: 14.5, step: 0.5, sail: '六截三开', del: '11-13天' },
+            'matson_extra':   { start: 12.5, step: 0.5, sail: '四截开船', del: '15-18天' },
+            'common_boat':    { start: 9.5,  step: 0.5, sail: '一截五开', del: '25-30天' }
+        };
+        const channels = ['matson_regular', 'matson_extra', 'common_boat'];
+
+        // 生成默认数据
+        function generateDefaultRates() {
+            const data = {};
+            channels.forEach(ch => {
+                data[ch] = {};
+                for(let i=0; i<=9; i++) {
+                    const zone = i.toString();
+                    let p101 = defaultBasePrices[ch].start + (i > 4 ? 1 : 0) + (i > 8 ? 1 : 0);
+                    data[ch][zone] = {
+                        price101: p101,
+                        price213: parseFloat((p101 - 0.5).toFixed(1)),
+                        price272: parseFloat((p101 - 1.0).toFixed(1)),
+                        sailing: defaultBasePrices[ch].sail,
+                        delivery: defaultBasePrices[ch].del
+                    };
+                }
+            });
+            return data;
+        }
+
+        // 初始化/加载数据
+        function loadRates() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    ratesData = JSON.parse(stored);
+                } catch (e) {
+                    console.error("Data parse error, using defaults");
+                    ratesData = generateDefaultRates();
+                }
+            } else {
+                ratesData = generateDefaultRates();
+            }
+        }
+
+        // 保存数据
+        function saveRatesToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(ratesData));
+        }
+
+        // 恢复默认
+        function resetDefaultRates() {
+            if(confirm('确定要恢复默认报价吗？所有修改将丢失。')) {
+                ratesData = generateDefaultRates();
+                saveRatesToStorage();
+                isEditMode = false;
+                updateEditUI();
+                renderFullRateTable();
+                calculateFreight(); // 重新计算
+            }
+        }
+
+        // --- 2. 语言包 (I18n) ---
+        const langResources = {
+            'zh-CN': {
+                appTitle: '美国海派渠道运费计算器',
+                calcTitle: '运费计算',
+                lblChannel: '运输渠道',
+                lblAddressType: '派送地址类型',
+                lblZipFirstDigit: '美国邮编首位 (0-9)',
+                lblWeight: '货物重量 (KG)',
+                btnCalculate: '计算运费',
+                lblResultTitle: '计算结果',
+                lblChargedWeight: '计费重量',
+                lblUnitPrice: '适用单价',
+                lblTotalFee: '预估总运费',
+                lblPrivateNote: '包含私人地址附加费 +1 CNY/KG',
+                lblMinWeightNote: '不足最低起运重，已按最低标准计费',
+                lblIntroTitle: '服务介绍',
+                lblIntroContent: '美国海派渠道包含美森正班快船海派、美森加班快船海派、普通快船海派三个渠道，按美国邮编首位分区计费。支持亚马逊地址、商业地址、私人地址派送。报价为普货价格，特殊货物需咨询客服确认附加费。',
+                lblNote: '备注说明：',
+                lblNote1: '亚马逊地址13公斤起收，其他商业/私人地址101公斤起收',
+                lblNote2: '私人地址单价 +1 CNY/KG，偏远地址收取偏远附加费',
+                lblNote3: '单件不足12公斤按12公斤计费，单票不足101KG按101KG计费',
+                lblNote4: '超长超重限制：2宽+2高+1长≤260CM，最长边≤110CM，单件重量≤22KG',
+                lblTableTitle: '完整报价表格',
+                thChannel: '渠道',
+                thZone: '邮编首位',
+                thTimings: '参考时效 / 备注',
+                lblDisclaimer: '表格数据仅供参考，实际价格以出货时为准。',
+                optMatsonReg: '美森正班 (Matson CLX)',
+                optMatsonExt: '美森加班 (Matson CLX+)',
+                optCommon: '普通快船 (Regular)',
+                optAmazon: '亚马逊地址',
+                optCommercial: '商业地址',
+                optPrivate: '私人地址',
+                errZip: '请输入有效的邮编首位 (0-9)',
+                errWeight: '请输入有效的重量',
+                btnEdit: '修改报价',
+                btnSave: '保存设置',
+                btnResetDefault: '恢复默认'
+            },
+            'zh-TW': {
+                appTitle: '美國海派渠道運費計算機',
+                calcTitle: '運費計算',
+                lblChannel: '運輸渠道',
+                lblAddressType: '派送地址類型',
+                lblZipFirstDigit: '美國郵遞區號首位 (0-9)',
+                lblWeight: '貨物重量 (KG)',
+                btnCalculate: '計算運費',
+                lblResultTitle: '計算結果',
+                lblChargedWeight: '計費重量',
+                lblUnitPrice: '適用單價',
+                lblTotalFee: '預估總運費',
+                lblPrivateNote: '包含私人地址附加費 +1 CNY/KG',
+                lblMinWeightNote: '不足最低起運重，已按最低標準計費',
+                lblIntroTitle: '服務介紹',
+                lblIntroContent: '美國海派渠道包含美森正班快船海派、美森加班快船海派、普通快船海派三個渠道，按美國郵遞區號首位分區計費。支持亞馬遜地址、商業地址、私人地址派送。報價為普貨價格，特殊貨物需諮詢客服。',
+                lblNote: '備註說明：',
+                lblNote1: '亞馬遜地址13公斤起收，其他商業/私人地址101公斤起收',
+                lblNote2: '私人地址單價 +1 CNY/KG，偏遠地址收取偏遠附加費',
+                lblNote3: '單件不足12公斤按12公斤計費，單票不足101KG按101KG計費',
+                lblNote4: '超長超重限制：2寬+2高+1長≤260CM，最長邊≤110CM',
+                lblTableTitle: '完整報價表格',
+                thChannel: '渠道',
+                thZone: '郵遞區號首位',
+                thTimings: '參考時效 / 備註',
+                lblDisclaimer: '表格數據僅供參考，實際價格以出貨時為準。',
+                optMatsonReg: '美森正班',
+                optMatsonExt: '美森加班',
+                optCommon: '普通快船',
+                optAmazon: '亞馬遜地址',
+                optCommercial: '商業地址',
+                optPrivate: '私人地址',
+                errZip: '請輸入有效的郵遞區號首位 (0-9)',
+                errWeight: '請輸入有效的重量',
+                btnEdit: '修改報價',
+                btnSave: '保存設置',
+                btnResetDefault: '恢復默認'
+            },
+            'en': {
+                appTitle: 'USA Sea Shipping Calculator',
+                calcTitle: 'Estimate Shipping',
+                lblChannel: 'Shipping Channel',
+                lblAddressType: 'Address Type',
+                lblZipFirstDigit: 'Zip Code First Digit (0-9)',
+                lblWeight: 'Cargo Weight (KG)',
+                btnCalculate: 'Calculate',
+                lblResultTitle: 'Calculation Result',
+                lblChargedWeight: 'Charged Weight',
+                lblUnitPrice: 'Applied Rate',
+                lblTotalFee: 'Estimated Total',
+                lblPrivateNote: 'Includes Private Address Surcharge +1 CNY/KG',
+                lblMinWeightNote: 'Minimum weight charge applied',
+                lblIntroTitle: 'Service Intro',
+                lblIntroContent: 'Services include Matson CLX, Matson CLX+, and Regular Sea Freight. Pricing based on Zip Code Zone. Supports Amazon, Commercial, and Private addresses.',
+                lblNote: 'Notes:',
+                lblNote1: 'Min 13KG for Amazon; Min 101KG for Commercial/Private',
+                lblNote2: 'Private address surcharge +1 CNY/KG',
+                lblNote3: 'Package under 12KG charged as 12KG',
+                lblNote4: 'Max size: 2W+2H+1L ≤ 260CM, Longest side ≤ 110CM',
+                lblTableTitle: 'Full Rate Table',
+                thChannel: 'Channel',
+                thZone: 'Zip Zone',
+                thTimings: 'Transit Time / Notes',
+                lblDisclaimer: 'Rates are for reference only.',
+                optMatsonReg: 'Matson Regular',
+                optMatsonExt: 'Matson Extra',
+                optCommon: 'Regular Boat',
+                optAmazon: 'Amazon',
+                optCommercial: 'Commercial',
+                optPrivate: 'Private',
+                errZip: 'Enter valid Zip Digit (0-9)',
+                errWeight: 'Enter valid weight',
+                btnEdit: 'Edit Rates',
+                btnSave: 'Save Settings',
+                btnResetDefault: 'Reset Defaults'
+            },
+            'ja': {
+                appTitle: '米国海上輸送送料計算機',
+                calcTitle: '送料計算',
+                lblChannel: '輸送チャネル',
+                lblAddressType: '配送先タイプ',
+                lblZipFirstDigit: '郵便番号先頭桁 (0-9)',
+                lblWeight: '貨物重量 (KG)',
+                btnCalculate: '計算する',
+                lblResultTitle: '計算結果',
+                lblChargedWeight: '請求重量',
+                lblUnitPrice: '適用単価',
+                lblTotalFee: '合計送料（概算）',
+                lblPrivateNote: '個人住所追加料金 +1 CNY/KG を含む',
+                lblMinWeightNote: '最低重量料金が適用されました',
+                lblIntroTitle: 'サービス紹介',
+                lblIntroContent: 'マットソン定期便、マットソン臨時便、通常便を含みます。米国の郵便番号の最初の数字に基づいて料金が設定されます。Amazon、商業、個人の住所に対応しています。',
+                lblNote: '備考：',
+                lblNote1: 'Amazonは13kgから、その他は101kgから',
+                lblNote2: '個人住所は +1 CNY/KG',
+                lblNote3: '12kg未満の荷物は12kgとして計算',
+                lblNote4: 'サイズ制限：2幅+2高さ+1長さ≤260CM',
+                lblTableTitle: '料金表完全版',
+                thChannel: 'チャネル',
+                thZone: '郵便番号',
+                thTimings: '配送期間 / 備考',
+                lblDisclaimer: '価格は参考用です',
+                optMatsonReg: 'マットソン定期便',
+                optMatsonExt: 'マットソン臨時便',
+                optCommon: '通常便',
+                optAmazon: 'Amazon住所',
+                optCommercial: '商業住所',
+                optPrivate: '個人住所',
+                errZip: '有効な数字(0-9)を入力してください',
+                errWeight: '有効な重量を入力してください',
+                btnEdit: '価格修正',
+                btnSave: '保存',
+                btnResetDefault: '初期化'
+            }
+        };
+
+        // --- 3. 核心逻辑 (Logic) ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化: 1.读取URL语言 2.加载数据 3.渲染
+            initLanguageFromURL();
+            loadRates();
+            renderFullRateTable();
+            
+            // 监听器
+            document.getElementById('lang-select').addEventListener('change', (e) => {
+                const newLang = e.target.value;
+                changeLanguageURL(newLang);
+                currentLang = newLang;
+                updateLanguageUI();
+                if (!document.getElementById('result-area').classList.contains('hidden')) {
+                    calculateFreight();
+                }
+            });
+        });
+
+        // URL 语言参数处理
+        function initLanguageFromURL() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                if (langParam && langResources[langParam]) {
+                    currentLang = langParam;
+                    document.getElementById('lang-select').value = currentLang;
+                }
+            } catch (e) {
+                console.log('URL param init failed', e);
+            }
+            updateLanguageUI();
+        }
+
+        function changeLanguageURL(lang) {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, null, '?' + urlParams.toString());
+            } catch (e) {
+                console.warn('History API not supported');
+            }
+        }
+
+        // 渲染表格 (支持普通模式和编辑模式)
+        function renderFullRateTable() {
+            const tbody = document.getElementById('rate-table-body');
+            tbody.innerHTML = '';
+            
+            const channelKeys = ['matson_regular', 'matson_extra', 'common_boat'];
+            const channelNames = {
+                'matson_regular': '美森正班 (Matson CLX)',
+                'matson_extra': '美森加班 (Matson CLX+)',
+                'common_boat': '普通快船 (Regular)'
+            };
+
+            channelKeys.forEach(chKey => {
+                const chData = ratesData[chKey];
+                
+                for (let z = 0; z <= 9; z++) {
+                    const zoneKey = z.toString();
+                    const rates = chData[zoneKey];
+                    
+                    const tr = document.createElement('tr');
+                    tr.className = "bg-white border-b hover:bg-gray-50 transition-colors group";
+                    
+                    // 生成单元格内容：如果是编辑模式，生成 input
+                    const cell101 = isEditMode 
+                        ? `<input type="number" step="0.1" class="edit-input bg-blue-50" data-ch="${chKey}" data-zone="${zoneKey}" data-field="price101" value="${rates.price101}">`
+                        : rates.price101;
+                    
+                    const cell213 = isEditMode 
+                        ? `<input type="number" step="0.1" class="edit-input bg-green-50" data-ch="${chKey}" data-zone="${zoneKey}" data-field="price213" value="${rates.price213}">`
+                        : rates.price213;
+
+                    const cell272 = isEditMode 
+                        ? `<input type="number" step="0.1" class="edit-input bg-green-50" data-ch="${chKey}" data-zone="${zoneKey}" data-field="price272" value="${rates.price272}">`
+                        : rates.price272;
+                    
+                    const cellSail = isEditMode 
+                        ? `<input type="text" class="edit-input text-xs mb-1" data-ch="${chKey}" data-zone="${zoneKey}" data-field="sailing" value="${rates.sailing}">`
+                        : rates.sailing;
+                        
+                    const cellDel = isEditMode 
+                        ? `<input type="text" class="edit-input text-xs" data-ch="${chKey}" data-zone="${zoneKey}" data-field="delivery" value="${rates.delivery}">`
+                        : rates.delivery;
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-medium text-gray-900">${channelNames[chKey]}</td>
+                        <td class="px-4 py-3 text-center font-bold text-gray-800 border-l border-gray-100">${zoneKey}</td>
+                        <td class="px-4 py-3 text-center text-gray-600 border-l border-gray-100">${cell101}</td>
+                        <td class="px-4 py-3 text-center text-green-600 font-medium border-l border-gray-100">${cell213}</td>
+                        <td class="px-4 py-3 text-center text-green-600 font-medium border-l border-gray-100">${cell272}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 border-l border-gray-100">
+                            <div>${!isEditMode ? '<i class="fa-solid fa-ship text-blue-300"></i> ' : ''}${cellSail}</div>
+                            <div>${!isEditMode ? '<i class="fa-solid fa-truck text-blue-300"></i> ' : ''}${cellDel}</div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+
+        // 编辑模式切换
+        function toggleEditMode() {
+            isEditMode = true;
+            updateEditUI();
+            renderFullRateTable();
+        }
+
+        // 保存编辑
+        function saveRates() {
+            // 收集所有 input 的数据
+            const inputs = document.querySelectorAll('#rate-table-body input');
+            inputs.forEach(input => {
+                const ch = input.dataset.ch;
+                const zone = input.dataset.zone;
+                const field = input.dataset.field;
+                let val = input.value;
+                
+                // 数字类型转换
+                if (field.startsWith('price')) {
+                    val = parseFloat(val);
+                    if (isNaN(val)) val = 0;
+                }
+                
+                if (ratesData[ch] && ratesData[ch][zone]) {
+                    ratesData[ch][zone][field] = val;
+                }
+            });
+
+            saveRatesToStorage();
+            isEditMode = false;
+            updateEditUI();
+            renderFullRateTable();
+            
+            // 显示 Toast
+            const toast = document.getElementById('save-toast');
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+            
+            // 如果有结果，刷新计算
+            if (!document.getElementById('result-area').classList.contains('hidden')) {
+                calculateFreight();
+            }
+        }
+
+        function updateEditUI() {
+            const btnEdit = document.getElementById('btn-edit-mode');
+            const btnSave = document.getElementById('btn-save-mode');
+            const btnReset = document.getElementById('btn-reset-default');
+            
+            if (isEditMode) {
+                btnEdit.classList.add('hidden');
+                btnSave.classList.remove('hidden');
+                btnReset.classList.remove('hidden');
+            } else {
+                btnEdit.classList.remove('hidden');
+                btnSave.classList.add('hidden');
+                btnReset.classList.add('hidden');
+            }
+        }
+
+        // 核心计算函数 (无变化，只是使用 ratesData)
+        function calculateFreight() {
+            const t = langResources[currentLang];
+            const channel = document.getElementById('channel').value;
+            const addressType = document.getElementById('addressType').value;
+            const zipInput = document.getElementById('zipCode').value;
+            const weightInput = parseFloat(document.getElementById('weight').value);
+            
+            const errorArea = document.getElementById('error-area');
+            const resultArea = document.getElementById('result-area');
+            const placeholder = document.getElementById('result-placeholder');
+            const errorMsg = document.getElementById('error-msg');
+
+            if (zipInput === '' || isNaN(zipInput) || zipInput < 0 || zipInput > 9) {
+                errorMsg.textContent = t.errZip;
+                errorArea.classList.remove('hidden');
+                resultArea.classList.add('hidden');
+                placeholder.classList.add('hidden');
+                return;
+            }
+            if (!weightInput || weightInput <= 0) {
+                errorMsg.textContent = t.errWeight;
+                errorArea.classList.remove('hidden');
+                resultArea.classList.add('hidden');
+                placeholder.classList.add('hidden');
+                return;
+            }
+
+            errorArea.classList.add('hidden');
+            placeholder.classList.add('hidden');
+
+            let chargedWeight = weightInput;
+            let isMinWeightApplied = false;
+
+            if (addressType === 'amazon') {
+                if (chargedWeight < 13) {
+                    chargedWeight = 13;
+                    isMinWeightApplied = true;
+                }
+            } else {
+                if (chargedWeight < 101) {
+                    chargedWeight = 101;
+                    isMinWeightApplied = true;
+                }
+            }
+
+            const zone = zipInput.toString().charAt(0);
+            const rateObj = ratesData[channel][zone];
+            
+            let unitPrice = rateObj.price101; 
+            let tierName = "101KG+";
+
+            if (addressType === 'amazon') {
+                if (chargedWeight >= 272) {
+                    unitPrice = rateObj.price272;
+                    tierName = "272KG+ (Amz)";
+                } else if (chargedWeight >= 213) {
+                    unitPrice = rateObj.price213;
+                    tierName = "213KG+ (Amz)";
+                }
+            }
+
+            let isPrivateSurcharge = false;
+            if (addressType === 'private') {
+                unitPrice += 1;
+                isPrivateSurcharge = true;
+                tierName += " + Pvt";
+            }
+
+            const totalFee = chargedWeight * unitPrice;
+
+            document.getElementById('res-weight').textContent = chargedWeight.toFixed(2);
+            document.getElementById('res-price').textContent = unitPrice.toFixed(2);
+            document.getElementById('res-total').textContent = totalFee.toFixed(2);
+            document.getElementById('res-zone-badge').textContent = `Zone ${zone}`;
+            document.getElementById('tier-badge').textContent = tierName;
+
+            const privateNoteEl = document.getElementById('private-surcharge-note');
+            const minWeightNoteEl = document.getElementById('min-weight-note');
+
+            if (isPrivateSurcharge) privateNoteEl.classList.remove('hidden');
+            else privateNoteEl.classList.add('hidden');
+
+            if (isMinWeightApplied) minWeightNoteEl.classList.remove('hidden');
+            else minWeightNoteEl.classList.add('hidden');
+
+            resultArea.classList.remove('hidden');
+        }
+
+        function resetForm() {
+            document.getElementById('calculator-form').reset();
+            document.getElementById('result-area').classList.add('hidden');
+            document.getElementById('error-area').classList.add('hidden');
+            document.getElementById('result-placeholder').classList.remove('hidden');
+        }
+
+        function updateLanguageUI() {
+            const t = langResources[currentLang];
+            if (!t) return;
+            
+            // Removed 'btn-calculate' from here because it's a container button with an icon.
+            // Automatically setting its textContent destroys the child span and icon.
+            const ids = ['app-title', 'calc-title', 'lbl-channel', 'lbl-addressType', 
+                         'lbl-zipFirstDigit', 'lbl-weight', 'lbl-resultTitle',
+                         'lbl-chargedWeight', 'lbl-unitPrice', 'lbl-totalFee', 'lbl-privateNote',
+                         'lbl-minWeightNote', 'lbl-introTitle', 'lbl-introContent', 'lbl-note',
+                         'lbl-note1', 'lbl-note2', 'lbl-note3', 'lbl-note4', 'lbl-tableTitle',
+                         'th-channel', 'th-zone', 'th-timings', 'lbl-disclaimer'];
+            
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && t[camelCase(id)]) el.textContent = t[camelCase(id)];
+            });
+
+            // Added safety checks for manual updates
+            if(document.getElementById('btn-calc-text')) document.getElementById('btn-calc-text').textContent = t.btnCalculate;
+            if(document.getElementById('btn-edit-text')) document.getElementById('btn-edit-text').textContent = t.btnEdit;
+            if(document.getElementById('btn-save-text')) document.getElementById('btn-save-text').textContent = t.btnSave;
+            if(document.getElementById('btn-reset-text')) document.getElementById('btn-reset-text').textContent = t.btnResetDefault;
+            
+            updateSelectOptions('channel', {
+                'matson_regular': t.optMatsonReg,
+                'matson_extra': t.optMatsonExt,
+                'common_boat': t.optCommon
+            });
+            updateSelectOptions('addressType', {
+                'amazon': t.optAmazon,
+                'commercial': t.optCommercial,
+                'private': t.optPrivate
+            });
+        }
+        
+        function camelCase(str) {
+            return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+        }
+
+        function updateSelectOptions(id, map) {
+            const select = document.getElementById(id);
+            Array.from(select.options).forEach(opt => {
+                if (map[opt.value]) {
+                    opt.text = map[opt.value];
+                }
+            });
+        }
+    </script>
+</body>
+</html>

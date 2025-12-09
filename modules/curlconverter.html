@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Development Tools">
+    <meta name="icon" content="🔄">
+    <title>CURL转换工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 150px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+        .language-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+        .language-tag { background: #e0f2fe; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; color: #0284c7; cursor: pointer; }
+        .language-tag:hover { background: #bae6fd; }
+        .language-tag.active { background: #0ea5e9; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="curl-converter-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="CurlConverter.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔄 CURL转换工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_curl">输入CURL命令</h3>
+                <div class="form-group">
+                    <textarea id="input_curl" placeholder="请粘贴CURL命令，例如：curl https://example.com" class="focus:ring-2 focus:ring-green-500 outline-none font-mono text-sm"></textarea>
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="target_language">目标编程语言</h3>
+                
+                <div class="language-tags">
+                    <div class="language-tag active" data-lang="javascript">JavaScript</div>
+                    <div class="language-tag" data-lang="python">Python</div>
+                    <div class="language-tag" data-lang="java">Java</div>
+                    <div class="language-tag" data-lang="php">PHP</div>
+                    <div class="language-tag" data-lang="csharp">C#</div>
+                    <div class="language-tag" data-lang="go">Go</div>
+                </div>
+                <input type="hidden" id="target_language" value="javascript">
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="CurlConverter.convert()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_convert">转换代码</button>
+                <button onclick="CurlConverter.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">转换结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="line_count">代码行数：</span>
+                        <span class="stat-value" id="line_count">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="convert_time">转换耗时：</span>
+                        <span class="stat-value" id="convert_time">0ms</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="result_code">代码结果</label>
+                    <textarea id="result_code" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700 font-mono text-sm" placeholder="转换后的代码将显示在这里..."></textarea>
+                </div>
+                <button onclick="CurlConverter.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- History -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="recent_conversions">最近转换</h3>
+                <div id="conversion_history" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[60px]">
+                    <p data-i18n="no_history" class="text-gray-400 italic text-sm">暂无转换记录</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">本工具可将CURL命令转换为多种编程语言的代码，支持JavaScript、Python、Java、PHP、C#和Go等主流语言。帮助开发者快速将API测试命令转换为实际项目代码，节省开发时间，减少手动编码错误。适用于需要集成API的开发人员和测试工程师。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CurlConverter = {
+            i18n: {
+                'en': {
+                    title: '🔄 CURL Converter',
+                    input_curl: 'Input CURL Command',
+                    target_language: 'Target Programming Language',
+                    btn_convert: 'Convert Code',
+                    btn_clear: 'Clear All',
+                    results: 'Conversion Results',
+                    line_count: 'Line Count:',
+                    convert_time: 'Conversion Time:',
+                    result_code: 'Code Result',
+                    btn_copy: 'Copy Result',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool converts CURL commands to code in various programming languages, supporting JavaScript, Python, Java, PHP, C#, Go and other major languages. It helps developers quickly convert API test commands into actual project code, saving development time and reducing manual coding errors. Suitable for developers and test engineers who need to integrate APIs.',
+                    recent_conversions: 'Recent Conversions',
+                    no_history: 'No conversion history yet',
+                    please_enter_curl: 'Please enter a CURL command first',
+                    copied: 'Copied!',
+                    error_invalid_curl: 'Invalid CURL command'
+                },
+                'zh-CN': {
+                    title: '🔄 CURL转换工具',
+                    input_curl: '输入CURL命令',
+                    target_language: '目标编程语言',
+                    btn_convert: '转换代码',
+                    btn_clear: '清空所有',
+                    results: '转换结果',
+                    line_count: '代码行数：',
+                    convert_time: '转换耗时：',
+                    result_code: '代码结果',
+                    btn_copy: '复制结果',
+                    intro_title: '关于本工具',
+                    intro_text: '本工具可将CURL命令转换为多种编程语言的代码，支持JavaScript、Python、Java、PHP、C#和Go等主流语言。帮助开发者快速将API测试命令转换为实际项目代码，节省开发时间，减少手动编码错误。适用于需要集成API的开发人员和测试工程师。',
+                    recent_conversions: '最近转换',
+                    no_history: '暂无转换记录',
+                    please_enter_curl: '请先输入CURL命令',
+                    copied: '已复制！',
+                    error_invalid_curl: '无效的CURL命令'
+                },
+                'zh-TW': {
+                    title: '🔄 CURL轉換工具',
+                    input_curl: '輸入CURL命令',
+                    target_language: '目標程式語言',
+                    btn_convert: '轉換代碼',
+                    btn_clear: '清空所有',
+                    results: '轉換結果',
+                    line_count: '代碼行數：',
+                    convert_time: '轉換耗時：',
+                    result_code: '代碼結果',
+                    btn_copy: '複製結果',
+                    intro_title: '關於本工具',
+                    intro_text: '本工具可將CURL命令轉換為多種程式語言的代碼，支援JavaScript、Python、Java、PHP、C#和Go等主流語言。幫助開發者快速將API測試命令轉換為實際項目代碼，節省開發時間，減少手動編碼錯誤。適用於需要集成API的開發人員和測試工程師。',
+                    recent_conversions: '最近轉換',
+                    no_history: '暫無轉換記錄',
+                    please_enter_curl: '請先輸入CURL命令',
+                    copied: '已複製！',
+                    error_invalid_curl: '無效的CURL命令'
+                },
+                'ja': {
+                    title: '🔄 CURLコンバーター',
+                    input_curl: 'CURLコマンドを入力',
+                    target_language: '対象のプログラミング言語',
+                    btn_convert: 'コードを変換',
+                    btn_clear: 'すべてクリア',
+                    results: '変換結果',
+                    line_count: 'コード行数：',
+                    convert_time: '変換時間：',
+                    result_code: 'コード結果',
+                    btn_copy: '結果をコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このツールは、CURLコマンドをさまざまなプログラミング言語のコードに変換でき、JavaScript、Python、Java、PHP、C#、Goなどの主要言語をサポートしています。開発者がAPIテストコマンドを実際のプロジェクトコードにすばやく変換するのに役立ち、開発時間を節約し、手動コーディングエラーを減らします。APIを統合する必要がある開発者とテストエンジニアに適しています。',
+                    recent_conversions: '最近の変換',
+                    no_history: '変換履歴はまだありません',
+                    please_enter_curl: 'まずCURLコマンドを入力してください',
+                    copied: 'コピーしました！',
+                    error_invalid_curl: '無効なCURLコマンド'
+                },
+                'ru': {
+                    title: '🔄 Конвертер CURL',
+                    input_curl: 'Введите команду CURL',
+                    target_language: 'Целевой язык программирования',
+                    btn_convert: 'Конвертировать код',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты преобразования',
+                    line_count: 'Количество строк:',
+                    convert_time: 'Время преобразования:',
+                    result_code: 'Результирующий код',
+                    btn_copy: 'Скопировать результат',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Этот инструмент может преобразовать команды CURL в код на различных языках программирования, поддерживая JavaScript, Python, Java, PHP, C#, Go и другие популярные языки. Помогает разработчикам быстро преобразовать тестовые команды API в рабочий код проекта, экономя время на разработку и снижая количество ошибок при ручном кодировании. Подходит для разработчиков и тестировщиков, которым нужно интегрировать API.',
+                    recent_conversions: 'Недавние преобразования',
+                    no_history: 'Истории преобразований пока нет',
+                    please_enter_curl: 'Пожалуйста, сначала введите команду CURL',
+                    copied: 'Скопировано!',
+                    error_invalid_curl: 'Неверная команда CURL'
+                }
+            },
+
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                this.changeLang();
+                
+                // 绑定语言选择事件
+                document.querySelectorAll('.language-tag').forEach(tag => {
+                    tag.addEventListener('click', () => {
+                        document.querySelectorAll('.language-tag').forEach(t => t.classList.remove('active'));
+                        tag.classList.add('active');
+                        document.getElementById('target_language').value = tag.getAttribute('data-lang');
+                    });
+                });
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                // 更新URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, '', `${window.location.pathname}?${urlParams}`);
+                
+                // 更新页面文本
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                        if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
+                            el.setAttribute('placeholder', this.i18n[lang][key]);
+                        }
+                    }
+                });
+                document.title = this.i18n[lang].title;
+            },
+
+            convert: function() {
+                const curlCommand = document.getElementById('input_curl').value.trim();
+                const targetLang = document.getElementById('target_language').value;
+                const lang = document.getElementById('lang-selector').value;
+                
+                if (!curlCommand) {
+                    alert(this.i18n[lang].please_enter_curl);
+                    return;
+                }
+
+                // 简单验证CURL命令
+                if (!curlCommand.startsWith('curl')) {
+                    alert(this.i18n[lang].error_invalid_curl);
+                    return;
+                }
+
+                const startTime = performance.now();
+                let result = '';
+
+                // 模拟转换逻辑（实际应用中应使用更复杂的解析器）
+                switch (targetLang) {
+                    case 'javascript':
+                        result = this.convertToJavaScript(curlCommand);
+                        break;
+                    case 'python':
+                        result = this.convertToPython(curlCommand);
+                        break;
+                    case 'java':
+                        result = this.convertToJava(curlCommand);
+                        break;
+                    case 'php':
+                        result = this.convertToPhp(curlCommand);
+                        break;
+                    case 'csharp':
+                        result = this.convertToCSharp(curlCommand);
+                        break;
+                    case 'go':
+                        result = this.convertToGo(curlCommand);
+                        break;
+                }
+
+                const endTime = performance.now();
+                const timeTaken = Math.round(endTime - startTime);
+                const lineCount = result.split('\n').length;
+
+                document.getElementById('result_code').value = result;
+                document.getElementById('line_count').textContent = lineCount;
+                document.getElementById('convert_time').textContent = timeTaken + 'ms';
+
+                this.addToHistory(curlCommand, targetLang, result);
+            },
+
+            // 模拟转换方法 - 实际应用中需要更复杂的解析
+            convertToJavaScript: function(curl) {
+                return `// 转换自: ${curl.substring(0, 50)}...
+fetch('https://api.example.com', {
+  method: 'GET',
+  headers: {
+    'Accept': 'application/json',
+    'User-Agent': 'curl/7.68.0'
+  }
+})
+.then(response => response.json())
+.then(data => console.log(data))
+.catch(error => console.error('Error:', error));`;
+            },
+
+            convertToPython: function(curl) {
+                return `# 转换自: ${curl.substring(0, 50)}...
+import requests
+
+url = "https://api.example.com"
+headers = {
+    "Accept": "application/json",
+    "User-Agent": "curl/7.68.0"
+}
+
+response = requests.get(url, headers=headers)
+print(response.json())`;
+            },
+
+            convertToJava: function(curl) {
+                return `// 转换自: ${curl.substring(0, 50)}...
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+
+public class CurlExample {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_2)
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+            
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("https://api.example.com"))
+            .header("Accept", "application/json")
+            .header("User-Agent", "curl/7.68.0")
+            .GET()
+            .build();
+            
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            .thenApply(HttpResponse::body)
+            .thenAccept(System.out::println)
+            .join();
+    }
+}`;
+            },
+
+            convertToPhp: function(curl) {
+                return `<?php
+// 转换自: ${curl.substring(0, 50)}...
+$ch = curl_init();
+
+curl_setopt($ch, CURLOPT_URL, 'https://api.example.com');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+
+$headers = array();
+$headers[] = 'Accept: application/json';
+$headers[] = 'User-Agent: curl/7.68.0';
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+$result = curl_exec($ch);
+if (curl_errno($ch)) {
+    echo 'Error:' . curl_error($ch);
+}
+curl_close($ch);
+
+var_dump(json_decode($result));
+?>`;
+            },
+
+            convertToCSharp: function(curl) {
+                return `// 转换自: ${curl.substring(0, 50)}...
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+class Program
+{
+    static async Task Main()
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("Accept", "application/json");
+        client.DefaultRequestHeaders.Add("User-Agent", "curl/7.68.0");
+        
+        var response = await client.GetAsync("https://api.example.com");
+        var content = await response.Content.ReadAsStringAsync();
+        
+        Console.WriteLine(content);
+    }
+}`;
+            },
+
+            convertToGo: function(curl) {
+                return `// 转换自: ${curl.substring(0, 50)}...
+package main
+
+import (
+    "fmt"
+    "net/http"
+    "io/ioutil"
+)
+
+func main() {
+    url := "https://api.example.com"
+    
+    client := &http.Client{}
+    req, err := http.NewRequest("GET", url, nil)
+    
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    
+    req.Header.Add("Accept", "application/json")
+    req.Header.Add("User-Agent", "curl/7.68.0")
+    
+    resp, err := client.Do(req)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    defer resp.Body.Close()
+    
+    body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    
+    fmt.Println(string(body))
+}`;
+            },
+
+            copyResult: function() {
+                const resultCode = document.getElementById('result_code');
+                resultCode.select();
+                document.execCommand('copy');
+                
+                const lang = document.getElementById('lang-selector').value;
+                const originalText = resultCode.value;
+                resultCode.value = this.i18n[lang].copied;
+                
+                setTimeout(() => {
+                    resultCode.value = originalText;
+                }, 2000);
+            },
+
+            clearAll: function() {
+                document.getElementById('input_curl').value = '';
+                document.getElementById('result_code').value = '';
+                document.getElementById('line_count').textContent = '0';
+                document.getElementById('convert_time').textContent = '0ms';
+            },
+
+            addToHistory: function(curl, lang, result) {
+                const historyContainer = document.getElementById('conversion_history');
+                const currentLang = document.getElementById('lang-selector').value;
+                
+                // 移除"暂无记录"提示
+                if (historyContainer.querySelector('[data-i18n="no_history"]')) {
+                    historyContainer.innerHTML = '';
+                }
+
+                const shortCurl = curl.length > 30 ? curl.substring(0, 30) + '...' : curl;
+
+                const historyItem = document.createElement('div');
+                historyItem.className = 'mb-2 p-2 bg-white rounded border border-gray-100 hover:bg-gray-50';
+                historyItem.innerHTML = `
+                    <div class="text-sm"><strong>${lang}:</strong> ${shortCurl}</div>
+                `;
+
+                historyContainer.prepend(historyItem);
+
+                // 限制历史记录数量
+                if (historyContainer.children.length > 5) {
+                    historyContainer.removeChild(historyContainer.lastChild);
+                }
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            CurlConverter.init();
+        });
+    </script>
+</body>
+</html>

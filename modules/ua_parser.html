@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Web Tools">
+    <meta name="icon" content="🔍">
+    <title>UserAgent 解析工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 100px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .result-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .result-table th, .result-table td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        .result-table th { background-color: #f1f5f9; color: #334155; width: 30%; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="ua-parser-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="UAParserTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔍 UserAgent 解析工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_ua">输入UserAgent</h3>
+                <div class="form-group">
+                    <textarea id="input_ua" placeholder="请在此粘贴UserAgent字符串..." class="focus:ring-2 focus:ring-green-500 outline-none"></textarea>
+                    <p class="language-note" data-i18n="ua_example">示例: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36</p>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="UAParserTool.parseUA()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_parse">解析UserAgent</button>
+                <button onclick="UAParserTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+                <button onclick="UAParserTool.fillExample()" class="flex-1 bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700 transition shadow-md" data-i18n="btn_example">填充示例</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">解析结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="parse_time">解析耗时：</span>
+                        <span class="stat-value" id="parse_time">0ms</span>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <table class="result-table">
+                        <tr>
+                            <th data-i18n="browser">浏览器</th>
+                            <td id="browser">-</td>
+                        </tr>
+                        <tr>
+                            <th data-i18n="browser_version">浏览器版本</th>
+                            <td id="browser_version">-</td>
+                        </tr>
+                        <tr>
+                            <th data-i18n="os">操作系统</th>
+                            <td id="os">-</td>
+                        </tr>
+                        <tr>
+                            <th data-i18n="os_version">操作系统版本</th>
+                            <td id="os_version">-</td>
+                        </tr>
+                        <tr>
+                            <th data-i18n="device">设备类型</th>
+                            <td id="device">-</td>
+                        </tr>
+                        <tr>
+                            <th data-i18n="platform">平台</th>
+                            <td id="platform">-</td>
+                        </tr>
+                        <tr>
+                            <th data-i18n="engine">渲染引擎</th>
+                            <td id="engine">-</td>
+                        </tr>
+                    </table>
+                </div>
+                <button onclick="UAParserTool.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- Recent Parses -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="recent_parses">最近解析</h3>
+                <div id="parse_history" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[60px]">
+                    <p data-i18n="no_history" class="text-gray-400 italic text-sm">暂无解析记录</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">UserAgent解析工具可以分析浏览器发送的UserAgent字符串，提取出浏览器类型、版本、操作系统、设备类型等信息。这对于开发者调试、统计访问者设备信息和优化网站兼容性非常有用。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const UAParserTool = {
+            i18n: {
+                'en': {
+                    title: '🔍 UserAgent Parser',
+                    input_ua: 'Input UserAgent',
+                    ua_example: 'Example: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    btn_parse: 'Parse UserAgent',
+                    btn_clear: 'Clear All',
+                    btn_example: 'Load Example',
+                    results: 'Parsing Results',
+                    parse_time: 'Parsing Time:',
+                    browser: 'Browser',
+                    browser_version: 'Browser Version',
+                    os: 'Operating System',
+                    os_version: 'OS Version',
+                    device: 'Device Type',
+                    platform: 'Platform',
+                    engine: 'Rendering Engine',
+                    btn_copy: 'Copy Results',
+                    recent_parses: 'Recent Parses',
+                    no_history: 'No parsing history yet',
+                    please_enter_ua: 'Please enter a UserAgent string first',
+                    copied: 'Copied!',
+                    intro_title: 'About This Tool',
+                    intro_text: 'The UserAgent Parser tool analyzes the UserAgent string sent by browsers, extracting information such as browser type, version, operating system, and device type. This is useful for developers debugging,统计访问者设备信息 and optimizing website compatibility.'
+                },
+                'zh-CN': {
+                    title: '🔍 UserAgent 解析工具',
+                    input_ua: '输入UserAgent',
+                    ua_example: '示例: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    btn_parse: '解析UserAgent',
+                    btn_clear: '清空所有',
+                    btn_example: '填充示例',
+                    results: '解析结果',
+                    parse_time: '解析耗时：',
+                    browser: '浏览器',
+                    browser_version: '浏览器版本',
+                    os: '操作系统',
+                    os_version: '操作系统版本',
+                    device: '设备类型',
+                    platform: '平台',
+                    engine: '渲染引擎',
+                    btn_copy: '复制结果',
+                    recent_parses: '最近解析',
+                    no_history: '暂无解析记录',
+                    please_enter_ua: '请先输入UserAgent字符串',
+                    copied: '已复制！',
+                    intro_title: '关于本工具',
+                    intro_text: 'UserAgent解析工具可以分析浏览器发送的UserAgent字符串，提取出浏览器类型、版本、操作系统、设备类型等信息。这对于开发者调试、统计访问者设备信息和优化网站兼容性非常有用。'
+                },
+                'zh-TW': {
+                    title: '🔍 UserAgent 解析工具',
+                    input_ua: '輸入UserAgent',
+                    ua_example: '示例: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    btn_parse: '解析UserAgent',
+                    btn_clear: '清空所有',
+                    btn_example: '填充示例',
+                    results: '解析結果',
+                    parse_time: '解析耗時：',
+                    browser: '瀏覽器',
+                    browser_version: '瀏覽器版本',
+                    os: '作業系統',
+                    os_version: '作業系統版本',
+                    device: '設備類型',
+                    platform: '平台',
+                    engine: '渲染引擎',
+                    btn_copy: '複製結果',
+                    recent_parses: '最近解析',
+                    no_history: '暫無解析記錄',
+                    please_enter_ua: '請先輸入UserAgent字符串',
+                    copied: '已複製！',
+                    intro_title: '關於本工具',
+                    intro_text: 'UserAgent解析工具可以分析瀏覽器發送的UserAgent字符串，提取出瀏覽器類型、版本、作業系統、設備類型等信息。這對於開發者調試、統計訪問者設備信息和優化網站兼容性非常有用。'
+                },
+                'ja': {
+                    title: '🔍 UserAgent解析ツール',
+                    input_ua: 'UserAgentを入力',
+                    ua_example: '例: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    btn_parse: 'UserAgentを解析',
+                    btn_clear: 'すべてクリア',
+                    btn_example: '例を読み込む',
+                    results: '解析結果',
+                    parse_time: '解析時間：',
+                    browser: 'ブラウザ',
+                    browser_version: 'ブラウザバージョン',
+                    os: 'オペレーティングシステム',
+                    os_version: 'OSバージョン',
+                    device: 'デバイスタイプ',
+                    platform: 'プラットフォーム',
+                    engine: 'レンダリングエンジン',
+                    btn_copy: '結果をコピー',
+                    recent_parses: '最近の解析',
+                    no_history: '解析履歴はまだありません',
+                    please_enter_ua: 'まずUserAgent文字列を入力してください',
+                    copied: 'コピーしました！',
+                    intro_title: 'このツールについて',
+                    intro_text: 'UserAgent解析ツールは、ブラウザが送信するUserAgent文字列を分析し、ブラウザの種類、バージョン、オペレーティングシステム、デバイスの種類などの情報を抽出できます。これは開発者のデバッグ、訪問者のデバイス情報の統計、ウェブサイトの互換性の最適化に非常に役立ちます。'
+                },
+                'ru': {
+                    title: '🔍 Парсер UserAgent',
+                    input_ua: 'Введите UserAgent',
+                    ua_example: 'Пример: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    btn_parse: 'Парсить UserAgent',
+                    btn_clear: 'Очистить все',
+                    btn_example: 'Загрузить пример',
+                    results: 'Результаты парсинга',
+                    parse_time: 'Время парсинга:',
+                    browser: 'Браузер',
+                    browser_version: 'Версия браузера',
+                    os: 'Операционная система',
+                    os_version: 'Версия ОС',
+                    device: 'Тип устройства',
+                    platform: 'Платформа',
+                    engine: 'Рендерингный движок',
+                    btn_copy: 'Скопировать результаты',
+                    recent_parses: 'Недавние парсинги',
+                    no_history: 'Истории парсинга пока нет',
+                    please_enter_ua: 'Пожалуйста, сначала введите строку UserAgent',
+                    copied: 'Скопировано!',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Инструмент парсинга UserAgent анализирует строку UserAgent, отправленную браузером, и извлекает информацию о типе браузера, его версии, операционной системе, типе устройства и т.д. Это полезно для отладки разработчиками, статистики информации о устройствах посетителей и оптимизации совместимости веб-сайта.'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false);
+                } else {
+                    this.changeLang(false);
+                }
+
+                // 尝试从本地存储加载解析历史
+                this.loadParseHistory();
+                
+                // 自动填充当前浏览器的UA
+                try {
+                    document.getElementById('input_ua').value = navigator.userAgent;
+                } catch (e) {
+                    console.log('无法获取浏览器UserAgent');
+                }
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                // 更新HTML元素
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                // 更新URL参数
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                // 特别更新页面标题
+                document.title = i18nData['title'];
+            },
+
+            parseUA: function() {
+                const uaString = document.getElementById('input_ua').value.trim();
+                if (!uaString) {
+                    alert(this.getI18nText('please_enter_ua'));
+                    return;
+                }
+
+                const startTime = performance.now();
+                
+                // 解析逻辑 - 简化版UA解析
+                const result = this.simpleUAParse(uaString);
+                
+                const endTime = performance.now();
+                const parseTime = Math.round(endTime - startTime);
+                
+                // 更新结果显示
+                document.getElementById('browser').textContent = result.browser || '-';
+                document.getElementById('browser_version').textContent = result.browserVersion || '-';
+                document.getElementById('os').textContent = result.os || '-';
+                document.getElementById('os_version').textContent = result.osVersion || '-';
+                document.getElementById('device').textContent = result.device || '-';
+                document.getElementById('platform').textContent = result.platform || '-';
+                document.getElementById('engine').textContent = result.engine || '-';
+                document.getElementById('parse_time').textContent = `${parseTime}ms`;
+                
+                // 保存到历史记录
+                this.saveToHistory(uaString, result);
+            },
+
+            simpleUAParse: function(ua) {
+                const result = {
+                    browser: '',
+                    browserVersion: '',
+                    os: '',
+                    osVersion: '',
+                    device: '',
+                    platform: '',
+                    engine: ''
+                };
+
+                // 检测浏览器
+                if (/Chrome/.test(ua) && !/Edge/.test(ua)) {
+                    result.browser = 'Chrome';
+                    result.browserVersion = (ua.match(/Chrome\/([\d.]+)/) || [])[1];
+                } else if (/Firefox/.test(ua)) {
+                    result.browser = 'Firefox';
+                    result.browserVersion = (ua.match(/Firefox\/([\d.]+)/) || [])[1];
+                } else if (/Safari/.test(ua) && !/Chrome/.test(ua)) {
+                    result.browser = 'Safari';
+                    result.browserVersion = (ua.match(/Safari\/([\d.]+)/) || [])[1];
+                } else if (/Edge/.test(ua)) {
+                    result.browser = 'Edge';
+                    result.browserVersion = (ua.match(/Edge\/([\d.]+)/) || [])[1];
+                } else if (/MSIE|Trident/.test(ua)) {
+                    result.browser = 'Internet Explorer';
+                    result.browserVersion = (ua.match(/MSIE ([\d.]+)|rv:([\d.]+)/) || [])[1] || '';
+                }
+
+                // 检测操作系统
+                if (/Windows NT 10.0/.test(ua)) {
+                    result.os = 'Windows';
+                    result.osVersion = '10';
+                } else if (/Windows NT 6.3/.test(ua)) {
+                    result.os = 'Windows';
+                    result.osVersion = '8.1';
+                } else if (/Windows NT 6.2/.test(ua)) {
+                    result.os = 'Windows';
+                    result.osVersion = '8';
+                } else if (/Windows NT 6.1/.test(ua)) {
+                    result.os = 'Windows';
+                    result.osVersion = '7';
+                } else if (/Mac OS X/.test(ua)) {
+                    result.os = 'macOS';
+                    result.osVersion = (ua.match(/Mac OS X ([\d_]+)/) || [])[1]?.replace(/_/g, '.') || '';
+                } else if (/Linux/.test(ua)) {
+                    result.os = 'Linux';
+                } else if (/Android/.test(ua)) {
+                    result.os = 'Android';
+                    result.osVersion = (ua.match(/Android ([\d.]+)/) || [])[1] || '';
+                } else if (/iOS|iPhone|iPad/.test(ua)) {
+                    result.os = 'iOS';
+                    result.osVersion = (ua.match(/OS ([\d_]+) like Mac OS X/) || [])[1]?.replace(/_/g, '.') || '';
+                }
+
+                // 检测设备类型
+                if (/Mobile|Android|iPhone|iPad|iPod/.test(ua)) {
+                    result.device = /iPad/.test(ua) ? 'Tablet' : 'Mobile';
+                } else {
+                    result.device = 'Desktop';
+                }
+
+                // 检测平台
+                if (/Win64|x64/.test(ua)) {
+                    result.platform = '64-bit';
+                } else if (/Win32|x86/.test(ua)) {
+                    result.platform = '32-bit';
+                }
+
+                // 检测渲染引擎
+                if (/WebKit/.test(ua)) {
+                    result.engine = 'WebKit';
+                } else if (/Gecko/.test(ua) && !/WebKit/.test(ua)) {
+                    result.engine = 'Gecko';
+                } else if (/Trident/.test(ua)) {
+                    result.engine = 'Trident';
+                }
+
+                return result;
+            },
+
+            clearAll: function() {
+                document.getElementById('input_ua').value = '';
+                document.getElementById('browser').textContent = '-';
+                document.getElementById('browser_version').textContent = '-';
+                document.getElementById('os').textContent = '-';
+                document.getElementById('os_version').textContent = '-';
+                document.getElementById('device').textContent = '-';
+                document.getElementById('platform').textContent = '-';
+                document.getElementById('engine').textContent = '-';
+                document.getElementById('parse_time').textContent = '0ms';
+            },
+
+            fillExample: function() {
+                document.getElementById('input_ua').value = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15';
+            },
+
+            copyResult: function() {
+                const browser = document.getElementById('browser').textContent;
+                const browserVer = document.getElementById('browser_version').textContent;
+                const os = document.getElementById('os').textContent;
+                const osVer = document.getElementById('os_version').textContent;
+                const device = document.getElementById('device').textContent;
+                const platform = document.getElementById('platform').textContent;
+                const engine = document.getElementById('engine').textContent;
+
+                const resultText = `${this.getI18nText('browser')}: ${browser} ${browserVer}\n` +
+                                  `${this.getI18nText('os')}: ${os} ${osVer}\n` +
+                                  `${this.getI18nText('device')}: ${device}\n` +
+                                  `${this.getI18nText('platform')}: ${platform}\n` +
+                                  `${this.getI18nText('engine')}: ${engine}`;
+
+                navigator.clipboard.writeText(resultText).then(() => {
+                    const originalText = document.querySelector('[data-i18n="btn_copy"]').textContent;
+                    document.querySelector('[data-i18n="btn_copy"]').textContent = this.getI18nText('copied');
+                    setTimeout(() => {
+                        document.querySelector('[data-i18n="btn_copy"]').textContent = originalText;
+                    }, 2000);
+                });
+            },
+
+            saveToHistory: function(uaString, result) {
+                let history = JSON.parse(localStorage.getItem('uaParseHistory') || '[]');
+                
+                // 限制历史记录长度
+                if (history.length >= 10) {
+                    history.pop();
+                }
+                
+                // 添加新记录到开头
+                history.unshift({
+                    timestamp: new Date().toISOString(),
+                    ua: uaString.substring(0, 50) + (uaString.length > 50 ? '...' : ''),
+                    result: result
+                });
+                
+                localStorage.setItem('uaParseHistory', JSON.stringify(history));
+                this.loadParseHistory();
+            },
+
+            loadParseHistory: function() {
+                const historyContainer = document.getElementById('parse_history');
+                const history = JSON.parse(localStorage.getItem('uaParseHistory') || '[]');
+                
+                if (history.length === 0) {
+                    historyContainer.innerHTML = `<p data-i18n="no_history" class="text-gray-400 italic text-sm">${this.getI18nText('no_history')}</p>`;
+                    return;
+                }
+                
+                let html = '<div class="space-y-2">';
+                history.forEach((item, index) => {
+                    const date = new Date(item.timestamp);
+                    html += `
+                        <div class="p-2 bg-white rounded border border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="UAParserTool.loadHistoryItem(${index})">
+                            <div class="text-sm font-medium">${item.ua}</div>
+                            <div class="text-xs text-gray-500">${date.toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                historyContainer.innerHTML = html;
+            },
+
+            loadHistoryItem: function(index) {
+                const history = JSON.parse(localStorage.getItem('uaParseHistory') || '[]');
+                if (history[index]) {
+                    document.getElementById('input_ua').value = history[index].ua.replace('...', '');
+                    
+                    // 填充结果
+                    const result = history[index].result;
+                    document.getElementById('browser').textContent = result.browser || '-';
+                    document.getElementById('browser_version').textContent = result.browserVersion || '-';
+                    document.getElementById('os').textContent = result.os || '-';
+                    document.getElementById('os_version').textContent = result.osVersion || '-';
+                    document.getElementById('device').textContent = result.device || '-';
+                    document.getElementById('platform').textContent = result.platform || '-';
+                    document.getElementById('engine').textContent = result.engine || '-';
+                }
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang] && this.i18n[lang][key] ? this.i18n[lang][key] : this.i18n['en'][key];
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            UAParserTool.init();
+        });
+    </script>
+</body>
+</html>

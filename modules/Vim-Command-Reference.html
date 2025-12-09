@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="编辑器操作参考工具">
+    <meta name="icon" content="⌨️">
+    <title>Vim 命令速查表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1200px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .command-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
+        .command-card { padding: 15px; border: 1px solid #e5e7eb; border-radius: 6px; transition: all 0.2s; }
+        .command-card:hover { background-color: #f0fdf4; border-color: #a7f3d0; transform: translateY(-2px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .command-keys { font-family: monospace; font-size: 1rem; color: #dc2626; background-color: #fef2f2; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+        .command-desc { font-size: 0.9rem; color: #4b5563; line-height: 1.4; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+    </style>
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">⌨️ Vim 命令速查表</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">搜索Vim命令</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group mb-0">
+                        <label data-i18n="command_category">命令类别</label>
+                        <select id="category-select" onchange="Tool.search()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="all" data-i18n="all_categories">所有类别 (All)</option>
+                            <option value="navigation" data-i18n="navigation">导航 (Navigation)</option>
+                            <option value="insert" data-i18n="insert">插入 (Insert)</option>
+                            <option value="edit" data-i18n="edit">编辑 (Edit)</option>
+                            <option value="save" data-i18n="save">保存退出 (Save/Exit)</option>
+                            <option value="search" data-i18n="search_replace">搜索替换 (Search)</option>
+                            <option value="window" data-i18n="window">窗口操作 (Window)</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label data-i18n="search_keyword">关键词</label>
+                        <input type="text" id="search-input" onkeyup="Tool.search()" placeholder="输入命令或描述..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="results">Vim命令列表</h3>
+                    <span class="text-sm text-gray-500" id="count-display"></span>
+                </div>
+                <div id="results-container" class="command-grid">
+                    <!-- 命令将通过JS动态加载 -->
+                </div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于Vim命令速查表</h3>
+                <p data-i18n="intro_text">本工具提供常用Vim编辑器命令的参考，包括命令按键、描述和分类，点击命令可复制其按键。适用于Vim初学者学习和开发者日常查阅，方便快速查找和使用所需命令。更多详细内容可访问</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '⌨️ Vim Command Reference',
+                    search: 'Search Vim Commands',
+                    'command_category': 'Command Category',
+                    'search_keyword': 'Keyword',
+                    'all_categories': 'All Categories',
+                    'navigation': 'Navigation',
+                    'insert': 'Insert',
+                    'edit': 'Editing',
+                    'save': 'Save/Exit',
+                    'search_replace': 'Search/Replace',
+                    'window': 'Window',
+                    'results': 'Vim Commands List',
+                    'copied': 'Copied!',
+                    'intro_title': 'About Vim Command Reference',
+                    'intro_text': 'This tool provides reference for common Vim editor commands, including key combinations, descriptions and categories. Click a command to copy its keys. Suitable for Vim beginners and developers. For more details, visit .'
+                },
+                'zh-CN': {
+                    title: '⌨️ Vim 命令速查表',
+                    search: '搜索Vim命令',
+                    'command_category': '命令类别',
+                    'search_keyword': '关键词',
+                    'all_categories': '所有类别',
+                    'navigation': '导航',
+                    'insert': '插入',
+                    'edit': '编辑',
+                    'save': '保存退出',
+                    'search_replace': '搜索替换',
+                    'window': '窗口操作',
+                    'results': 'Vim命令列表',
+                    'copied': '已复制！',
+                    'intro_title': '关于Vim命令速查表',
+                    'intro_text': '本工具提供常用Vim编辑器命令的参考，包括命令按键、描述和分类，点击命令可复制其按键。适用于Vim初学者学习和开发者日常查阅，方便快速查找和使用所需命令。更多详细内容可访问>。'
+                },
+                'zh-TW': {
+                    title: '⌨️ Vim 命令速查表',
+                    search: '搜索Vim命令',
+                    'command_category': '命令類別',
+                    'search_keyword': '關鍵詞',
+                    'all_categories': '所有類別',
+                    'navigation': '導航',
+                    'insert': '插入',
+                    'edit': '編輯',
+                    'save': '儲存退出',
+                    'search_replace': '搜索替換',
+                    'window': '視窗操作',
+                    'results': 'Vim命令列表',
+                    'copied': '已複製！',
+                    'intro_title': '關於Vim命令速查表',
+                    'intro_text': '本工具提供常用Vim編輯器命令的參考，包括命令按鍵、描述和分類，點擊命令可複製其按鍵。適用於Vim初學者學習和開發者日常查閱，方便快速查找和使用所需命令。更多詳細內容可訪問>。'
+                },
+                'ja': {
+                    title: '⌨️ Vim コマンド早見表',
+                    search: 'Vimコマンド検索',
+                    'command_category': 'カテゴリー',
+                    'search_keyword': 'キーワード',
+                    'all_categories': 'すべてのカテゴリー',
+                    'navigation': 'ナビゲーション',
+                    'insert': '挿入',
+                    'edit': '編集',
+                    'save': '保存/終了',
+                    'search_replace': '検索/置換',
+                    'window': 'ウィンドウ操作',
+                    'results': 'Vimコマンド一覧',
+                    'copied': 'コピーしました！',
+                    'intro_title': 'Vimコマンド早見表について',
+                    'intro_text': 'このツールは、一般的なVimエディタのコマンドを提供します。コマンドをクリックするとキーをコピーできます。Vim初心者や開発者の日常的な参照に適しています。詳細は>をご覧ください。'
+                },
+                'ru': {
+                    title: '⌨️ Справочник команд Vim',
+                    search: 'Поиск команд Vim',
+                    'command_category': 'Категория команд',
+                    'search_keyword': 'Ключевое слово',
+                    'all_categories': 'Все категории',
+                    'navigation': 'Навигация',
+                    'insert': 'Вставка',
+                    'edit': 'Редактирование',
+                    'save': 'Сохранение/Выход',
+                    'search_replace': 'Поиск/Замена',
+                    'window': 'Окна',
+                    'results': 'Список команд Vim',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О справочнике команд Vim',
+                    'intro_text': 'Этот инструмент предоставляет справочник по популярным командам редактора Vim, включая сочетания клавиш, описания и категории. Нажмите на команду, чтобы скопировать её. Подходит для новичков и разработчиков. Дополнительная информация на >.'
+                }
+            },
+
+            // Vim命令数据
+            commandData: [
+                // 导航命令
+                { keys: "h", code: "h", name: "move left", category: "navigation", desc: "向左移动光标" },
+                { keys: "j", code: "j", name: "move down", category: "navigation", desc: "向下移动光标" },
+                { keys: "k", code: "k", name: "move up", category: "navigation", desc: "向上移动光标" },
+                { keys: "l", code: "l", name: "move right", category: "navigation", desc: "向右移动光标" },
+                { keys: "w", code: "w", name: "move to next word", category: "navigation", desc: "移动到下一个单词开头" },
+                { keys: "b", code: "b", name: "move to previous word", category: "navigation", desc: "移动到上一个单词开头" },
+                { keys: "e", code: "e", name: "move to end of word", category: "navigation", desc: "移动到单词结尾" },
+                { keys: "0", code: "0", name: "move to start of line", category: "navigation", desc: "移动到行首" },
+                { keys: "$", code: "$", name: "move to end of line", category: "navigation", desc: "移动到行尾" },
+                { keys: "gg", code: "gg", name: "move to start of file", category: "navigation", desc: "移动到文件开头" },
+                { keys: "G", code: "G", name: "move to end of file", category: "navigation", desc: "移动到文件结尾" },
+                { keys: "5G", code: "5G", name: "move to line 5", category: "navigation", desc: "移动到第5行" },
+                { keys: "Ctrl + f", code: "Ctrl + f", name: "scroll down", category: "navigation", desc: "向下翻页" },
+                { keys: "Ctrl + b", code: "Ctrl + b", name: "scroll up", category: "navigation", desc: "向上翻页" },
+                { keys: "Ctrl + d", code: "Ctrl + d", name: "scroll down half", category: "navigation", desc: "向下翻半页" },
+                { keys: "Ctrl + u", code: "Ctrl + u", name: "scroll up half", category: "navigation", desc: "向上翻半页" },
+
+                // 插入命令
+                { keys: "i", code: "i", name: "insert before cursor", category: "insert", desc: "在光标前插入" },
+                { keys: "I", code: "I", name: "insert at start of line", category: "insert", desc: "在行首插入" },
+                { keys: "a", code: "a", name: "insert after cursor", category: "insert", desc: "在光标后插入" },
+                { keys: "A", code: "A", name: "insert at end of line", category: "insert", desc: "在行尾插入" },
+                { keys: "o", code: "o", name: "open new line below", category: "insert", desc: "在下方新开一行插入" },
+                { keys: "O", code: "O", name: "open new line above", category: "insert", desc: "在上方新开一行插入" },
+                { keys: "s", code: "s", name: "delete char and insert", category: "insert", desc: "删除当前字符并插入" },
+                { keys: "S", code: "S", name: "delete line and insert", category: "insert", desc: "删除当前行并插入" },
+                { keys: "Esc", code: "Esc", name: "exit insert mode", category: "insert", desc: "退出插入模式" },
+
+                // 编辑命令
+                { keys: "x", code: "x", name: "delete current char", category: "edit", desc: "删除当前字符" },
+                { keys: "dd", code: "dd", name: "delete current line", category: "edit", desc: "删除当前行" },
+                { keys: "5dd", code: "5dd", name: "delete 5 lines", category: "edit", desc: "删除5行" },
+                { keys: "d$", code: "d$", name: "delete to end of line", category: "edit", desc: "删除到行尾" },
+                { keys: "d0", code: "d0", name: "delete to start of line", category: "edit", desc: "删除到行首" },
+                { keys: "dw", code: "dw", name: "delete word", category: "edit", desc: "删除单词" },
+                { keys: "yy", code: "yy", name: "yank current line", category: "edit", desc: "复制当前行" },
+                { keys: "5yy", code: "5yy", name: "yank 5 lines", category: "edit", desc: "复制5行" },
+                { keys: "p", code: "p", name: "paste after", category: "edit", desc: "在光标后粘贴" },
+                { keys: "P", code: "P", name: "paste before", category: "edit", desc: "在光标前粘贴" },
+                { keys: "u", code: "u", name: "undo", category: "edit", desc: "撤销" },
+                { keys: "Ctrl + r", code: "Ctrl + r", name: "redo", category: "edit", desc: "重做" },
+                { keys: "r", code: "r", name: "replace char", category: "edit", desc: "替换单个字符" },
+                { keys: "R", code: "R", name: "replace mode", category: "edit", desc: "进入替换模式" },
+                { keys: ">>", code: ">>", name: "indent line", category: "edit", desc: "增加缩进" },
+                { keys: "<<", code: "<<", name: "unindent line", category: "edit", desc: "减少缩进" },
+
+                // 保存退出命令
+                { keys: ":w", code: ":w", name: "save file", category: "save", desc: "保存文件" },
+                { keys: ":wq", code: ":wq", name: "save and quit", category: "save", desc: "保存并退出" },
+                { keys: ":q", code: ":q", name: "quit", category: "save", desc: "退出" },
+                { keys: ":q!", code: ":q!", name: "quit without saving", category: "save", desc: "不保存退出" },
+                { keys: ":x", code: ":x", name: "save and quit", category: "save", desc: "保存并退出（同:wq）" },
+                { keys: ":w filename", code: ":w filename", name: "save as", category: "save", desc: "另存为指定文件" },
+
+                // 搜索替换命令
+                { keys: "/pattern", code: "/pattern", name: "search forward", category: "search_replace", desc: "向前搜索pattern" },
+                { keys: "?pattern", code: "?pattern", name: "search backward", category: "search_replace", desc: "向后搜索pattern" },
+                { keys: "n", code: "n", name: "next match", category: "search_replace", desc: "下一个匹配项" },
+                { keys: "N", code: "N", name: "previous match", category: "search_replace", desc: "上一个匹配项" },
+                { keys: ":s/old/new", code: ":s/old/new", name: "replace first occurrence", category: "search_replace", desc: "替换当前行第一个old为new" },
+                { keys: ":s/old/new/g", code: ":s/old/new/g", name: "replace all in line", category: "search_replace", desc: "替换当前行所有old为new" },
+                { keys: ":%s/old/new/g", code: ":%s/old/new/g", name: "replace all in file", category: "search_replace", desc: "替换整个文件所有old为new" },
+                { keys: ":%s/old/new/gc", code: ":%s/old/new/gc", name: "replace with confirm", category: "search_replace", desc: "替换整个文件所有old为new，需确认" },
+
+                // 窗口操作命令
+                { keys: ":split", code: ":split", name: "horizontal split", category: "window", desc: "水平分割窗口" },
+                { keys: ":vsplit", code: ":vsplit", name: "vertical split", category: "window", desc: "垂直分割窗口" },
+                { keys: "Ctrl + w w", code: "Ctrl + w w", name: "cycle windows", category: "window", desc: "切换窗口" },
+                { keys: "Ctrl + w h", code: "Ctrl + w h", name: "move to left window", category: "window", desc: "移动到左侧窗口" },
+                { keys: "Ctrl + w j", code: "Ctrl + w j", name: "move to lower window", category: "window", desc: "移动到下方窗口" },
+                { keys: "Ctrl + w k", code: "Ctrl + w k", name: "move to upper window", category: "window", desc: "移动到上方窗口" },
+                { keys: "Ctrl + w l", code: "Ctrl + w l", name: "move to right window", category: "window", desc: "移动到右侧窗口" },
+                { keys: ":close", code: ":close", name: "close window", category: "window", desc: "关闭当前窗口" }
+            ],
+
+            // 初始化
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang') || 'zh-CN';
+                if (this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                this.changeLang();
+                this.renderCommands();
+            },
+
+            // 切换语言
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const translations = this.i18n[lang] || this.i18n['en'];
+                
+                // 更新页面元素
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (translations[key]) {
+                        el.innerHTML = translations[key];
+                    }
+                });
+
+                // 更新URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
+
+                // 重新渲染命令
+                this.renderCommands();
+            },
+
+            // 搜索命令
+            search: function() {
+                this.renderCommands();
+            },
+
+            // 渲染命令列表
+            renderCommands: function() {
+                const container = document.getElementById('results-container');
+                const category = document.getElementById('category-select').value;
+                const keyword = document.getElementById('search-input').value.toLowerCase();
+                const currentLang = document.getElementById('lang-selector').value;
+                
+                let filtered = this.commandData;
+                
+                // 按类别过滤
+                if (category !== 'all') {
+                    filtered = filtered.filter(item => item.category === category);
+                }
+                
+                // 按关键词过滤
+                if (keyword) {
+                    filtered = filtered.filter(item => 
+                        item.keys.toLowerCase().includes(keyword) || 
+                        item.name.toLowerCase().includes(keyword) ||
+                        item.desc.toLowerCase().includes(keyword)
+                    );
+                }
+                
+                // 更新计数
+                document.getElementById('count-display').textContent = `${filtered.length} ${this.i18n[currentLang]['results'].split(' ')[1] || ''}`;
+                
+                // 渲染命令卡片
+                container.innerHTML = '';
+                filtered.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'command-card';
+                    card.innerHTML = `
+                        <div class="command-keys">${item.keys}</div>
+                        <div class="command-desc">${item.desc}</div>
+                    `;
+                    
+                    // 点击复制功能
+                    card.addEventListener('click', () => {
+                        navigator.clipboard.writeText(item.code).then(() => {
+                            const notification = document.getElementById('copy-notification');
+                            notification.style.opacity = '1';
+                            setTimeout(() => {
+                                notification.style.opacity = '0';
+                            }, 2000);
+                        });
+                    });
+                    
+                    container.appendChild(card);
+                });
+            }
+        };
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', () => Tool.init());
+    </script>
+</body>
+</html>

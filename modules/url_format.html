@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="URL Tools">
+    <meta name="icon" content="🔗">
+    <title>URL格式化工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 150px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .param-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .param-table th, .param-table td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+        .param-table th { background-color: #f8fafc; font-weight: 600; }
+        .param-table tr:nth-child(even) { background-color: #f8fafc; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="url-formatter-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="UrlTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔗 URL格式化工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_url">输入URL</h3>
+                <div class="form-group">
+                    <input type="text" id="input_url" placeholder="请输入URL（如https://example.com/path?name=value&id=123）" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    <p class="language-note" data-i18n="url_note">支持包含查询参数的完整URL</p>
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="options">格式化选项</h3>
+                
+                <div class="options-grid">
+                    <div class="form-group">
+                        <label data-i18n="param_sort">参数排序</label>
+                        <select id="param_sort" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="none" data-i18n="no_sort">不排序</option>
+                            <option value="asc" data-i18n="ascending">按字母升序</option>
+                            <option value="desc" data-i18n="descending">按字母降序</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="encoding">编码方式</label>
+                        <select id="encoding" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="encode" data-i18n="url_encode">URL编码</option>
+                            <option value="decode" data-i18n="url_decode">URL解码</option>
+                            <option value="both" data-i18n="smart" selected>智能处理</option>
+                        </select>
+                        <p class="language-note" data-i18n="encoding_note">处理URL中的特殊字符</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="UrlTool.formatUrl()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_format">格式化URL</button>
+                <button onclick="UrlTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">格式化结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="param_count">参数数量：</span>
+                        <span class="stat-value" id="param_count">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="process_time">处理耗时：</span>
+                        <span class="stat-value" id="process_time">0ms</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label data-i18n="formatted_url">格式化URL</label>
+                    <textarea id="formatted_url" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700" placeholder="格式化后的URL将显示在这里..."></textarea>
+                </div>
+                
+                <h4 class="text-md font-medium mt-6 mb-3 text-gray-700" data-i18n="param_list">参数列表</h4>
+                <div id="param_table_container" class="overflow-x-auto">
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="param_name">参数名</th>
+                                <th data-i18n="param_value">参数值</th>
+                            </tr>
+                        </thead>
+                        <tbody id="param_table_body">
+                            <tr>
+                                <td colspan="2" class="text-center text-gray-400" data-i18n="no_params">无参数</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <button onclick="UrlTool.copyResult()" class="w-full mt-4 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制格式化URL</button>
+            </div>
+
+            <!-- History -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="recent_history">最近处理</h3>
+                <div id="url_history" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[60px]">
+                    <p data-i18n="no_history" class="text-gray-400 italic text-sm">暂无处理记录</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">本工具提供URL格式化和参数处理功能，可对URL进行规范化、参数排序和编码转换。能将冗长混乱的URL转换为清晰易读的格式，支持URL编码与解码，以及查询参数的排序整理。适用于开发者调试API、SEO优化人员分析链接结构和需要处理URL的用户。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const UrlTool = {
+            i18n: {
+                'en': {
+                    title: '🔗 URL Formatter',
+                    input_url: 'Input URL',
+                    url_note: 'Supports full URLs with query parameters',
+                    options: 'Format Options',
+                    param_sort: 'Parameter Sorting',
+                    no_sort: 'No sorting',
+                    ascending: 'Alphabetical ascending',
+                    descending: 'Alphabetical descending',
+                    encoding: 'Encoding Method',
+                    url_encode: 'URL encode',
+                    url_decode: 'URL decode',
+                    smart: 'Smart processing',
+                    encoding_note: 'Handle special characters in URL',
+                    btn_format: 'Format URL',
+                    btn_clear: 'Clear All',
+                    results: 'Formatting Results',
+                    param_count: 'Parameter Count:',
+                    process_time: 'Processing Time:',
+                    formatted_url: 'Formatted URL',
+                    param_list: 'Parameter List',
+                    param_name: 'Parameter Name',
+                    param_value: 'Parameter Value',
+                    no_params: 'No parameters',
+                    btn_copy: 'Copy Formatted URL',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool provides URL formatting and parameter processing functions, including URL normalization, parameter sorting, and encoding conversion. It can convert long and messy URLs into clear and readable formats, supports URL encoding and decoding, and sorts query parameters. Suitable for developers debugging APIs, SEO optimizers analyzing link structures, and users needing to process URLs.',
+                    recent_history: 'Recent Processings',
+                    no_history: 'No processing history yet',
+                    please_enter_url: 'Please enter a URL first',
+                    invalid_url: 'Invalid URL format',
+                    copied: 'Copied!'
+                },
+                'zh-CN': {
+                    title: '🔗 URL格式化工具',
+                    input_url: '输入URL',
+                    url_note: '支持包含查询参数的完整URL',
+                    options: '格式化选项',
+                    param_sort: '参数排序',
+                    no_sort: '不排序',
+                    ascending: '按字母升序',
+                    descending: '按字母降序',
+                    encoding: '编码方式',
+                    url_encode: 'URL编码',
+                    url_decode: 'URL解码',
+                    smart: '智能处理',
+                    encoding_note: '处理URL中的特殊字符',
+                    btn_format: '格式化URL',
+                    btn_clear: '清空所有',
+                    results: '格式化结果',
+                    param_count: '参数数量：',
+                    process_time: '处理耗时：',
+                    formatted_url: '格式化URL',
+                    param_list: '参数列表',
+                    param_name: '参数名',
+                    param_value: '参数值',
+                    no_params: '无参数',
+                    btn_copy: '复制格式化URL',
+                    intro_title: '关于本工具',
+                    intro_text: '本工具提供URL格式化和参数处理功能，可对URL进行规范化、参数排序和编码转换。能将冗长混乱的URL转换为清晰易读的格式，支持URL编码与解码，以及查询参数的排序整理。适用于开发者调试API、SEO优化人员分析链接结构和需要处理URL的用户。',
+                    recent_history: '最近处理',
+                    no_history: '暂无处理记录',
+                    please_enter_url: '请先输入URL',
+                    invalid_url: 'URL格式无效',
+                    copied: '已复制！'
+                },
+                'zh-TW': {
+                    title: '🔗 URL格式化工具',
+                    input_url: '輸入URL',
+                    url_note: '支援包含查詢參數的完整URL',
+                    options: '格式化選項',
+                    param_sort: '參數排序',
+                    no_sort: '不排序',
+                    ascending: '按字母升序',
+                    descending: '按字母降序',
+                    encoding: '編碼方式',
+                    url_encode: 'URL編碼',
+                    url_decode: 'URL解碼',
+                    smart: '智能處理',
+                    encoding_note: '處理URL中的特殊字元',
+                    btn_format: '格式化URL',
+                    btn_clear: '清空所有',
+                    results: '格式化結果',
+                    param_count: '參數數量：',
+                    process_time: '處理耗時：',
+                    formatted_url: '格式化URL',
+                    param_list: '參數列表',
+                    param_name: '參數名',
+                    param_value: '參數值',
+                    no_params: '無參數',
+                    btn_copy: '複製格式化URL',
+                    intro_title: '關於本工具',
+                    intro_text: '本工具提供URL格式化和參數處理功能，可對URL進行規範化、參數排序和編碼轉換。能將冗長混亂的URL轉換為清晰易讀的格式，支援URL編碼與解碼，以及查詢參數的排序整理。適用於開發者調試API、SEO優化人員分析鏈接結構和需要處理URL的用戶。',
+                    recent_history: '最近處理',
+                    no_history: '暫無處理記錄',
+                    please_enter_url: '請先輸入URL',
+                    invalid_url: 'URL格式無效',
+                    copied: '已複製！'
+                },
+                'ja': {
+                    title: '🔗 URLフォーマッター',
+                    input_url: 'URLを入力',
+                    url_note: 'クエリパラメータを含む完全なURLをサポート',
+                    options: 'フォーマットオプション',
+                    param_sort: 'パラメータの並び替え',
+                    no_sort: '並び替えなし',
+                    ascending: 'アルファベット順（昇順）',
+                    descending: 'アルファベット順（降順）',
+                    encoding: 'エンコーディング方式',
+                    url_encode: 'URLエンコード',
+                    url_decode: 'URLデコード',
+                    smart: 'スマート処理',
+                    encoding_note: 'URL内の特殊文字を処理',
+                    btn_format: 'URLをフォーマット',
+                    btn_clear: 'すべてクリア',
+                    results: 'フォーマット結果',
+                    param_count: 'パラメータ数：',
+                    process_time: '処理時間：',
+                    formatted_url: 'フォーマット済みURL',
+                    param_list: 'パラメータ一覧',
+                    param_name: 'パラメータ名',
+                    param_value: 'パラメータ値',
+                    no_params: 'パラメータなし',
+                    btn_copy: 'フォーマット済みURLをコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このツールはURLのフォーマットとパラメータ処理機能を提供し、URLの正規化、パラメータの並び替え、エンコーディング変換を行うことができます。長く混乱したURLを明確で読みやすい形式に変換し、URLのエンコードとデコード、クエリパラメータの並び替えをサポートします。APIのデバッグを行う開発者、リンク構造を分析するSEO最適化担当者、URLを処理する必要があるユーザーに適しています。',
+                    recent_history: '最近の処理',
+                    no_history: '処理履歴はまだありません',
+                    please_enter_url: 'まずURLを入力してください',
+                    invalid_url: '無効なURL形式',
+                    copied: 'コピーしました！'
+                },
+                'ru': {
+                    title: '🔗 Форматтер URL',
+                    input_url: 'Введите URL',
+                    url_note: 'Поддерживает полные URL с параметрами запроса',
+                    options: 'Параметры форматирования',
+                    param_sort: 'Сортировка параметров',
+                    no_sort: 'Без сортировки',
+                    ascending: 'По алфавиту (по возрастанию)',
+                    descending: 'По алфавиту (по убыванию)',
+                    encoding: 'Метод кодировки',
+                    url_encode: 'URL-кодировка',
+                    url_decode: 'URL-декодировка',
+                    smart: 'Интеллектуальная обработка',
+                    encoding_note: 'Обрабатывает специальные символы в URL',
+                    btn_format: 'Отформатировать URL',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты форматирования',
+                    param_count: 'Количество параметров:',
+                    process_time: 'Время обработки:',
+                    formatted_url: 'Отформатированный URL',
+                    param_list: 'Список параметров',
+                    param_name: 'Имя параметра',
+                    param_value: 'Значение параметра',
+                    no_params: 'Нет параметров',
+                    btn_copy: 'Скопировать отформатированный URL',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Этот инструмент предоставляет функции форматирования URL и обработки параметров, включая нормализацию URL, сортировку параметров и преобразование кодировки. Он может преобразовать длинные и неупорядоченные URL в понятные и читаемые форматы, поддерживает кодировку и декодировку URL, а также сортировку параметров запроса. Подходит для разработчиков, отлаживающих API, специалистов по SEO, анализирующих структуру ссылок, и пользователей, которым нужно обрабатывать URL.',
+                    recent_history: 'Недавние обработки',
+                    no_history: 'Истории обработки пока нет',
+                    please_enter_url: 'Пожалуйста, сначала введите URL',
+                    invalid_url: 'Неверный формат URL',
+                    copied: 'Скопировано!'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false);
+                } else {
+                    this.changeLang(false);
+                }
+
+                this.loadUrlHistory();
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                document.title = i18nData['title'];
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang] && this.i18n[lang][key] ? this.i18n[lang][key] : this.i18n['en'][key];
+            },
+
+            isValidUrl: function(url) {
+                try {
+                    new URL(url);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            },
+
+            formatUrl: function() {
+                const inputUrl = document.getElementById('input_url').value.trim();
+                const sortOption = document.getElementById('param_sort').value;
+                const encodingOption = document.getElementById('encoding').value;
+                
+                if (!inputUrl) {
+                    alert(this.getI18nText('please_enter_url'));
+                    return;
+                }
+                
+                if (!this.isValidUrl(inputUrl)) {
+                    alert(this.getI18nText('invalid_url'));
+                    return;
+                }
+
+                const startTime = performance.now();
+                
+                try {
+                    const url = new URL(inputUrl);
+                    let params = new URLSearchParams(url.search);
+                    let paramArray = Array.from(params.entries());
+                    
+                    // 处理编码
+                    paramArray = paramArray.map(([key, value]) => {
+                        if (encodingOption === 'decode' || encodingOption === 'both') {
+                            try {
+                                key = decodeURIComponent(key);
+                                value = decodeURIComponent(value);
+                            } catch (e) {
+                                // 保留原始值如果解码失败
+                            }
+                        }
+                        
+                        if (encodingOption === 'encode') {
+                            key = encodeURIComponent(key);
+                            value = encodeURIComponent(value);
+                        }
+                        
+                        return [key, value];
+                    });
+                    
+                    // 处理排序
+                    if (sortOption === 'asc') {
+                        paramArray.sort((a, b) => a[0].localeCompare(b[0]));
+                    } else if (sortOption === 'desc') {
+                        paramArray.sort((a, b) => b[0].localeCompare(a[0]));
+                    }
+                    
+                    // 构建新的查询字符串
+                    const newParams = new URLSearchParams();
+                    paramArray.forEach(([key, value]) => {
+                        newParams.append(key, value);
+                    });
+                    
+                    // 构建格式化的URL
+                    url.search = newParams.toString();
+                    const formattedUrl = url.toString();
+                    
+                    // 更新结果
+                    document.getElementById('formatted_url').value = formattedUrl;
+                    document.getElementById('param_count').textContent = paramArray.length;
+                    
+                    // 更新参数表格
+                    this.updateParamTable(paramArray);
+                    
+                    // 记录处理时间
+                    const endTime = performance.now();
+                    const processTime = Math.round(endTime - startTime);
+                    document.getElementById('process_time').textContent = processTime + 'ms';
+                    
+                    // 保存到历史记录
+                    this.saveToHistory(inputUrl, formattedUrl, paramArray.length);
+                } catch (e) {
+                    alert(this.getI18nText('invalid_url') + ': ' + e.message);
+                    return;
+                }
+            },
+
+            updateParamTable: function(params) {
+                const tableBody = document.getElementById('param_table_body');
+                
+                if (params.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="2" class="text-center text-gray-400" data-i18n="no_params">${this.getI18nText('no_params')}</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                params.forEach(([key, value]) => {
+                    html += `
+                        <tr>
+                            <td>${key}</td>
+                            <td>${value}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableBody.innerHTML = html;
+            },
+
+            clearAll: function() {
+                document.getElementById('input_url').value = '';
+                document.getElementById('formatted_url').value = '';
+                document.getElementById('param_count').textContent = '0';
+                document.getElementById('process_time').textContent = '0ms';
+                this.updateParamTable([]);
+            },
+
+            copyResult: function() {
+                const resultText = document.getElementById('formatted_url');
+                resultText.select();
+                document.execCommand('copy');
+                
+                const originalText = this.getI18nText('btn_copy');
+                const copyBtn = document.querySelector('[data-i18n="btn_copy"]');
+                copyBtn.textContent = this.getI18nText('copied');
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            },
+
+            saveToHistory: function(original, formatted, paramCount) {
+                let history = JSON.parse(localStorage.getItem('urlFormatterHistory') || '[]');
+                
+                const entry = {
+                    id: Date.now(),
+                    original: original.substring(0, 50) + (original.length > 50 ? '...' : ''),
+                    formatted: formatted.substring(0, 50) + (formatted.length > 50 ? '...' : ''),
+                    params: paramCount,
+                    timestamp: new Date().toLocaleString()
+                };
+                
+                history.unshift(entry);
+                if (history.length > 10) history = history.slice(0, 10);
+                
+                localStorage.setItem('urlFormatterHistory', JSON.stringify(history));
+                this.loadUrlHistory();
+            },
+
+            loadUrlHistory: function() {
+                const historyContainer = document.getElementById('url_history');
+                const history = JSON.parse(localStorage.getItem('urlFormatterHistory') || '[]');
+                
+                if (history.length === 0) {
+                    historyContainer.innerHTML = `<p data-i18n="no_history" class="text-gray-400 italic text-sm">${this.getI18nText('no_history')}</p>`;
+                    return;
+                }
+                
+                let html = '<div class="space-y-2">';
+                history.forEach(entry => {
+                    html += `
+                        <div class="p-2 bg-white rounded border border-gray-100 text-sm">
+                            <div class="text-gray-700 font-medium truncate">${entry.original}</div>
+                            <div class="flex justify-between items-center mt-1">
+                                <div class="text-gray-600 text-xs truncate">${entry.formatted}</div>
+                                <div class="text-gray-400 text-xs">${entry.params} ${this.getI18nText('param_name')} · ${entry.timestamp}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                historyContainer.innerHTML = html;
+            }
+        };
+
+        // Initialize the tool when the page loads
+        window.onload = function() {
+            UrlTool.init();
+        };
+    </script>
+</body>
+</html>

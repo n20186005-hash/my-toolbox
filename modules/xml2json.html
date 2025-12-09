@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Format Tools">
+    <meta name="icon" content="🔄">
+    <title>XML与JSON互转工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 150px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .conversion-tag { display: inline-block; background-color: #dbeafe; padding: 4px 8px; border-radius: 4px; color: #1e40af; font-weight: bold; font-size: 0.85rem; margin: 2px; border: 1px solid #bfdbfe; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="xml-json-converter">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="ConverterTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔄 XML与JSON互转工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_text">输入内容</h3>
+                <div class="form-group">
+                    <textarea id="input_content" placeholder="请在此粘贴XML或JSON内容..." class="focus:ring-2 focus:ring-green-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="options">转换选项</h3>
+                
+                <div class="options-grid">
+                    <div class="form-group">
+                        <label data-i18n="conversion_direction">转换方向</label>
+                        <select id="conversion_direction" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="xml2json" data-i18n="xml_to_json">XML到JSON</option>
+                            <option value="json2xml" data-i18n="json_to_xml">JSON到XML</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="indentation">缩进空格数</label>
+                        <select id="indentation" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="2">2</option>
+                            <option value="4" selected>4</option>
+                            <option value="8">8</option>
+                        </select>
+                        <p class="language-note" data-i18n="indentation_note">格式化输出时使用的缩进空格数</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="ConverterTool.convert()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_convert">转换</button>
+                <button onclick="ConverterTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">转换结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="char_count">字符数：</span>
+                        <span class="stat-value" id="char_count">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="conversion_time">转换耗时：</span>
+                        <span class="stat-value" id="conversion_time">0ms</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="result_text">结果内容</label>
+                    <textarea id="result_text" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700" placeholder="转换后的内容将显示在这里..."></textarea>
+                </div>
+                <button onclick="ConverterTool.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- Conversion History -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="recent_conversions">最近转换</h3>
+                <div id="conversion_history" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[60px]">
+                    <p data-i18n="no_history" class="text-gray-400 italic text-sm">暂无转换记录</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">本工具提供XML与JSON格式之间的相互转换功能，支持自定义缩进格式。可将XML标记语言转换为JSON数据格式，也能将JSON数据转换为结构化的XML格式，保留原始数据的层级结构和内容。适用于开发者、数据分析师和需要处理不同数据格式的用户。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ConverterTool = {
+            i18n: {
+                'en': {
+                    title: '🔄 XML-JSON Converter',
+                    input_text: 'Input Content',
+                    options: 'Conversion Options',
+                    conversion_direction: 'Conversion Direction',
+                    xml_to_json: 'XML to JSON',
+                    json_to_xml: 'JSON to XML',
+                    indentation: 'Indentation Spaces',
+                    indentation_note: 'Number of spaces for formatted output',
+                    btn_convert: 'Convert',
+                    btn_clear: 'Clear All',
+                    results: 'Conversion Results',
+                    char_count: 'Character Count:',
+                    conversion_time: 'Conversion Time:',
+                    result_text: 'Result Content',
+                    btn_copy: 'Copy Result',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool converts between XML and JSON formats with customizable indentation. It can convert XML markup language to JSON data format and vice versa, preserving the original data structure and content. Suitable for developers, data analysts, and users needing to handle different data formats.',
+                    recent_conversions: 'Recent Conversions',
+                    no_history: 'No conversion history yet',
+                    please_enter_text: 'Please enter some content first',
+                    invalid_format: 'Invalid format, please check your input',
+                    copied: 'Copied!'
+                },
+                'zh-CN': {
+                    title: '🔄 XML与JSON互转工具',
+                    input_text: '输入内容',
+                    options: '转换选项',
+                    conversion_direction: '转换方向',
+                    xml_to_json: 'XML到JSON',
+                    json_to_xml: 'JSON到XML',
+                    indentation: '缩进空格数',
+                    indentation_note: '格式化输出时使用的缩进空格数',
+                    btn_convert: '转换',
+                    btn_clear: '清空所有',
+                    results: '转换结果',
+                    char_count: '字符数：',
+                    conversion_time: '转换耗时：',
+                    result_text: '结果内容',
+                    btn_copy: '复制结果',
+                    intro_title: '关于本工具',
+                    intro_text: '本工具提供XML与JSON格式之间的相互转换功能，支持自定义缩进格式。可将XML标记语言转换为JSON数据格式，也能将JSON数据转换为结构化的XML格式，保留原始数据的层级结构和内容。适用于开发者、数据分析师和需要处理不同数据格式的用户。',
+                    recent_conversions: '最近转换',
+                    no_history: '暂无转换记录',
+                    please_enter_text: '请先输入一些内容',
+                    invalid_format: '格式无效，请检查输入内容',
+                    copied: '已复制！'
+                },
+                'zh-TW': {
+                    title: '🔄 XML與JSON互轉工具',
+                    input_text: '輸入內容',
+                    options: '轉換選項',
+                    conversion_direction: '轉換方向',
+                    xml_to_json: 'XML到JSON',
+                    json_to_xml: 'JSON到XML',
+                    indentation: '縮進空格數',
+                    indentation_note: '格式化輸出時使用的縮進空格數',
+                    btn_convert: '轉換',
+                    btn_clear: '清空所有',
+                    results: '轉換結果',
+                    char_count: '字符數：',
+                    conversion_time: '轉換耗時：',
+                    result_text: '結果內容',
+                    btn_copy: '複製結果',
+                    intro_title: '關於本工具',
+                    intro_text: '本工具提供XML與JSON格式之間的相互轉換功能，支援自定義縮進格式。可將XML標記語言轉換為JSON數據格式，也能將JSON數據轉換為結構化的XML格式，保留原始數據的層級結構和內容。適用於開發者、數據分析師和需要處理不同數據格式的用戶。',
+                    recent_conversions: '最近轉換',
+                    no_history: '暫無轉換記錄',
+                    please_enter_text: '請先輸入一些內容',
+                    invalid_format: '格式無效，請檢查輸入內容',
+                    copied: '已複製！'
+                },
+                'ja': {
+                    title: '🔄 XML-JSON変換ツール',
+                    input_text: 'コンテンツを入力',
+                    options: '変換オプション',
+                    conversion_direction: '変換方向',
+                    xml_to_json: 'XMLからJSON',
+                    json_to_xml: 'JSONからXML',
+                    indentation: 'インデントスペース数',
+                    indentation_note: 'フォーマット出力に使用するスペース数',
+                    btn_convert: '変換',
+                    btn_clear: 'すべてクリア',
+                    results: '変換結果',
+                    char_count: '文字数：',
+                    conversion_time: '変換時間：',
+                    result_text: '結果コンテンツ',
+                    btn_copy: '結果をコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このツールはXMLとJSON形式の相互変換機能を提供し、インデント形式をカスタマイズできます。XMLマークアップ言語をJSONデータ形式に変換したり、JSONデータを構造化されたXML形式に変換したりすることができ、元のデータの階層構造と内容を保持します。開発者、データアナリスト、および異なるデータ形式を処理する必要があるユーザーに適しています。',
+                    recent_conversions: '最近の変換',
+                    no_history: '変換履歴はまだありません',
+                    please_enter_text: 'まずコンテンツを入力してください',
+                    invalid_format: '形式が無効です。入力内容を確認してください',
+                    copied: 'コピーしました！'
+                },
+                'ru': {
+                    title: '🔄 Конвертер XML-JSON',
+                    input_text: 'Входное содержимое',
+                    options: 'Параметры преобразования',
+                    conversion_direction: 'Направление преобразования',
+                    xml_to_json: 'XML в JSON',
+                    json_to_xml: 'JSON в XML',
+                    indentation: 'Количество пробелов для отступа',
+                    indentation_note: 'Количество пробелов для форматированного вывода',
+                    btn_convert: 'Преобразовать',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты преобразования',
+                    char_count: 'Количество символов:',
+                    conversion_time: 'Время преобразования:',
+                    result_text: 'Результирующее содержимое',
+                    btn_copy: 'Скопировать результат',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Этот инструмент выполняет преобразование между форматами XML и JSON с настраиваемым отступом. Он может преобразовать язык разметки XML в формат данных JSON и наоборот, сохраняя структуру и содержимое исходных данных. Подходит для разработчиков, аналитиков данных и пользователей, которым нужно работать с разными форматами данных.',
+                    recent_conversions: 'Недавние преобразования',
+                    no_history: 'Истории преобразований пока нет',
+                    please_enter_text: 'Пожалуйста, сначала введите содержимое',
+                    invalid_format: 'Неверный формат, проверьте входные данные',
+                    copied: 'Скопировано!'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false);
+                } else {
+                    this.changeLang(false);
+                }
+
+                this.loadConversionHistory();
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                document.title = i18nData['title'];
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang] && this.i18n[lang][key] ? this.i18n[lang][key] : this.i18n['en'][key];
+            },
+
+            convert: function() {
+                const input = document.getElementById('input_content').value.trim();
+                const direction = document.getElementById('conversion_direction').value;
+                const indent = parseInt(document.getElementById('indentation').value);
+                
+                if (!input) {
+                    alert(this.getI18nText('please_enter_text'));
+                    return;
+                }
+
+                let result = '';
+                const startTime = performance.now();
+                
+                try {
+                    if (direction === 'xml2json') {
+                        // XML to JSON conversion (simplified example)
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(input, "text/xml");
+                        result = JSON.stringify(this.xmlToJson(xmlDoc), null, indent);
+                    } else {
+                        // JSON to XML conversion (simplified example)
+                        const jsonObj = JSON.parse(input);
+                        result = this.jsonToXml(jsonObj, indent);
+                    }
+                } catch (e) {
+                    alert(this.getI18nText('invalid_format') + ': ' + e.message);
+                    return;
+                }
+
+                const endTime = performance.now();
+                const conversionTime = Math.round(endTime - startTime);
+                
+                document.getElementById('result_text').value = result;
+                document.getElementById('char_count').textContent = result.length;
+                document.getElementById('conversion_time').textContent = conversionTime + 'ms';
+                
+                this.saveToHistory(input, result, direction);
+            },
+
+            // Simplified XML to JSON conversion
+            xmlToJson: function(xml) {
+                let obj = {};
+                
+                if (xml.nodeType === 1) {
+                    if (xml.attributes.length > 0) {
+                        obj["@attributes"] = {};
+                        for (let j = 0; j < xml.attributes.length; j++) {
+                            const attribute = xml.attributes.item(j);
+                            obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
+                        }
+                    }
+                } else if (xml.nodeType === 3) {
+                    obj = xml.nodeValue;
+                }
+                
+                if (xml.hasChildNodes()) {
+                    for (let i = 0; i < xml.childNodes.length; i++) {
+                        const item = xml.childNodes.item(i);
+                        const nodeName = item.nodeName;
+                        if (typeof(obj[nodeName]) === "undefined") {
+                            obj[nodeName] = this.xmlToJson(item);
+                        } else {
+                            if (typeof(obj[nodeName].push) === "undefined") {
+                                const old = obj[nodeName];
+                                obj[nodeName] = [];
+                                obj[nodeName].push(old);
+                            }
+                            obj[nodeName].push(this.xmlToJson(item));
+                        }
+                    }
+                }
+                return obj;
+            },
+
+            // Simplified JSON to XML conversion
+            jsonToXml: function(obj, indent) {
+                const indentStr = ' '.repeat(indent);
+                let xml = '<?xml version="1.0"?>\n';
+                xml += this.buildXmlFromJson(obj, 'root', 0, indentStr);
+                return xml;
+            },
+
+            buildXmlFromJson: function(obj, parentTag, level, indentStr) {
+                let xml = '';
+                const currentIndent = indentStr.repeat(level);
+                const nextLevel = level + 1;
+                
+                if (typeof obj === 'object' && obj !== null) {
+                    xml += currentIndent + '<' + parentTag + '>\n';
+                    
+                    for (const key in obj) {
+                        if (obj.hasOwnProperty(key)) {
+                            xml += this.buildXmlFromJson(obj[key], key, nextLevel, indentStr);
+                        }
+                    }
+                    
+                    xml += currentIndent + '</' + parentTag + '>\n';
+                } else {
+                    xml += currentIndent + '<' + parentTag + '>' + obj + '</' + parentTag + '>\n';
+                }
+                
+                return xml;
+            },
+
+            clearAll: function() {
+                document.getElementById('input_content').value = '';
+                document.getElementById('result_text').value = '';
+                document.getElementById('char_count').textContent = '0';
+                document.getElementById('conversion_time').textContent = '0ms';
+            },
+
+            copyResult: function() {
+                const resultText = document.getElementById('result_text');
+                resultText.select();
+                document.execCommand('copy');
+                
+                const originalText = this.getI18nText('btn_copy');
+                const copyBtn = document.querySelector('[data-i18n="btn_copy"]');
+                copyBtn.textContent = this.getI18nText('copied');
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            },
+
+            saveToHistory: function(input, result, direction) {
+                let history = JSON.parse(localStorage.getItem('xmlJsonConversionHistory') || '[]');
+                const directionText = direction === 'xml2json' ? 
+                    this.getI18nText('xml_to_json') : this.getI18nText('json_to_xml');
+                
+                const entry = {
+                    id: Date.now(),
+                    direction: directionText,
+                    input: input.substring(0, 50) + (input.length > 50 ? '...' : ''),
+                    timestamp: new Date().toLocaleString()
+                };
+                
+                history.unshift(entry);
+                if (history.length > 10) history = history.slice(0, 10);
+                
+                localStorage.setItem('xmlJsonConversionHistory', JSON.stringify(history));
+                this.loadConversionHistory();
+            },
+
+            loadConversionHistory: function() {
+                const historyContainer = document.getElementById('conversion_history');
+                const history = JSON.parse(localStorage.getItem('xmlJsonConversionHistory') || '[]');
+                
+                if (history.length === 0) {
+                    historyContainer.innerHTML = `<p data-i18n="no_history" class="text-gray-400 italic text-sm">${this.getI18nText('no_history')}</p>`;
+                    return;
+                }
+                
+                let html = '<div class="space-y-2">';
+                history.forEach(entry => {
+                    html += `
+                        <div class="p-2 bg-white rounded border border-gray-100 text-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700 font-medium">${entry.direction}</span>
+                                <span class="text-gray-400 text-xs">${entry.timestamp}</span>
+                            </div>
+                            <div class="text-gray-600 mt-1 truncate">${entry.input}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                historyContainer.innerHTML = html;
+            }
+        };
+
+        // Initialize the tool when the page loads
+        window.onload = function() {
+            ConverterTool.init();
+        };
+    </script>
+</body>
+</html>

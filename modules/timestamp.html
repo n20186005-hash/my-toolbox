@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Time Tools">
+    <meta name="icon" content="⏱️">
+    <title>时间戳转换|格式化工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 100px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .format-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+        .format-option { padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .format-option:hover { background-color: #f1f5f9; }
+        .format-option.selected { background-color: #dbeafe; border-color: #93c5fd; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+        .conversion-direction { display: flex; align-items: center; justify-content: center; margin: 20px 0; }
+        .swap-btn { background: #94a3b8; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0 10px; }
+        .swap-btn:hover { background: #64748b; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="timestamp-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="TimestampTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">⏱️ 时间戳转换|格式化工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="timestamp_input">时间戳输入</h3>
+                <div class="form-group">
+                    <input type="text" id="timestamp_input" placeholder="请输入时间戳（秒或毫秒）..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                    <p class="language-note" data-i18n="timestamp_example">示例: 1620000000 或 1620000000000</p>
+                </div>
+            </div>
+
+            <div class="conversion-direction">
+                <div data-i18n="timestamp">时间戳</div>
+                <div class="swap-btn" onclick="TimestampTool.swapConversion()" data-i18n="swap">↔️</div>
+                <div data-i18n="datetime">日期时间</div>
+            </div>
+
+            <!-- DateTime Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="datetime_input">日期时间输入</h3>
+                <div class="form-group">
+                    <input type="datetime-local" id="datetime_input" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    <p class="language-note" data-i18n="datetime_example">选择日期和时间</p>
+                </div>
+            </div>
+
+            <!-- Format Options -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="format_options">输出格式</h3>
+                <div class="format-options" id="format_options">
+                    <div class="format-option selected" data-format="YYYY-MM-DD HH:mm:ss" onclick="TimestampTool.selectFormat(this)">YYYY-MM-DD HH:mm:ss</div>
+                    <div class="format-option" data-format="YYYY/MM/DD HH:mm:ss" onclick="TimestampTool.selectFormat(this)">YYYY/MM/DD HH:mm:ss</div>
+                    <div class="format-option" data-format="DD-MM-YYYY HH:mm:ss" onclick="TimestampTool.selectFormat(this)">DD-MM-YYYY HH:mm:ss</div>
+                    <div class="format-option" data-format="MM/DD/YYYY hh:mm:ss A" onclick="TimestampTool.selectFormat(this)">MM/DD/YYYY hh:mm:ss A</div>
+                    <div class="format-option" data-format="YYYY年MM月DD日 HH:mm:ss" onclick="TimestampTool.selectFormat(this)">YYYY年MM月DD日 HH:mm:ss</div>
+                    <div class="format-option" data-format="timestamp_seconds" onclick="TimestampTool.selectFormat(this)">时间戳(秒)</div>
+                    <div class="format-option" data-format="timestamp_milliseconds" onclick="TimestampTool.selectFormat(this)">时间戳(毫秒)</div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="TimestampTool.convert()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_convert">转换</button>
+                <button onclick="TimestampTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+                <button onclick="TimestampTool.useCurrentTime()" class="flex-1 bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700 transition shadow-md" data-i18n="btn_current_time">当前时间</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">转换结果</h3>
+                
+                <div class="form-group">
+                    <input type="text" id="result" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700" placeholder="转换结果将显示在这里...">
+                </div>
+                <button onclick="TimestampTool.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- Recent Conversions -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="recent_conversions">最近转换</h3>
+                <div id="conversion_history" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[60px]">
+                    <p data-i18n="no_history" class="text-gray-400 italic text-sm">暂无转换记录</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">时间戳转换工具可以在Unix时间戳（秒或毫秒）与人类可读的日期时间格式之间进行相互转换。支持多种日期时间格式，适用于开发调试、日志分析等场景。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TimestampTool = {
+            i18n: {
+                'en': {
+                    title: '⏱️ Timestamp Converter | Formatter',
+                    timestamp_input: 'Timestamp Input',
+                    timestamp_example: 'Example: 1620000000 or 1620000000000',
+                    datetime_input: 'DateTime Input',
+                    datetime_example: 'Select date and time',
+                    format_options: 'Output Format',
+                    btn_convert: 'Convert',
+                    btn_clear: 'Clear All',
+                    btn_current_time: 'Current Time',
+                    results: 'Conversion Result',
+                    btn_copy: 'Copy Result',
+                    recent_conversions: 'Recent Conversions',
+                    no_history: 'No conversion history yet',
+                    please_enter_input: 'Please enter a timestamp or select a date',
+                    invalid_timestamp: 'Invalid timestamp',
+                    copied: 'Copied!',
+                    timestamp: 'Timestamp',
+                    datetime: 'DateTime',
+                    swap: '↔️',
+                    intro_title: 'About This Tool',
+                    intro_text: 'The timestamp converter can convert between Unix timestamps (seconds or milliseconds) and human-readable datetime formats. Supports multiple datetime formats, suitable for development debugging, log analysis and other scenarios.'
+                },
+                'zh-CN': {
+                    title: '⏱️ 时间戳转换|格式化工具',
+                    timestamp_input: '时间戳输入',
+                    timestamp_example: '示例: 1620000000 或 1620000000000',
+                    datetime_input: '日期时间输入',
+                    datetime_example: '选择日期和时间',
+                    format_options: '输出格式',
+                    btn_convert: '转换',
+                    btn_clear: '清空所有',
+                    btn_current_time: '当前时间',
+                    results: '转换结果',
+                    btn_copy: '复制结果',
+                    recent_conversions: '最近转换',
+                    no_history: '暂无转换记录',
+                    please_enter_input: '请输入时间戳或选择日期',
+                    invalid_timestamp: '无效的时间戳',
+                    copied: '已复制！',
+                    timestamp: '时间戳',
+                    datetime: '日期时间',
+                    swap: '↔️',
+                    intro_title: '关于本工具',
+                    intro_text: '时间戳转换工具可以在Unix时间戳（秒或毫秒）与人类可读的日期时间格式之间进行相互转换。支持多种日期时间格式，适用于开发调试、日志分析等场景。'
+                },
+                'zh-TW': {
+                    title: '⏱️ 時間戳轉換|格式化工具',
+                    timestamp_input: '時間戳輸入',
+                    timestamp_example: '示例: 1620000000 或 1620000000000',
+                    datetime_input: '日期時間輸入',
+                    datetime_example: '選擇日期和時間',
+                    format_options: '輸出格式',
+                    btn_convert: '轉換',
+                    btn_clear: '清空所有',
+                    btn_current_time: '當前時間',
+                    results: '轉換結果',
+                    btn_copy: '複製結果',
+                    recent_conversions: '最近轉換',
+                    no_history: '暫無轉換記錄',
+                    please_enter_input: '請輸入時間戳或選擇日期',
+                    invalid_timestamp: '無效的時間戳',
+                    copied: '已複製！',
+                    timestamp: '時間戳',
+                    datetime: '日期時間',
+                    swap: '↔️',
+                    intro_title: '關於本工具',
+                    intro_text: '時間戳轉換工具可以在Unix時間戳（秒或毫秒）與人類可讀的日期時間格式之間進行相互轉換。支持多種日期時間格式，適用於開發調試、日誌分析等場景。'
+                },
+                'ja': {
+                    title: '⏱️ タイムスタンプ変換|フォーマットツール',
+                    timestamp_input: 'タイムスタンプ入力',
+                    timestamp_example: '例: 1620000000 または 1620000000000',
+                    datetime_input: '日時入力',
+                    datetime_example: '日付と時間を選択',
+                    format_options: '出力フォーマット',
+                    btn_convert: '変換',
+                    btn_clear: 'すべてクリア',
+                    btn_current_time: '現在の時間',
+                    results: '変換結果',
+                    btn_copy: '結果をコピー',
+                    recent_conversions: '最近の変換',
+                    no_history: '変換履歴はまだありません',
+                    please_enter_input: 'タイムスタンプを入力するか、日付を選択してください',
+                    invalid_timestamp: '無効なタイムスタンプ',
+                    copied: 'コピーしました！',
+                    timestamp: 'タイムスタンプ',
+                    datetime: '日時',
+                    swap: '↔️',
+                    intro_title: 'このツールについて',
+                    intro_text: 'タイムスタンプ変換ツールは、Unixタイムスタンプ（秒またはミリ秒）と人間が読める日時形式を相互に変換できます。複数の日時形式をサポートし、開発デバッグやログ分析などのシナリオに適しています。'
+                },
+                'ru': {
+                    title: '⏱️ Конвертер таймстампов | Форматер',
+                    timestamp_input: 'Ввод таймстампа',
+                    timestamp_example: 'Пример: 1620000000 или 1620000000000',
+                    datetime_input: 'Ввод даты и времени',
+                    datetime_example: 'Выберите дату и время',
+                    format_options: 'Формат вывода',
+                    btn_convert: 'Конвертировать',
+                    btn_clear: 'Очистить все',
+                    btn_current_time: 'Текущее время',
+                    results: 'Результат преобразования',
+                    btn_copy: 'Скопировать результат',
+                    recent_conversions: 'Недавние преобразования',
+                    no_history: 'Истории преобразований пока нет',
+                    please_enter_input: 'Пожалуйста, введите таймстамп или выберите дату',
+                    invalid_timestamp: 'Неверный таймстамп',
+                    copied: 'Скопировано!',
+                    timestamp: 'Таймстамп',
+                    datetime: 'Дата и время',
+                    swap: '↔️',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Конвертер таймстампов может преобразовывать между Unix таймстампами (секунды или миллисекунды) и читаемыми человеком форматами даты и времени. Поддерживает多种 форматы дат и времени, подходит для отладки разработки, анализа журналов и других сценариев.'
+                }
+            },
+
+            conversionDirection: 'timestamp_to_datetime', // 或 'datetime_to_timestamp'
+            
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false);
+                } else {
+                    this.changeLang(false);
+                }
+
+                // 设置当前时间为默认值
+                this.useCurrentTime();
+                
+                // 尝试从本地存储加载转换历史
+                this.loadConversionHistory();
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                // 更新HTML元素
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                // 更新URL参数
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                // 特别更新页面标题
+                document.title = i18nData['title'];
+            },
+
+            swapConversion: function() {
+                this.conversionDirection = this.conversionDirection === 'timestamp_to_datetime' 
+                    ? 'datetime_to_timestamp' 
+                    : 'timestamp_to_datetime';
+                
+                // 交换输入值
+                const timestampInput = document.getElementById('timestamp_input').value;
+                const datetimeInput = document.getElementById('datetime_input').value;
+                
+                document.getElementById('timestamp_input').value = datetimeInput;
+                document.getElementById('datetime_input').value = timestampInput;
+            },
+
+            selectFormat: function(element) {
+                // 移除其他选中状态
+                document.querySelectorAll('.format-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                // 添加当前选中状态
+                element.classList.add('selected');
+            },
+
+            getSelectedFormat: function() {
+                return document.querySelector('.format-option.selected').getAttribute('data-format');
+            },
+
+            convert: function() {
+                const format = this.getSelectedFormat();
+                
+                if (this.conversionDirection === 'timestamp_to_datetime') {
+                    const timestampStr = document.getElementById('timestamp_input').value.trim();
+                    if (!timestampStr) {
+                        alert(this.getI18nText('please_enter_input'));
+                        return;
+                    }
+                    
+                    let timestamp = parseFloat(timestampStr);
+                    if (isNaN(timestamp)) {
+                        alert(this.getI18nText('invalid_timestamp'));
+                        return;
+                    }
+                    
+                    // 判断是秒还是毫秒 (如果大于1e12则视为毫秒)
+                    if (timestamp > 1e12) {
+                        timestamp = timestamp / 1000;
+                    }
+                    
+                    const date = new Date(timestamp * 1000);
+                    if (isNaN(date.getTime())) {
+                        alert(this.getI18nText('invalid_timestamp'));
+                        return;
+                    }
+                    
+                    const result = this.formatDate(date, format);
+                    document.getElementById('result').value = result;
+                    document.getElementById('datetime_input').value = this.toDateTimeLocal(date);
+                    
+                    // 保存到历史记录
+                    this.saveToHistory(timestampStr, result);
+                } else {
+                    const datetimeStr = document.getElementById('datetime_input').value;
+                    if (!datetimeStr) {
+                        alert(this.getI18nText('please_enter_input'));
+                        return;
+                    }
+                    
+                    const date = new Date(datetimeStr);
+                    if (isNaN(date.getTime())) {
+                        alert(this.getI18nText('invalid_timestamp'));
+                        return;
+                    }
+                    
+                    let result;
+                    if (format === 'timestamp_seconds') {
+                        result = Math.floor(date.getTime() / 1000).toString();
+                    } else if (format === 'timestamp_milliseconds') {
+                        result = date.getTime().toString();
+                    } else {
+                        result = this.formatDate(date, format);
+                    }
+                    
+                    document.getElementById('result').value = result;
+                    document.getElementById('timestamp_input').value = Math.floor(date.getTime() / 1000).toString();
+                    
+                    // 保存到历史记录
+                    this.saveToHistory(datetimeStr, result);
+                }
+            },
+
+            formatDate: function(date, format) {
+                if (format === 'timestamp_seconds') {
+                    return Math.floor(date.getTime() / 1000).toString();
+                }
+                if (format === 'timestamp_milliseconds') {
+                    return date.getTime().toString();
+                }
+                
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                
+                let hh = hours;
+                let period = 'AM';
+                if (parseInt(hours) >= 12) {
+                    period = 'PM';
+                    hh = hours === '12' ? '12' : String(parseInt(hours) - 12).padStart(2, '0');
+                } else {
+                    hh = hours === '00' ? '12' : hours;
+                }
+                
+                return format
+                    .replace('YYYY', year)
+                    .replace('MM', month)
+                    .replace('DD', day)
+                    .replace('HH', hours)
+                    .replace('hh', hh)
+                    .replace('mm', minutes)
+                    .replace('ss', seconds)
+                    .replace('A', period);
+            },
+
+            toDateTimeLocal: function(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            },
+
+            clearAll: function() {
+                document.getElementById('timestamp_input').value = '';
+                document.getElementById('datetime_input').value = '';
+                document.getElementById('result').value = '';
+            },
+
+            useCurrentTime: function() {
+                const now = new Date();
+                document.getElementById('timestamp_input').value = Math.floor(now.getTime() / 1000).toString();
+                document.getElementById('datetime_input').value = this.toDateTimeLocal(now);
+                
+                // 自动转换
+                this.convert();
+            },
+
+            copyResult: function() {
+                const resultText = document.getElementById('result').value;
+                if (resultText) {
+                    navigator.clipboard.writeText(resultText).then(() => {
+                        const originalText = document.querySelector('[data-i18n="btn_copy"]').textContent;
+                        document.querySelector('[data-i18n="btn_copy"]').textContent = this.getI18nText('copied');
+                        setTimeout(() => {
+                            document.querySelector('[data-i18n="btn_copy"]').textContent = originalText;
+                        }, 2000);
+                    });
+                }
+            },
+
+            saveToHistory: function(input, result) {
+                let history = JSON.parse(localStorage.getItem('timestampConversionHistory') || '[]');
+                
+                // 限制历史记录长度
+                if (history.length >= 10) {
+                    history.pop();
+                }
+                
+                // 添加新记录到开头
+                history.unshift({
+                    timestamp: new Date().toISOString(),
+                    input: input.substring(0, 30) + (input.length > 30 ? '...' : ''),
+                    result: result.substring(0, 30) + (result.length > 30 ? '...' : '')
+                });
+                
+                localStorage.setItem('timestampConversionHistory', JSON.stringify(history));
+                this.loadConversionHistory();
+            },
+
+            loadConversionHistory: function() {
+                const historyContainer = document.getElementById('conversion_history');
+                const history = JSON.parse(localStorage.getItem('timestampConversionHistory') || '[]');
+                
+                if (history.length === 0) {
+                    historyContainer.innerHTML = `<p data-i18n="no_history" class="text-gray-400 italic text-sm">${this.getI18nText('no_history')}</p>`;
+                    return;
+                }
+                
+                let html = '<div class="space-y-2">';
+                history.forEach((item, index) => {
+                    const date = new Date(item.timestamp);
+                    html += `
+                        <div class="p-2 bg-white rounded border border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="TimestampTool.loadHistoryItem(${index})">
+                            <div class="text-sm font-medium">${item.input} → ${item.result}</div>
+                            <div class="text-xs text-gray-500">${date.toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                historyContainer.innerHTML = html;
+            },
+
+            loadHistoryItem: function(index) {
+                const history = JSON.parse(localStorage.getItem('timestampConversionHistory') || '[]');
+                if (history[index]) {
+                    // 尝试判断是时间戳还是日期时间
+                    const input = history[index].input.replace('...', '');
+                    if (!isNaN(parseFloat(input))) {
+                        document.getElementById('timestamp_input').value = input;
+                        this.conversionDirection = 'timestamp_to_datetime';
+                    } else {
+                        document.getElementById('datetime_input').value = input;
+                        this.conversionDirection = 'datetime_to_timestamp';
+                    }
+                    
+                    this.convert();
+                }
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang] && this.i18n[lang][key] ? this.i18n[lang][key] : this.i18n['en'][key];
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            TimestampTool.init();
+        });
+    </script>
+</body>
+</html>

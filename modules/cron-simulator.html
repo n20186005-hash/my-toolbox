@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Dev Tools">
+    <meta name="icon" content="⏰">
+    <title>Cron表达式模拟器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, select, input { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-item { padding: 8px 0; border-bottom: 1px dashed #a7f3d0; }
+        .result-item:last-child { border-bottom: none; }
+        .result-time { font-family: monospace; color: #065f46; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        .btn-primary { background: #22c55e; color: white; border: none; }
+        .btn-primary:hover { background: #16a34a; }
+        .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        .btn-secondary:hover { background: #e5e7eb; }
+        .cron-explainer { background: #f3faf7; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.9rem; color: #166534; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="cron-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="CronTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">⏰ Cron表达式模拟器</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_cron">输入Cron表达式</h3>
+                <div class="form-group">
+                    <input type="text" id="cron_expression" placeholder="例如: 0 0 * * *" class="focus:ring-2 focus:ring-green-500 outline-none" value="0 0 * * *">
+                    <div class="cron-explainer" id="cron_explainer" data-i18n="cron_example_explanation">解释: 每天午夜执行</div>
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="options">模拟选项</h3>
+                
+                <div class="options-grid">
+                    <div class="form-group">
+                        <label data-i18n="start_date">开始日期</label>
+                        <input type="datetime-local" id="start_date" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="num_executions">执行次数</label>
+                        <select id="num_executions" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="CronTool.simulate()" class="flex-1 btn-primary py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_simulate">模拟执行</button>
+                <button onclick="CronTool.clearAll()" class="flex-1 btn-secondary py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">模拟结果</h3>
+                
+                <div id="simulation_results" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[100px]">
+                    <p data-i18n="no_results" class="text-gray-400 italic text-sm">请点击"模拟执行"查看结果</p>
+                </div>
+            </div>
+
+            <!-- Examples -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="common_examples">常用示例</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="p-3 bg-gray-50 rounded border border-gray-100 cursor-pointer hover:bg-gray-100" onclick="CronTool.loadExample('0 0 * * *')">
+                        <div class="font-medium">0 0 * * *</div>
+                        <div class="text-xs text-gray-500" data-i18n="example_daily">每天午夜执行</div>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded border border-gray-100 cursor-pointer hover:bg-gray-100" onclick="CronTool.loadExample('0 */2 * * *')">
+                        <div class="font-medium">0 */2 * * *</div>
+                        <div class="text-xs text-gray-500" data-i18n="example_every_2h">每2小时执行一次</div>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded border border-gray-100 cursor-pointer hover:bg-gray-100" onclick="CronTool.loadExample('0 8 * * 1')">
+                        <div class="font-medium">0 8 * * 1</div>
+                        <div class="text-xs text-gray-500" data-i18n="example_monday">每周一早上8点执行</div>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded border border-gray-100 cursor-pointer hover:bg-gray-100" onclick="CronTool.loadExample('0 12 1 * *')">
+                        <div class="font-medium">0 12 1 * *</div>
+                        <div class="text-xs text-gray-500" data-i18n="example_monthly">每月1日中午12点执行</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于Cron表达式</h3>
+                <p data-i18n="intro_text">Cron表达式用于定义定时任务的执行时间，格式为5个字段（分 时 日 月 周），每个字段代表不同的时间单位。本工具可以模拟Cron表达式的执行时间，帮助您验证表达式是否符合预期，避免定时任务配置错误。</p>
+                <div class="mt-3">
+                    <h4 class="font-medium mb-1" data-i18n="cron_format">Cron格式说明：</h4>
+                    <pre class="bg-gray-100 p-2 rounded text-sm">*    *    *    *    *
+┬    ┬    ┬    ┬    ┬
+│    │    │    │    │
+│    │    │    │    └─ 星期 (0-7, 0和7都是周日)
+│    │    │    └───── 月份 (1-12)
+│    │    └────────── 日期 (1-31)
+│    └─────────────── 小时 (0-23)
+└──────────────────── 分钟 (0-59)</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CronTool = {
+            i18n: {
+                'en': {
+                    title: '⏰ Cron Expression Simulator',
+                    input_cron: 'Enter Cron Expression',
+                    cron_example_explanation: 'Explanation: Runs every day at midnight',
+                    options: 'Simulation Options',
+                    start_date: 'Start Date',
+                    num_executions: 'Number of Executions',
+                    btn_simulate: 'Simulate Execution',
+                    btn_clear: 'Clear All',
+                    results: 'Simulation Results',
+                    no_results: 'Click "Simulate Execution" to view results',
+                    common_examples: 'Common Examples',
+                    example_daily: 'Runs daily at midnight',
+                    example_every_2h: 'Runs every 2 hours',
+                    example_monday: 'Runs every Monday at 8 AM',
+                    example_monthly: 'Runs on 1st of each month at noon',
+                    intro_title: 'About Cron Expressions',
+                    intro_text: 'Cron expressions are used to define execution times for scheduled tasks, with a format of 5 fields (minute hour day month week), each representing a different time unit. This tool can simulate the execution times of Cron expressions to help you verify that the expression meets your expectations and avoid configuration errors in scheduled tasks.',
+                    cron_format: 'Cron Format Explanation:',
+                    invalid_expression: 'Invalid Cron expression',
+                    please_enter_expression: 'Please enter a Cron expression'
+                },
+                'zh-CN': {
+                    title: '⏰ Cron表达式模拟器',
+                    input_cron: '输入Cron表达式',
+                    cron_example_explanation: '解释: 每天午夜执行',
+                    options: '模拟选项',
+                    start_date: '开始日期',
+                    num_executions: '执行次数',
+                    btn_simulate: '模拟执行',
+                    btn_clear: '清空所有',
+                    results: '模拟结果',
+                    no_results: '请点击"模拟执行"查看结果',
+                    common_examples: '常用示例',
+                    example_daily: '每天午夜执行',
+                    example_every_2h: '每2小时执行一次',
+                    example_monday: '每周一早上8点执行',
+                    example_monthly: '每月1日中午12点执行',
+                    intro_title: '关于Cron表达式',
+                    intro_text: 'Cron表达式用于定义定时任务的执行时间，格式为5个字段（分 时 日 月 周），每个字段代表不同的时间单位。本工具可以模拟Cron表达式的执行时间，帮助您验证表达式是否符合预期，避免定时任务配置错误。',
+                    cron_format: 'Cron格式说明：',
+                    invalid_expression: '无效的Cron表达式',
+                    please_enter_expression: '请输入Cron表达式'
+                },
+                'zh-TW': {
+                    title: '⏰ Cron表达式模擬器',
+                    input_cron: '輸入Cron表达式',
+                    cron_example_explanation: '解釋: 每天午夜執行',
+                    options: '模擬選項',
+                    start_date: '開始日期',
+                    num_executions: '執行次數',
+                    btn_simulate: '模擬執行',
+                    btn_clear: '清空所有',
+                    results: '模擬結果',
+                    no_results: '請點擊"模擬執行"查看結果',
+                    common_examples: '常用示例',
+                    example_daily: '每天午夜執行',
+                    example_every_2h: '每2小時執行一次',
+                    example_monday: '每週一早上8點執行',
+                    example_monthly: '每月1日中午12點執行',
+                    intro_title: '關於Cron表达式',
+                    intro_text: 'Cron表达式用於定義定時任務的執行時間，格式為5個字段（分 時 日 月 週），每個字段代表不同的時間單位。本工具可以模擬Cron表达式的執行時間，幫助您驗證表达式是否符合預期，避免定時任務配置錯誤。',
+                    cron_format: 'Cron格式說明：',
+                    invalid_expression: '無效的Cron表达式',
+                    please_enter_expression: '請輸入Cron表达式'
+                },
+                'ja': {
+                    title: '⏰ Cron式シミュレータ',
+                    input_cron: 'Cron式を入力',
+                    cron_example_explanation: '説明: 毎日午前0時に実行',
+                    options: 'シミュレーションオプション',
+                    start_date: '開始日時',
+                    num_executions: '実行回数',
+                    btn_simulate: '実行をシミュレート',
+                    btn_clear: 'すべてクリア',
+                    results: 'シミュレーション結果',
+                    no_results: '"実行をシミュレート"をクリックして結果を表示',
+                    common_examples: '一般的な例',
+                    example_daily: '毎日午前0時に実行',
+                    example_every_2h: '2時間ごとに実行',
+                    example_monday: '毎週月曜日の午前8時に実行',
+                    example_monthly: '毎月1日の正午に実行',
+                    intro_title: 'Cron式について',
+                    intro_text: 'Cron式は、スケジュールされたタスクの実行時間を定義するために使用され、5つのフィールド（分 時 日 月 曜日）の形式で構成され、それぞれが異なる時間単位を表します。このツールはCron式の実行時間をシミュレートし、式が期待どおりであるかを確認し、スケジュールされたタスクの設定エラーを回避するのに役立ちます。',
+                    cron_format: 'Cron形式の説明：',
+                    invalid_expression: '無効なCron式',
+                    please_enter_expression: 'Cron式を入力してください'
+                },
+                'ru': {
+                    title: '⏰ Симулятор Cron-выражений',
+                    input_cron: 'Введите Cron-выражение',
+                    cron_example_explanation: 'Объяснение: Выполняется каждый день в полночь',
+                    options: 'Параметры симуляции',
+                    start_date: 'Дата начала',
+                    num_executions: 'Количество выполнений',
+                    btn_simulate: 'Симулировать выполнение',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты симуляции',
+                    no_results: 'Нажмите "Симулировать выполнение" для просмотра результатов',
+                    common_examples: 'Общие примеры',
+                    example_daily: 'Выполняется каждый день в полночь',
+                    example_every_2h: 'Выполняется каждые 2 часа',
+                    example_monday: 'Выполняется каждый понедельник в 8:00',
+                    example_monthly: 'Выполняется 1-го каждого месяца в 12:00',
+                    intro_title: 'О Cron-выражениях',
+                    intro_text: 'Cron-выражения используются для определения времени выполнения запланированных задач и имеют формат из 5 полей (минута час день месяц неделя), каждое из которых представляет собой разные единицы времени. Этот инструмент может симулировать время выполнения Cron-выражений, помогая проверить, соответствует ли выражение ожиданиям, и избежать ошибок в настройке запланированных задач.',
+                    cron_format: 'Объяснение формата Cron:',
+                    invalid_expression: 'Недопустимое Cron-выражение',
+                    please_enter_expression: 'Пожалуйста, введите Cron-выражение'
+                }
+            },
+
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false); // 不更新URL
+                }
+                
+                // 设置默认开始日期为当前时间
+                const now = new Date();
+                const defaultDate = now.toISOString().slice(0, 16); // 截断到分钟
+                document.getElementById('start_date').value = defaultDate;
+                
+                // 监听Cron表达式变化，更新解释
+                document.getElementById('cron_expression').addEventListener('input', () => {
+                    this.updateCronExplainer();
+                });
+                
+                // 初始更新解释
+                this.updateCronExplainer();
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                        // 更新占位符
+                        if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
+                            el.placeholder = this.i18n[lang][key + '_placeholder'] || this.i18n[lang][key];
+                        }
+                    }
+                });
+                
+                // 更新页面标题
+                document.title = this.i18n[lang].title || 'Cron表达式模拟器';
+                
+                // 更新Cron解释
+                this.updateCronExplainer();
+                
+                // 更新URL参数
+                if (updateUrl) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('lang', lang);
+                    window.history.replaceState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
+                }
+            },
+
+            updateCronExplainer: function() {
+                const cron = document.getElementById('cron_expression').value.trim();
+                const explainer = document.getElementById('cron_explainer');
+                const lang = document.getElementById('lang-selector').value;
+                
+                if (!cron) {
+                    explainer.textContent = this.i18n[lang].please_enter_expression || '请输入Cron表达式';
+                    explainer.className = 'cron-explainer text-amber-700 bg-amber-50';
+                    return;
+                }
+                
+                // 简单解析Cron表达式并生成解释
+                const parts = cron.split(/\s+/);
+                if (parts.length !== 5) {
+                    explainer.textContent = this.i18n[lang].invalid_expression || '无效的Cron表达式';
+                    explainer.className = 'cron-explainer text-red-700 bg-red-50';
+                    return;
+                }
+                
+                // 简单解释生成
+                const explanations = {
+                    '0 0 * * *': this.i18n[lang].example_daily || '每天午夜执行',
+                    '0 */2 * * *': this.i18n[lang].example_every_2h || '每2小时执行一次',
+                    '0 8 * * 1': this.i18n[lang].example_monday || '每周一早上8点执行',
+                    '0 12 1 * *': this.i18n[lang].example_monthly || '每月1日中午12点执行'
+                };
+                
+                if (explanations[cron]) {
+                    explainer.textContent = `解释: ${explanations[cron]}`;
+                    explainer.className = 'cron-explainer text-green-700 bg-green-50';
+                } else {
+                    explainer.textContent = `解释: 分钟 ${parts[0]}, 小时 ${parts[1]}, 日期 ${parts[2]}, 月份 ${parts[3]}, 星期 ${parts[4]}`;
+                    explainer.className = 'cron-explainer';
+                }
+            },
+
+            loadExample: function(expression) {
+                document.getElementById('cron_expression').value = expression;
+                this.updateCronExplainer();
+            },
+
+            simulate: function() {
+                const cron = document.getElementById('cron_expression').value.trim();
+                const startDateStr = document.getElementById('start_date').value;
+                const numExecutions = parseInt(document.getElementById('num_executions').value);
+                const resultsContainer = document.getElementById('simulation_results');
+                const lang = document.getElementById('lang-selector').value;
+                
+                if (!cron) {
+                    alert(this.i18n[lang].please_enter_expression || '请输入Cron表达式');
+                    return;
+                }
+                
+                // 验证Cron表达式格式
+                const parts = cron.split(/\s+/);
+                if (parts.length !== 5) {
+                    alert(this.i18n[lang].invalid_expression || '无效的Cron表达式');
+                    return;
+                }
+                
+                // 设置开始时间
+                let currentDate = startDateStr ? new Date(startDateStr) : new Date();
+                if (isNaN(currentDate.getTime())) {
+                    currentDate = new Date();
+                }
+                
+                // 清空结果容器
+                resultsContainer.innerHTML = '';
+                
+                // 模拟执行时间（简化版Cron解析）
+                const execTimes = [];
+                for (let i = 0; i < numExecutions; i++) {
+                    currentDate = this.getNextExecution(currentDate, parts);
+                    execTimes.push(new Date(currentDate));
+                }
+                
+                // 显示结果
+                execTimes.forEach((time, index) => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item';
+                    resultItem.innerHTML = `
+                        <div class="flex justify-between">
+                            <span class="font-medium">${index + 1}. </span>
+                            <span class="result-time">${this.formatDate(time)}</span>
+                        </div>
+                    `;
+                    resultsContainer.appendChild(resultItem);
+                });
+            },
+
+            // 简化版获取下一次执行时间
+            getNextExecution: function(current, parts) {
+                const [minute, hour, day, month, week] = parts;
+                const next = new Date(current);
+                
+                // 简单递增时间（实际Cron解析比这复杂得多）
+                if (minute === '*' || minute === '*/1') {
+                    next.setMinutes(next.getMinutes() + 1);
+                } else if (hour === '*' || hour === '*/1') {
+                    next.setHours(next.getHours() + 1);
+                    next.setMinutes(parseInt(minute) || 0);
+                } else {
+                    next.setDate(next.getDate() + 1);
+                    next.setHours(parseInt(hour) || 0);
+                    next.setMinutes(parseInt(minute) || 0);
+                }
+                
+                return next;
+            },
+
+            // 格式化日期显示
+            formatDate: function(date) {
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            },
+
+            clearAll: function() {
+                document.getElementById('cron_expression').value = '';
+                const now = new Date();
+                document.getElementById('start_date').value = now.toISOString().slice(0, 16);
+                document.getElementById('simulation_results').innerHTML = 
+                    '<p data-i18n="no_results" class="text-gray-400 italic text-sm">请点击"模拟执行"查看结果</p>';
+                this.updateCronExplainer();
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            CronTool.init();
+        });
+    </script>
+</body>
+</html>

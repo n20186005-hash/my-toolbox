@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Markdown Tools">
+    <title>HTML转MarkDown</title>
+    <!-- 使用 data URI 作為 favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔄</text></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Turndown 用於 HTML -> MD -->
+    <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.js"></script>
+    <!-- 引入 Marked 用於 MD -> HTML (新增) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 200px; resize: vertical; font-family: monospace; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; border: none; }
+        .btn-primary { background: #22c55e; color: white; }
+        .btn-primary:hover { background: #16a34a; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .direction-tabs { display: flex; margin-bottom: 15px; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; }
+        .direction-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; background: #f3f4f6; transition: all 0.3s; }
+        .direction-tab.active { background: #22c55e; color: white; }
+    </style>
+</head>
+<body>
+    <div class="tool-module" id="html2markdown-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Html2Markdown.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔄 HTML转MarkDown</h2>
+
+        <div class="space-y-6">
+            <!-- Direction Selection -->
+            <div class="direction-tabs">
+                <div class="direction-tab active" id="dir_html2md" onclick="Html2Markdown.setDirection('html2md')" data-i18n="html_to_md">HTML → MarkDown</div>
+                <div class="direction-tab" id="dir_md2html" onclick="Html2Markdown.setDirection('md2html')" data-i18n="md_to_html">MarkDown → HTML</div>
+            </div>
+
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" id="input_label" data-i18n="input_html">输入HTML</h3>
+                <div class="form-group">
+                    <textarea id="input_content" placeholder="请输入HTML代码..." class="focus:ring-2 focus:ring-green-500 outline-none"></textarea>
+                </div>
+
+                <div class="flex gap-4">
+                    <button onclick="Html2Markdown.convert()" class="flex-1 btn-primary" data-i18n="btn_convert">转换</button>
+                    <button onclick="Html2Markdown.clearAll()" class="flex-1 btn-danger" data-i18n="btn_clear">清空所有</button>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" id="result_label" data-i18n="result_md">MarkDown结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="char_count">字符数：</span>
+                        <span class="stat-value" id="char_count">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="process_time">转换耗时：</span>
+                        <span class="stat-value" id="process_time">0ms</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label id="result_content_label" data-i18n="result_md_text">MarkDown文本</label>
+                    <textarea id="result_content" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700" placeholder="转换后的MarkDown将显示在这里..."></textarea>
+                </div>
+                <button onclick="Html2Markdown.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于HTML与MarkDown互转工具</h3>
+                <p data-i18n="intro_text">本工具支持HTML与MarkDown格式的相互转换。可将HTML标签转换为简洁的MarkDown语法，也能将MarkDown文本还原为对应的HTML代码。适用于内容创作者、博客作者和需要在不同格式间转换文档的用户，保持内容结构和格式的一致性。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const Html2Markdown = {
+            direction: 'html2md', // 默认方向: html到markdown
+            turndownService: null,
+
+            i18n: {
+                'en': {
+                    title: '🔄 HTML to MarkDown',
+                    html_to_md: 'HTML → MarkDown',
+                    md_to_html: 'MarkDown → HTML',
+                    input_html: 'Input HTML',
+                    input_md: 'Input MarkDown',
+                    btn_convert: 'Convert',
+                    btn_clear: 'Clear All',
+                    result_md: 'MarkDown Result',
+                    result_html: 'HTML Result',
+                    result_md_text: 'MarkDown Text',
+                    result_html_text: 'HTML Code',
+                    char_count: 'Character Count:',
+                    process_time: 'Conversion Time:',
+                    btn_copy: 'Copy Result',
+                    intro_title: 'About HTML-MarkDown Converter',
+                    intro_text: 'This tool supports mutual conversion between HTML and MarkDown formats. It can convert HTML tags to concise MarkDown syntax, and also restore MarkDown text to corresponding HTML code. Suitable for content creators, bloggers and users who need to convert documents between different formats while maintaining content structure and format consistency.',
+                    please_enter_content: 'Please enter some content first',
+                    conversion_error: 'Conversion error',
+                    copied: 'Copied!'
+                },
+                'zh-CN': {
+                    title: '🔄 HTML转MarkDown',
+                    html_to_md: 'HTML → MarkDown',
+                    md_to_html: 'MarkDown → HTML',
+                    input_html: '输入HTML',
+                    input_md: '输入MarkDown',
+                    btn_convert: '转换',
+                    btn_clear: '清空所有',
+                    result_md: 'MarkDown结果',
+                    result_html: 'HTML结果',
+                    result_md_text: 'MarkDown文本',
+                    result_html_text: 'HTML代码',
+                    char_count: '字符数：',
+                    process_time: '转换耗时：',
+                    btn_copy: '复制结果',
+                    intro_title: '关于HTML与MarkDown互转工具',
+                    intro_text: '本工具支持HTML与MarkDown格式的相互转换。可将HTML标签转换为简洁的MarkDown语法，也能将MarkDown文本还原为对应的HTML代码。适用于内容创作者、博客作者和需要在不同格式间转换文档的用户，保持内容结构和格式的一致性。',
+                    please_enter_content: '请先输入内容',
+                    conversion_error: '转换错误',
+                    copied: '已复制！'
+                },
+                'zh-TW': {
+                    title: '🔄 HTML轉MarkDown',
+                    html_to_md: 'HTML → MarkDown',
+                    md_to_html: 'MarkDown → HTML',
+                    input_html: '輸入HTML',
+                    input_md: '輸入MarkDown',
+                    btn_convert: '轉換',
+                    btn_clear: '清空所有',
+                    result_md: 'MarkDown結果',
+                    result_html: 'HTML結果',
+                    result_md_text: 'MarkDown文本',
+                    result_html_text: 'HTML代碼',
+                    char_count: '字符數：',
+                    process_time: '轉換耗時：',
+                    btn_copy: '複製結果',
+                    intro_title: '關於HTML與MarkDown互轉工具',
+                    intro_text: '本工具支持HTML與MarkDown格式的相互轉換。可將HTML標籤轉換為簡潔的MarkDown語法，也能將MarkDown文本還原為對應的HTML代碼。適用於內容創作者、博客作者和需要在不同格式間轉換文檔的用戶，保持內容結構和格式的一致性。',
+                    please_enter_content: '請先輸入內容',
+                    conversion_error: '轉換錯誤',
+                    copied: '已複製！'
+                },
+                'ja': {
+                    title: '🔄 HTMLからMarkDownへ',
+                    html_to_md: 'HTML → MarkDown',
+                    md_to_html: 'MarkDown → HTML',
+                    input_html: 'HTMLを入力',
+                    input_md: 'MarkDownを入力',
+                    btn_convert: '変換',
+                    btn_clear: 'すべてクリア',
+                    result_md: 'MarkDown結果',
+                    result_html: 'HTML結果',
+                    result_md_text: 'MarkDownテキスト',
+                    result_html_text: 'HTMLコード',
+                    char_count: '文字数：',
+                    process_time: '変換時間：',
+                    btn_copy: '結果をコピー',
+                    intro_title: 'HTMLとMarkDownの相互変換ツールについて',
+                    intro_text: 'このツールはHTMLとMarkDown形式の相互変換をサポートしています。HTMLタグを簡潔なMarkDown構文に変換したり、MarkDownテキストを対応するHTMLコードに復元したりすることができます。コンテンツクリエーター、ブロガー、およびさまざまな形式間でドキュメントを変換する必要があるユーザーに適しており、コンテンツの構造と形式の一貫性を維持します。',
+                    please_enter_content: 'まずコンテンツを入力してください',
+                    conversion_error: '変換エラー',
+                    copied: 'コピーしました！'
+                },
+                'ru': {
+                    title: '🔄 HTML в MarkDown',
+                    html_to_md: 'HTML → MarkDown',
+                    md_to_html: 'MarkDown → HTML',
+                    input_html: 'Введите HTML',
+                    input_md: 'Введите MarkDown',
+                    btn_convert: 'Конвертировать',
+                    btn_clear: 'Очистить все',
+                    result_md: 'Результат MarkDown',
+                    result_html: 'Результат HTML',
+                    result_md_text: 'Текст MarkDown',
+                    result_html_text: 'Код HTML',
+                    char_count: 'Количество символов:',
+                    process_time: 'Время преобразования:',
+                    btn_copy: 'Скопировать результат',
+                    intro_title: 'О конвертере HTML-MarkDown',
+                    intro_text: 'Этот инструмент поддерживает взаимное преобразование форматов HTML и MarkDown. Он может преобразовать HTML-теги в лаконичный синтаксис MarkDown, а также восстановить текст MarkDown в соответствующий HTML-код. Подходит для контент- креаторов, блогеров и пользователей, которым нужно преобразовывать документы между разными форматами, сохраняя структуру и формат содержимого.',
+                    please_enter_content: 'Пожалуйста, сначала введите контент',
+                    conversion_error: 'Ошибка преобразования',
+                    copied: 'Скопировано!'
+                }
+            },
+
+            init: function() {
+                // 从URL获取语言参数 (加入錯誤處理以防止在某些環境下崩潰)
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const lang = urlParams.get('lang');
+                    if (lang && this.i18n[lang]) {
+                        document.getElementById('lang-selector').value = lang;
+                    }
+                } catch (e) {
+                    console.log('Cannot access URL parameters:', e);
+                }
+                
+                this.changeLang();
+                
+                // 初始化Markdown解析器
+                this.initParsers();
+                
+                // 监听输入变化更新字符数
+                document.getElementById('input_content').addEventListener('input', () => {
+                    this.updateCharCount();
+                });
+            },
+
+            initParsers: function() {
+                // 配置Turndown服务 (HTML -> MD)
+                if (typeof TurndownService !== 'undefined') {
+                    this.turndownService = new TurndownService({
+                        headingStyle: 'atx',
+                        bulletListMarker: '-',
+                        codeBlockStyle: 'fenced'
+                    });
+                } else {
+                    console.error('TurndownService is not loaded');
+                }
+
+                // Marked (MD -> HTML) 不需要额外初始化，直接使用 marked.parse()
+            },
+
+            setDirection: function(direction) {
+                this.direction = direction;
+                
+                // 更新标签状态
+                document.getElementById('dir_html2md').classList.remove('active');
+                document.getElementById('dir_md2html').classList.remove('active');
+                document.getElementById(`dir_${direction}`).classList.add('active');
+                
+                // 更新标签文本
+                const inputLabel = document.getElementById('input_label');
+                const resultLabel = document.getElementById('result_label');
+                const resultContentLabel = document.getElementById('result_content_label');
+                const lang = document.getElementById('lang-selector').value;
+                
+                if (direction === 'html2md') {
+                    inputLabel.textContent = this.i18n[lang]['input_html'];
+                    resultLabel.textContent = this.i18n[lang]['result_md'];
+                    resultContentLabel.textContent = this.i18n[lang]['result_md_text'];
+                    document.getElementById('input_content').placeholder = this.i18n[lang]['input_html'] + '...';
+                    document.getElementById('result_content').placeholder = this.i18n[lang]['result_md_text'] + '...';
+                } else {
+                    inputLabel.textContent = this.i18n[lang]['input_md'];
+                    resultLabel.textContent = this.i18n[lang]['result_html'];
+                    resultContentLabel.textContent = this.i18n[lang]['result_html_text'];
+                    document.getElementById('input_content').placeholder = this.i18n[lang]['input_md'] + '...';
+                    document.getElementById('result_content').placeholder = this.i18n[lang]['result_html_text'] + '...';
+                }
+                
+                // 清空内容
+                this.clearAll();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                // 更新页面文本
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 更新方向相关文本
+                this.setDirection(this.direction);
+                
+                // 更新页面标题
+                document.title = this.i18n[lang]['title'];
+                
+                // 更新URL参数 - 使用 try-catch 包裹以防止 SecurityError
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('lang', lang);
+                    window.history.replaceState(null, '', `${window.location.pathname}?${urlParams}`);
+                } catch (e) {
+                    console.warn('Sandbox environment: history.replaceState is not available. URL language parameter not updated.');
+                }
+            },
+
+            convert: function() {
+                const input = document.getElementById('input_content').value.trim();
+                const lang = document.getElementById('lang-selector').value;
+                
+                if (!input) {
+                    alert(this.i18n[lang]['please_enter_content']);
+                    return;
+                }
+
+                try {
+                    const start = performance.now();
+                    let result;
+                    
+                    if (this.direction === 'html2md') {
+                        // HTML转Markdown
+                        if (this.turndownService) {
+                            result = this.turndownService.turndown(input);
+                        } else {
+                            throw new Error('Turndown service not initialized');
+                        }
+                    } else {
+                        // Markdown转HTML (使用 marked 库)
+                        if (typeof marked !== 'undefined') {
+                            // breaks: true 允许回车换行，gfm: true 启用 GitHub 风格 Markdown
+                            result = marked.parse(input, { breaks: true, gfm: true });
+                        } else {
+                            throw new Error('Marked library not loaded');
+                        }
+                    }
+                    
+                    const end = performance.now();
+                    
+                    document.getElementById('result_content').value = result;
+                    document.getElementById('process_time').textContent = `${Math.round(end - start)}ms`;
+                    this.updateCharCount();
+                } catch (e) {
+                    console.error(e);
+                    alert(`${this.i18n[lang]['conversion_error']}: ${e.message}`);
+                }
+            },
+
+            clearAll: function() {
+                document.getElementById('input_content').value = '';
+                document.getElementById('result_content').value = '';
+                document.getElementById('char_count').textContent = '0';
+                document.getElementById('process_time').textContent = '0ms';
+            },
+
+            copyResult: function() {
+                const result = document.getElementById('result_content');
+                if (!result.value) return;
+                
+                result.select();
+                try {
+                    document.execCommand('copy');
+                    alert(this.i18n[document.getElementById('lang-selector').value]['copied']);
+                } catch (err) {
+                    console.error('Copy failed', err);
+                }
+            },
+
+            updateCharCount: function() {
+                const result = document.getElementById('result_content').value;
+                document.getElementById('char_count').textContent = result.length.toString();
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            Html2Markdown.init();
+        });
+    </script>
+</body>
+</html>
