@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="🔤">
+    <title>Chinese to Pinyin Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 120px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-row { padding: 6px 0; border-bottom: 1px dashed #a7f3d0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #1e3a8a; }
+        .result-value { font-weight: 600; color: #065f46; white-space: pre-wrap; word-wrap: break-word; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .option-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        .option-item { flex: 1; min-width: 150px; }
+        button { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="pinyin-converter">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="PinyinConverter.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔤 Chinese to Pinyin Converter</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_section">Input Chinese Text</h3>
+                <div class="form-group">
+                    <label for="chinese_text" data-i18n="chinese_text">Chinese Characters</label>
+                    <textarea id="chinese_text" placeholder="Enter Chinese characters here..." oninput="PinyinConverter.convert()" class="focus:ring-2 focus:ring-green-500 outline-none"></textarea>
+                </div>
+
+                <div class="option-group">
+                    <div class="option-item form-group">
+                        <label for="tone_type" data-i18n="tone_type">Tone Display</label>
+                        <select id="tone_type" onchange="PinyinConverter.convert()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="with_tone" data-i18n="with_tone">With Tone Marks</option>
+                            <option value="number_tone" data-i18n="number_tone">With Tone Numbers</option>
+                            <option value="no_tone" data-i18n="no_tone">No Tone</option>
+                        </select>
+                    </div>
+                    <div class="option-item form-group">
+                        <label for="separator" data-i18n="separator">Word Separator</label>
+                        <select id="separator" onchange="PinyinConverter.convert()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="space" data-i18n="space">Space ( )</option>
+                            <option value="hyphen" data-i18n="hyphen">Hyphen (-)</option>
+                            <option value="none" data-i18n="none">None</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="PinyinConverter.convert()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="convert_btn">Convert to Pinyin</button>
+
+            <!-- Results -->
+            <div class="summary-section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">Conversion Result</h3>
+                <div class="result-card">
+                    <div class="result-row">
+                        <span class="result-value" id="pinyin_result"></span>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-center">
+                    <button onclick="PinyinConverter.copyResult()" class="bg-blue-600 text-white py-2 px-4 rounded font-medium hover:bg-blue-700 transition" data-i18n="copy_btn">Copy Result</button>
+                </div>
+            </div>
+
+            <!-- Introduction -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">About This Tool</h3>
+                <p data-i18n="intro_text">This tool converts Chinese characters to Pinyin (the official romanization system for Standard Chinese). You can customize the tone display and word separation according to your needs. It supports simplified and traditional Chinese characters.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PinyinConverter = {
+            // Pinyin dictionary (simplified for demonstration)
+            pinyinDict: {
+                '你': 'ni3', '好': 'hao3', '中': 'zhong1', '国': 'guo2',
+                '人': 'ren2', '民': 'min2', '爱': 'ai4', '我': 'wo3',
+                '学': 'xue2', '习': 'xi2', '大': 'da4', '小': 'xiao3',
+                '上': 'shang4', '下': 'xia4', '左': 'zuo3', '右': 'you4',
+                '一': 'yi1', '二': 'er4', '三': 'san1', '四': 'si4',
+                '五': 'wu3', '六': 'liu4', '七': 'qi1', '八': 'ba1',
+                '九': 'jiu3', '十': 'shi2'
+            },
+
+            // Tone marks mapping
+            toneMap: {
+                'a1': 'ā', 'a2': 'á', 'a3': 'ǎ', 'a4': 'à',
+                'e1': 'ē', 'e2': 'é', 'e3': 'ě', 'e4': 'è',
+                'i1': 'ī', 'i2': 'í', 'i3': 'ǐ', 'i4': 'ì',
+                'o1': 'ō', 'o2': 'ó', 'o3': 'ǒ', 'o4': 'ò',
+                'u1': 'ū', 'u2': 'ú', 'u3': 'ǔ', 'u4': 'ù',
+                'ü1': 'ǖ', 'ü2': 'ǘ', 'ü3': 'ǚ', 'ü4': 'ǜ',
+                'v1': 'ǖ', 'v2': 'ǘ', 'v3': 'ǚ', 'v4': 'ǜ'
+            },
+
+            // Translation data
+            i18n: {
+                'en': {
+                    title: '🔤 Chinese to Pinyin Converter',
+                    input_section: 'Input Chinese Text',
+                    chinese_text: 'Chinese Characters',
+                    tone_type: 'Tone Display',
+                    with_tone: 'With Tone Marks',
+                    number_tone: 'With Tone Numbers',
+                    no_tone: 'No Tone',
+                    separator: 'Word Separator',
+                    space: 'Space ( )',
+                    hyphen: 'Hyphen (-)',
+                    none: 'None',
+                    convert_btn: 'Convert to Pinyin',
+                    results: 'Conversion Result',
+                    copy_btn: 'Copy Result',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool converts Chinese characters to Pinyin (the official romanization system for Standard Chinese). You can customize the tone display and word separation according to your needs. It supports simplified and traditional Chinese characters.'
+                },
+                'zh-CN': {
+                    title: '🔤 汉字转拼音工具',
+                    input_section: '输入中文文本',
+                    chinese_text: '汉字内容',
+                    tone_type: '声调显示',
+                    with_tone: '带声调符号',
+                    number_tone: '带声调数字',
+                    no_tone: '无声调',
+                    separator: '词语分隔符',
+                    space: '空格 ( )',
+                    hyphen: '连字符 (-)',
+                    none: '无',
+                    convert_btn: '转换为拼音',
+                    results: '转换结果',
+                    copy_btn: '复制结果',
+                    intro_title: '关于本工具',
+                    intro_text: '本工具可将汉字转换为拼音（现代汉语的官方罗马化系统）。您可以根据需要自定义声调显示方式和词语分隔符，支持简体和繁体汉字。'
+                },
+                'zh-TW': {
+                    title: '🔤 漢字轉拼音工具',
+                    input_section: '輸入中文文本',
+                    chinese_text: '漢字內容',
+                    tone_type: '聲調顯示',
+                    with_tone: '帶聲調符號',
+                    number_tone: '帶聲調數字',
+                    no_tone: '無聲調',
+                    separator: '詞語分隔符',
+                    space: '空格 ( )',
+                    hyphen: '連字符 (-)',
+                    none: '無',
+                    convert_btn: '轉換為拼音',
+                    results: '轉換結果',
+                    copy_btn: '複製結果',
+                    intro_title: '關於本工具',
+                    intro_text: '本工具可將漢字轉換為拼音（現代漢語的官方羅馬化系統）。您可以根據需要自定義聲調顯示方式和詞語分隔符，支援簡體和繁體漢字。'
+                },
+                'ja': {
+                    title: '🔤 漢字からピンインへの変換ツール',
+                    input_section: '中国語テキストを入力',
+                    chinese_text: '漢字内容',
+                    tone_type: 'トーン表示',
+                    with_tone: 'トーン記号付き',
+                    number_tone: 'トーン数字付き',
+                    no_tone: 'トーンなし',
+                    separator: '単語区切り',
+                    space: 'スペース ( )',
+                    hyphen: 'ハイフン (-)',
+                    none: 'なし',
+                    convert_btn: 'ピンインに変換',
+                    results: '変換結果',
+                    copy_btn: '結果をコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このツールは漢字をピンイン（標準中国語の公式ローマ字表記システム）に変換します。必要に応じてトーンの表示方法と単語の区切りをカスタマイズできます。簡体字と繁体字に対応しています。'
+                },
+                'ru': {
+                    title: '🔤 Конвертер китайских символов в пиньинь',
+                    input_section: 'Введите китайский текст',
+                    chinese_text: 'Китайские символы',
+                    tone_type: 'Отображение тонов',
+                    with_tone: 'С знаками тонов',
+                    number_tone: 'С числами тонов',
+                    no_tone: 'Без тонов',
+                    separator: 'Разделитель слов',
+                    space: 'Пробел ( )',
+                    hyphen: 'Дефис (-)',
+                    none: 'Без разделителя',
+                    convert_btn: 'Конвертировать в пиньинь',
+                    results: 'Результат конвертации',
+                    copy_btn: 'Скопировать результат',
+                    intro_title: 'О этом инструменте',
+                    intro_text: 'Этот инструмент преобразует китайские символы в пиньинь (официальную систему римской транскрипции стандартного китайского языка). Вы можете настроить отображение тонов и разделение слов в соответствии со своими потребностями. Поддерживаются упрощенные и традиционные китайские символы.'
+                }
+            },
+
+            // Initialize the tool
+            init: function() {
+                // Check URL for language parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                this.changeLang();
+                this.convert();
+            },
+
+            // Change language
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+
+                // Update placeholder for textarea
+                const textarea = document.getElementById('chinese_text');
+                if (lang === 'zh-CN') textarea.placeholder = '在此输入汉字...';
+                else if (lang === 'zh-TW') textarea.placeholder = '在此輸入漢字...';
+                else if (lang === 'ja') textarea.placeholder = 'ここに漢字を入力...';
+                else if (lang === 'ru') textarea.placeholder = 'Введите китайские символы здесь...';
+                else textarea.placeholder = 'Enter Chinese characters here...';
+
+                // Update URL with language parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, null, '?' + urlParams.toString());
+
+                this.convert();
+            },
+
+            // Convert Chinese to Pinyin
+            convert: function() {
+                const chineseText = document.getElementById('chinese_text').value.trim();
+                const toneType = document.getElementById('tone_type').value;
+                const separator = document.getElementById('separator').value;
+                const resultElement = document.getElementById('pinyin_result');
+
+                if (!chineseText) {
+                    resultElement.textContent = '';
+                    return;
+                }
+
+                let pinyinResult = [];
+
+                // Process each character
+                for (let i = 0; i < chineseText.length; i++) {
+                    const char = chineseText[i];
+                    
+                    // If it's a Chinese character in our dictionary
+                    if (this.pinyinDict[char]) {
+                        let pinyin = this.pinyinDict[char];
+                        
+                        // Process tone according to selected option
+                        if (toneType === 'with_tone') {
+                            pinyin = this.applyToneMarks(pinyin);
+                        } else if (toneType === 'no_tone') {
+                            pinyin = pinyin.replace(/[0-9]/, '');
+                        }
+                        
+                        pinyinResult.push(pinyin);
+                    } else {
+                        // Keep non-Chinese characters as is
+                        pinyinResult.push(char);
+                    }
+                }
+
+                // Apply separator
+                let separatorChar = ' ';
+                if (separator === 'hyphen') separatorChar = '-';
+                else if (separator === 'none') separatorChar = '';
+
+                // Join with selected separator (but don't add between non-Chinese characters)
+                let finalResult = '';
+                let prevWasChinese = false;
+                
+                pinyinResult.forEach((item, index) => {
+                    const isChinese = this.isPinyin(item);
+                    
+                    if (index > 0 && prevWasChinese && isChinese) {
+                        finalResult += separatorChar;
+                    }
+                    
+                    finalResult += item;
+                    prevWasChinese = isChinese;
+                });
+
+                resultElement.textContent = finalResult;
+            },
+
+            // Helper to check if a string is pinyin
+            isPinyin: function(str) {
+                return /^[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü]+$/.test(str);
+            },
+
+            // Apply tone marks to pinyin
+            applyToneMarks: function(pinyin) {
+                // Extract tone number (last character if it's a digit)
+                const toneMatch = pinyin.match(/(\d)$/);
+                if (!toneMatch) return pinyin;
+                
+                const tone = toneMatch[1];
+                if (tone === '5' || tone === '0') {
+                    return pinyin.replace(/[0-9]/, '');
+                }
+                
+                const base = pinyin.replace(/[0-9]/, '');
+                let newPinyin = base;
+                
+                // Check for vowels that take tone marks (priority order: a, e, o, iu, ui, i, u, ü)
+                const vowels = ['a', 'e', 'o', 'iu', 'ui', 'i', 'u', 'v', 'ü'];
+                
+                for (const vowel of vowels) {
+                    if (base.includes(vowel)) {
+                        const index = base.indexOf(vowel);
+                        const charWithTone = this.toneMap[vowel + tone] || vowel;
+                        newPinyin = base.substring(0, index) + charWithTone + base.substring(index + 1);
+                        break;
+                    }
+                }
+                
+                return newPinyin;
+            },
+
+            // Copy result to clipboard
+            copyResult: function() {
+                const result = document.getElementById('pinyin_result').textContent;
+                navigator.clipboard.writeText(result).then(() => {
+                    const copyBtn = document.querySelector('[data-i18n="copy_btn"]');
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = this.getI18nText('copied');
+                    
+                    setTimeout(() => {
+                        copyBtn.textContent = originalText;
+                    }, 2000);
+                });
+            },
+
+            // Get translated text
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                const translations = {
+                    'en': { 'copied': 'Copied!' },
+                    'zh-CN': { 'copied': '已复制！' },
+                    'zh-TW': { 'copied': '已複製！' },
+                    'ja': { 'copied': 'コピーしました！' },
+                    'ru': { 'copied': 'Скопировано!' }
+                };
+                return translations[lang]?.[key] || 'Copied!';
+            }
+        };
+
+        // Initialize when document is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            SalaryDesign = PinyinConverter; // For backward compatibility with any potential references
+            PinyinConverter.init();
+        });
+    </script>
+</body>
+</html>

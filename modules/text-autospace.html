@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="🔤">
+    <title>中英文加空格工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; min-height: 150px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .option-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .option-item { flex: 1; min-width: 200px; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-module" id="text-autospace-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="TextSpaceTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔤 中英文加空格工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_text">输入文本</h3>
+                <div class="form-group">
+                    <textarea id="input_text" placeholder="在此粘贴需要处理的文本..." class="focus:ring-2 focus:ring-green-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="options">设置选项</h3>
+                
+                <div class="option-row">
+                    <div class="option-item form-group">
+                        <label data-i18n="space_between_cn_en">中英文之间加空格</label>
+                        <select id="space_between_cn_en" class="w-full focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="true" data-i18n="yes">是</option>
+                            <option value="false" data-i18n="no">否</option>
+                        </select>
+                    </div>
+                    <div class="option-item form-group">
+                        <label data-i18n="space_between_cn_number">中文与数字之间加空格</label>
+                        <select id="space_between_cn_number" class="w-full focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="true" data-i18n="yes">是</option>
+                            <option value="false" data-i18n="no">否</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="option-row">
+                    <div class="option-item form-group">
+                        <label data-i18n="space_between_en_number">英文与数字之间加空格</label>
+                        <select id="space_between_en_number" class="w-full focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="true" data-i18n="yes">是</option>
+                            <option value="false" data-i18n="no">否</option>
+                        </select>
+                    </div>
+                    <div class="option-item form-group">
+                        <label data-i18n="remove_extra_spaces">移除多余空格 (保留换行)</label>
+                        <select id="remove_extra_spaces" class="w-full focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="true" data-i18n="yes">是</option>
+                            <option value="false" data-i18n="no">否</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="TextSpaceTool.processText()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_process">处理文本</button>
+                <button onclick="TextSpaceTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">处理结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="original_length">原始长度：</span>
+                        <span class="stat-value" id="original_length">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="added_spaces">添加空格数：</span>
+                        <span class="stat-value" id="added_spaces">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="final_length">处理后长度：</span>
+                        <span class="stat-value" id="final_length">0</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="result_text">结果文本</label>
+                    <textarea id="result_text" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700" placeholder="处理后的文本将显示在这里..."></textarea>
+                </div>
+                <button onclick="TextSpaceTool.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">中英文加空格工具可以自动在中文、英文和数字之间添加适当的空格，使文本排版更加美观易读。支持自定义设置不同类型字符间的空格规则，并能自动移除多余的空格（保留原有段落），让文本格式更加规范统一。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TextSpaceTool = {
+            i18n: {
+                'en': {
+                    title: '🔤 English-Chinese Space Tool',
+                    input_text: 'Input Text',
+                    options: 'Options',
+                    space_between_cn_en: 'Add space between Chinese and English',
+                    space_between_cn_number: 'Add space between Chinese and numbers',
+                    space_between_en_number: 'Add space between English and numbers',
+                    remove_extra_spaces: 'Remove extra spaces (Keep newlines)',
+                    yes: 'Yes',
+                    no: 'No',
+                    btn_process: 'Process Text',
+                    btn_clear: 'Clear All',
+                    results: 'Results',
+                    original_length: 'Original Length:',
+                    added_spaces: 'Added Spaces:',
+                    final_length: 'Final Length:',
+                    result_text: 'Result Text',
+                    btn_copy: 'Copy Result',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool automatically adds appropriate spaces between Chinese, English, and numbers to make text formatting more beautiful and readable. It supports custom settings for space rules between different types of characters and can automatically remove extra spaces (preserving paragraphs) to make text formatting more standardized and uniform.',
+                    please_enter_text: 'Please enter some text first',
+                    copied: 'Copied!'
+                },
+                'zh-CN': {
+                    title: '🔤 中英文加空格工具',
+                    input_text: '输入文本',
+                    options: '设置选项',
+                    space_between_cn_en: '中英文之间加空格',
+                    space_between_cn_number: '中文与数字之间加空格',
+                    space_between_en_number: '英文与数字之间加空格',
+                    remove_extra_spaces: '移除多余空格 (保留换行)',
+                    yes: '是',
+                    no: '否',
+                    btn_process: '处理文本',
+                    btn_clear: '清空所有',
+                    results: '处理结果',
+                    original_length: '原始长度：',
+                    added_spaces: '添加空格数：',
+                    final_length: '处理后长度：',
+                    result_text: '结果文本',
+                    btn_copy: '复制结果',
+                    intro_title: '关于本工具',
+                    intro_text: '中英文加空格工具可以自动在中文、英文和数字之间添加适当的空格，使文本排版更加美观易读。支持自定义设置不同类型字符间的空格规则，并能自动移除多余的空格（保留原有段落），让文本格式更加规范统一。',
+                    please_enter_text: '请先输入一些文本',
+                    copied: '已复制！'
+                },
+                'zh-TW': {
+                    title: '🔤 中英文加空格工具',
+                    input_text: '輸入文本',
+                    options: '設置選項',
+                    space_between_cn_en: '中英文之間加空格',
+                    space_between_cn_number: '中文與數字之間加空格',
+                    space_between_en_number: '英文與數字之間加空格',
+                    remove_extra_spaces: '移除多餘空格 (保留換行)',
+                    yes: '是',
+                    no: '否',
+                    btn_process: '處理文本',
+                    btn_clear: '清空所有',
+                    results: '處理結果',
+                    original_length: '原始長度：',
+                    added_spaces: '添加空格數：',
+                    final_length: '處理後長度：',
+                    result_text: '結果文本',
+                    btn_copy: '複製結果',
+                    intro_title: '關於本工具',
+                    intro_text: '中英文加空格工具可以自動在中文、英文和數字之間添加適當的空格，使文本排版更加美觀易讀。支持自定義設置不同類型字符間的空格規則，並能自動移除多餘的空格（保留原有段落），讓文本格式更加規範統一。',
+                    please_enter_text: '請先輸入一些文本',
+                    copied: '已複製！'
+                },
+                'ja': {
+                    title: '🔤 中日英スペース追加ツール',
+                    input_text: 'テキストを入力',
+                    options: '設定オプション',
+                    space_between_cn_en: '中国語と英語の間にスペースを追加',
+                    space_between_cn_number: '中国語と数字の間にスペースを追加',
+                    space_between_en_number: '英語と数字の間にスペースを追加',
+                    remove_extra_spaces: '余分なスペースを削除（改行保持）',
+                    yes: 'はい',
+                    no: 'いいえ',
+                    btn_process: 'テキストを処理',
+                    btn_clear: 'すべてクリア',
+                    results: '処理結果',
+                    original_length: '元の長さ：',
+                    added_spaces: '追加されたスペース数：',
+                    final_length: '処理後の長さ：',
+                    result_text: '結果テキスト',
+                    btn_copy: '結果をコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: '中日英スペース追加ツールは、中国語、英語、数字の間に適切なスペースを自動的に追加し、テキストの排版をより美しく読みやすくします。さまざまなタイプの文字間のスペース規則をカスタマイズし、余分なスペースを自動的に削除して（段落を保持）、テキスト形式をより標準化、統一化することができます。',
+                    please_enter_text: 'まずテキストを入力してください',
+                    copied: 'コピーしました！'
+                },
+                'ru': {
+                    title: '🔤 Инструмент добавления пробелов',
+                    input_text: 'Введите текст',
+                    options: 'Параметры',
+                    space_between_cn_en: 'Пробел между китайским и английским',
+                    space_between_cn_number: 'Пробел между китайским и цифрами',
+                    space_between_en_number: 'Пробел между английским и цифрами',
+                    remove_extra_spaces: 'Удалить лишние пробелы (сохр. абзацы)',
+                    yes: 'Да',
+                    no: 'Нет',
+                    btn_process: 'Обработать текст',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты',
+                    original_length: 'Исходная длина:',
+                    added_spaces: 'Добавлено пробелов:',
+                    final_length: 'Длина после обработки:',
+                    result_text: 'Результирующий текст',
+                    btn_copy: 'Скопировать результат',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Этот инструмент автоматически добавляет пробелы между китайскими иероглифами, английскими словами и цифрами. Поддерживает настройку правил и удаление лишних пробелов с сохранением структуры абзацев.',
+                    please_enter_text: 'Пожалуйста, сначала введите текст',
+                    copied: 'Скопировано!'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false); 
+                } else {
+                    this.changeLang(false); 
+                }
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                document.title = i18nData['title'];
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang]?.[key] || this.i18n['en'][key] || key;
+            },
+
+            processText: function() {
+                const inputText = document.getElementById('input_text').value;
+                if (!inputText.trim()) {
+                    alert(this.getI18nText('please_enter_text'));
+                    return;
+                }
+
+                // 获取设置选项
+                const spaceCN_EN = document.getElementById('space_between_cn_en').value === 'true';
+                const spaceCN_Num = document.getElementById('space_between_cn_number').value === 'true';
+                const spaceEN_Num = document.getElementById('space_between_en_number').value === 'true';
+                const removeExtra = document.getElementById('remove_extra_spaces').value === 'true';
+
+                // 保存原始长度
+                const originalLength = inputText.length;
+                
+                // 处理文本
+                let processedText = inputText;
+                
+                // 1. 中英文之间加空格 (Chinese <-> English Letters Only)
+                // 修正：排除了数字，避免与"中文-数字"选项冲突
+                if (spaceCN_EN) {
+                    processedText = processedText.replace(/([\u4e00-\u9fa5])([a-zA-Z])/g, '$1 $2');
+                    processedText = processedText.replace(/([a-zA-Z])([\u4e00-\u9fa5])/g, '$1 $2');
+                }
+                
+                // 2. 中文与数字之间加空格 (Chinese <-> Numbers)
+                // 修正：移除了 && !spaceCN_EN 限制，使其可以独立控制
+                if (spaceCN_Num) {
+                    processedText = processedText.replace(/([\u4e00-\u9fa5])([0-9])/g, '$1 $2');
+                    processedText = processedText.replace(/([0-9])([\u4e00-\u9fa5])/g, '$1 $2');
+                }
+                
+                // 3. 英文与数字之间加空格 (English Letters <-> Numbers)
+                // 修正：移除了 && !spaceCN_EN 限制，使其可以独立控制
+                if (spaceEN_Num) {
+                    processedText = processedText.replace(/([a-zA-Z])([0-9])/g, '$1 $2');
+                    processedText = processedText.replace(/([0-9])([a-zA-Z])/g, '$1 $2');
+                }
+                
+                // 4. 移除多余空格
+                // 修正：使用正则 /[ \t]+/ 代替 \s+，避免将换行符 \n 替换为空格，从而保护段落结构
+                if (removeExtra) {
+                    processedText = processedText.replace(/[ \t]+/g, ' ').trim();
+                    // 处理行首行尾的空格 (保留换行)
+                    processedText = processedText.split('\n').map(line => line.trim()).join('\n');
+                }
+                
+                // 计算添加的空格数 (简单的长度差计算)
+                // 注意：如果移除多余空格，长度可能会变短，added_spaces 可能是负数，这里显示实际变化
+                const lengthDiff = processedText.length - originalLength;
+                
+                // 更新UI
+                document.getElementById('original_length').textContent = originalLength;
+                // 如果是减少了，显示负数也无妨，或者显示0
+                document.getElementById('added_spaces').textContent = lengthDiff > 0 ? lengthDiff : 0;
+                document.getElementById('final_length').textContent = processedText.length;
+                document.getElementById('result_text').value = processedText;
+            },
+
+            clearAll: function() {
+                document.getElementById('input_text').value = '';
+                document.getElementById('result_text').value = '';
+                document.getElementById('original_length').textContent = '0';
+                document.getElementById('added_spaces').textContent = '0';
+                document.getElementById('final_length').textContent = '0';
+            },
+
+            copyResult: function() {
+                const resultText = document.getElementById('result_text');
+                if (!resultText.value) return;
+                
+                resultText.select();
+                document.execCommand('copy');
+                
+                const btn = document.querySelector('button[onclick="TextSpaceTool.copyResult()"]');
+                const originalText = btn.textContent;
+                btn.textContent = this.getI18nText('copied');
+                btn.classList.add('bg-green-700');
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('bg-green-700');
+                }, 2000);
+            }
+        };
+
+        window.onload = function() { TextSpaceTool.init(); };
+    </script>
+</body>
+</html>
