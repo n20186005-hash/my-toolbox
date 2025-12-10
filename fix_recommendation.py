@@ -1,4 +1,18 @@
+import os
 
+# 配置路径
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODULES_DIR = os.path.join(BASE_DIR, 'modules')
+SCRIPTS_DIR = os.path.join(BASE_DIR, 'scripts')
+
+# 1. 重写 related.js (使用绝对路径 + 增加调试日志)
+def fix_related_js():
+    if not os.path.exists(SCRIPTS_DIR):
+        os.makedirs(SCRIPTS_DIR)
+    
+    js_path = os.path.join(SCRIPTS_DIR, 'related.js')
+    
+    js_content = """
 document.addEventListener("DOMContentLoaded", async function() {
     const container = document.getElementById('related-tools-container');
     if (!container) return;
@@ -77,3 +91,52 @@ document.addEventListener("DOMContentLoaded", async function() {
         console.error("❌ Failed to load related tools:", error);
     }
 });
+"""
+    with open(js_path, 'w', encoding='utf-8') as f:
+        f.write(js_content)
+    print(f"✅ [修复] related.js 已更新为绝对路径版本")
+
+# 2. 批量修正 HTML 引用
+def fix_html_references():
+    print("🚀 开始修正 HTML 文件引用...")
+    count = 0
+    
+    for root, dirs, files in os.walk(MODULES_DIR):
+        for file in files:
+            if file.endswith('.html'):
+                if root == MODULES_DIR: continue
+
+                file_path = os.path.join(root, file)
+                
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                
+                original_content = content
+                
+                # 【核心修复】将相对引用改为绝对引用
+                # 替换 ../../scripts/related.js 为 /scripts/related.js
+                if 'src="../../scripts/related.js"' in content:
+                    content = content.replace('src="../../scripts/related.js"', 'src="/scripts/related.js"')
+                
+                # 如果之前没加进去，这里强制加绝对路径版本
+                if '/scripts/related.js' not in content and 'related-tools-container' in content:
+                     # 可能是旧的引用方式，尝试替换
+                     pass 
+                
+                # 确保容器存在
+                if 'related-tools-container' not in content:
+                     rec_code = '\n    \n    <div id="related-tools-container"></div>\n    <script src="/scripts/related.js"></script>\n'
+                     if '</body>' in content:
+                        content = content.replace('</body>', rec_code + '</body>')
+
+                if content != original_content:
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    print(f"  👉 已修正路径: {file}")
+                    count += 1
+    
+    print(f"\n✅ 全部完成！共修正了 {count} 个文件。")
+
+if __name__ == '__main__':
+    fix_related_js()
+    fix_html_references()
