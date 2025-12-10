@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Loan Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="personal_loan_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💰">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Personal Loan Calculator">
+    <meta name="description" content="Calculate monthly payments and total interest for your personal loan.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="个人贷款计算器">
+    <meta name="lang-description-zh-CN" content="计算您的个人贷款的月付款和总利息。">
+    
+    <meta name="lang-title-zh-TW" content="個人貸款計算器">
+    <meta name="lang-description-zh-TW" content="計算您的個人貸款的月付款和總利息。">
+    
+    <meta name="lang-title-ja" content="個人ローン計算機">
+    <meta name="lang-description-ja" content="個人ローンの月々の支払いと総利息を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор личных кредитов">
+    <meta name="lang-description-ru" content="Вычислите ежемесячные платежи и общую процентную ставку по вашему личному кредиту.">
+    
+    <meta name="lang-title-es" content="Calculadora de préstamos personales">
+    <meta name="lang-description-es" content="Calcule los pagos mensuales y el interés total de su préstamo personal.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/finance/personal-loan-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="personal_loan_calculator" 
+         data-category="finance" 
+         data-title="Personal Loan Calculator" 
+         data-icon="💰">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="loan-lang" onchange="LoanCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💰 Personal Loan Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="amount_label">Loan Amount ($)</label>
+                <input type="number" id="loan-amount" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 20000" min="100" step="100" value="20000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rate_label">Interest Rate (% per year)</label>
+                <input type="number" id="interest-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 7.5" min="0.1" max="100" step="0.1" value="7.5">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="term_label">Loan Term (Months)</label>
+                <input type="number" id="loan-term" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 60" min="6" max="360" value="60">
+            </div>
+        </div>
+
+        <button onclick="LoanCalc.calc()" class="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700 transition mb-6" data-i18n="btn_calc">Calculate Loan</button>
+
+        <div class="bg-purple-50 p-6 rounded-lg border border-purple-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Loan Calculation Results</div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="monthly_label">Monthly Payment</div>
+                    <div id="monthly-payment" class="text-xl font-bold text-purple-800">--</div>
+                </div>
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="total_interest_label">Total Interest</div>
+                    <div id="total-interest" class="text-xl font-bold text-purple-800">--</div>
+                </div>
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="total_payment_label">Total Payment</div>
+                    <div id="total-payment" class="text-xl font-bold text-purple-800">--</div>
+                </div>
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="interest_ratio_label">Interest Ratio</div>
+                    <div id="interest-ratio" class="text-xl font-bold text-purple-800">--</div>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">Formula</div>
+                <div id="loan-formula" class="text-gray-600">M = P × (r(1+r)^n) / ((1+r)^n - 1)</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    <span data-i18n="formula_key">M = monthly payment, P = principal loan amount, r = monthly interest rate, n = number of payments</span>
+                </div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual loan terms may vary by lender.</div>
+        </div>
+    </div>
+
+    <script>
+        const LoanCalc = {
+            i18n: {
+                'en': {
+                    title: '💰 Personal Loan Calculator',
+                    amount_label: 'Loan Amount ($)',
+                    rate_label: 'Interest Rate (% per year)',
+                    term_label: 'Loan Term (Months)',
+                    btn_calc: 'Calculate Loan',
+                    res_label: 'Loan Calculation Results',
+                    monthly_label: 'Monthly Payment',
+                    total_interest_label: 'Total Interest',
+                    total_payment_label: 'Total Payment',
+                    interest_ratio_label: 'Interest Ratio',
+                    formula_label: 'Formula',
+                    formula_key: 'M = monthly payment, P = principal loan amount, r = monthly interest rate, n = number of payments',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual loan terms may vary by lender.'
+                },
+                'zh-CN': {
+                    title: '💰 个人贷款计算器',
+                    amount_label: '贷款金额（美元）',
+                    rate_label: '年利率（%）',
+                    term_label: '贷款期限（月）',
+                    btn_calc: '计算贷款',
+                    res_label: '贷款计算结果',
+                    monthly_label: '月付款',
+                    total_interest_label: '总利息',
+                    total_payment_label: '总付款额',
+                    interest_ratio_label: '利息比例',
+                    formula_label: '计算公式',
+                    formula_key: 'M = 月付款, P = 贷款本金, r = 月利率, n = 付款次数',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。实际贷款条款可能因贷款人而异。'
+                },
+                'zh-TW': {
+                    title: '💰 個人貸款計算器',
+                    amount_label: '貸款金額（美元）',
+                    rate_label: '年利率（%）',
+                    term_label: '貸款期限（月）',
+                    btn_calc: '計算貸款',
+                    res_label: '貸款計算結果',
+                    monthly_label: '月付款',
+                    total_interest_label: '總利息',
+                    total_payment_label: '總付款額',
+                    interest_ratio_label: '利息比例',
+                    formula_label: '計算公式',
+                    formula_key: 'M = 月付款, P = 貸款本金, r = 月利率, n = 付款次數',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。實際貸款條款可能因貸款人而異。'
+                },
+                'ja': {
+                    title: '💰 個人ローン計算機',
+                    amount_label: 'ローン金額（ドル）',
+                    rate_label: '金利（年利%）',
+                    term_label: 'ローン期間（月）',
+                    btn_calc: 'ローンを計算',
+                    res_label: 'ローン計算結果',
+                    monthly_label: '月々の支払額',
+                    total_interest_label: '総利息',
+                    total_payment_label: '総支払額',
+                    interest_ratio_label: '利息比率',
+                    formula_label: '計算式',
+                    formula_key: 'M = 月々の支払額, P = ローン元本, r = 月利率, n = 支払回数',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際のローン条件は貸し手によって異なる場合があります。'
+                },
+                'ru': {
+                    title: '💰 Калькулятор личных кредитов',
+                    amount_label: 'Сумма кредита ($)',
+                    rate_label: 'Процентная ставка (% в год)',
+                    term_label: 'Срок кредита (месяцев)',
+                    btn_calc: 'Вычислить кредит',
+                    res_label: 'Результаты расчета кредита',
+                    monthly_label: 'Ежемесячный платеж',
+                    total_interest_label: 'Общий процент',
+                    total_payment_label: 'Общий платеж',
+                    interest_ratio_label: 'Процентная доля',
+                    formula_label: 'Формула',
+                    formula_key: 'M = ежемесячный платеж, P = основная сумма кредита, r = месячная процентная ставка, n = количество платежей',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактические условия кредита могут отличаться в зависимости от кредитора.'
+                },
+                'es': {
+                    title: '💰 Calculadora de préstamos personales',
+                    amount_label: 'Monto del préstamo ($)',
+                    rate_label: 'Tasa de interés (% anual)',
+                    term_label: 'Plazo del préstamo (meses)',
+                    btn_calc: 'Calcular préstamo',
+                    res_label: 'Resultados del cálculo del préstamo',
+                    monthly_label: 'Pago mensual',
+                    total_interest_label: 'Interés total',
+                    total_payment_label: 'Pago total',
+                    interest_ratio_label: 'Proporción de interés',
+                    formula_label: 'Fórmula',
+                    formula_key: 'M = pago mensual, P = monto principal del préstamo, r = tasa de interés mensual, n = número de pagos',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo una estimación. Los términos reales del préstamo pueden variar según el prestamista.'
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('loan-lang').value;
+                const texts = LoanCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="personal_loan_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                LoanCalc.calc();
+            },
+
+            calc: () => {
+                const principal = parseFloat(document.getElementById('loan-amount').value) || 0;
+                const annualRate = parseFloat(document.getElementById('interest-rate').value) || 0;
+                const months = parseFloat(document.getElementById('loan-term').value) || 0;
+                const lang = document.getElementById('loan-lang').value;
+                const texts = LoanCalc.i18n[lang];
+
+                const monthlyEl = document.getElementById('monthly-payment');
+                const totalInterestEl = document.getElementById('total-interest');
+                const totalPaymentEl = document.getElementById('total-payment');
+                const ratioEl = document.getElementById('interest-ratio');
+
+                // 验证输入
+                if (isNaN(principal) || isNaN(annualRate) || isNaN(months) || 
+                    principal <= 0 || annualRate <= 0 || months < 6) {
+                    monthlyEl.innerText = texts.err_invalid;
+                    monthlyEl.className = "text-xl font-bold text-red-600";
+                    totalInterestEl.innerText = "";
+                    totalPaymentEl.innerText = "";
+                    ratioEl.innerText = "";
+                    return;
+                }
+
+                // 计算贷款
+                const monthlyRate = annualRate / 100 / 12;
+                const monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / 
+                                      (Math.pow(1 + monthlyRate, months) - 1);
+                const totalPayment = monthlyPayment * months;
+                const totalInterest = totalPayment - principal;
+                const interestRatio = (totalInterest / principal * 100).toFixed(1) + '%';
+
+                // 格式化结果
+                const formatCurrency = (num) => '$' + num.toFixed(2);
+
+                // 显示结果
+                monthlyEl.className = "text-xl font-bold text-purple-800";
+                monthlyEl.innerText = formatCurrency(monthlyPayment);
+                
+                totalInterestEl.className = "text-xl font-bold text-purple-800";
+                totalInterestEl.innerText = formatCurrency(totalInterest);
+                
+                totalPaymentEl.className = "text-xl font-bold text-purple-800";
+                totalPaymentEl.innerText = formatCurrency(totalPayment);
+                
+                ratioEl.className = "text-xl font-bold text-purple-800";
+                ratioEl.innerText = interestRatio;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', LoanCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('loan-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    LoanCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

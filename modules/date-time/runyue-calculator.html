@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leap Month Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="runyue_calc">
+    <meta name="category" content="Date & Time">
+    <meta name="icon" content="📅">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Leap Month Calculator">
+    <meta name="description" content="Check if a year has a lunar leap month and which month it is.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="闰月计算器">
+    <meta name="lang-description-zh-CN" content="查询某一年是否有农历闰月以及是闰几月。">
+    
+    <meta name="lang-title-zh-TW" content="閏月計算器">
+    <meta name="lang-description-zh-TW" content="查詢某一年是否有農曆閏月以及是閏幾月。">
+    
+    <meta name="lang-title-ja" content="閏月計算ツール">
+    <meta name="lang-description-ja" content="特定の年に太陰暦の閏月があるかどうか、そしてどの月が閏月かを確認します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор високосного месяца">
+    <meta name="lang-description-ru" content="Проверьте, есть ли в году лунный високосный месяц и какой именно месяц он является.">
+    
+    <meta name="lang-title-es" content="Calculadora de Mes Bisiesto Lunar">
+    <meta name="lang-description-es" content="Compruebe si un año tiene un mes bisiesto lunar y cuál es.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .month-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .month-item { background: #e6f7ff; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/date-time/runyue-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="runyue_calc" 
+         data-category="calendar" 
+         data-title="Leap Month Calculator" 
+         data-icon="📅">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="runyue-lang" onchange="RunyueCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📅 Leap Month Calculator</h2>
+        
+        <div class="space-y-4">
+            <div class="p-4 border rounded-lg">
+                <label class="block text-gray-700 mb-2" data-i18n="year_label">Year</label>
+                <input type="number" id="leap-year" min="1900" max="2100" value="2024" 
+                       class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none">
+            </div>
+            
+            <button onclick="RunyueCalc.calc()" class="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700 transition mb-6" data-i18n="btn_calc">Check Leap Month</button>
+
+            <div class="bg-purple-50 p-6 rounded-lg border border-purple-100">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="result_label">Lunar Leap Month Information</div>
+                <div id="leap-result" class="text-xl font-bold text-purple-800 text-center">--</div>
+                
+                <div class="mt-6">
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="recent_leap_years">Recent Leap Years</div>
+                    <div id="recent-leap-years" class="month-list">
+                        <!-- 最近的闰年会在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const RunyueCalc = {
+            // 闰月数据 (示例)
+            leapMonths: {
+                2012: 4,
+                2014: 9,
+                2017: 6,
+                2020: 4,
+                2023: 2,
+                2025: 6,
+                2028: 5,
+                2031: 3,
+                2033: 11,
+                2036: 6,
+                2039: 5,
+                2042: 2
+            },
+
+            // 月份多语言名称
+            months: {
+                1: { 'en': '1st', 'zh-CN': '一月', 'zh-TW': '一月', 'ja': '1月', 'ru': '1-й', 'es': '1º' },
+                2: { 'en': '2nd', 'zh-CN': '二月', 'zh-TW': '二月', 'ja': '2月', 'ru': '2-й', 'es': '2º' },
+                3: { 'en': '3rd', 'zh-CN': '三月', 'zh-TW': '三月', 'ja': '3月', 'ru': '3-й', 'es': '3º' },
+                4: { 'en': '4th', 'zh-CN': '四月', 'zh-TW': '四月', 'ja': '4月', 'ru': '4-й', 'es': '4º' },
+                5: { 'en': '5th', 'zh-CN': '五月', 'zh-TW': '五月', 'ja': '5月', 'ru': '5-й', 'es': '5º' },
+                6: { 'en': '6th', 'zh-CN': '六月', 'zh-TW': '六月', 'ja': '6月', 'ru': '6-й', 'es': '6º' },
+                7: { 'en': '7th', 'zh-CN': '七月', 'zh-TW': '七月', 'ja': '7月', 'ru': '7-й', 'es': '7º' },
+                8: { 'en': '8th', 'zh-CN': '八月', 'zh-TW': '八月', 'ja': '8月', 'ru': '8-й', 'es': '8º' },
+                9: { 'en': '9th', 'zh-CN': '九月', 'zh-TW': '九月', 'ja': '9月', 'ru': '9-й', 'es': '9º' },
+                10: { 'en': '10th', 'zh-CN': '十月', 'zh-TW': '十月', 'ja': '10月', 'ru': '10-й', 'es': '10º' },
+                11: { 'en': '11th', 'zh-CN': '十一月', 'zh-TW': '十一月', 'ja': '11月', 'ru': '11-й', 'es': '11º' },
+                12: { 'en': '12th', 'zh-CN': '十二月', 'zh-TW': '十二月', 'ja': '12月', 'ru': '12-й', 'es': '12º' }
+            },
+
+            i18n: {
+                'en': {
+                    title: '📅 Leap Month Calculator',
+                    year_label: 'Year',
+                    btn_calc: 'Check Leap Month',
+                    result_label: 'Lunar Leap Month Information',
+                    recent_leap_years: 'Recent Leap Years',
+                    err_invalid: 'Please enter a valid year (1900-2100)',
+                    has_leap: 'Year {year} has a leap {month} month in the lunar calendar',
+                    no_leap: 'Year {year} has no leap month in the lunar calendar',
+                    leap: 'leap'
+                },
+                'zh-CN': {
+                    title: '📅 闰月计算器',
+                    year_label: '年份',
+                    btn_calc: '查询闰月',
+                    result_label: '农历闰月信息',
+                    recent_leap_years: '近期有闰月的年份',
+                    err_invalid: '请输入有效的年份（1900-2100）',
+                    has_leap: '{year}年农历有闰{month}',
+                    no_leap: '{year}年农历没有闰月',
+                    leap: '闰'
+                },
+                'zh-TW': {
+                    title: '📅 閏月計算器',
+                    year_label: '年份',
+                    btn_calc: '查詢閏月',
+                    result_label: '農曆閏月資訊',
+                    recent_leap_years: '近期有閏月的年份',
+                    err_invalid: '請輸入有效的年份（1900-2100）',
+                    has_leap: '{year}年農曆有閏{month}',
+                    no_leap: '{year}年農曆沒有閏月',
+                    leap: '閏'
+                },
+                'ja': {
+                    title: '📅 閏月計算ツール',
+                    year_label: '年',
+                    btn_calc: '閏月を確認',
+                    result_label: '太陰暦の閏月情報',
+                    recent_leap_years: '最近の閏月がある年',
+                    err_invalid: '有効な年を入力してください（1900-2100）',
+                    has_leap: '{year}年の太陰暦には閏{month}があります',
+                    no_leap: '{year}年の太陰暦には閏月がありません',
+                    leap: '閏'
+                },
+                'ru': {
+                    title: '📅 Калькулятор високосного месяца',
+                    year_label: 'Год',
+                    btn_calc: 'Проверить високосный месяц',
+                    result_label: 'Информация о лунном високосном месяце',
+                    recent_leap_years: 'Последние годы с високосным месяцем',
+                    err_invalid: 'Введите действительный год (1900-2100)',
+                    has_leap: 'В {year} году в лунном календаре есть високосный {month} месяц',
+                    no_leap: 'В {year} году в лунном календаре нет високосного месяца',
+                    leap: 'високосный'
+                },
+                'es': {
+                    title: '📅 Calculadora de Mes Bisieto Lunar',
+                    year_label: 'Año',
+                    btn_calc: 'Comprobar Mes Bisieto',
+                    result_label: 'Información del mes bisiesto lunar',
+                    recent_leap_years: 'Últimos años con meses bisiestos',
+                    err_invalid: 'Por favor, ingrese un año válido (1900-2100)',
+                    has_leap: 'El año {year} tiene un mes bisiesto {month} en el calendario lunar',
+                    no_leap: 'El año {year} no tiene meses bisiestos en el calendario lunar',
+                    leap: 'bisiesto'
+                }
+            },
+
+            init: () => {
+                // 初始显示最近的闰月年份
+                RunyueCalc.showRecentLeapYears();
+            },
+
+            showRecentLeapYears: () => {
+                const lang = document.getElementById('runyue-lang').value;
+                const container = document.getElementById('recent-leap-years');
+                container.innerHTML = '';
+                
+                // 获取并排序所有闰月年份
+                const years = Object.keys(RunyueCalc.leapMonths).map(Number).sort((a, b) => b - a);
+                
+                // 显示最近的6个
+                const recentYears = years.slice(0, 6);
+                recentYears.forEach(year => {
+                    const month = RunyueCalc.leapMonths[year];
+                    const monthName = RunyueCalc.months[month][lang];
+                    
+                    const item = document.createElement('div');
+                    item.className = 'month-item';
+                    item.innerText = `${year} (${RunyueCalc.i18n[lang].leap} ${monthName})`;
+                    container.appendChild(item);
+                });
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('runyue-lang').value;
+                const texts = RunyueCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="runyue_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        el.innerText = texts[key];
+                    }
+                });
+
+                // 更新最近闰月年份显示
+                RunyueCalc.showRecentLeapYears();
+                
+                // 如果已有计算结果，重新计算以更新语言
+                const yearInput = document.getElementById('leap-year');
+                if (yearInput.value) {
+                    RunyueCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const lang = document.getElementById('runyue-lang').value;
+                const texts = RunyueCalc.i18n[lang];
+                const year = parseInt(document.getElementById('leap-year').value);
+                
+                const resultEl = document.getElementById('leap-result');
+                
+                // 验证年份
+                if (isNaN(year) || year < 1900 || year > 2100) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600 text-center";
+                    return;
+                }
+                
+                // 检查是否有闰月
+                if (RunyueCalc.leapMonths[year]) {
+                    const month = RunyueCalc.leapMonths[year];
+                    const monthName = RunyueCalc.months[month][lang];
+                    resultEl.innerText = texts.has_leap.replace('{year}', year).replace('{month}', monthName);
+                } else {
+                    resultEl.innerText = texts.no_leap.replace('{year}', year);
+                }
+                
+                resultEl.className = "text-xl font-bold text-purple-800 text-center";
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', RunyueCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('runyue-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    RunyueCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

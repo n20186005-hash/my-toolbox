@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="loan_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💳">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Loan Calculator">
+    <meta name="description" content="Calculate your loan payments with equal principal and equal principal & interest methods.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="贷款计算器">
+    <meta name="lang-description-zh-CN" content="使用等额本金和等额本息方法计算您的贷款还款。">
+    
+    <meta name="lang-title-zh-TW" content="貸款計算器">
+    <meta name="lang-description-zh-TW" content="使用等額本金和等額本息方法計算您的貸款還款。">
+    
+    <meta name="lang-title-ja" content="ローン計算機">
+    <meta name="lang-description-ja" content="元金均等法と元利均等法でローンの支払額を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор кредитов">
+    <meta name="lang-description-ru" content="Рассчитайте платежи по кредиту методами равного основного долга и равных платежей.">
+    
+    <meta name="lang-title-es" content="Calculadora de préstamos">
+    <meta name="lang-description-es" content="Calcule sus pagos de préstamo con métodos de principal igual y principal e interés iguales.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .payment-schedule { max-height: 300px; overflow-y: auto; margin-top: 15px; }
+        .schedule-row { display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px; border-bottom: 1px solid #eee; }
+        .schedule-header { font-weight: bold; background-color: #f8fafc; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/finance/loan-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="loan_calculator" 
+         data-category="finance" 
+         data-title="Loan Calculator" 
+         data-icon="💳">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="loan-lang" onchange="LoanCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💳 Loan Calculator</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="loan_amount_label">Loan Amount</label>
+                <input type="number" id="loan-amount" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 10000" min="100" value="10000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="interest_rate_label">Annual Interest Rate (%)</label>
+                <input type="number" id="interest-rate" step="0.01" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 6.5" min="0.01" max="30" value="6.5">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="loan_term_label">Loan Term (Months)</label>
+                <input type="number" id="loan-term" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 60" min="1" max="600" value="60">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="calculation_method_label">Calculation Method</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="calc-method" value="equal-principal-interest" checked class="text-purple-600 focus:ring-purple-500">
+                        <span data-i18n="equal_principal_interest">Equal Principal & Interest</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="calc-method" value="equal-principal" class="text-purple-600 focus:ring-purple-500">
+                        <span data-i18n="equal_principal">Equal Principal</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="LoanCalc.calc()" class="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700 transition mb-6" data-i18n="btn_calc">Calculate Loan</button>
+
+        <div class="bg-purple-50 p-6 rounded-lg border border-purple-100">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="monthly_payment_label">Monthly Payment</div>
+                    <div id="monthly-payment" class="text-3xl font-bold text-purple-800">--</div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <div>
+                            <div class="text-sm text-gray-500 mb-1" data-i18n="total_principal_label">Total Principal</div>
+                            <div id="total-principal" class="text-lg font-medium text-gray-800">--</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-500 mb-1" data-i18n="total_interest_label">Total Interest</div>
+                            <div id="total-interest" class="text-lg font-medium text-gray-800">--</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-500 mb-1" data-i18n="total_payment_label">Total Payment</div>
+                            <div id="total-payment" class="text-lg font-medium text-gray-800">--</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-500 mb-1" data-i18n="payment_count_label">Payment Count</div>
+                            <div id="payment-count" class="text-lg font-medium text-gray-800">--</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="payment_schedule_label">Payment Schedule (First 12 Months)</div>
+                    <div class="schedule-row schedule-header">
+                        <div data-i18n="month_label">Month</div>
+                        <div data-i18n="payment_label">Payment</div>
+                        <div data-i18n="principal_label">Principal</div>
+                        <div data-i18n="interest_label">Interest</div>
+                    </div>
+                    <div id="payment-schedule" class="payment-schedule">
+                        <!-- 付款计划将在这里动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual payments may vary based on additional fees and terms.</div>
+        </div>
+    </div>
+
+    <script>
+        const LoanCalc = {
+            i18n: {
+                'en': {
+                    title: '💳 Loan Calculator',
+                    loan_amount_label: 'Loan Amount',
+                    interest_rate_label: 'Annual Interest Rate (%)',
+                    loan_term_label: 'Loan Term (Months)',
+                    calculation_method_label: 'Calculation Method',
+                    equal_principal_interest: 'Equal Principal & Interest',
+                    equal_principal: 'Equal Principal',
+                    btn_calc: 'Calculate Loan',
+                    monthly_payment_label: 'Monthly Payment',
+                    total_principal_label: 'Total Principal',
+                    total_interest_label: 'Total Interest',
+                    total_payment_label: 'Total Payment',
+                    payment_count_label: 'Payment Count',
+                    payment_schedule_label: 'Payment Schedule (First 12 Months)',
+                    month_label: 'Month',
+                    payment_label: 'Payment',
+                    principal_label: 'Principal',
+                    interest_label: 'Interest',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual payments may vary based on additional fees and terms.'
+                },
+                'zh-CN': {
+                    title: '💳 贷款计算器',
+                    loan_amount_label: '贷款金额',
+                    interest_rate_label: '年利率 (%)',
+                    loan_term_label: '贷款期限 (月)',
+                    calculation_method_label: '计算方式',
+                    equal_principal_interest: '等额本息',
+                    equal_principal: '等额本金',
+                    btn_calc: '计算贷款',
+                    monthly_payment_label: '每月还款',
+                    total_principal_label: '总本金',
+                    total_interest_label: '总利息',
+                    total_payment_label: '还款总额',
+                    payment_count_label: '还款期数',
+                    payment_schedule_label: '还款计划（前12期）',
+                    month_label: '期数',
+                    payment_label: '还款额',
+                    principal_label: '本金',
+                    interest_label: '利息',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。实际还款可能因额外费用和条款而异。'
+                },
+                'zh-TW': {
+                    title: '💳 貸款計算器',
+                    loan_amount_label: '貸款金額',
+                    interest_rate_label: '年利率 (%)',
+                    loan_term_label: '貸款期限 (月)',
+                    calculation_method_label: '計算方式',
+                    equal_principal_interest: '等額本息',
+                    equal_principal: '等額本金',
+                    btn_calc: '計算貸款',
+                    monthly_payment_label: '每月還款',
+                    total_principal_label: '總本金',
+                    total_interest_label: '總利息',
+                    total_payment_label: '還款總額',
+                    payment_count_label: '還款期數',
+                    payment_schedule_label: '還款計劃（前12期）',
+                    month_label: '期數',
+                    payment_label: '還款額',
+                    principal_label: '本金',
+                    interest_label: '利息',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。實際還款可能因額外費用和條款而異。'
+                },
+                'ja': {
+                    title: '💳 ローン計算機',
+                    loan_amount_label: 'ローン金額',
+                    interest_rate_label: '年利 (%)',
+                    loan_term_label: 'ローン期間 (月)',
+                    calculation_method_label: '計算方法',
+                    equal_principal_interest: '元利均等',
+                    equal_principal: '元金均等',
+                    btn_calc: 'ローンを計算',
+                    monthly_payment_label: '月々の支払い',
+                    total_principal_label: '総元金',
+                    total_interest_label: '総利息',
+                    total_payment_label: '総支払額',
+                    payment_count_label: '支払回数',
+                    payment_schedule_label: '支払スケジュール（最初の12ヶ月）',
+                    month_label: '月',
+                    payment_label: '支払額',
+                    principal_label: '元金',
+                    interest_label: '利息',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際の支払額は追加費用や条件によって異なる場合があります。'
+                },
+                'ru': {
+                    title: '💳 Калькулятор кредитов',
+                    loan_amount_label: 'Сумма кредита',
+                    interest_rate_label: 'Годовая процентная ставка (%)',
+                    loan_term_label: 'Срок кредита (месяцев)',
+                    calculation_method_label: 'Метод расчета',
+                    equal_principal_interest: 'Равные платежи (с основным и процентами)',
+                    equal_principal: 'Равный основной долг',
+                    btn_calc: 'Рассчитать кредит',
+                    monthly_payment_label: 'Ежемесячный платеж',
+                    total_principal_label: 'Общий основной долг',
+                    total_interest_label: 'Общий процент',
+                    total_payment_label: 'Общий платеж',
+                    payment_count_label: 'Количество платежей',
+                    payment_schedule_label: 'График платежей (первые 12 месяцев)',
+                    month_label: 'Месяц',
+                    payment_label: 'Платеж',
+                    principal_label: 'Основной долг',
+                    interest_label: 'Процент',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактические платежи могут отличаться в зависимости от дополнительных комиссий и условий.'
+                },
+                'es': {
+                    title: '💳 Calculadora de préstamos',
+                    loan_amount_label: 'Monto del préstamo',
+                    interest_rate_label: 'Tasa de interés anual (%)',
+                    loan_term_label: 'Plazo del préstamo (meses)',
+                    calculation_method_label: 'Método de cálculo',
+                    equal_principal_interest: 'Principal e interés iguales',
+                    equal_principal: 'Principal igual',
+                    btn_calc: 'Calcular préstamo',
+                    monthly_payment_label: 'Pago mensual',
+                    total_principal_label: 'Principal total',
+                    total_interest_label: 'Interés total',
+                    total_payment_label: 'Pago total',
+                    payment_count_label: 'Número de pagos',
+                    payment_schedule_label: 'Programación de pagos (primeros 12 meses)',
+                    month_label: 'Mes',
+                    payment_label: 'Pago',
+                    principal_label: 'Principal',
+                    interest_label: 'Interés',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo una estimación. Los pagos reales pueden variar según tarifas y términos adicionales.'
+                }
+            },
+
+            init: () => {
+                // 初始化计算
+                LoanCalc.calc();
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('loan-lang').value;
+                const texts = LoanCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="loan_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                LoanCalc.calc();
+            },
+
+            // 等额本息计算
+            calculateEqualPrincipalInterest: (loanAmount, monthlyRate, totalMonths) => {
+                const monthlyPayment = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, totalMonths) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
+                let remainingPrincipal = loanAmount;
+                const schedule = [];
+                
+                for (let month = 1; month <= totalMonths; month++) {
+                    const interestPayment = remainingPrincipal * monthlyRate;
+                    const principalPayment = monthlyPayment - interestPayment;
+                    remainingPrincipal -= principalPayment;
+                    
+                    schedule.push({
+                        month,
+                        payment: monthlyPayment,
+                        principal: principalPayment,
+                        interest: interestPayment,
+                        remaining: remainingPrincipal
+                    });
+                    
+                    if (month === 12) break; // 只显示前12期
+                }
+                
+                const totalPayment = monthlyPayment * totalMonths;
+                const totalInterest = totalPayment - loanAmount;
+                
+                return {
+                    monthlyPayment,
+                    totalPayment,
+                    totalInterest,
+                    totalPrincipal: loanAmount,
+                    paymentCount: totalMonths,
+                    schedule
+                };
+            },
+
+            // 等额本金计算
+            calculateEqualPrincipal: (loanAmount, monthlyRate, totalMonths) => {
+                const monthlyPrincipal = loanAmount / totalMonths;
+                let remainingPrincipal = loanAmount;
+                const schedule = [];
+                let totalPayment = 0;
+                
+                for (let month = 1; month <= totalMonths; month++) {
+                    const interestPayment = remainingPrincipal * monthlyRate;
+                    const payment = monthlyPrincipal + interestPayment;
+                    remainingPrincipal -= monthlyPrincipal;
+                    totalPayment += payment;
+                    
+                    schedule.push({
+                        month,
+                        payment,
+                        principal: monthlyPrincipal,
+                        interest: interestPayment,
+                        remaining: remainingPrincipal
+                    });
+                    
+                    if (month === 12) break; // 只显示前12期
+                }
+                
+                const totalInterest = totalPayment - loanAmount;
+                
+                return {
+                    monthlyPayment: schedule[0].payment, // 首月还款额作为参考
+                    totalPayment,
+                    totalInterest,
+                    totalPrincipal: loanAmount,
+                    paymentCount: totalMonths,
+                    schedule
+                };
+            },
+
+            formatCurrency: (value) => {
+                return new Intl.NumberFormat(document.getElementById('loan-lang').value).format(value.toFixed(2));
+            },
+
+            calc: () => {
+                const loanAmount = parseFloat(document.getElementById('loan-amount').value) || 0;
+                const interestRate = parseFloat(document.getElementById('interest-rate').value) || 0;
+                const loanTerm = parseFloat(document.getElementById('loan-term').value) || 0;
+                const calcMethod = document.querySelector('input[name="calc-method"]:checked').value;
+                const lang = document.getElementById('loan-lang').value;
+                const texts = LoanCalc.i18n[lang];
+
+                const monthlyPaymentEl = document.getElementById('monthly-payment');
+                const totalPrincipalEl = document.getElementById('total-principal');
+                const totalInterestEl = document.getElementById('total-interest');
+                const totalPaymentEl = document.getElementById('total-payment');
+                const paymentCountEl = document.getElementById('payment-count');
+                const scheduleEl = document.getElementById('payment-schedule');
+
+                // 验证输入
+                if (isNaN(loanAmount) || isNaN(interestRate) || isNaN(loanTerm) || 
+                    loanAmount <= 0 || interestRate <= 0 || loanTerm <= 0) {
+                    monthlyPaymentEl.innerText = texts.err_invalid;
+                    monthlyPaymentEl.className = "text-xl font-bold text-red-600";
+                    totalPrincipalEl.innerText = "";
+                    totalInterestEl.innerText = "";
+                    totalPaymentEl.innerText = "";
+                    paymentCountEl.innerText = "";
+                    scheduleEl.innerHTML = "";
+                    return;
+                }
+
+                // 计算参数
+                const monthlyRate = interestRate / 100 / 12;
+                const totalMonths = loanTerm;
+                
+                // 根据选择的计算方式进行计算
+                let result;
+                if (calcMethod === 'equal-principal-interest') {
+                    result = LoanCalc.calculateEqualPrincipalInterest(loanAmount, monthlyRate, totalMonths);
+                } else {
+                    result = LoanCalc.calculateEqualPrincipal(loanAmount, monthlyRate, totalMonths);
+                }
+
+                // 显示结果
+                monthlyPaymentEl.className = "text-3xl font-bold text-purple-800";
+                monthlyPaymentEl.innerText = LoanCalc.formatCurrency(result.monthlyPayment);
+                totalPrincipalEl.innerText = LoanCalc.formatCurrency(result.totalPrincipal);
+                totalInterestEl.innerText = LoanCalc.formatCurrency(result.totalInterest);
+                totalPaymentEl.innerText = LoanCalc.formatCurrency(result.totalPayment);
+                paymentCountEl.innerText = result.paymentCount;
+
+                // 生成还款计划
+                scheduleEl.innerHTML = "";
+                result.schedule.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = "schedule-row";
+                    row.innerHTML = `
+                        <div>${item.month}</div>
+                        <div>${LoanCalc.formatCurrency(item.payment)}</div>
+                        <div>${LoanCalc.formatCurrency(item.principal)}</div>
+                        <div>${LoanCalc.formatCurrency(item.interest)}</div>
+                    `;
+                    scheduleEl.appendChild(row);
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', LoanCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('loan-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    LoanCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

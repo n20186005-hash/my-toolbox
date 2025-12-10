@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="🔊">
+    <title>Text to Speech Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 150px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        button { padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #10b981; color: white; border: none; }
+        .btn-primary:hover { background: #059669; }
+        .btn-secondary { background: #3b82f6; color: white; border: none; }
+        .btn-secondary:hover { background: #2563eb; }
+        .btn-danger { background: #ef4444; color: white; border: none; }
+        .btn-danger:hover { background: #dc2626; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        .badge-supported { background: #dcfce7; color: #166534; }
+        .voice-preview { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 6px; background: #f3f4f6; margin-bottom: 6px; cursor: pointer; }
+        .voice-preview:hover { background: #e5e7eb; }
+        .voice-active { background: #dbeafe; border: 1px solid #93c5fd; }
+        /* Toast notification */
+        .copy-notify { position: fixed; bottom: 20px; right: 20px; background: #10b981; color: white; padding: 10px 20px; border-radius: 4px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 50; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/text-tools/text-to-speech.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="text-to-speech-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="TTS.handleLangChange(this.value)" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔊 Text to Speech Converter</h2>
+
+        <div class="space-y-6">
+            
+            <!-- Text Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_section">Input Text</h3>
+                <div class="form-group">
+                    <label data-i18n="text_content">Text Content</label>
+                    <textarea id="text_content" placeholder="Enter text to convert to speech" class="focus:ring-2 focus:ring-green-500 outline-none" data-i18n-placeholder="text_placeholder"></textarea>
+                </div>
+            </div>
+
+            <!-- Voice Settings Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="voice_settings">Voice Settings</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label data-i18n="language">Language</label>
+                        <select id="language" onchange="TTS.updateVoices()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="en-US">English</option>
+                            <option value="zh-CN">简体中文</option>
+                            <option value="zh-TW">繁體中文</option>
+                            <option value="ja-JP">日本語</option>
+                            <option value="ru-RU">Русский</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="voice_type">Voice Type</label>
+                        <select id="voice_type" onchange="TTS.updateVoicePreview()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="default" data-i18n="default_voice">Default</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="speech_rate">Speech Rate (0.5-2)</label>
+                        <input type="number" id="speech_rate" min="0.5" max="2" step="0.1" value="1" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="pitch">Pitch (0-2)</label>
+                        <input type="number" id="pitch" min="0" max="2" step="0.1" value="1" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label class="block mb-2" data-i18n="available_voices">Available Voices (Click to preview)</label>
+                    <div id="voices_list" class="max-h-40 overflow-y-auto p-2 border border-gray-200 rounded">
+                        <div class="text-gray-500 text-sm" data-i18n="loading_voices">Loading available voices...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button onclick="TTS.speak()" class="btn-primary" data-i18n="btn_speak">Speak</button>
+                <button onclick="TTS.stop()" class="btn-danger" data-i18n="btn_stop">Stop</button>
+                <!-- Changed from Audio Download to Text Download to ensure functionality -->
+                <button onclick="TTS.downloadText()" class="btn-secondary" data-i18n="btn_download">Download Text (.txt)</button>
+            </div>
+
+            <!-- Result Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="status_title">Status</h3>
+                <div class="result-card">
+                    <div id="status_message" class="text-sm text-gray-600" data-i18n="no_audio">Ready to speak</div>
+                </div>
+            </div>
+
+            <!-- Intro Section -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">About Text to Speech</h3>
+                <p data-i18n="intro_text">This Text to Speech (TTS) tool converts written text into spoken audio using your browser's built-in speech synthesis capabilities. It supports multiple languages including English, Chinese, Japanese, and Russian. You can adjust speech rate, pitch, and choose different voices for a more natural listening experience.</p>
+                <p class="mt-2 text-sm" data-i18n="intro_note">Note: Available voices may vary depending on your browser and operating system.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="copy-notify" class="copy-notify" data-i18n="download_success">File downloaded successfully!</div>
+
+    <script>
+        const TTS = {
+            speechSynthesis: window.speechSynthesis,
+            voices: [],
+            currentUtterance: null,
+
+            i18n: {
+                'en': {
+                    title: '🔊 Text to Speech Converter',
+                    input_section: 'Input Text',
+                    text_content: 'Text Content',
+                    text_placeholder: 'Enter text to convert to speech',
+                    voice_settings: 'Voice Settings',
+                    language: 'Language',
+                    voice_type: 'Voice Type',
+                    default_voice: 'Default',
+                    speech_rate: 'Speech Rate (0.5-2)',
+                    pitch: 'Pitch (0-2)',
+                    available_voices: 'Available Voices (Click to preview)',
+                    loading_voices: 'Loading available voices...',
+                    btn_speak: 'Speak',
+                    btn_stop: 'Stop',
+                    btn_download: 'Download Text (.txt)',
+                    status_title: 'Status',
+                    no_audio: 'Ready to speak',
+                    intro_title: 'About Text to Speech',
+                    intro_text: 'This Text to Speech (TTS) tool converts written text into spoken audio using your browser\'s built-in speech synthesis capabilities. It supports multiple languages including English, Chinese, Japanese, and Russian. You can adjust speech rate, pitch, and choose different voices for a more natural listening experience.',
+                    intro_note: 'Note: Available voices may vary depending on your browser and operating system. Direct audio file download is not supported by most browsers.',
+                    download_success: 'File downloaded successfully!',
+                    no_voices: 'No voices available for this language'
+                },
+                'zh-CN': {
+                    title: '🔊 文字转语音工具',
+                    input_section: '输入文本',
+                    text_content: '文本内容',
+                    text_placeholder: '输入要转换为语音的文字',
+                    voice_settings: '语音设置',
+                    language: '语言',
+                    voice_type: '语音类型',
+                    default_voice: '默认',
+                    speech_rate: '语速 (0.5-2)',
+                    pitch: '音调 (0-2)',
+                    available_voices: '可用语音 (点击预览)',
+                    loading_voices: '加载可用语音中...',
+                    btn_speak: '播放',
+                    btn_stop: '停止',
+                    btn_download: '下载文本 (.txt)',
+                    status_title: '状态',
+                    no_audio: '准备就绪',
+                    intro_title: '关于文字转语音',
+                    intro_text: '这款文字转语音（TTS）工具利用浏览器内置的语音合成功能，将书面文本转换为有声音频。它支持多种语言，包括英语、中文、日语和俄语。您可以调整语速、音调和选择不同的声音，以获得更自然的聆听体验。',
+                    intro_note: '注意：可用的语音可能因浏览器和操作系统而异。大多数浏览器不支持直接下载合成的音频文件。',
+                    download_success: '文件下载成功！',
+                    no_voices: '该语言暂无可用语音'
+                },
+                'zh-TW': {
+                    title: '🔊 文字轉語音工具',
+                    input_section: '輸入文本',
+                    text_content: '文本內容',
+                    text_placeholder: '輸入要轉換為語音的文字',
+                    voice_settings: '語音設定',
+                    language: '語言',
+                    voice_type: '語音類型',
+                    default_voice: '默認',
+                    speech_rate: '語速 (0.5-2)',
+                    pitch: '音調 (0-2)',
+                    available_voices: '可用語音 (點擊預覽)',
+                    loading_voices: '加載可用語音中...',
+                    btn_speak: '播放',
+                    btn_stop: '停止',
+                    btn_download: '下載文本 (.txt)',
+                    status_title: '狀態',
+                    no_audio: '準備就緒',
+                    intro_title: '關於文字轉語音',
+                    intro_text: '這款文字轉語音（TTS）工具利用瀏覽器內置的語音合成功能，將書面文本轉換為有聲音頻。它支持多種語言，包括英語、中文、日語和俄語。您可以調整語速、音調和選擇不同的聲音，以獲得更自然的聆聽體驗。',
+                    intro_note: '注意：可用的語音可能因瀏覽器和操作系統而異。大多數瀏覽器不支持直接下載合成的音頻文件。',
+                    download_success: '文件下載成功！',
+                    no_voices: '該語言暫無可用語音'
+                },
+                'ja': {
+                    title: '🔊 テキスト読み上げツール',
+                    input_section: 'テキスト入力',
+                    text_content: 'テキスト内容',
+                    text_placeholder: '音声に変換するテキストを入力',
+                    voice_settings: '音声設定',
+                    language: '言語',
+                    voice_type: '音声タイプ',
+                    default_voice: 'デフォルト',
+                    speech_rate: '話速 (0.5-2)',
+                    pitch: 'ピッチ (0-2)',
+                    available_voices: '利用可能な音声 (クリックしてプレビュー)',
+                    loading_voices: '利用可能な音声を読み込んでいます...',
+                    btn_speak: '再生',
+                    btn_stop: '停止',
+                    btn_download: 'テキストをダウンロード (.txt)',
+                    status_title: 'ステータス',
+                    no_audio: '準備完了',
+                    intro_title: 'テキスト読み上げについて',
+                    intro_text: 'このテキスト読み上げ（TTS）ツールは、ブラウザの組み込み音声合成機能を使用して、書かれたテキストを音声に変換します。英語、中国語、日本語、ロシア語など複数の言語に対応しています。話速、ピッチを調整したり、さまざまな音声を選択したりして、より自然な聴取体験を得ることができます。',
+                    intro_note: '注：利用可能な音声は、ブラウザとオペレーティングシステムによって異なる場合があります。ほとんどのブラウザは音声ファイルの直接ダウンロードをサポートしていません。',
+                    download_success: 'ファイルのダウンロードが成功しました！',
+                    no_voices: 'この言語で利用可能な音声はありません'
+                },
+                'ru': {
+                    title: '🔊 Конвертер текста в речь',
+                    input_section: 'Входной текст',
+                    text_content: 'Содержимое текста',
+                    text_placeholder: 'Введите текст для преобразования в речь',
+                    voice_settings: 'Настройки голоса',
+                    language: 'Язык',
+                    voice_type: 'Тип голоса',
+                    default_voice: 'По умолчанию',
+                    speech_rate: 'Скорость речи (0.5-2)',
+                    pitch: 'Тон (0-2)',
+                    available_voices: 'Доступные голоса (щелкните для предварительного просмотра)',
+                    loading_voices: 'Загрузка доступных голосов...',
+                    btn_speak: 'Проиграть',
+                    btn_stop: 'Остановить',
+                    btn_download: 'Скачать текст (.txt)',
+                    status_title: 'Статус',
+                    no_audio: 'Готов к работе',
+                    intro_title: 'О тексте в речь',
+                    intro_text: 'Этот инструмент преобразования текста в речь (TTS) преобразует письменный текст в произносимый аудио с использованием встроенных возможностей синтеза речи браузера. Он поддерживает несколько языков, включая английский, китайский, японский и русский. Вы можете регулировать скорость речи, тон и выбирать разные голоса для более естественного прослушивания.',
+                    intro_note: 'Примечание: Доступные голоса могут отличаться в зависимости от вашего браузера и операционной системы. Прямая загрузка аудиофайлов не поддерживается.',
+                    download_success: 'Файл успешно скачан!',
+                    no_voices: 'Нет доступных голосов для этого языка'
+                }
+            },
+
+            init: function() {
+                // Initialize voices when loaded
+                if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                        this.voices = window.speechSynthesis.getVoices();
+                        this.updateVoices();
+                    };
+                }
+                
+                // Trigger voice loading immediately as well
+                this.voices = window.speechSynthesis.getVoices();
+                
+                // Check URL for language parameter
+                this.checkUrlParams();
+            },
+
+            checkUrlParams: function() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                
+                // If there is a valid lang param, set it
+                if (langParam && this.i18n[langParam]) {
+                    document.getElementById('lang-selector').value = langParam;
+                    this.applyLang(langParam);
+                } else {
+                    // Default to English if no param
+                    this.applyLang('en');
+                }
+            },
+
+            handleLangChange: function(lang) {
+                // Update URL parameter with try-catch to avoid SecurityError in sandboxed environments
+                try {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                } catch (e) {
+                    console.log('Cannot update URL in this environment', e);
+                }
+                
+                this.applyLang(lang);
+            },
+
+            // FIX: Added shouldUpdateVoices parameter to prevent infinite recursion
+            applyLang: function(lang, shouldUpdateVoices = true) {
+                // Update UI text
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // Update placeholders
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-placeholder');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.placeholder = this.i18n[lang][key];
+                    }
+                });
+
+                // Update voice language selector based on UI language
+                // Only do this if shouldUpdateVoices is true
+                if (shouldUpdateVoices) {
+                    const langMap = {
+                        'en': 'en-US',
+                        'zh-CN': 'zh-CN',
+                        'zh-TW': 'zh-TW',
+                        'ja': 'ja-JP',
+                        'ru': 'ru-RU'
+                    };
+                    if (langMap[lang]) {
+                        document.getElementById('language').value = langMap[lang];
+                        this.updateVoices();
+                    }
+                }
+            },
+
+            updateVoices: function() {
+                // Retry getting voices if empty (sometimes happens on first load in Chrome)
+                if (this.voices.length === 0) {
+                    this.voices = window.speechSynthesis.getVoices();
+                }
+
+                const lang = document.getElementById('language').value;
+                const voiceSelect = document.getElementById('voice_type');
+                const voicesList = document.getElementById('voices_list');
+                const uiLang = document.getElementById('lang-selector').value;
+                
+                // Clear existing options
+                voiceSelect.innerHTML = '<option value="default" data-i18n="default_voice">Default</option>';
+                voicesList.innerHTML = '';
+                
+                // Filter voices by language
+                const filteredVoices = this.voices.filter(voice => 
+                    voice.lang.startsWith(lang) || voice.lang.split('-')[0] === lang.split('-')[0]
+                );
+                
+                if (filteredVoices.length === 0) {
+                    const noVoiceMsg = this.i18n[uiLang]['no_voices'] || 'No voices available';
+                    voicesList.innerHTML = `<div class="text-gray-500 text-sm">${noVoiceMsg}</div>`;
+                    
+                    // FIX: Pass false to prevent recursion
+                    this.applyLang(uiLang, false);
+                    return;
+                }
+                
+                // Populate voice select and preview list
+                filteredVoices.forEach(voice => {
+                    // Add to select dropdown
+                    const option = document.createElement('option');
+                    option.value = voice.name;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                    
+                    // Add to preview list
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'voice-preview';
+                    previewDiv.innerHTML = `
+                        <span>${voice.name}</span>
+                        <span class="badge badge-supported text-xs">${voice.lang}</span>
+                    `;
+                    previewDiv.addEventListener('click', () => {
+                        // Remove active class from all
+                        document.querySelectorAll('.voice-preview').forEach(el => 
+                            el.classList.remove('voice-active')
+                        );
+                        // Add active class to clicked
+                        previewDiv.classList.add('voice-active');
+                        // Set selected voice
+                        voiceSelect.value = voice.name;
+                        // Preview voice
+                        this.previewVoice(voice);
+                    });
+                    voicesList.appendChild(previewDiv);
+                });
+                
+                // FIX: Pass false to prevent recursion
+                // We re-apply translations to ensure "Default" is translated, but don't trigger voice update again
+                this.applyLang(uiLang, false);
+            },
+
+            updateVoicePreview: function() {
+                const voiceName = document.getElementById('voice_type').value;
+                if (voiceName === 'default') return;
+                
+                const voice = this.voices.find(v => v.name === voiceName);
+                if (voice) {
+                    this.previewVoice(voice);
+                }
+            },
+
+            previewVoice: function(voice) {
+                const sampleText = {
+                    'en-US': 'This is a voice preview.',
+                    'zh-CN': '这是一个语音预览。',
+                    'zh-TW': '這是一個語音預覽。',
+                    'ja-JP': 'これは音声プレビューです。',
+                    'ru-RU': 'Это предварительный просмотр голоса.'
+                };
+                
+                const lang = document.getElementById('language').value;
+                const text = sampleText[lang] || 'Voice preview.';
+                
+                this.speakText(text, voice);
+            },
+
+            speak: function() {
+                const text = document.getElementById('text_content').value.trim();
+                if (!text) {
+                    alert('Please enter some text to speak');
+                    return;
+                }
+                
+                const voiceName = document.getElementById('voice_type').value;
+                const rate = parseFloat(document.getElementById('speech_rate').value);
+                const pitch = parseFloat(document.getElementById('pitch').value);
+                
+                let voice = null;
+                if (voiceName !== 'default') {
+                    voice = this.voices.find(v => v.name === voiceName);
+                }
+                
+                this.speakText(text, voice, rate, pitch);
+            },
+
+            speakText: function(text, voice, rate = 1, pitch = 1) {
+                // Stop any ongoing speech first - CRITICAL FIX
+                this.stop();
+                
+                // Create new utterance
+                this.currentUtterance = new SpeechSynthesisUtterance(text);
+                
+                // Set voice properties
+                if (voice) this.currentUtterance.voice = voice;
+                this.currentUtterance.rate = rate;
+                this.currentUtterance.pitch = pitch;
+                
+                // Update status
+                const statusMsg = document.getElementById('status_message');
+                statusMsg.textContent = 'Speaking...';
+                
+                // Handle events
+                this.currentUtterance.onend = () => {
+                    statusMsg.textContent = 'Playback finished';
+                };
+                
+                this.currentUtterance.onerror = (e) => {
+                    console.error('Speech error:', e);
+                    statusMsg.textContent = 'Error occurred during playback';
+                };
+                
+                // Speak
+                this.speechSynthesis.speak(this.currentUtterance);
+            },
+
+            stop: function() {
+                if (this.speechSynthesis.speaking || this.speechSynthesis.pending) {
+                    this.speechSynthesis.cancel();
+                    document.getElementById('status_message').textContent = 'Playback stopped';
+                }
+                this.currentUtterance = null;
+            },
+
+            // REPAIR: Changed from simulated audio download to functional text download
+            downloadText: function() {
+                const text = document.getElementById('text_content').value.trim();
+                if (!text) {
+                    alert('Please enter some text first');
+                    return;
+                }
+                
+                // Create blob and download
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'speech-text.txt';
+                document.body.appendChild(a);
+                a.click();
+                
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                // Show success notification
+                const notify = document.getElementById('copy-notify');
+                notify.style.opacity = '1';
+                setTimeout(() => notify.style.opacity = '0', 2000);
+            }
+        };
+
+        // Initialize the TTS tool when page loads
+        window.onload = () => {
+            TTS.init();
+        };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="category" content="date-time">
+    <meta charset="UTF-8">
+    <title>Unix Timestamp Converter Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdfa; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .mono { font-family: monospace; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/date-time/unix-timestamp-converter.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="unix_conv" 
+         data-category="dev" 
+         data-title="Unix Timestamp Converter" 
+         data-icon="⏱️">
+        
+        <div class="absolute top-4 right-4">
+            <select id="ux-lang" onchange="UnixConv.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">⏱️ Unix Timestamp Converter</h2>
+
+        <!-- Live Current -->
+        <div class="bg-teal-50 p-3 rounded border border-teal-100 text-center mb-6">
+            <div class="text-xs text-gray-500 uppercase tracking-wide mb-1" data-i18n="lbl_current">Current Timestamp (Seconds)</div>
+            <div id="ux-current" class="text-3xl font-bold text-teal-600 mono">--</div>
+            <button onclick="UnixConv.pause()" id="ux-pause-btn" class="text-xs text-teal-500 hover:text-teal-700 mt-2 underline" data-i18n="btn_stop">Stop</button>
+        </div>
+
+        <!-- Ts to Date -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_ts2date">Timestamp to Date</label>
+            <div class="flex gap-2">
+                <input type="number" id="ux-input-ts" class="flex-1 p-2 border rounded focus:ring-2 focus:ring-teal-500 outline-none mono" placeholder="1672531200">
+                <select id="ux-unit-1" class="border rounded px-2 bg-white text-sm">
+                    <option value="s" data-i18n="unit_s">Sec</option>
+                    <option value="ms" data-i18n="unit_ms">Millis</option>
+                </select>
+                <button onclick="UnixConv.convertTs()" class="px-4 bg-teal-600 text-white rounded hover:bg-teal-700 font-bold" data-i18n="btn_conv">Convert</button>
+            </div>
+            <div id="ux-res-date" class="mt-2 text-sm font-bold text-gray-800 bg-gray-50 p-2 rounded hidden"></div>
+        </div>
+
+        <!-- Date to Ts -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_date2ts">Date to Timestamp</label>
+            <div class="flex gap-2">
+                <input type="datetime-local" id="ux-input-date" class="flex-1 p-2 border rounded focus:ring-2 focus:ring-teal-500 outline-none" step="1">
+                <button onclick="UnixConv.convertDate()" class="px-4 bg-teal-600 text-white rounded hover:bg-teal-700 font-bold" data-i18n="btn_conv">Convert</button>
+            </div>
+            <div id="ux-res-ts" class="mt-2 text-sm font-bold text-gray-800 bg-gray-50 p-2 rounded hidden mono"></div>
+        </div>
+    </div>
+
+    <script>
+        const UnixConv = {
+            running: true,
+            i18n: {
+                'en': {
+                    title: '⏱️ Unix Timestamp Converter',
+                    lbl_current: 'Current Timestamp (Seconds)',
+                    btn_stop: 'Stop', btn_start: 'Start',
+                    lbl_ts2date: 'Timestamp to Date',
+                    lbl_date2ts: 'Date to Timestamp',
+                    unit_s: 'Sec', unit_ms: 'Millis',
+                    btn_conv: 'Convert'
+                },
+                'zh-CN': {
+                    title: '⏱️ Unix 时间戳转换',
+                    lbl_current: '当前时间戳 (秒)',
+                    btn_stop: '停止', btn_start: '开始',
+                    lbl_ts2date: '时间戳 转 日期',
+                    lbl_date2ts: '日期 转 时间戳',
+                    unit_s: '秒', unit_ms: '毫秒',
+                    btn_conv: '转换'
+                },
+                'zh-TW': {
+                    title: '⏱️ Unix 時間戳轉換',
+                    lbl_current: '當前時間戳 (秒)',
+                    btn_stop: '停止', btn_start: '開始',
+                    lbl_ts2date: '時間戳 轉 日期',
+                    lbl_date2ts: '日期 轉 時間戳',
+                    unit_s: '秒', unit_ms: '毫秒',
+                    btn_conv: '轉換'
+                },
+                'ja': {
+                    title: '⏱️ Unixタイムスタンプ変換',
+                    lbl_current: '現在のタイムスタンプ (秒)',
+                    btn_stop: '停止', btn_start: '開始',
+                    lbl_ts2date: 'タイムスタンプ → 日付',
+                    lbl_date2ts: '日付 → タイムスタンプ',
+                    unit_s: '秒', unit_ms: 'ミリ秒',
+                    btn_conv: '変換'
+                },
+                'ru': {
+                    title: '⏱️ Unix время (Timestamp)',
+                    lbl_current: 'Текущий Timestamp (сек)',
+                    btn_stop: 'Стоп', btn_start: 'Старт',
+                    lbl_ts2date: 'Timestamp в Дату',
+                    lbl_date2ts: 'Дату в Timestamp',
+                    unit_s: 'Сек', unit_ms: 'Мс',
+                    btn_conv: 'Перевести'
+                },
+                'es': {
+                    title: '⏱️ Conversor Unix Timestamp',
+                    lbl_current: 'Timestamp Actual (Seg)',
+                    btn_stop: 'Parar', btn_start: 'Iniciar',
+                    lbl_ts2date: 'Timestamp a Fecha',
+                    lbl_date2ts: 'Fecha a Timestamp',
+                    unit_s: 'Seg', unit_ms: 'Miliseg',
+                    btn_conv: 'Convertir'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('ux-lang').value;
+                const texts = UnixConv.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="unix_conv"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        if(el.tagName === 'OPTION') el.text = texts[key];
+                        else el.innerText = texts[key];
+                    }
+                });
+                // Update button text state
+                const btn = document.getElementById('ux-pause-btn');
+                btn.innerText = UnixConv.running ? texts.btn_stop : texts.btn_start;
+            },
+
+            tick: () => {
+                if(!UnixConv.running) return;
+                const now = Math.floor(Date.now() / 1000);
+                document.getElementById('ux-current').innerText = now;
+                setTimeout(UnixConv.tick, 1000);
+            },
+
+            pause: () => {
+                UnixConv.running = !UnixConv.running;
+                const lang = document.getElementById('ux-lang').value;
+                const txt = UnixConv.i18n[lang];
+                document.getElementById('ux-pause-btn').innerText = UnixConv.running ? txt.btn_stop : txt.btn_start;
+                if(UnixConv.running) UnixConv.tick();
+            },
+
+            convertTs: () => {
+                const val = document.getElementById('ux-input-ts').value;
+                const unit = document.getElementById('ux-unit-1').value;
+                const resEl = document.getElementById('ux-res-date');
+                
+                if(!val) return;
+                
+                let ms = parseFloat(val);
+                if (unit === 's') ms *= 1000;
+
+                const date = new Date(ms);
+                resEl.innerText = date.toLocaleString(); // Uses browser locale, which is usually fine
+                resEl.classList.remove('hidden');
+            },
+
+            convertDate: () => {
+                const val = document.getElementById('ux-input-date').value;
+                const resEl = document.getElementById('ux-res-ts');
+                
+                if(!val) return;
+
+                const date = new Date(val);
+                const ms = date.getTime();
+                const s = Math.floor(ms / 1000);
+
+                resEl.innerText = `${s} (s) / ${ms} (ms)`;
+                resEl.classList.remove('hidden');
+            }
+        };
+
+        // Init
+        UnixConv.tick();
+        // Set default datetime input to now (local ISO string slice)
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('ux-input-date').value = now.toISOString().slice(0,16);
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

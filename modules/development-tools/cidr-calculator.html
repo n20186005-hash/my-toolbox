@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Development Tools">
+    <meta name="icon" content="🔗">
+    <title>CIDR计算器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, select, input { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-row { display: flex; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px dashed #a7f3d0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { flex: 0 0 180px; font-weight: 500; color: #1e3a8a; }
+        .result-value { flex: 1; color: #065f46; word-break: break-all; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        .btn-primary { background: #22c55e; color: white; border: none; }
+        .btn-primary:hover { background: #16a34a; }
+        .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        .btn-secondary:hover { background: #e5e7eb; }
+        .ip-address { font-family: monospace; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/cidr-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="cidr-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="CIDRTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔗 CIDR计算器</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_cidr">输入CIDR地址</h3>
+                <div class="form-group">
+                    <input type="text" id="cidr_input" placeholder="例如: 192.168.1.0/24" class="focus:ring-2 focus:ring-green-500 outline-none" value="192.168.1.0/24">
+                    <p class="language-note" data-i18n="cidr_note">CIDR格式: IP地址/前缀长度 (如 10.0.0.0/8)</p>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="CIDRTool.calculateCIDR()" class="flex-1 btn-primary py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_calculate">计算CIDR</button>
+                <button onclick="CIDRTool.clearAll()" class="flex-1 btn-secondary py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">计算结果</h3>
+                
+                <div id="cidr_results" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[200px]">
+                    <p data-i18n="no_results" class="text-gray-400 italic text-sm">请点击"计算CIDR"查看结果</p>
+                </div>
+            </div>
+
+            <!-- Examples -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="common_examples">常用示例</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="p-3 bg-gray-50 rounded border border-gray-100 cursor-pointer hover:bg-gray-100" onclick="CIDRTool.loadExample('192.168.1.0/24')">
+                        <div class="font-medium ip-address">192.168.1.0/24</div>
+                        <div class="text-xs text-gray-500" data-i18n="example_lan">典型局域网网段</div>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded border border-gray-100 cursor-pointer hover:bg-gray-100" onclick="CIDRTool.loadExample('10.0.0.0/8')">
+                        <div class="font-medium ip-address">10.0.0.0/8</div>
+                        <div class="text-xs text-gray-500" data-i18n="example_private">A类私有地址</div>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded border border-gray-100 cursor-pointer hover:bg-gray-100" onclick="CIDRTool.loadExample('172.16.0.0/12')">
+                        <div class="font-medium ip-address">172.16.0.0/12</div>
+                        <div class="text-xs text-gray-500" data-i18n="example_b_class">B类私有地址段</div>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded border border-gray-100 cursor-pointer hover:bg-gray-100" onclick="CIDRTool.loadExample('203.0.113.0/24')">
+                        <div class="font-medium ip-address">203.0.113.0/24</div>
+                        <div class="text-xs text-gray-500" data-i18n="example_test">TEST-NET-3 测试网段</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于CIDR</h3>
+                <p data-i18n="intro_text">CIDR（无类别域间路由）是一种IP地址分配和路由聚合的方法，用于高效管理IP地址空间。CIDR表示法为"IP地址/前缀长度"，前缀长度决定了网络地址的位数。本工具可以计算给定CIDR的网络地址、广播地址、子网掩码、可用IP范围和主机数量等信息。</p>
+                <div class="mt-3">
+                    <h4 class="font-medium mb-1" data-i18n="cidr_format">CIDR格式说明：</h4>
+                    <pre class="bg-gray-100 p-2 rounded text-sm">192.168.1.0/24
+   └──────┘ └┘
+    IP地址  前缀长度</pre>
+                    <p class="mt-2 text-sm" data-i18n="prefix_note">前缀长度范围：0-32（IPv4），0-128（IPv6）</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CIDRTool = {
+            i18n: {
+                'en': {
+                    title: '🔗 CIDR Calculator',
+                    input_cidr: 'Enter CIDR Address',
+                    cidr_note: 'CIDR format: IP address/prefix length (e.g. 10.0.0.0/8)',
+                    btn_calculate: 'Calculate CIDR',
+                    btn_clear: 'Clear All',
+                    results: 'Calculation Results',
+                    no_results: 'Click "Calculate CIDR" to view results',
+                    common_examples: 'Common Examples',
+                    example_lan: 'Typical LAN segment',
+                    example_private: 'Class A private address',
+                    example_b_class: 'Class B private address range',
+                    example_test: 'TEST-NET-3 test segment',
+                    intro_title: 'About CIDR',
+                    intro_text: 'CIDR (Classless Inter-Domain Routing) is a method for allocating IP addresses and routing aggregates, used to efficiently manage IP address space. CIDR notation is "IP address/prefix length", where the prefix length determines the number of bits in the network address. This tool can calculate network address, broadcast address, subnet mask, available IP range and number of hosts for a given CIDR.',
+                    cidr_format: 'CIDR Format Explanation:',
+                    prefix_note: 'Prefix length range: 0-32 (IPv4), 0-128 (IPv6)',
+                    network_address: 'Network Address:',
+                    broadcast_address: 'Broadcast Address:',
+                    subnet_mask: 'Subnet Mask:',
+                    wildcard_mask: 'Wildcard Mask:',
+                    prefix_length: 'Prefix Length:',
+                    total_hosts: 'Total Hosts:',
+                    usable_hosts: 'Usable Hosts:',
+                    first_host: 'First Usable Host:',
+                    last_host: 'Last Usable Host:',
+                    invalid_cidr: 'Invalid CIDR format',
+                    please_enter_cidr: 'Please enter a CIDR address'
+                },
+                'zh-CN': {
+                    title: '🔗 CIDR计算器',
+                    input_cidr: '输入CIDR地址',
+                    cidr_note: 'CIDR格式: IP地址/前缀长度 (如 10.0.0.0/8)',
+                    btn_calculate: '计算CIDR',
+                    btn_clear: '清空所有',
+                    results: '计算结果',
+                    no_results: '请点击"计算CIDR"查看结果',
+                    common_examples: '常用示例',
+                    example_lan: '典型局域网网段',
+                    example_private: 'A类私有地址',
+                    example_b_class: 'B类私有地址段',
+                    example_test: 'TEST-NET-3 测试网段',
+                    intro_title: '关于CIDR',
+                    intro_text: 'CIDR（无类别域间路由）是一种IP地址分配和路由聚合的方法，用于高效管理IP地址空间。CIDR表示法为"IP地址/前缀长度"，前缀长度决定了网络地址的位数。本工具可以计算给定CIDR的网络地址、广播地址、子网掩码、可用IP范围和主机数量等信息。',
+                    cidr_format: 'CIDR格式说明：',
+                    prefix_note: '前缀长度范围：0-32（IPv4），0-128（IPv6）',
+                    network_address: '网络地址：',
+                    broadcast_address: '广播地址：',
+                    subnet_mask: '子网掩码：',
+                    wildcard_mask: '通配符掩码：',
+                    prefix_length: '前缀长度：',
+                    total_hosts: '总主机数：',
+                    usable_hosts: '可用主机数：',
+                    first_host: '第一个可用主机：',
+                    last_host: '最后一个可用主机：',
+                    invalid_cidr: '无效的CIDR格式',
+                    please_enter_cidr: '请输入CIDR地址'
+                },
+                'zh-TW': {
+                    title: '🔗 CIDR計算器',
+                    input_cidr: '輸入CIDR地址',
+                    cidr_note: 'CIDR格式: IP地址/前綴長度 (如 10.0.0.0/8)',
+                    btn_calculate: '計算CIDR',
+                    btn_clear: '清空所有',
+                    results: '計算結果',
+                    no_results: '請點擊"計算CIDR"查看結果',
+                    common_examples: '常用示例',
+                    example_lan: '典型局域網網段',
+                    example_private: 'A類私有地址',
+                    example_b_class: 'B類私有地址段',
+                    example_test: 'TEST-NET-3 測試網段',
+                    intro_title: '關於CIDR',
+                    intro_text: 'CIDR（無類別域間路由）是一種IP地址分配和路由聚合的方法，用於高效管理IP地址空間。CIDR表示法為"IP地址/前綴長度"，前綴長度決定了網絡地址的位數。本工具可以計算給定CIDR的網絡地址、廣播地址、子網掩碼、可用IP範圍和主機數量等信息。',
+                    cidr_format: 'CIDR格式說明：',
+                    prefix_note: '前綴長度範圍：0-32（IPv4），0-128（IPv6）',
+                    network_address: '網絡地址：',
+                    broadcast_address: '廣播地址：',
+                    subnet_mask: '子網掩碼：',
+                    wildcard_mask: '通配符掩碼：',
+                    prefix_length: '前綴長度：',
+                    total_hosts: '總主機數：',
+                    usable_hosts: '可用主機數：',
+                    first_host: '第一個可用主機：',
+                    last_host: '最後一個可用主機：',
+                    invalid_cidr: '無效的CIDR格式',
+                    please_enter_cidr: '請輸入CIDR地址'
+                },
+                'ja': {
+                    title: '🔗 CIDR計算ツール',
+                    input_cidr: 'CIDRアドレスを入力',
+                    cidr_note: 'CIDR形式: IPアドレス/プレフィックス長 (例: 10.0.0.0/8)',
+                    btn_calculate: 'CIDRを計算',
+                    btn_clear: 'すべてクリア',
+                    results: '計算結果',
+                    no_results: '"CIDRを計算"をクリックして結果を表示',
+                    common_examples: '一般的な例',
+                    example_lan: '典型的なLANセグメント',
+                    example_private: 'Aクラスプライベートアドレス',
+                    example_b_class: 'Bクラスプライベートアドレス範囲',
+                    example_test: 'TEST-NET-3テストセグメント',
+                    intro_title: 'CIDRについて',
+                    intro_text: 'CIDR（クラスレス・インタードメイン・ルーティング）は、IPアドレス空間を効率的に管理するためのIPアドレス割り当てとルーティング集約の方法です。CIDR表記は「IPアドレス/プレフィックス長」で、プレフィックス長はネットワークアドレスのビット数を決定します。このツールは、指定されたCIDRのネットワークアドレス、ブロードキャストアドレス、サブネットマスク、使用可能なIP範囲、ホスト数などを計算できます。',
+                    cidr_format: 'CIDR形式の説明：',
+                    prefix_note: 'プレフィックス長の範囲：0-32（IPv4）、0-128（IPv6）',
+                    network_address: 'ネットワークアドレス：',
+                    broadcast_address: 'ブロードキャストアドレス：',
+                    subnet_mask: 'サブネットマスク：',
+                    wildcard_mask: 'ワイルドカードマスク：',
+                    prefix_length: 'プレフィックス長：',
+                    total_hosts: '総ホスト数：',
+                    usable_hosts: '使用可能なホスト数：',
+                    first_host: '最初の使用可能なホスト：',
+                    last_host: '最後の使用可能なホスト：',
+                    invalid_cidr: '無効なCIDR形式',
+                    please_enter_cidr: 'CIDRアドレスを入力してください'
+                },
+                'ru': {
+                    title: '🔗 Калькулятор CIDR',
+                    input_cidr: 'Введите адрес CIDR',
+                    cidr_note: 'Формат CIDR: IP-адрес/длина префикса (например 10.0.0.0/8)',
+                    btn_calculate: 'Вычислить CIDR',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты вычисления',
+                    no_results: 'Нажмите "Вычислить CIDR" для просмотра результатов',
+                    common_examples: 'Общие примеры',
+                    example_lan: 'Типичный сегмент локальной сети',
+                    example_private: 'Частный адрес класса A',
+                    example_b_class: 'Диапазон частных адресов класса B',
+                    example_test: 'Тестовый сегмент TEST-NET-3',
+                    intro_title: 'О CIDR',
+                    intro_text: 'CIDR (Классовый междоменное маршрутизирование) — это метод выделения IP-адресов и агрегации маршрутов, используемый для эффективного управления пространством IP-адресов. Запись CIDR имеет формат "IP-адрес/длина префикса", где длина префикса определяет количество битов в сетевом адресе. Этот инструмент может вычислить сетевой адрес, широковещательный адрес, маску подсети, диапазон доступных IP-адресов и количество хостов для заданного CIDR.',
+                    cidr_format: 'Объяснение формата CIDR：',
+                    prefix_note: 'Диапазон длины префикса：0-32 (IPv4), 0-128 (IPv6)',
+                    network_address: 'Сетевой адрес：',
+                    broadcast_address: 'Широковещательный адрес：',
+                    subnet_mask: 'Маска подсети：',
+                    wildcard_mask: 'Маска 와айлдкарда：',
+                    prefix_length: 'Длина префикса：',
+                    total_hosts: 'Общее количество хостов：',
+                    usable_hosts: 'Доступные хосты：',
+                    first_host: 'Первый доступный хост：',
+                    last_host: 'Последний доступный хост：',
+                    invalid_cidr: 'Недопустимый формат CIDR',
+                    please_enter_cidr: 'Пожалуйста, введите адрес CIDR'
+                }
+            },
+
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false); // 不更新URL
+                }
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                        // 更新占位符
+                        if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
+                            el.placeholder = this.i18n[lang][key + '_placeholder'] || this.i18n[lang][key];
+                        }
+                    }
+                });
+                
+                // 更新页面标题
+                document.title = this.i18n[lang].title || 'CIDR计算器';
+                
+                // 更新URL参数
+                if (updateUrl) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('lang', lang);
+                    window.history.replaceState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
+                }
+            },
+
+            loadExample: function(cidr) {
+                document.getElementById('cidr_input').value = cidr;
+            },
+
+            calculateCIDR: function() {
+                const cidr = document.getElementById('cidr_input').value.trim();
+                const resultsContainer = document.getElementById('cidr_results');
+                const lang = document.getElementById('lang-selector').value;
+                
+                if (!cidr) {
+                    alert(this.i18n[lang].please_enter_cidr || '请输入CIDR地址');
+                    return;
+                }
+                
+                // 解析CIDR
+                const parsed = this.parseCIDR(cidr);
+                if (!parsed) {
+                    alert(this.i18n[lang].invalid_cidr || '无效的CIDR格式');
+                    return;
+                }
+                
+                const { ip, prefix, networkAddr, broadcastAddr, subnetMask, wildcardMask, 
+                        totalHosts, usableHosts, firstHost, lastHost } = parsed;
+                
+                // 显示结果
+                resultsContainer.innerHTML = `
+                    <div class="result-row">
+                        <div class="result-label" data-i18n="network_address">网络地址：</div>
+                        <div class="result-value ip-address">${networkAddr}</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label" data-i18n="broadcast_address">广播地址：</div>
+                        <div class="result-value ip-address">${broadcastAddr}</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label" data-i18n="subnet_mask">子网掩码：</div>
+                        <div class="result-value ip-address">${subnetMask}</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label" data-i18n="wildcard_mask">通配符掩码：</div>
+                        <div class="result-value ip-address">${wildcardMask}</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label" data-i18n="prefix_length">前缀长度：</div>
+                        <div class="result-value">${prefix}</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label" data-i18n="total_hosts">总主机数：</div>
+                        <div class="result-value">${totalHosts}</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label" data-i18n="usable_hosts">可用主机数：</div>
+                        <div class="result-value">${usableHosts}</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label" data-i18n="first_host">第一个可用主机：</div>
+                        <div class="result-value ip-address">${firstHost}</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label" data-i18n="last_host">最后一个可用主机：</div>
+                        <div class="result-value ip-address">${lastHost}</div>
+                    </div>
+                `;
+                
+                // 国际化结果标签
+                this.updateResultLabels(lang);
+            },
+
+            updateResultLabels: function(lang) {
+                const labels = document.querySelectorAll('#cidr_results [data-i18n]');
+                labels.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+
+            // 解析CIDR并计算相关值
+            parseCIDR: function(cidr) {
+                // 匹配CIDR格式
+                const match = cidr.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/);
+                if (!match) return null;
+                
+                // 提取IP和前缀
+                const ipParts = match.slice(1, 5).map(Number);
+                const prefix = parseInt(match[5], 10);
+                
+                // 验证IP和前缀有效性
+                if (ipParts.some(part => part < 0 || part > 255) || prefix < 0 || prefix > 32) {
+                    return null;
+                }
+                
+                // 转换为32位整数
+                const ipInt = (ipParts[0] << 24) | (ipParts[1] << 16) | (ipParts[2] << 8) | ipParts[3];
+                
+                // 计算子网掩码
+                const maskInt = prefix === 0 ? 0 : 0xFFFFFFFF << (32 - prefix);
+                const wildcardInt = 0xFFFFFFFF ^ maskInt;
+                
+                // 网络地址和广播地址
+                const networkInt = ipInt & maskInt;
+                const broadcastInt = networkInt | wildcardInt;
+                
+                // 可用主机范围
+                const firstHostInt = networkInt + 1;
+                const lastHostInt = broadcastInt - 1;
+                const totalHosts = broadcastInt - networkInt + 1;
+                const usableHosts = totalHosts >= 2 ? totalHosts - 2 : 0;
+                
+                return {
+                    ip: match[0].split('/')[0],
+                    prefix: prefix,
+                    networkAddr: this.intToIp(networkInt),
+                    broadcastAddr: this.intToIp(broadcastInt),
+                    subnetMask: this.intToIp(maskInt),
+                    wildcardMask: this.intToIp(wildcardInt),
+                    totalHosts: totalHosts,
+                    usableHosts: usableHosts,
+                    firstHost: totalHosts > 1 ? this.intToIp(firstHostInt) : '-',
+                    lastHost: totalHosts > 1 ? this.intToIp(lastHostInt) : '-'
+                };
+            },
+
+            // 将32位整数转换为IP地址
+            intToIp: function(int) {
+                return [
+                    (int >>> 24) & 0xFF,
+                    (int >>> 16) & 0xFF,
+                    (int >>> 8) & 0xFF,
+                    int & 0xFF
+                ].join('.');
+            },
+
+            clearAll: function() {
+                document.getElementById('cidr_input').value = '';
+                document.getElementById('cidr_results').innerHTML = 
+                    '<p data-i18n="no_results" class="text-gray-400 italic text-sm">请点击"计算CIDR"查看结果</p>';
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            CIDRTool.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

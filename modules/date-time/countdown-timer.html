@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="countdown_timer">
+    <meta name="category" content="Date & Time">
+    <meta name="icon" content="⏱️">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Countdown Timer">
+    <meta name="description" content="Set a countdown timer for any date and time, with real-time updates.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="在线倒计时器">
+    <meta name="lang-description-zh-CN" content="为任何日期和时间设置倒计时器，实时更新。">
+    
+    <meta name="lang-title-zh-TW" content="線上倒計時器">
+    <meta name="lang-description-zh-TW" content="為任何日期和時間設定倒計時器，即時更新。">
+    
+    <meta name="lang-title-ja" content="カウントダウンタイマー">
+    <meta name="lang-description-ja" content="任意の日付と時間にカウントダウンタイマーを設定し、リアルタイムで更新します。">
+    
+    <meta name="lang-title-ru" content="Таймер обратного отсчета">
+    <meta name="lang-description-ru" content="Установите таймер обратного отсчета на любую дату и время с реальными обновлениями.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .countdown-display { text-align: center; padding: 20px; margin: 20px 0; background: #e8f4f8; border-radius: 8px; }
+        .time-unit { display: inline-block; margin: 0 10px; text-align: center; }
+        .time-value { font-size: 2rem; font-weight: bold; color: #1e40af; }
+        .time-label { font-size: 0.85rem; color: #4b5563; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .start-btn { background: #22c55e; color: white; flex: 2; }
+        .reset-btn { background: #ef4444; color: white; flex: 1; }
+        .pause-btn { background: #f59e0b; color: white; flex: 1; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/date-time/countdown-timer.html" />
+</head>
+<body>
+    <div class="tool-module active" 
+         data-id="countdown_timer" 
+         data-category="time" 
+         data-title="Countdown Timer" 
+         data-icon="⏱️">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="countdown-lang" onchange="Countdown.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">⏱️ Countdown Timer</h2>
+        
+        <div class="space-y-4 mb-6">
+            <div class="input-group">
+                <label data-i18n="target_date">Target Date & Time</label>
+                <input type="datetime-local" id="target-datetime" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div class="input-group">
+                <label data-i18n="event_name">Event Name (Optional)</label>
+                <input type="text" id="event-name" placeholder="e.g. Birthday, New Year" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div class="countdown-display">
+                <div id="event-display" class="text-lg font-medium mb-4"></div>
+                <div class="time-units">
+                    <div class="time-unit">
+                        <div class="time-value" id="days">00</div>
+                        <div class="time-label" data-i18n="days">Days</div>
+                    </div>
+                    <div class="time-unit">
+                        <div class="time-value" id="hours">00</div>
+                        <div class="time-label" data-i18n="hours">Hours</div>
+                    </div>
+                    <div class="time-unit">
+                        <div class="time-value" id="minutes">00</div>
+                        <div class="time-label" data-i18n="minutes">Minutes</div>
+                    </div>
+                    <div class="time-unit">
+                        <div class="time-value" id="seconds">00</div>
+                        <div class="time-label" data-i18n="seconds">Seconds</div>
+                    </div>
+                </div>
+                <div id="countdown-complete" class="mt-4 text-green-600 font-bold hidden" data-i18n="countdown_complete">Countdown Complete!</div>
+            </div>
+            
+            <div class="button-group">
+                <button id="start-btn" onclick="Countdown.start()" class="start-btn" data-i18n="start">Start</button>
+                <button id="pause-btn" onclick="Countdown.pause()" class="pause-btn" data-i18n="pause">Pause</button>
+                <button id="reset-btn" onclick="Countdown.reset()" class="reset-btn" data-i18n="reset">Reset</button>
+            </div>
+        </div>
+        
+        <div id="countdown-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1">
+                <li data-i18n="note1">Set a future date and time for the countdown</li>
+                <li data-i18n="note2">The timer will update in real-time</li>
+                <li data-i18n="note3">You can pause or reset the timer at any time</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const Countdown = {
+            timer: null,
+            isRunning: false,
+            targetTime: null,
+            
+            i18n: {
+                'en': {
+                    title: '⏱️ Countdown Timer',
+                    target_date: 'Target Date & Time',
+                    event_name: 'Event Name (Optional)',
+                    days: 'Days',
+                    hours: 'Hours',
+                    minutes: 'Minutes',
+                    seconds: 'Seconds',
+                    start: 'Start',
+                    pause: 'Pause',
+                    reset: 'Reset',
+                    countdown_complete: 'Countdown Complete!',
+                    notes: 'Notes:',
+                    note1: 'Set a future date and time for the countdown',
+                    note2: 'The timer will update in real-time',
+                    note3: 'You can pause or reset the timer at any time',
+                    err_past_date: 'Please select a future date and time',
+                    err_no_date: 'Please select a target date and time'
+                },
+                'zh-CN': {
+                    title: '⏱️ 在线倒计时器',
+                    target_date: '目标日期和时间',
+                    event_name: '事件名称（可选）',
+                    days: '天',
+                    hours: '时',
+                    minutes: '分',
+                    seconds: '秒',
+                    start: '开始',
+                    pause: '暂停',
+                    reset: '重置',
+                    countdown_complete: '倒计时完成！',
+                    notes: '说明：',
+                    note1: '为倒计时设置未来的日期和时间',
+                    note2: '计时器将实时更新',
+                    note3: '您可以随时暂停或重置计时器',
+                    err_past_date: '请选择未来的日期和时间',
+                    err_no_date: '请选择目标日期和时间'
+                },
+                'zh-TW': {
+                    title: '⏱️ 線上倒計時器',
+                    target_date: '目標日期和時間',
+                    event_name: '事件名稱（可選）',
+                    days: '天',
+                    hours: '時',
+                    minutes: '分',
+                    seconds: '秒',
+                    start: '開始',
+                    pause: '暫停',
+                    reset: '重置',
+                    countdown_complete: '倒計時完成！',
+                    notes: '說明：',
+                    note1: '為倒計時設定未來的日期和時間',
+                    note2: '計時器將即時更新',
+                    note3: '您可以隨時暫停或重置計時器',
+                    err_past_date: '請選擇未來的日期和時間',
+                    err_no_date: '請選擇目標日期和時間'
+                },
+                'ja': {
+                    title: '⏱️ カウントダウンタイマー',
+                    target_date: '対象の日付と時間',
+                    event_name: 'イベント名（オプション）',
+                    days: '日',
+                    hours: '時間',
+                    minutes: '分',
+                    seconds: '秒',
+                    start: '開始',
+                    pause: '一時停止',
+                    reset: 'リセット',
+                    countdown_complete: 'カウントダウン完了！',
+                    notes: '注意事項：',
+                    note1: 'カウントダウンの未来の日付と時間を設定します',
+                    note2: 'タイマーはリアルタイムで更新されます',
+                    note3: 'いつでもタイマーを一時停止またはリセットできます',
+                    err_past_date: '未来の日付と時間を選択してください',
+                    err_no_date: '対象の日付と時間を選択してください'
+                },
+                'ru': {
+                    title: '⏱️ Таймер обратного отсчета',
+                    target_date: 'Целевая дата и время',
+                    event_name: 'Название события (опционально)',
+                    days: 'Дни',
+                    hours: 'Часы',
+                    minutes: 'Минуты',
+                    seconds: 'Секунды',
+                    start: 'Старт',
+                    pause: 'Пауза',
+                    reset: 'Сброс',
+                    countdown_complete: 'Обратный отсчет завершен!',
+                    notes: 'Примечания:',
+                    note1: 'Установите будущую дату и время для обратного отсчета',
+                    note2: 'Таймер будет обновляться в реальном времени',
+                    note3: 'Вы можете в любой момент поставить таймер на паузу или сбросить его',
+                    err_past_date: 'Пожалуйста, выберите будущую дату и время',
+                    err_no_date: 'Пожалуйста, выберите целевую дату и время'
+                }
+            },
+            
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                // 设置默认日期为当前时间加1小时
+                const now = new Date();
+                now.setHours(now.getHours() + 1);
+                const dateStr = now.toISOString().slice(0, 16);
+                document.getElementById('target-datetime').value = dateStr;
+                
+                this.changeLang();
+            },
+            
+            changeLang: function() {
+                const lang = document.getElementById('countdown-lang').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+            
+            start: function() {
+                const datetime = document.getElementById('target-datetime').value;
+                const eventName = document.getElementById('event-name').value;
+                
+                this.clearError();
+                
+                if (!datetime) {
+                    this.showError('err_no_date');
+                    return;
+                }
+                
+                this.targetTime = new Date(datetime);
+                const now = new Date();
+                
+                if (this.targetTime <= now) {
+                    this.showError('err_past_date');
+                    return;
+                }
+                
+                // 显示事件名称
+                document.getElementById('event-display').textContent = eventName || this.i18n[document.getElementById('countdown-lang').value]['countdown_complete'].replace('!', '');
+                
+                // 隐藏完成消息
+                document.getElementById('countdown-complete').classList.add('hidden');
+                
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.updateCountdown();
+                    this.timer = setInterval(() => this.updateCountdown(), 1000);
+                }
+            },
+            
+            pause: function() {
+                if (this.isRunning) {
+                    this.isRunning = false;
+                    clearInterval(this.timer);
+                }
+            },
+            
+            reset: function() {
+                this.pause();
+                this.isRunning = false;
+                document.getElementById('days').textContent = '00';
+                document.getElementById('hours').textContent = '00';
+                document.getElementById('minutes').textContent = '00';
+                document.getElementById('seconds').textContent = '00';
+                document.getElementById('event-display').textContent = '';
+                this.clearError();
+            },
+            
+            updateCountdown: function() {
+                const now = new Date();
+                const diff = this.targetTime - now;
+                
+                if (diff <= 0) {
+                    this.pause();
+                    document.getElementById('days').textContent = '00';
+                    document.getElementById('hours').textContent = '00';
+                    document.getElementById('minutes').textContent = '00';
+                    document.getElementById('seconds').textContent = '00';
+                    document.getElementById('countdown-complete').classList.remove('hidden');
+                    return;
+                }
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                document.getElementById('days').textContent = days.toString().padStart(2, '0');
+                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+            },
+            
+            showError: function(key) {
+                const lang = document.getElementById('countdown-lang').value;
+                const errorEl = document.getElementById('countdown-error');
+                errorEl.textContent = this.i18n[lang][key];
+                errorEl.classList.remove('hidden');
+            },
+            
+            clearError: function() {
+                document.getElementById('countdown-error').classList.add('hidden');
+            }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => Countdown.init());
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

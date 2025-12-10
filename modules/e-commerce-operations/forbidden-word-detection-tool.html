@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="E-commerce Operations">
+    <meta name="icon" content="✂️">
+    <title>违禁词检测工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 150px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .limit-word-tag { display: inline-block; background-color: #fee2e2; padding: 4px 8px; border-radius: 4px; color: #dc2626; font-weight: bold; font-size: 0.85rem; margin: 2px; border: 1px solid #fecaca; }
+        .limit-word-section { background-color: #fff7ed; border: 1px solid #ffedd5; padding: 15px; border-radius: 8px; }
+        .platform-badge { font-size: 0.7rem; background: rgba(255,255,255,0.8); padding: 1px 4px; border-radius: 3px; margin-left: 4px; color: #991b1b; border: 1px solid #fca5a5; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/e-commerce-operations/forbidden-word-detection-tool.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="text-remover-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="TextTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">✂️ 违禁词检测工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_text">Input Text</h3>
+                <div class="form-group">
+                    <textarea id="input_text" placeholder="Paste your text here..." class="focus:ring-2 focus:ring-green-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="options">Options</h3>
+                
+                <div class="options-grid">
+                    <div class="form-group">
+                        <label data-i18n="duplicate_type">Duplicate Type</label>
+                        <select id="duplicate_type" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="line" data-i18n="line_duplicates">Line Duplicates</option>
+                            <option value="word" data-i18n="word_duplicates">Word Duplicates</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="case_sensitive">Case Sensitivity</label>
+                        <select id="case_sensitive" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="false" data-i18n="case_insensitive">Insensitive</option>
+                            <option value="true" data-i18n="case_sensitive_val">Sensitive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Limit Word Check Options -->
+                <div class="mt-6">
+                    <h4 class="font-medium mb-3 text-gray-700" data-i18n="limit_word_check">Limit Word Check</h4>
+                    <div class="options-grid">
+                        <div class="form-group">
+                            <label data-i18n="check_platforms">Check Platforms</label>
+                            <select id="check_platforms" class="focus:ring-2 focus:ring-amber-500 outline-none">
+                                <option value="all" data-i18n="all_platforms">All Platforms</option>
+                                <option value="official" data-i18n="official_only">Official Only (广告法)</option>
+                                <option value="taobao" data-i18n="taobao">Taobao/Tmall</option>
+                                <option value="jd" data-i18n="jd">JD.com</option>
+                                <option value="pdd" data-i18n="pdd">Pinduoduo</option>
+                                <option value="tiktok_live" data-i18n="tiktok_live">Douyin Live (抖音)</option>
+                                <option value="amazon" data-i18n="amazon">Amazon</option>
+                                <option value="tiktok" data-i18n="tiktok">TikTok (Global)</option>
+                                <option value="ebay" data-i18n="ebay">eBay</option>
+                                <option value="shopee" data-i18n="shopee">Shopee</option>
+                                <option value="snapchat" data-i18n="snapchat">Snapchat</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="limit_word_action">Action</label>
+                            <select id="limit_word_action" class="focus:ring-2 focus:ring-amber-500 outline-none">
+                                <option value="highlight" data-i18n="highlight">Highlight Only</option>
+                                <option value="replace" data-i18n="replace">Replace with ***</option>
+                                <option value="remove" data-i18n="remove">Remove Completely</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="TextTool.processText()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_process">Process Text</button>
+                <button onclick="TextTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">Clear All</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">Results</h3>
+                
+                <!-- Limit Words Found Section (Moved up for better visibility) -->
+                <div class="section limit-word-section mb-6">
+                    <h3 class="text-md font-bold mb-2 text-red-700" data-i18n="found_limit_words">Found Limit Words</h3>
+                    <div id="limit_words_list" class="p-4 bg-white rounded border border-red-100 min-h-[60px] max-h-[200px] overflow-y-auto">
+                        <p data-i18n="no_limit_words" class="text-gray-400 italic text-sm">No limit words found in the text.</p>
+                    </div>
+                </div>
+
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="original_count">Original Count:</span>
+                        <span class="stat-value" id="original_count">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="duplicates_removed">Duplicates Removed:</span>
+                        <span class="stat-value" id="duplicates_removed">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="limit_words_found">Limit Words Found:</span>
+                        <span class="stat-value" id="limit_words_found_count">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="remaining_count">Remaining Count:</span>
+                        <span class="stat-value" id="remaining_count">0</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="result_text">Result Text</label>
+                    <textarea id="result_text" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700" placeholder="Processed text will appear here..."></textarea>
+                </div>
+                <button onclick="TextTool.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">Copy Result</button>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">About This Tool</h3>
+                <p data-i18n="intro_text">This toolkit combines text duplicate removal and e-commerce platform limit word checking. You can remove duplicate lines or words, and check for restricted words from major e-commerce platforms. The tool helps ensure your content complies with platform regulations while eliminating redundancy.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TextTool = {
+            i18n: {
+                'en': {
+                    title: '✂️ Forbidden Word Detection Tool',
+                    input_text: 'Input Text',
+                    options: 'Options',
+                    duplicate_type: 'Duplicate Type',
+                    line_duplicates: 'Line Duplicates',
+                    word_duplicates: 'Word Duplicates',
+                    case_sensitive: 'Case Sensitivity',
+                    case_insensitive: 'Insensitive',
+                    'case_sensitive_val': 'Sensitive',
+                    btn_process: 'Process Text',
+                    btn_clear: 'Clear All',
+                    results: 'Results',
+                    original_count: 'Original Count:',
+                    duplicates_removed: 'Duplicates Removed:',
+                    limit_words_found: 'Limit Words Found:',
+                    remaining_count: 'Remaining Count:',
+                    result_text: 'Result Text',
+                    btn_copy: 'Copy Result',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This toolkit combines text duplicate removal and e-commerce platform limit word checking. You can remove duplicate lines or words, and check for restricted words from major e-commerce platforms.',
+                    limit_word_check: 'Limit Word Check',
+                    check_platforms: 'Check Platforms',
+                    all_platforms: 'All Platforms',
+                    official_only: 'Official Only (Ad Law)',
+                    taobao: 'Taobao/Tmall',
+                    jd: 'JD.com',
+                    pdd: 'Pinduoduo',
+                    amazon: 'Amazon',
+                    tiktok: 'TikTok (Global)',
+                    tiktok_live: 'Douyin Live (China)',
+                    ebay: 'eBay',
+                    shopee: 'Shopee',
+                    snapchat: 'Snapchat',
+                    limit_word_action: 'Action',
+                    highlight: 'Highlight Only',
+                    replace: 'Replace with ***',
+                    remove: 'Remove Completely',
+                    found_limit_words: 'Found Limit Words',
+                    no_limit_words: 'No limit words found in the text.',
+                    please_enter_text: 'Please enter some text first',
+                    occurrences: 'Occurrences',
+                    platforms: 'Platforms:',
+                    copied: 'Copied!'
+                },
+                'zh-CN': {
+                    title: '✂️ 违禁词检测工具',
+                    input_text: '输入文本',
+                    options: '选项设置',
+                    duplicate_type: '去重类型',
+                    line_duplicates: '行重复',
+                    word_duplicates: '单词重复',
+                    case_sensitive: '大小写敏感性',
+                    case_insensitive: '不敏感',
+                    'case_sensitive_val': '敏感',
+                    btn_process: '处理文本',
+                    btn_clear: '清空所有',
+                    results: '处理结果',
+                    original_count: '原始数量：',
+                    duplicates_removed: '已移除重复项：',
+                    limit_words_found: '发现违禁词：',
+                    remaining_count: '剩余数量：',
+                    result_text: '结果文本',
+                    btn_copy: '复制结果',
+                    intro_title: '关于本工具',
+                    intro_text: '本工具集文本去重与电商平台违禁词检测于一体。您可以去除重复的行或单词，并检查各大电商平台的限制词。该工具帮助确保您的内容符合平台规定，同时消除冗余。',
+                    limit_word_check: '违禁词检测',
+                    check_platforms: '检测平台',
+                    all_platforms: '所有平台',
+                    official_only: '仅官方规定 (广告法)',
+                    taobao: '淘宝/天猫',
+                    jd: '京东',
+                    pdd: '拼多多',
+                    amazon: '亚马逊',
+                    tiktok: 'TikTok (国际版)',
+                    tiktok_live: '抖音直播/视频号',
+                    ebay: 'eBay',
+                    shopee: '虾皮 (Shopee)',
+                    snapchat: 'Snapchat',
+                    limit_word_action: '处理方式',
+                    highlight: '仅高亮显示',
+                    replace: '替换为***',
+                    remove: '完全移除',
+                    found_limit_words: '发现的违禁词',
+                    no_limit_words: '文本中未发现违禁词。',
+                    please_enter_text: '请先输入一些文本',
+                    occurrences: '出现次数',
+                    platforms: '涉及平台：',
+                    copied: '已复制！'
+                },
+                'zh-TW': {
+                    title: '✂️ 違禁詞檢測工具',
+                    input_text: '輸入文本',
+                    options: '選項設置',
+                    duplicate_type: '去重類型',
+                    line_duplicates: '行重複',
+                    word_duplicates: '單詞重複',
+                    case_sensitive: '大小寫敏感性',
+                    case_insensitive: '不敏感',
+                    'case_sensitive_val': '敏感',
+                    btn_process: '處理文本',
+                    btn_clear: '清空所有',
+                    results: '處理結果',
+                    original_count: '原始數量：',
+                    duplicates_removed: '已移除重複項：',
+                    limit_words_found: '發現違禁詞：',
+                    remaining_count: '剩餘數量：',
+                    result_text: '結果文本',
+                    btn_copy: '複製結果',
+                    intro_title: '關於本工具',
+                    intro_text: '本工具集文本去重與電商平台違禁詞檢測於一體。您可以去除重複的行或單詞，並檢查各大電商平台的限制詞。該工具幫助確保您的內容符合平台規定，同時消除冗餘。',
+                    limit_word_check: '違禁詞檢測',
+                    check_platforms: '檢測平台',
+                    all_platforms: '所有平台',
+                    official_only: '僅官方規定 (廣告法)',
+                    taobao: '淘寶/天貓',
+                    jd: '京東',
+                    pdd: '拼多多',
+                    amazon: '亞馬遜',
+                    tiktok: 'TikTok (國際版)',
+                    tiktok_live: '抖音直播/視頻號',
+                    ebay: 'eBay',
+                    shopee: '蝦皮 (Shopee)',
+                    snapchat: 'Snapchat',
+                    limit_word_action: '處理方式',
+                    highlight: '僅高亮顯示',
+                    replace: '替換為***',
+                    remove: '完全移除',
+                    found_limit_words: '發現的違禁詞',
+                    no_limit_words: '文本中未發現違禁詞。',
+                    please_enter_text: '請先輸入一些文本',
+                    occurrences: '出現次數',
+                    platforms: '涉及平台：',
+                    copied: '已複製！'
+                },
+                'ja': {
+                    title: '✂️ 禁止用語検出ツール',
+                    input_text: 'テキストを入力',
+                    options: 'オプション',
+                    duplicate_type: '重複タイプ',
+                    line_duplicates: '行の重複',
+                    word_duplicates: '単語の重複',
+                    case_sensitive: '大文字小文字の区別',
+                    case_insensitive: '区別しない',
+                    'case_sensitive_val': '区別する',
+                    btn_process: 'テキスト処理',
+                    btn_clear: 'すべてクリア',
+                    results: '結果',
+                    original_count: '元の数:',
+                    duplicates_removed: '削除された重複:',
+                    limit_words_found: '見つかった禁止用語:',
+                    remaining_count: '残りの数:',
+                    result_text: '結果テキスト',
+                    btn_copy: '結果をコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このツールキットは、テキストの重複削除とEコマースプラットフォームの禁止用語チェックを組み合わせたものです。重複する行や単語を削除し、主要なEコマースプラットフォームの制限された単語をチェックできます。',
+                    limit_word_check: '禁止用語チェック',
+                    check_platforms: 'チェックするプラットフォーム',
+                    all_platforms: 'すべてのプラットフォーム',
+                    official_only: '公式のみ (広告法)',
+                    taobao: 'Taobao/Tmall',
+                    jd: 'JD.com',
+                    pdd: 'Pinduoduo',
+                    amazon: 'Amazon',
+                    tiktok: 'TikTok (Global)',
+                    tiktok_live: 'Douyin Live (中国)',
+                    ebay: 'eBay',
+                    shopee: 'Shopee',
+                    snapchat: 'Snapchat',
+                    limit_word_action: 'アクション',
+                    highlight: 'ハイライトのみ',
+                    replace: '***に置換',
+                    remove: '完全に削除',
+                    found_limit_words: '見つかった禁止用語',
+                    no_limit_words: '禁止用語は見つかりませんでした。',
+                    please_enter_text: '最初にテキストを入力してください',
+                    occurrences: '出現回数',
+                    platforms: 'プラットフォーム:',
+                    copied: 'コピーしました！'
+                },
+                'ru': {
+                    title: '✂️ Инструмент проверки запрещенных слов',
+                    input_text: 'Введите текст',
+                    options: 'Настройки',
+                    duplicate_type: 'Тип дубликатов',
+                    line_duplicates: 'Дубликаты строк',
+                    word_duplicates: 'Дубликаты слов',
+                    case_sensitive: 'Чувствительность к регистру',
+                    case_insensitive: 'Нечувствительно',
+                    'case_sensitive_val': 'Чувствительно',
+                    btn_process: 'Обработать',
+                    btn_clear: 'Очистить',
+                    results: 'Результаты',
+                    original_count: 'Исходное количество:',
+                    duplicates_removed: 'Удалено дубликатов:',
+                    limit_words_found: 'Найдено запрещенных слов:',
+                    remaining_count: 'Осталось:',
+                    result_text: 'Результат',
+                    btn_copy: 'Копировать',
+                    intro_title: 'Об инструменте',
+                    intro_text: 'Этот набор инструментов объединяет удаление дубликатов текста и проверку запрещенных слов для платформ электронной коммерции.',
+                    limit_word_check: 'Проверка запрещенных слов',
+                    check_platforms: 'Платформы',
+                    all_platforms: 'Все платформы',
+                    official_only: 'Только официальные (Закон о рекламе)',
+                    taobao: 'Таобао',
+                    jd: 'JD.com',
+                    pdd: 'Pinduoduo',
+                    amazon: 'Амазон',
+                    tiktok: 'ТикТок (Global)',
+                    tiktok_live: 'Douyin Live (Китай)',
+                    ebay: 'eBay',
+                    shopee: 'Шоппи',
+                    snapchat: 'Снапчат',
+                    limit_word_action: 'Действие',
+                    highlight: 'Только подсветка',
+                    replace: 'Заменить на ***',
+                    remove: 'Удалить полностью',
+                    found_limit_words: 'Найденные слова',
+                    no_limit_words: 'Запрещенных слов не найдено.',
+                    please_enter_text: 'Пожалуйста, введите текст',
+                    occurrences: 'Вхождений',
+                    platforms: 'Платформы:',
+                    copied: 'Скопировано!'
+                }
+            },
+
+            // 扩充后的违禁词库 (Updated Forbidden Words List)
+            limitWords: {
+                // 1. 官方/广告法 (Official/Ad Law)
+                official: [
+                    // 绝对化用语
+                    '最高级', '最佳', '第一', '唯一', '首个', '首选', '绝对', '顶级', '终极', '极致',
+                    '冠军', '金牌', '王牌', '独家', '全网首发', '国家级', '世界级', '全球级', '宇宙级',
+                    '极品', '完美', '永久', '特效', '100%有效', '绝无仅有', '无与伦比', '史无前例',
+                    '前无古人', '万能', '无敌', '至尊', '巅峰', '领袖', '之王', '缔造者', '领导者',
+                    '填补空白', '绝版', '排名第一', '销量第一', '最新技术', '最先进', '最时尚', '最受欢迎',
+                    '特供', '专供', '专家推荐', '质量免检', '无需检测', '祖传', '神效', '根治', '治愈'
+                ],
+                // 2. 淘宝/天猫 (Taobao/Tmall)
+                taobao: [
+                    '最低价', '淘宝第一', '天猫独家', '仅此一家', '假一赔万', '淘宝销量第一',
+                    '全网最低', '淘宝首发', '天猫首发', '必买', '不买后悔', '爆款之王',
+                    '抢疯了', '再不抢就没了', '售罄', '零首付', '万人疯抢', '仅此一次', '最后一波',
+                    '跳楼价', '亏本清仓', '原价', '名牌', '奢侈', '高档', '正品', '真皮' // 需谨慎使用
+                ],
+                // 3. 京东 (JD.com)
+                jd: [
+                    '京东独家', '京东首发', '京东自营认证', '京东销量第一', '极速达',
+                    '211限时达', '京东秒杀', '京东超市专供', '京东全球购', '正品保障100%',
+                    '全网最低价', '绝无仅有', '世界领先', '遥遥领先', '独一无二', '最后一天'
+                ],
+                // 4. 拼多多 (Pinduoduo)
+                pdd: [
+                    '拼团最低价', '拼多多独家', '9.9元秒杀', '亏本清仓', '工厂直供',
+                    '产地直供', '拼得多省得多', '拼多多爆款', '全网底价', '假一罚十',
+                    '秒杀全网', '全网首家', '绝对高端', '绝对实用', '最大', '最好', '最高档'
+                ],
+                // 5. 亚马逊 (Amazon) - English Restricted Keywords
+                amazon: [
+                    'Best Seller', 'Top Rated', 'Number 1', 'No.1', 'Exclusive', 'Guaranteed', 'Perfect',
+                    'Ultimate', 'Premium', 'Cheapest', 'Lowest Price', '100% Effective',
+                    'Free Shipping', 'Limited Time', 'Amazon Choice', 'FDA Approved', 
+                    'Cure', 'Prevent', 'Treat', 'Heal', 'Eliminate', 'Antibacterial', 
+                    'Virus', 'Bacteria', 'Germs', 'Cancer', 'Tumor', 'Diabetic', 
+                    'Weight Loss', 'Fat Burner', 'Hemp', 'CBD', 'Marijuana', 
+                    'Satisfaction Guaranteed', 'Money Back'
+                ],
+                // 6. TikTok (Global) - Viral/Spam terms
+                tiktok: [
+                    'Viral', 'Trending', 'Must Have', 'Life Changing', 'Hottest',
+                    'Go Viral', 'Best Seller', 'Number 1', 'Exclusive', 'Limited Stock',
+                    'Selling Fast', 'Last Chance', 'Free Gift', 'Buy Now', 'Don\'t Miss',
+                    'TikTok Made Me Buy It', 'As Seen On TikTok', 'Viral Sensation',
+                    'Giveaway', 'Free', 'Follow for Follow', 'Like for Like'
+                ],
+                // 7. 抖音直播/视频号 (Douyin Live/China)
+                tiktok_live: [
+                    '限时秒杀', '仅此一次', '直播专享', '不买后悔', '手慢无',
+                    '直播间专属', '仅此一批', '抢到就是赚到', '最后一波', '福利款',
+                    '宠粉价', '秒杀价', '仅此一天', '独家福利', '直播限定',
+                    '马上抢', '错过拍大腿', '仅此一件', '刷单', '好评返现', 
+                    '免单', '返利', '国家级', '特供', '专供', '演戏', '炒作', '卖惨',
+                    '保本', '无风险', '月赚', '投资回报', '稳赚不赔', '药到病除', '根治'
+                ],
+                // 8. eBay
+                ebay: [
+                    'Best Offer', 'Lowest Price', 'Free Shipping', 'Brand New',
+                    '100% Authentic', 'Rare', 'Limited Edition', 'Exclusive',
+                    'Hard to Find', 'Like New', 'Mint Condition', 'Fast Delivery',
+                    'LQQK', 'Wow', 'Must See', 'Fake', 'Replica', 'Copy', 'Counterfeit'
+                ],
+                // 9. Shopee
+                shopee: [
+                    '闪购', '限时折扣', '最低价', '正品保障', '虾皮独家',
+                    '包邮', '热卖', '爆款', '新品首发', '限时抢购',
+                    'Shopee Mall', '100%正品', '限时特卖', '超值优惠',
+                    'Top', 'No.1', 'Best', 'Cheapest', 'Medical', 'Cure'
+                ],
+                // 10. Snapchat
+                snapchat: [
+                    'Swipe Up', 'Exclusive Offer', 'Limited Time', 'Only on Snapchat',
+                    'Snap Exclusive', 'Flash Sale', 'Hurry', 'Last Chance',
+                    'Secret Deal', 'Snapchat Only', 'Screenshot', 'Add me'
+                ]
+            },
+
+            init: function() {
+                // 修复i18n键名冲突
+                document.querySelector('option[value="true"]').setAttribute('data-i18n', 'case_sensitive_val');
+                
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false); // Init call, don't update URL again
+                } else {
+                    // Default to Simplified Chinese based on request
+                    this.changeLang(false); 
+                }
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                // Update HTML elements
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                // Update URL parameter
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                // Update page title tag specifically
+                document.title = i18nData['title'];
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang]?.[key] || this.i18n['en'][key] || key;
+            },
+
+            processText: function() {
+                const inputText = document.getElementById('input_text').value;
+                if (!inputText.trim()) {
+                    alert(this.getI18nText('please_enter_text'));
+                    return;
+                }
+
+                const dupType = document.getElementById('duplicate_type').value;
+                const isCaseSensitive = document.getElementById('case_sensitive').value === 'true';
+                const platform = document.getElementById('check_platforms').value;
+                const action = document.getElementById('limit_word_action').value;
+
+                // 1. Duplicate Removal
+                let items;
+                let separator;
+                if (dupType === 'line') {
+                    items = inputText.split('\n');
+                    separator = '\n';
+                } else {
+                    items = inputText.split(/\s+/);
+                    separator = ' ';
+                }
+
+                const seen = new Set();
+                const uniqueItems = [];
+                let duplicatesCount = 0;
+
+                items.forEach(item => {
+                    if (item.trim() === '') {
+                        uniqueItems.push(item); // Keep empty lines/spaces structure roughly
+                        return;
+                    }
+                    
+                    const checkItem = isCaseSensitive ? item : item.toLowerCase();
+                    if (!seen.has(checkItem)) {
+                        seen.add(checkItem);
+                        uniqueItems.push(item);
+                    } else {
+                        duplicatesCount++;
+                    }
+                });
+
+                let processedText = uniqueItems.join(separator);
+
+                // 2. Limit Word Check
+                let foundLimitWords = [];
+                let platformsToCheck = [];
+
+                if (platform === 'all') {
+                    Object.keys(this.limitWords).forEach(key => platformsToCheck.push({name: key, words: this.limitWords[key]}));
+                } else {
+                    platformsToCheck.push({name: platform, words: this.limitWords[platform] || []});
+                }
+
+                // Identify matches
+                platformsToCheck.forEach(p => {
+                    p.words.forEach(word => {
+                        // Regex to find word, ignore case if needed (usually limit words are checked case-insensitive mostly, but let's stick to simple includes or regex)
+                        try {
+                            // Escape special regex chars if any (though most limit words are plain text)
+                            const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const regex = new RegExp(escapedWord, 'gi'); 
+                            const matches = processedText.match(regex);
+                            if (matches) {
+                                foundLimitWords.push({
+                                    word: word,
+                                    count: matches.length,
+                                    platform: p.name
+                                });
+                            }
+                        } catch(e) {
+                            console.error("Regex error for word:", word);
+                        }
+                    });
+                });
+
+                // Deduplicate found words list (same word in multiple platforms)
+                const uniqueFound = {};
+                foundLimitWords.forEach(item => {
+                    if (!uniqueFound[item.word]) {
+                        uniqueFound[item.word] = { ...item, platforms: [item.platform] };
+                    } else {
+                        if (!uniqueFound[item.word].platforms.includes(item.platform)) {
+                            uniqueFound[item.word].platforms.push(item.platform);
+                        }
+                    }
+                });
+
+                // Apply Actions
+                if (action === 'remove') {
+                    Object.keys(uniqueFound).forEach(word => {
+                        const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(escapedWord, 'gi');
+                        processedText = processedText.replace(regex, '');
+                    });
+                } else if (action === 'replace') {
+                    Object.keys(uniqueFound).forEach(word => {
+                        const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(escapedWord, 'gi');
+                        processedText = processedText.replace(regex, '***');
+                    });
+                }
+                // If highlight, we don't change the textarea text, just list them below.
+
+                // Update UI Stats
+                document.getElementById('original_count').textContent = items.length;
+                document.getElementById('duplicates_removed').textContent = duplicatesCount;
+                document.getElementById('remaining_count').textContent = uniqueItems.length;
+                document.getElementById('limit_words_found_count').textContent = Object.keys(uniqueFound).length;
+                
+                document.getElementById('result_text').value = processedText;
+
+                // Render Limit Words Found
+                const listContainer = document.getElementById('limit_words_list');
+                listContainer.innerHTML = '';
+                
+                const foundKeys = Object.keys(uniqueFound);
+                if (foundKeys.length === 0) {
+                    listContainer.innerHTML = `<p class="text-gray-500 italic">${this.getI18nText('no_limit_words')}</p>`;
+                } else {
+                    foundKeys.forEach(key => {
+                        const data = uniqueFound[key];
+                        const span = document.createElement('span');
+                        span.className = 'limit-word-tag';
+                        span.innerHTML = `${key} <span class="text-xs bg-red-100 rounded px-1">${data.count}</span>`;
+                        span.title = `${this.getI18nText('platforms')} ${data.platforms.join(', ')}`;
+                        
+                        // Add platform badges
+                        data.platforms.forEach(p => {
+                            const badge = document.createElement('span');
+                            badge.className = 'platform-badge';
+                            badge.textContent = p;
+                            span.appendChild(badge);
+                        });
+
+                        listContainer.appendChild(span);
+                    });
+                }
+            },
+
+            clearAll: function() {
+                document.getElementById('input_text').value = '';
+                document.getElementById('result_text').value = '';
+                document.getElementById('original_count').textContent = '0';
+                document.getElementById('duplicates_removed').textContent = '0';
+                document.getElementById('limit_words_found_count').textContent = '0';
+                document.getElementById('remaining_count').textContent = '0';
+                document.getElementById('limit_words_list').innerHTML = `<p class="text-gray-500 italic">${this.getI18nText('no_limit_words')}</p>`;
+            },
+
+            copyResult: function() {
+                const resultText = document.getElementById('result_text');
+                if (!resultText.value) return;
+                
+                resultText.select();
+                document.execCommand('copy');
+                
+                // Show feedback
+                const btn = document.querySelector('button[onclick="TextTool.copyResult()"]');
+                const originalText = btn.textContent;
+                btn.textContent = this.getI18nText('copied');
+                btn.classList.add('bg-green-700');
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('bg-green-700');
+                }, 2000);
+            }
+        };
+
+        window.onload = function() { TextTool.init(); };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

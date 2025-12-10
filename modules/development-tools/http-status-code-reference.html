@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Development Tools">
+    <meta name="icon" content="🌐">
+    <title>HTTP状态码对照表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+        .status-card { padding: 15px; border: 1px solid #e5e7eb; border-radius: 6px; transition: all 0.2s; }
+        .status-card:hover { background-color: #f0fdf4; border-color: #a7f3d0; transform: translateY(-2px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .status-code { font-size: 1.5rem; font-weight: bold; margin-bottom: 5px; line-height: 1.2; padding: 5px 10px; background: #f9fafb; border-radius: 4px; display: inline-block; }
+        .status-category { font-size: 0.85rem; color: white; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+        .status-1xx { background-color: #3b82f6; }
+        .status-2xx { background-color: #10b981; }
+        .status-3xx { background-color: #f59e0b; }
+        .status-4xx { background-color: #ef4444; }
+        .status-5xx { background-color: #8b5cf6; }
+        .status-name { font-weight: 600; margin-bottom: 4px; color: #1e293b; }
+        .status-desc { font-size: 0.9rem; color: #64748b; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+        .reference-link { margin-top: 20px; padding: 15px; text-align: center; color: #3b82f6; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/http-status-code-reference.html" />
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🌐 HTTP状态码对照表</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">搜索状态码</h3>
+                <div class="form-group">
+                    <label data-i18n="search_keyword">关键词</label>
+                    <input type="text" id="search-input" onkeyup="Tool.search()" placeholder="输入状态码或描述..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="results">状态码列表</h3>
+                    <span class="text-sm text-gray-500" id="count-display"></span>
+                </div>
+                <div id="results-container" class="status-grid">
+                    <!-- 状态码将通过JS动态加载 -->
+                </div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于HTTP状态码</h3>
+                <p data-i18n="intro_text">HTTP状态码是服务器对客户端请求的响应状态标识，分为五大类：1xx（信息性）、2xx（成功）、3xx（重定向）、4xx（客户端错误）和5xx（服务器错误）。本工具提供完整的HTTP状态码参考，包含状态码、名称及详细描述，帮助开发者快速排查网络请求问题。</p>
+            </div>
+
+            <div class="reference-link">
+                <a href="https://toolboxpro.top" target="_blank" data-i18n="more_tools">更多工具可访问：toolboxpro.top</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '🌐 HTTP Status Code Reference',
+                    search: 'Search Status Codes',
+                    'search_keyword': 'Keyword',
+                    'results': 'Status Code List',
+                    'copied': 'Copied!',
+                    'intro_title': 'About HTTP Status Codes',
+                    'intro_text': 'HTTP status codes are response status identifiers from servers to client requests, divided into five categories: 1xx (Informational), 2xx (Success), 3xx (Redirection), 4xx (Client Error), and 5xx (Server Error). This tool provides a complete reference of HTTP status codes, including codes, names and detailed descriptions to help developers quickly troubleshoot network request issues.',
+                    'more_tools': 'More tools: toolboxpro.top'
+                },
+                'zh-CN': {
+                    title: '🌐 HTTP状态码对照表',
+                    search: '搜索状态码',
+                    'search_keyword': '关键词',
+                    'results': '状态码列表',
+                    'copied': '已复制！',
+                    'intro_title': '关于HTTP状态码',
+                    'intro_text': 'HTTP状态码是服务器对客户端请求的响应状态标识，分为五大类：1xx（信息性）、2xx（成功）、3xx（重定向）、4xx（客户端错误）和5xx（服务器错误）。本工具提供完整的HTTP状态码参考，包含状态码、名称及详细描述，帮助开发者快速排查网络请求问题。',
+                    'more_tools': '更多工具可访问：toolboxpro.top'
+                },
+                'zh-TW': {
+                    title: '🌐 HTTP狀態碼對照表',
+                    search: '搜尋狀態碼',
+                    'search_keyword': '關鍵詞',
+                    'results': '狀態碼列表',
+                    'copied': '已複製！',
+                    'intro_title': '關於HTTP狀態碼',
+                    'intro_text': 'HTTP狀態碼是伺服器對用戶端請求的回應狀態標識，分為五大類：1xx（資訊性）、2xx（成功）、3xx（重新導向）、4xx（用戶端錯誤）和5xx（伺服器錯誤）。本工具提供完整的HTTP狀態碼參考，包含狀態碼、名稱及詳細描述，幫助開發者快速排查網路請求問題。',
+                    'more_tools': '更多工具可訪問：toolboxpro.top'
+                },
+                'ja': {
+                    title: '🌐 HTTPステータスコード対照表',
+                    search: 'ステータスコード検索',
+                    'search_keyword': 'キーワード',
+                    'results': 'ステータスコード一覧',
+                    'copied': 'コピーしました！',
+                    'intro_title': 'HTTPステータスコードについて',
+                    'intro_text': 'HTTPステータスコードは、サーバーからクライアントのリクエストに対する応答状態を示す識別子で、5つのカテゴリに分類されます：1xx（情報）、2xx（成功）、3xx（リダイレクト）、4xx（クライアントエラー）、5xx（サーバーエラー）。このツールは、ステータスコード、名前、詳細な説明を含む完全なHTTPステータスコードの参照を提供し、開発者がネットワークリクエストの問題をすばやく解決するのに役立ちます。',
+                    'more_tools': '詳細ツール: toolboxpro.top'
+                },
+                'ru': {
+                    title: '🌐 Таблица кодов состояния HTTP',
+                    search: 'Поиск кодов состояния',
+                    'search_keyword': 'Ключевое слово',
+                    'results': 'Список кодов состояния',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О кодах состояния HTTP',
+                    'intro_text': 'Коды состояния HTTP — это идентификаторы состояния ответа сервера на запрос клиента, разделенные на пять категорий: 1xx (информационные), 2xx (успех), 3xx (перенаправление), 4xx (ошибка клиента) и 5xx (ошибка сервера). Этот инструмент предоставляет полную справку по кодам состояния HTTP, включая коды, названия и подробные описания, чтобы помочь разработчикам быстро устранять проблемы с сетевыми запросами.',
+                    'more_tools': 'Больше инструментов: toolboxpro.top'
+                }
+            },
+
+            // HTTP状态码数据
+            statusCodeData: [
+                // 1xx 信息性状态码
+                { code: "100", name: "Continue", desc: "服务器已收到请求的初始部分，客户端应继续发送其余部分", category: "1xx" },
+                { code: "101", name: "Switching Protocols", desc: "服务器同意客户端的协议切换请求", category: "1xx" },
+                { code: "102", name: "Processing", desc: "服务器正在处理请求，但尚未完成", category: "1xx" },
+                { code: "103", name: "Early Hints", desc: "服务器返回的提示信息，用于提前加载资源", category: "1xx" },
+                
+                // 2xx 成功状态码
+                { code: "200", name: "OK", desc: "请求成功，服务器返回所请求的数据", category: "2xx" },
+                { code: "201", name: "Created", desc: "请求已成功处理并创建了新资源", category: "2xx" },
+                { code: "202", name: "Accepted", desc: "请求已被接受，但尚未处理完成", category: "2xx" },
+                { code: "203", name: "Non-Authoritative Information", desc: "服务器返回的元数据不是来自原始服务器", category: "2xx" },
+                { code: "204", name: "No Content", desc: "请求成功，但没有返回内容", category: "2xx" },
+                { code: "205", name: "Reset Content", desc: "请求成功，客户端应重置视图", category: "2xx" },
+                { code: "206", name: "Partial Content", desc: "服务器成功处理了部分GET请求", category: "2xx" },
+                { code: "207", name: "Multi-Status", desc: "多个资源的状态信息", category: "2xx" },
+                { code: "208", name: "Already Reported", desc: "资源已在先前的响应中报告过", category: "2xx" },
+                { code: "226", name: "IM Used", desc: "服务器已完成对资源的GET请求，响应是对当前实例的修改", category: "2xx" },
+                
+                // 3xx 重定向状态码
+                { code: "300", name: "Multiple Choices", desc: "请求的资源有多个可能的响应", category: "3xx" },
+                { code: "301", name: "Moved Permanently", desc: "请求的资源已永久移动到新位置", category: "3xx" },
+                { code: "302", name: "Found", desc: "请求的资源临时移动到新位置", category: "3xx" },
+                { code: "303", name: "See Other", desc: "客户端应使用GET方法请求另一个URI", category: "3xx" },
+                { code: "304", name: "Not Modified", desc: "资源未修改，可使用缓存版本", category: "3xx" },
+                { code: "305", name: "Use Proxy", desc: "请求的资源必须通过指定的代理访问", category: "3xx" },
+                { code: "307", name: "Temporary Redirect", desc: "临时重定向，保持请求方法不变", category: "3xx" },
+                { code: "308", name: "Permanent Redirect", desc: "永久重定向，保持请求方法不变", category: "3xx" },
+                
+                // 4xx 客户端错误状态码
+                { code: "400", name: "Bad Request", desc: "服务器无法理解请求的格式", category: "4xx" },
+                { code: "401", name: "Unauthorized", desc: "请求需要用户认证", category: "4xx" },
+                { code: "402", name: "Payment Required", desc: "预留状态码，用于未来的支付场景", category: "4xx" },
+                { code: "403", name: "Forbidden", desc: "服务器拒绝请求，客户端没有访问权限", category: "4xx" },
+                { code: "404", name: "Not Found", desc: "请求的资源不存在", category: "4xx" },
+                { code: "405", name: "Method Not Allowed", desc: "请求使用的方法不被允许", category: "4xx" },
+                { code: "406", name: "Not Acceptable", desc: "服务器无法提供符合客户端要求的响应格式", category: "4xx" },
+                { code: "407", name: "Proxy Authentication Required", desc: "请求需要代理认证", category: "4xx" },
+                { code: "408", name: "Request Timeout", desc: "服务器等待请求超时", category: "4xx" },
+                { code: "409", name: "Conflict", desc: "请求与服务器当前状态冲突", category: "4xx" },
+                { code: "410", name: "Gone", desc: "请求的资源已永久删除", category: "4xx" },
+                { code: "411", name: "Length Required", desc: "请求需要Content-Length头信息", category: "4xx" },
+                { code: "412", name: "Precondition Failed", desc: "请求的前提条件不满足", category: "4xx" },
+                { code: "413", name: "Payload Too Large", desc: "请求体过大，服务器拒绝处理", category: "4xx" },
+                { code: "414", name: "URI Too Long", desc: "请求的URI过长，服务器无法处理", category: "4xx" },
+                { code: "415", name: "Unsupported Media Type", desc: "请求的媒体类型不被支持", category: "4xx" },
+                { code: "416", name: "Range Not Satisfiable", desc: "请求的范围无法满足", category: "4xx" },
+                { code: "417", name: "Expectation Failed", desc: "服务器无法满足Expect头的要求", category: "4xx" },
+                { code: "418", name: "I'm a teapot", desc: "幽默的状态码，表示服务器是茶壶，不能煮咖啡", category: "4xx" },
+                { code: "421", name: "Misdirected Request", desc: "请求被发送到无法处理的服务器", category: "4xx" },
+                { code: "422", name: "Unprocessable Entity", desc: "请求格式正确，但语义错误", category: "4xx" },
+                { code: "423", name: "Locked", desc: "请求的资源被锁定", category: "4xx" },
+                { code: "424", name: "Failed Dependency", desc: "请求失败，因为依赖的请求失败", category: "4xx" },
+                { code: "425", name: "Too Early", desc: "请求过早，服务器无法处理", category: "4xx" },
+                { code: "426", name: "Upgrade Required", desc: "客户端需要升级协议", category: "4xx" },
+                { code: "428", name: "Precondition Required", desc: "服务器要求请求满足特定条件", category: "4xx" },
+                { code: "429", name: "Too Many Requests", desc: "客户端发送的请求过多", category: "4xx" },
+                { code: "431", name: "Request Header Fields Too Large", desc: "请求头字段过大", category: "4xx" },
+                { code: "451", name: "Unavailable For Legal Reasons", desc: "资源因法律原因不可用", category: "4xx" },
+                
+                // 5xx 服务器错误状态码
+                { code: "500", name: "Internal Server Error", desc: "服务器内部错误", category: "5xx" },
+                { code: "501", name: "Not Implemented", desc: "服务器不支持请求的功能", category: "5xx" },
+                { code: "502", name: "Bad Gateway", desc: "服务器作为网关收到无效响应", category: "5xx" },
+                { code: "503", name: "Service Unavailable", desc: "服务器暂时无法处理请求", category: "5xx" },
+                { code: "504", name: "Gateway Timeout", desc: "服务器作为网关超时", category: "5xx" },
+                { code: "505", name: "HTTP Version Not Supported", desc: "服务器不支持请求的HTTP版本", category: "5xx" },
+                { code: "506", name: "Variant Also Negotiates", desc: "服务器内部配置错误", category: "5xx" },
+                { code: "507", name: "Insufficient Storage", desc: "服务器存储不足", category: "5xx" },
+                { code: "508", name: "Loop Detected", desc: "服务器检测到无限循环", category: "5xx" },
+                { code: "510", name: "Not Extended", desc: "请求需要进一步扩展", category: "5xx" },
+                { code: "511", name: "Network Authentication Required", desc: "需要网络认证", category: "5xx" }
+            ],
+
+            // 初始化
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang') || 'zh-CN';
+                if (this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                
+                this.renderStatusCodes();
+                this.updateLanguage();
+                this.updateCountDisplay();
+            },
+
+            // 渲染状态码列表
+            renderStatusCodes: function(filteredData) {
+                const container = document.getElementById('results-container');
+                const data = filteredData || this.statusCodeData;
+                
+                container.innerHTML = '';
+                
+                data.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'status-card';
+                    card.innerHTML = `
+                        <div class="status-code">${item.code}</div>
+                        <div class="status-category status-${item.category}">${item.category} ${this.getCategoryName(item.category)}</div>
+                        <div class="status-name">${item.name}</div>
+                        <div class="status-desc">${item.desc}</div>
+                    `;
+                    
+                    // 点击复制功能
+                    card.addEventListener('click', () => {
+                        navigator.clipboard.writeText(item.code).then(() => {
+                            const notification = document.getElementById('copy-notification');
+                            notification.style.opacity = '1';
+                            setTimeout(() => {
+                                notification.style.opacity = '0';
+                            }, 2000);
+                        });
+                    });
+                    
+                    container.appendChild(card);
+                });
+            },
+
+            // 获取状态码类别名称
+            getCategoryName: function(category) {
+                const lang = document.getElementById('lang-selector').value;
+                const names = {
+                    'en': {
+                        '1xx': 'Informational',
+                        '2xx': 'Success',
+                        '3xx': 'Redirection',
+                        '4xx': 'Client Error',
+                        '5xx': 'Server Error'
+                    },
+                    'zh-CN': {
+                        '1xx': '信息性',
+                        '2xx': '成功',
+                        '3xx': '重定向',
+                        '4xx': '客户端错误',
+                        '5xx': '服务器错误'
+                    },
+                    'zh-TW': {
+                        '1xx': '資訊性',
+                        '2xx': '成功',
+                        '3xx': '重新導向',
+                        '4xx': '用戶端錯誤',
+                        '5xx': '伺服器錯誤'
+                    },
+                    'ja': {
+                        '1xx': '情報',
+                        '2xx': '成功',
+                        '3xx': 'リダイレクト',
+                        '4xx': 'クライアントエラー',
+                        '5xx': 'サーバーエラー'
+                    },
+                    'ru': {
+                        '1xx': 'Информационные',
+                        '2xx': 'Успех',
+                        '3xx': 'Перенаправление',
+                        '4xx': 'Ошибка клиента',
+                        '5xx': 'Ошибка сервера'
+                    }
+                };
+                return names[lang] ? names[lang][category] : names['en'][category];
+            },
+
+            // 搜索功能
+            search: function() {
+                const keyword = document.getElementById('search-input').value.toLowerCase();
+                const filtered = this.statusCodeData.filter(item => 
+                    item.code.includes(keyword) || 
+                    item.name.toLowerCase().includes(keyword) ||
+                    item.desc.toLowerCase().includes(keyword) ||
+                    item.category.includes(keyword)
+                );
+                
+                this.renderStatusCodes(filtered);
+                this.updateCountDisplay(filtered.length);
+            },
+
+            // 更新计数显示
+            updateCountDisplay: function(count) {
+                const total = count !== undefined ? count : this.statusCodeData.length;
+                document.getElementById('count-display').textContent = `${total} 个结果`;
+            },
+
+            // 切换语言
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                // 更新URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, '', `${window.location.pathname}?${urlParams}`);
+                
+                this.updateLanguage();
+                this.renderStatusCodes(); // 重新渲染以更新类别名称
+            },
+
+            // 更新语言显示
+            updateLanguage: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const translations = this.i18n[lang] || this.i18n['en'];
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (translations[key]) {
+                        el.innerHTML = translations[key];
+                    }
+                });
+                
+                // 更新占位符
+                document.getElementById('search-input').placeholder = this.getPlaceholder(lang);
+            },
+
+            // 获取搜索框占位符
+            getPlaceholder: function(lang) {
+                const placeholders = {
+                    'en': 'Enter status code or description...',
+                    'zh-CN': '输入状态码或描述...',
+                    'zh-TW': '輸入狀態碼或描述...',
+                    'ja': 'ステータスコードまたは説明を入力...',
+                    'ru': 'Введите код состояния или описание...'
+                };
+                return placeholders[lang] || placeholders['en'];
+            }
+        };
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            Tool.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

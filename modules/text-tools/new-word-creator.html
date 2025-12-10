@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <title>新词创造工具 | New Word Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        neutral: '#6B7280',
+                        badgeS: '#10B981',
+                        badgeA: '#3B82F6',
+                        badgeB: '#F59E0B',
+                        badgeC: '#EF4444',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .badge {
+                @apply px-2 py-0.5 rounded text-xs font-medium;
+            }
+            .badge-s {
+                @apply bg-green-100 text-green-800;
+            }
+            .badge-a {
+                @apply bg-blue-100 text-blue-800;
+            }
+            .badge-b {
+                @apply bg-yellow-100 text-yellow-800;
+            }
+            .badge-c {
+                @apply bg-red-100 text-red-800;
+            }
+            .form-input {
+                @apply w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-primary outline-none transition;
+            }
+            .rules-panel {
+                @apply mt-4 p-3 bg-gray-50 border border-gray-200 rounded;
+            }
+            .rules-grid {
+                @apply grid grid-cols-3 gap-4 mb-2 items-center;
+            }
+            .rules-header {
+                @apply text-sm font-medium text-gray-600;
+            }
+            .rule-input {
+                @apply form-input text-sm;
+            }
+            .rule-label {
+                @apply font-medium;
+            }
+            .result-card {
+                @apply bg-white p-4 rounded border border-gray-200 shadow-sm;
+            }
+            .result-row {
+                @apply flex justify-between mb-2;
+            }
+            .result-label {
+                @apply text-gray-600;
+            }
+            .result-value {
+                @apply font-medium text-gray-900;
+            }
+        }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/text-tools/new-word-creator.html" />
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2" data-i18n="title">新词创造工具</h1>
+            <div class="flex justify-end mb-4">
+                <select id="lang-selector" onchange="NewWordCreator.changeLang()" class="form-input max-w-[150px]">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="en">English</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="ja">日本語</option>
+                    <option value="ru">Русский</option>
+                </select>
+            </div>
+        </header>
+
+        <main class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <!-- 基础设置 -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700" data-i18n="basic_settings">基础设置</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label for="word_category" class="block text-gray-700 mb-1" data-i18n="word_category">词语类别</label>
+                        <input type="text" id="word_category" value="科技" oninput="NewWordCreator.generate()" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="core_concept" class="block text-gray-700 mb-1" data-i18n="core_concept">核心概念</label>
+                        <input type="text" id="core_concept" value="人工智能" oninput="NewWordCreator.generate()" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 创造规则 -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700" data-i18n="creation_rules">创造规则</h2>
+                
+                <!-- 规则1: 简洁度 -->
+                <div class="bg-gray-50 p-4 rounded mb-4 border border-gray-200">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-800" data-i18n="metric_conciseness">1. 简洁度 (字符数)</h4>
+                        <span class="rule-toggle-btn text-primary cursor-pointer" onclick="NewWordCreator.toggleRules('rules-conciseness')" data-i18n="edit_rules">编辑规则</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label data-i18n="target_length">目标长度</label>
+                            <input type="number" id="conciseness_val" value="2" min="1" max="10" oninput="NewWordCreator.generate()" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="achieved_score">得分</label>
+                            <div id="score_conciseness" class="font-bold text-lg text-blue-600 mt-1">-</div>
+                        </div>
+                    </div>
+
+                    <!-- 规则面板1 -->
+                    <div id="rules-conciseness" class="rules-panel hidden">
+                        <div class="rules-grid">
+                            <div></div>
+                            <div class="rules-header" data-i18n="hdr_length">长度范围</div>
+                            <div class="rules-header" data-i18n="hdr_points">得分</div>
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-green-700" data-i18n="grade_s">S</div>
+                            <input type="text" class="rule-input rule-threshold" data-metric="cn" data-grade="S" value="1-2" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="cn" data-grade="S" value="90" oninput="NewWordCreator.generate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-blue-700" data-i18n="grade_a">A</div>
+                            <input type="text" class="rule-input rule-threshold" data-metric="cn" data-grade="A" value="3-4" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="cn" data-grade="A" value="80" oninput="NewWordCreator.generate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-yellow-700" data-i18n="grade_b">B</div>
+                            <input type="text" class="rule-input rule-threshold" data-metric="cn" data-grade="B" value="5-6" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="cn" data-grade="B" value="60" oninput="NewWordCreator.generate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-red-700" data-i18n="grade_c">C</div>
+                            <input type="text" class="rule-input rule-threshold" data-metric="cn" data-grade="C" value="7+" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="cn" data-grade="C" value="40" oninput="NewWordCreator.generate()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 规则2: 相关性 -->
+                <div class="bg-gray-50 p-4 rounded mb-4 border border-gray-200">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-800" data-i18n="metric_relevance">2. 概念相关性 (%)</h4>
+                        <span class="rule-toggle-btn text-primary cursor-pointer" onclick="NewWordCreator.toggleRules('rules-relevance')" data-i18n="edit_rules">编辑规则</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label data-i18n="relevance_level">相关度设置</label>
+                            <input type="number" id="relevance_val" value="85" min="0" max="100" oninput="NewWordCreator.generate()" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="achieved_score">得分</label>
+                            <div id="score_relevance" class="font-bold text-lg text-blue-600 mt-1">-</div>
+                        </div>
+                    </div>
+
+                    <!-- 规则面板2 -->
+                    <div id="rules-relevance" class="rules-panel hidden">
+                        <div class="rules-grid">
+                            <div></div>
+                            <div class="rules-header" data-i18n="hdr_min">最低值 (≥)</div>
+                            <div class="rules-header" data-i18n="hdr_points">得分</div>
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-green-700" data-i18n="grade_s">S</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="rl" data-grade="S" value="90" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="rl" data-grade="S" value="95" oninput="NewWordCreator.generate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-blue-700" data-i18n="grade_a">A</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="rl" data-grade="A" value="80" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="rl" data-grade="A" value="85" oninput="NewWordCreator.generate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-yellow-700" data-i18n="grade_b">B</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="rl" data-grade="B" value="60" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="rl" data-grade="B" value="70" oninput="NewWordCreator.generate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-red-700" data-i18n="grade_c">C</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="rl" data-grade="C" value="40" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="rl" data-grade="C" value="50" oninput="NewWordCreator.generate()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 规则3: 独特性 -->
+                <div class="bg-gray-50 p-4 rounded mb-4 border border-gray-200">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-800" data-i18n="metric_uniqueness">3. 独特性 (%)</h4>
+                        <span class="rule-toggle-btn text-primary cursor-pointer" onclick="NewWordCreator.toggleRules('rules-uniqueness')" data-i18n="edit_rules">编辑规则</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label data-i18n="uniqueness_level">独特性设置</label>
+                            <input type="number" id="uniqueness_val" value="90" min="0" max="100" oninput="NewWordCreator.generate()" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="achieved_score">得分</label>
+                            <div id="score_uniqueness" class="font-bold text-lg text-blue-600 mt-1">-</div>
+                        </div>
+                    </div>
+
+                    <!-- 规则面板3 -->
+                    <div id="rules-uniqueness" class="rules-panel hidden">
+                        <div class="rules-grid">
+                            <div></div>
+                            <div class="rules-header" data-i18n="hdr_min">最低值 (≥)</div>
+                            <div class="rules-header" data-i18n="hdr_points">得分</div>
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-green-700" data-i18n="grade_s">S</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="un" data-grade="S" value="90" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="un" data-grade="S" value="90" oninput="NewWordCreator.generate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-blue-700" data-i18n="grade_a">A</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="un" data-grade="A" value="80" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="un" data-grade="A" value="80" oninput="NewWordCreator.generate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-yellow-700" data-i18n="grade_b">B</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="un" data-grade="B" value="60" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="un" data-grade="B" value="65" oninput="NewWordCreator.generate()">
+                        </div>
+                        <div class="rules-grid">
+                            <div class="rule-label text-red-700" data-i18n="grade_c">C</div>
+                            <input type="number" class="rule-input rule-threshold" data-metric="un" data-grade="C" value="40" oninput="NewWordCreator.generate()">
+                            <input type="number" class="rule-input rule-points" data-metric="un" data-grade="C" value="50" oninput="NewWordCreator.generate()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="NewWordCreator.generate()" class="w-full bg-primary text-white py-3 rounded font-bold hover:bg-primary/90 transition mb-6" data-i18n="btn_generate">生成新词</button>
+
+            <!-- 结果 -->
+            <div class="summary-section mb-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">创造结果</h3>
+                <div class="result-card">
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="generated_word">生成的新词</span>
+                        <span class="result-value font-bold text-xl text-primary" id="res_word">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="word_meaning">词语含义</span>
+                        <span class="result-value" id="res_meaning">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="overall_score">综合评分</span>
+                        <span class="result-value" id="res_total_score">-</span>
+                    </div>
+                    <div class="result-row border-t border-gray-300 mt-2 pt-2">
+                        <span class="result-label font-bold text-gray-900" data-i18n="word_rating">词语评级</span>
+                        <span class="result-value font-bold text-xl" id="res_rating">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 介绍 -->
+            <div class="intro-section bg-gray-50 p-4 rounded border border-gray-200">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p class="text-gray-600" data-i18n="intro_text">新词创造工具帮助用户根据特定领域和核心概念生成有意义的新词汇。通过设置简洁度、相关性和独特性参数，您可以定制符合需求的专业术语或创新词汇，适用于品牌命名、技术术语创造或文学创作等场景。</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const NewWordCreator = {
+            i18n: {
+                'zh-CN': {
+                    title: '新词创造工具',
+                    basic_settings: '基础设置',
+                    word_category: '词语类别',
+                    core_concept: '核心概念',
+                    creation_rules: '创造规则',
+                    metric_conciseness: '1. 简洁度 (字符数)',
+                    metric_relevance: '2. 概念相关性 (%)',
+                    metric_uniqueness: '3. 独特性 (%)',
+                    edit_rules: '编辑规则',
+                    hdr_min: '最低值 (≥)',
+                    hdr_length: '长度范围',
+                    hdr_points: '得分',
+                    target_length: '目标长度',
+                    relevance_level: '相关度设置',
+                    uniqueness_level: '独特性设置',
+                    achieved_score: '得分',
+                    grade_s: 'S',
+                    grade_a: 'A',
+                    grade_b: 'B',
+                    grade_c: 'C',
+                    btn_generate: '生成新词',
+                    results: '创造结果',
+                    generated_word: '生成的新词',
+                    word_meaning: '词语含义',
+                    overall_score: '综合评分',
+                    word_rating: '词语评级',
+                    intro_title: '关于本工具',
+                    intro_text: '新词创造工具帮助用户根据特定领域和核心概念生成有意义的新词汇。通过设置简洁度、相关性和独特性参数，您可以定制符合需求的专业术语或创新词汇，适用于品牌命名、技术术语创造或文学创作等场景。'
+                },
+                'en': {
+                    title: 'New Word Creator',
+                    basic_settings: 'Basic Settings',
+                    word_category: 'Word Category',
+                    core_concept: 'Core Concept',
+                    creation_rules: 'Creation Rules',
+                    metric_conciseness: '1. Conciseness (Character Count)',
+                    metric_relevance: '2. Concept Relevance (%)',
+                    metric_uniqueness: '3. Uniqueness (%)',
+                    edit_rules: 'Edit Rules',
+                    hdr_min: 'Minimum Value (≥)',
+                    hdr_length: 'Length Range',
+                    hdr_points: 'Points',
+                    target_length: 'Target Length',
+                    relevance_level: 'Relevance Level',
+                    uniqueness_level: 'Uniqueness Level',
+                    achieved_score: 'Achieved Score',
+                    grade_s: 'S',
+                    grade_a: 'A',
+                    grade_b: 'B',
+                    grade_c: 'C',
+                    btn_generate: 'Generate New Word',
+                    results: 'Creation Results',
+                    generated_word: 'Generated Word',
+                    word_meaning: 'Word Meaning',
+                    overall_score: 'Overall Score',
+                    word_rating: 'Word Rating',
+                    intro_title: 'About This Tool',
+                    intro_text: 'The New Word Creator helps users generate meaningful new words based on specific fields and core concepts. By setting parameters for conciseness, relevance, and uniqueness, you can create professional terms or innovative vocabulary suitable for branding, technical terminology, or literary creation.'
+                },
+                'zh-TW': {
+                    title: '新詞創造工具',
+                    basic_settings: '基礎設定',
+                    word_category: '詞語類別',
+                    core_concept: '核心概念',
+                    creation_rules: '創造規則',
+                    metric_conciseness: '1. 簡潔度 (字元數)',
+                    metric_relevance: '2. 概念相關性 (%)',
+                    metric_uniqueness: '3. 獨特性 (%)',
+                    edit_rules: '編輯規則',
+                    hdr_min: '最低值 (≥)',
+                    hdr_length: '長度範圍',
+                    hdr_points: '得分',
+                    target_length: '目標長度',
+                    relevance_level: '相關度設定',
+                    uniqueness_level: '獨特性設定',
+                    achieved_score: '得分',
+                    grade_s: 'S',
+                    grade_a: 'A',
+                    grade_b: 'B',
+                    grade_c: 'C',
+                    btn_generate: '生成新詞',
+                    results: '創造結果',
+                    generated_word: '生成的新詞',
+                    word_meaning: '詞語含義',
+                    overall_score: '綜合評分',
+                    word_rating: '詞語評級',
+                    intro_title: '關於本工具',
+                    intro_text: '新詞創造工具幫助用戶根據特定領域和核心概念生成有意義的新詞彙。通過設置簡潔度、相關性和獨特性參數，您可以定制符合需求的專業術語或創新詞彙，適用於品牌命名、技術術語創造或文學創作等場景。'
+                },
+                'ja': {
+                    title: '新語創造ツール',
+                    basic_settings: '基本設定',
+                    word_category: '単語のカテゴリー',
+                    core_concept: 'コアコンセプト',
+                    creation_rules: '創造ルール',
+                    metric_conciseness: '1. 簡潔さ (文字数)',
+                    metric_relevance: '2. 概念の関連性 (%)',
+                    metric_uniqueness: '3. 独自性 (%)',
+                    edit_rules: 'ルールを編集',
+                    hdr_min: '最小値 (≥)',
+                    hdr_length: '長さ範囲',
+                    hdr_points: '得点',
+                    target_length: '目標長さ',
+                    relevance_level: '関連性レベル',
+                    uniqueness_level: '独自性レベル',
+                    achieved_score: '達成得点',
+                    grade_s: 'S',
+                    grade_a: 'A',
+                    grade_b: 'B',
+                    grade_c: 'C',
+                    btn_generate: '新語を生成',
+                    results: '創造結果',
+                    generated_word: '生成された単語',
+                    word_meaning: '単語の意味',
+                    overall_score: '総合スコア',
+                    word_rating: '単語の評価',
+                    intro_title: 'このツールについて',
+                    intro_text: '新語創造ツールは、特定の分野とコアコンセプトに基づいて意味のある新しい単語を生成するのに役立ちます。簡潔さ、関連性、独自性のパラメータを設定することで、ブランディング、技術用語、文学创作などのシーンに適した専門用語や革新的な語彙を作成できます。'
+                },
+                'ru': {
+                    title: 'Создатель новых слов',
+                    basic_settings: 'Основные настройки',
+                    word_category: 'Категория слова',
+                    core_concept: 'Основная концепция',
+                    creation_rules: 'Правила создания',
+                    metric_conciseness: '1. Лаконичность (количество символов)',
+                    metric_relevance: '2. Концептуальная релевантность (%)',
+                    metric_uniqueness: '3. Уникальность (%)',
+                    edit_rules: 'Редактировать правила',
+                    hdr_min: 'Минимальное значение (≥)',
+                    hdr_length: 'Диапазон длины',
+                    hdr_points: 'Очки',
+                    target_length: 'Целевая длина',
+                    relevance_level: 'Уровень релевантности',
+                    uniqueness_level: 'Уровень уникальности',
+                    achieved_score: 'Полученные очки',
+                    grade_s: 'S',
+                    grade_a: 'A',
+                    grade_b: 'B',
+                    grade_c: 'C',
+                    btn_generate: 'Сгенерировать новое слово',
+                    results: 'Результаты создания',
+                    generated_word: 'Сгенерированное слово',
+                    word_meaning: 'Значение слова',
+                    overall_score: 'Общий балл',
+                    word_rating: 'Рейтинг слова',
+                    intro_title: 'О этом инструменте',
+                    intro_text: 'Создатель новых слов помогает пользователям генерировать осмысленные новые слова на основе конкретных областей и основных концепций. Настройте параметры лаконичности, релевантности и уникальности, чтобы создать профессиональные термины или инновационную лексику для брендинга, технической терминологии или художественного творчества.'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                this.changeLang();
+                this.generate();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('lang', lang);
+                window.history.pushState({}, '', newUrl);
+                const texts = this.i18n[lang];
+                if (!texts) return;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                this.generate();
+            },
+
+            toggleRules: function(id) {
+                const el = document.getElementById(id);
+                el.classList.toggle('hidden');
+            },
+
+            getRuleConfig: function(metricCode) {
+                const rules = [];
+                const grades = ['S', 'A', 'B', 'C'];
+                
+                grades.forEach(grade => {
+                    const threshInput = document.querySelector(`.rule-threshold[data-metric="${metricCode}"][data-grade="${grade}"]`);
+                    const pointsInput = document.querySelector(`.rule-points[data-metric="${metricCode}"][data-grade="${grade}"]`);
+                    
+                    if (threshInput && pointsInput) {
+                        rules.push({
+                            grade: grade,
+                            threshold: threshInput.value,
+                            points: parseFloat(pointsInput.value) || 0
+                        });
+                    }
+                });
+                return rules;
+            },
+
+            getScoreAndGrade: function(metricCode, value) {
+                const rules = this.getRuleConfig(metricCode);
+                rules.sort((a, b) => {
+                    const aVal = this.parseThreshold(a.threshold);
+                    const bVal = this.parseThreshold(b.threshold);
+                    return bVal - aVal;
+                });
+
+                for (let rule of rules) {
+                    const threshold = this.parseThreshold(rule.threshold);
+                    if (this.checkValueAgainstThreshold(value, threshold, rule.threshold)) {
+                        let css = 'text-gray-600';
+                        if(rule.grade === 'S') css = 'badge badge-s';
+                        if(rule.grade === 'A') css = 'badge badge-a';
+                        if(rule.grade === 'B') css = 'badge badge-b';
+                        if(rule.grade === 'C') css = 'badge badge-c';
+                        
+                        return { grade: rule.grade, score: rule.points, css: css };
+                    }
+                }
+
+                return { grade: 'D/E', score: 0, css: 'text-gray-400' };
+            },
+
+            parseThreshold: function(threshold) {
+                if (threshold.includes('-')) {
+                    const [min, max] = threshold.split('-').map(Number);
+                    return { min, max };
+                } else if (threshold.includes('+')) {
+                    return { min: parseInt(threshold), max: Infinity };
+                } else {
+                    return { min: parseInt(threshold), max: parseInt(threshold) };
+                }
+            },
+
+            checkValueAgainstThreshold: function(value, threshold, originalThreshold) {
+                if (originalThreshold.includes('-')) {
+                    return value >= threshold.min && value <= threshold.max;
+                } else if (originalThreshold.includes('+')) {
+                    return value >= threshold.min;
+                } else {
+                    return value >= threshold.min;
+                }
+            },
+
+            generateWord: function(category, concept, length) {
+                const prefixes = {
+                    '科技': ['智', '数', '云', '网', '物', '链', '码', '算', '核', '元'],
+                    '商业': ['优', '创', '联', '通', '聚', '合', '盈', '利', '商', '贸'],
+                    '教育': ['智', '学', '教', '育', '知', '识', '启', '迪', '导', '育'],
+                    '医疗': ['康', '健', '医', '疗', '药', '诊', '治', '护', '养', '愈'],
+                    '默认': ['新', '创', '优', '智', '精', '锐', '强', '高', '快', '全']
+                };
+
+                const suffixes = {
+                    '科技': ['能', '力', '器', '机', '件', '脑', '环', '境', '界', '域'],
+                    '商业': ['通', '达', '行', '业', '场', '所', '圈', '群', '集', '会'],
+                    '教育': ['堂', '馆', '校', '院', '所', '坊', '室', '班', '会', '社'],
+                    '医疗': ['馆', '院', '所', '堂', '坊', '室', '站', '点', '中心', '馆'],
+                    '默认': ['体', '系', '界', '域', '圈', '群', '会', '社', '坊', '堂']
+                };
+
+                const catPrefixes = prefixes[category] || prefixes['默认'];
+                const catSuffixes = suffixes[category] || suffixes['默认'];
+
+                const conceptChars = concept.split('');
+                const availableChars = [...new Set([...catPrefixes, ...catSuffixes, ...conceptChars])];
+                
+                let word = '';
+                while (word.length < length) {
+                    const randomChar = availableChars[Math.floor(Math.random() * availableChars.length)];
+                    if (!word.includes(randomChar)) {
+                        word += randomChar;
+                    }
+                }
+                
+                return word;
+            },
+
+            generate: function() {
+                // 获取基础参数
+                const category = document.getElementById('word_category').value || '默认';
+                const concept = document.getElementById('core_concept').value || '概念';
+                const concisenessVal = parseInt(document.getElementById('conciseness_val').value) || 2;
+                const relevanceVal = parseFloat(document.getElementById('relevance_val').value) || 85;
+                const uniquenessVal = parseFloat(document.getElementById('uniqueness_val').value) || 90;
+
+                // 计算各维度得分
+                const res1 = this.getScoreAndGrade('cn', concisenessVal);
+                const el1 = document.getElementById('score_conciseness');
+                el1.innerHTML = `<span class="${res1.css}">${res1.grade}</span> <span class="text-sm ml-2">${res1.score}分</span>`;
+
+                const res2 = this.getScoreAndGrade('rl', relevanceVal);
+                const el2 = document.getElementById('score_relevance');
+                el2.innerHTML = `<span class="${res2.css}">${res2.grade}</span> <span class="text-sm ml-2">${res2.score}分</span>`;
+
+                const res3 = this.getScoreAndGrade('un', uniquenessVal);
+                const el3 = document.getElementById('score_uniqueness');
+                el3.innerHTML = `<span class="${res3.css}">${res3.grade}</span> <span class="text-sm ml-2">${res3.score}分</span>`;
+
+                // 生成新词
+                const newWord = this.generateWord(category, concept, concisenessVal);
+                
+                // 计算综合评分
+                const totalScore = Math.round((res1.score + res2.score + res3.score) / 3);
+                let rating = 'D';
+                if (totalScore >= 90) rating = 'S';
+                else if (totalScore >= 80) rating = 'A';
+                else if (totalScore >= 60) rating = 'B';
+                else if (totalScore >= 40) rating = 'C';
+
+                let ratingCss = 'text-gray-500';
+                if (rating === 'S') ratingCss = 'text-green-600';
+                else if (rating === 'A') ratingCss = 'text-blue-600';
+                else if (rating === 'B') ratingCss = 'text-yellow-600';
+                else if (rating === 'C') ratingCss = 'text-red-600';
+
+                // 生成词语含义
+                const meanings = [
+                    `${category}领域中与${concept}相关的新概念`,
+                    `结合${concept}特性的${category}专业术语`,
+                    `描述${concept}创新应用的${category}词汇`,
+                    `代表${category}领域${concept}发展的新术语`,
+                    `融合${concept}核心思想的${category}创新表达`
+                ];
+                const meaning = meanings[Math.floor(Math.random() * meanings.length)];
+
+                // 更新结果UI
+                document.getElementById('res_word').innerText = newWord;
+                document.getElementById('res_meaning').innerText = meaning;
+                document.getElementById('res_total_score').innerText = totalScore + '分';
+                document.getElementById('res_rating').innerText = rating;
+                document.getElementById('res_rating').className = `result-value font-bold text-xl ${ratingCss}`;
+            }
+        };
+
+        window.onload = function() { NewWordCreator.init(); };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protein Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="protein_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="🥩">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Protein Calculator">
+    <meta name="description" content="Calculate your recommended daily protein intake.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="蛋白质计算器">
+    <meta name="lang-description-zh-CN" content="计算您推荐的每日蛋白质摄入量。">
+    
+    <meta name="lang-title-zh-TW" content="蛋白質計算器">
+    <meta name="lang-description-zh-TW" content="計算您推薦的每日蛋白質攝取量。">
+    
+    <meta name="lang-title-ja" content="タンパク質計算機">
+    <meta name="lang-description-ja" content="推奨される1日のタンパク質摂取量を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор белка">
+    <meta name="lang-description-ru" content="Вычислите рекомендуемое суточное потребление белка.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-box { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        .range-info { margin-top: 6px; font-size: 12px; color: #64748b; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/health/protein-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="protein_calculator" 
+         data-category="health" 
+         data-title="Protein Calculator" 
+         data-icon="🥩">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="protein-lang" onchange="ProteinCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🥩 Protein Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="unit_system">Unit System</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="metric" checked class="text-red-600 focus:ring-red-500">
+                        <span data-i18n="metric">Metric (kg)</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="imperial" class="text-red-600 focus:ring-red-500">
+                        <span data-i18n="imperial">Imperial (lbs)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="weight-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_kg">Weight (kg)</label>
+                <input type="number" id="weight-kg" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="e.g. 70" min="30" max="250" value="70">
+            </div>
+            <div id="weight-imperial" style="display: none;">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_lbs">Weight (lbs)</label>
+                <input type="number" id="weight-lbs" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none" placeholder="e.g. 154" min="66" max="550" value="154">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="activity_level">Activity Level</label>
+                <select id="activity-level" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none">
+                    <option value="sedentary" data-i18n="sedentary">Sedentary (little exercise)</option>
+                    <option value="lightly" data-i18n="lightly">Lightly Active (light exercise)</option>
+                    <option value="moderately" data-i18n="moderately" selected>Moderately Active (moderate exercise)</option>
+                    <option value="very" data-i18n="very">Very Active (hard exercise)</option>
+                    <option value="athlete" data-i18n="athlete">Athlete (intense training)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="goal">Goal</label>
+                <select id="goal" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-500 outline-none">
+                    <option value="lose" data-i18n="lose">Lose Weight</option>
+                    <option value="maintain" data-i18n="maintain" selected>Maintain Weight</option>
+                    <option value="gain" data-i18n="gain">Gain Muscle</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="protein_factor">Protein Intensity Factor</label>
+                <input type="range" id="protein-factor" min="0.8" max="2.2" step="0.1" value="1.6" 
+                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0.8g/kg</span>
+                    <span id="protein-factor-display">1.6g/kg</span>
+                    <span>2.2g/kg</span>
+                </div>
+                <div class="range-info" data-i18n="factor_info">Lower for sedentary, higher for athletes and those looking to build muscle.</div>
+            </div>
+        </div>
+
+        <button onclick="ProteinCalc.calc()" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700 transition mb-6" data-i18n="btn_calc">Calculate Protein Intake</button>
+
+        <div class="bg-red-50 p-6 rounded-lg border border-red-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="daily_protein">Daily Protein Requirement</div>
+            <div id="protein-result" class="text-3xl font-bold text-red-800">--</div>
+            
+            <div class="grid grid-cols-2 gap-4 mt-6">
+                <div class="result-box text-center">
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="protein_per_kg">Protein per kg of body weight</div>
+                    <div id="protein-per-kg" class="text-xl font-bold text-red-800">--</div>
+                </div>
+                <div class="result-box text-center">
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="calories_from_protein">Calories from Protein</div>
+                    <div id="protein-calories" class="text-xl font-bold text-red-800">--</div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <div class="text-sm font-medium text-gray-700 mb-2" data-i18n="food_examples">Example Food Sources:</div>
+                <ul class="list-disc pl-5 text-sm text-gray-600" data-i18n="food_list">
+                    <li>100g chicken breast: ~30g protein</li>
+                    <li>1 cup Greek yogurt: ~23g protein</li>
+                    <li>1 egg: ~6g protein</li>
+                    <li>1 scoop protein powder: ~25g protein</li>
+                </ul>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is a general guide. Consult a healthcare provider for personalized advice.</div>
+        </div>
+    </div>
+
+    <script>
+        const ProteinCalc = {
+            i18n: {
+                'en': {
+                    title: '🥩 Protein Calculator',
+                    unit_system: 'Unit System',
+                    metric: 'Metric (kg)',
+                    imperial: 'Imperial (lbs)',
+                    weight_kg: 'Weight (kg)',
+                    weight_lbs: 'Weight (lbs)',
+                    activity_level: 'Activity Level',
+                    sedentary: 'Sedentary (little exercise)',
+                    lightly: 'Lightly Active (light exercise)',
+                    moderately: 'Moderately Active (moderate exercise)',
+                    very: 'Very Active (hard exercise)',
+                    athlete: 'Athlete (intense training)',
+                    goal: 'Goal',
+                    lose: 'Lose Weight',
+                    maintain: 'Maintain Weight',
+                    gain: 'Gain Muscle',
+                    protein_factor: 'Protein Intensity Factor',
+                    factor_info: 'Lower for sedentary, higher for athletes and those looking to build muscle.',
+                    btn_calc: 'Calculate Protein Intake',
+                    daily_protein: 'Daily Protein Requirement',
+                    protein_per_kg: 'Protein per kg of body weight',
+                    calories_from_protein: 'Calories from Protein',
+                    food_examples: 'Example Food Sources:',
+                    food_list: `
+                        <li>100g chicken breast: ~30g protein</li>
+                        <li>1 cup Greek yogurt: ~23g protein</li>
+                        <li>1 egg: ~6g protein</li>
+                        <li>1 scoop protein powder: ~25g protein</li>
+                    `,
+                    disclaimer: 'Disclaimer: This is a general guide. Consult a healthcare provider for personalized advice.',
+                    err_invalid: 'Please enter valid numbers',
+                    grams: 'grams',
+                    grams_per_kg: 'g/kg',
+                    calories_unit: 'calories'
+                },
+                'zh-CN': {
+                    title: '🥩 蛋白质计算器',
+                    unit_system: '单位系统',
+                    metric: '公制（千克）',
+                    imperial: '英制（磅）',
+                    weight_kg: '体重（千克）',
+                    weight_lbs: '体重（磅）',
+                    activity_level: '活动水平',
+                    sedentary: '久坐（很少运动）',
+                    lightly: '轻度活动（少量运动）',
+                    moderately: '中度活动（适度运动）',
+                    very: '高度活动（大量运动）',
+                    athlete: '运动员（高强度训练）',
+                    goal: '目标',
+                    lose: '减重',
+                    maintain: '维持体重',
+                    gain: '增肌',
+                    protein_factor: '蛋白质摄入系数',
+                    factor_info: '久坐者较低，运动员和增肌者较高。',
+                    btn_calc: '计算蛋白质摄入量',
+                    daily_protein: '每日蛋白质需求量',
+                    protein_per_kg: '每公斤体重蛋白质含量',
+                    calories_from_protein: '来自蛋白质的卡路里',
+                    food_examples: '食物来源示例：',
+                    food_list: `
+                        <li>100克鸡胸肉：约30克蛋白质</li>
+                        <li>1杯希腊酸奶：约23克蛋白质</li>
+                        <li>1个鸡蛋：约6克蛋白质</li>
+                        <li>1勺蛋白粉：约25克蛋白质</li>
+                    `,
+                    disclaimer: '免责声明：这是一般指南。请咨询医疗服务提供者以获得个性化建议。',
+                    err_invalid: '请输入有效的数字',
+                    grams: '克',
+                    grams_per_kg: '克/千克',
+                    calories_unit: '卡路里'
+                },
+                'zh-TW': {
+                    title: '🥩 蛋白質計算器',
+                    unit_system: '單位系統',
+                    metric: '公制（公斤）',
+                    imperial: '英制（磅）',
+                    weight_kg: '體重（公斤）',
+                    weight_lbs: '體重（磅）',
+                    activity_level: '活動水平',
+                    sedentary: '久坐（很少運動）',
+                    lightly: '輕度活動（少量運動）',
+                    moderately: '中度活動（適度運動）',
+                    very: '高度活動（大量運動）',
+                    athlete: '運動員（高強度訓練）',
+                    goal: '目標',
+                    lose: '減重',
+                    maintain: '維持體重',
+                    gain: '增肌',
+                    protein_factor: '蛋白質攝取係數',
+                    factor_info: '久坐者較低，運動員和增肌者較高。',
+                    btn_calc: '計算蛋白質攝取量',
+                    daily_protein: '每日蛋白質需求量',
+                    protein_per_kg: '每公斤體重蛋白質含量',
+                    calories_from_protein: '來自蛋白質的卡路里',
+                    food_examples: '食物來源示例：',
+                    food_list: `
+                        <li>100克雞胸肉：約30克蛋白質</li>
+                        <li>1杯希臘酸奶：約23克蛋白質</li>
+                        <li>1個雞蛋：約6克蛋白質</li>
+                        <li>1勺蛋白粉：約25克蛋白質</li>
+                    `,
+                    disclaimer: '免責聲明：這是一般指南。請諮詢醫療服務提供者以獲得個性化建議。',
+                    err_invalid: '請輸入有效的數字',
+                    grams: '克',
+                    grams_per_kg: '克/公斤',
+                    calories_unit: '卡路里'
+                },
+                'ja': {
+                    title: '🥩 タンパク質計算機',
+                    unit_system: '単位系',
+                    metric: 'メートル法（kg）',
+                    imperial: '帝国法（ポンド）',
+                    weight_kg: '体重（kg）',
+                    weight_lbs: '体重（ポンド）',
+                    activity_level: '活動レベル',
+                    sedentary: '久坐型（ほとんど運動なし）',
+                    lightly: '軽度活動（軽い運動）',
+                    moderately: '中等度活動（適度な運動）',
+                    very: '高度活動（激しい運動）',
+                    athlete: '運動選手（高強度トレーニング）',
+                    goal: '目標',
+                    lose: '減量',
+                    maintain: '体重維持',
+                    gain: '筋肉増強',
+                    protein_factor: 'タンパク質摂取係数',
+                    factor_info: '久坐型の人は低め、運動選手や筋肉をつけたい人は高め。',
+                    btn_calc: 'タンパク質摂取量を計算',
+                    daily_protein: '1日のタンパク質必要量',
+                    protein_per_kg: '体重1kgあたりのタンパク質量',
+                    calories_from_protein: 'タンパク質からのカロリー',
+                    food_examples: '食品例：',
+                    food_list: `
+                        <li>鶏胸肉100g：約30gのタンパク質</li>
+                        <li>ギリシャヨーグルト1カップ：約23gのタンパク質</li>
+                        <li>卵1個：約6gのタンパク質</li>
+                        <li>プロテインパウダー1スクープ：約25gのタンパク質</li>
+                    `,
+                    disclaimer: '免責事項：これは一般的なガイドです。個別のアドバイスについては、医療提供者に相談してください。',
+                    err_invalid: '有効な数字を入力してください',
+                    grams: 'グラム',
+                    grams_per_kg: 'g/kg',
+                    calories_unit: 'カロリー'
+                },
+                'ru': {
+                    title: '🥩 Калькулятор белка',
+                    unit_system: 'Система единиц',
+                    metric: 'Метрическая (кг)',
+                    imperial: 'Имперская (фунты)',
+                    weight_kg: 'Вес (кг)',
+                    weight_lbs: 'Вес (фунты)',
+                    activity_level: 'Уровень активности',
+                    sedentary: 'Сидячий образ жизни (малое количество упражнений)',
+                    lightly: 'Легкоактивный (легкие упражнения)',
+                    moderately: 'Умеренноактивный (умеренные упражнения)',
+                    very: 'Очень активный (напряженные упражнения)',
+                    athlete: 'Спортсмен (интенсивные тренировки)',
+                    goal: 'Цель',
+                    lose: 'Сброс веса',
+                    maintain: 'Сохранение веса',
+                    gain: 'Набор мышц',
+                    protein_factor: 'Фактор интенсивности потребления белка',
+                    factor_info: 'Меньше для сидячего образа жизни, больше для спортсменов и тех, кто хочет набрать мышцы.',
+                    btn_calc: 'Вычислить потребление белка',
+                    daily_protein: 'Суточная потребность в белке',
+                    protein_per_kg: 'Белок на кг веса',
+                    calories_from_protein: 'Калории от белка',
+                    food_examples: 'Примеры продуктов:',
+                    food_list: `
+                        <li>100г куриного грудного мяса: ~30г белка</li>
+                        <li>1 чашка греческого йогурта: ~23г белка</li>
+                        <li>1 яйцо: ~6г белка</li>
+                        <li>1 кусочек протеинового порошка: ~25г белка</li>
+                    `,
+                    disclaimer: 'Отказ от ответственности: Это общие рекомендации. Обратитесь к медицинскому специалисту за индивидуальными советами.',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    grams: 'грамм',
+                    grams_per_kg: 'г/кг',
+                    calories_unit: 'калорий'
+                }
+            },
+
+            init: () => {
+                // 监听单位切换
+                document.querySelectorAll('input[name="units"]').forEach(radio => {
+                    radio.addEventListener('change', ProteinCalc.toggleUnits);
+                });
+                
+                // 监听蛋白质系数滑块变化
+                const proteinSlider = document.getElementById('protein-factor');
+                const proteinDisplay = document.getElementById('protein-factor-display');
+                
+                proteinSlider.addEventListener('input', () => {
+                    proteinDisplay.innerText = `${proteinSlider.value}g/kg`;
+                });
+                
+                // 根据活动水平和目标自动调整蛋白质系数
+                document.getElementById('activity-level').addEventListener('change', ProteinCalc.adjustProteinFactor);
+                document.getElementById('goal').addEventListener('change', ProteinCalc.adjustProteinFactor);
+            },
+
+            toggleUnits: () => {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                
+                // 显示/隐藏重量输入框
+                document.getElementById('weight-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('weight-imperial').style.display = isMetric ? 'none' : 'block';
+            },
+            
+            adjustProteinFactor: () => {
+                const activity = document.getElementById('activity-level').value;
+                const goal = document.getElementById('goal').value;
+                let factor = 1.6; // 默认值
+                
+                // 根据活动水平和目标调整默认系数
+                if (activity === 'sedentary') {
+                    factor = goal === 'lose' ? 1.2 : 0.8;
+                } else if (activity === 'lightly') {
+                    factor = goal === 'gain' ? 1.6 : 1.0;
+                } else if (activity === 'moderately') {
+                    factor = goal === 'gain' ? 1.8 : 1.2;
+                } else if (activity === 'very') {
+                    factor = goal === 'gain' ? 2.0 : 1.4;
+                } else if (activity === 'athlete') {
+                    factor = goal === 'gain' ? 2.2 : 1.6;
+                }
+                
+                document.getElementById('protein-factor').value = factor;
+                document.getElementById('protein-factor-display').innerText = `${factor}g/kg`;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('protein-lang').value;
+                const texts = ProteinCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="protein_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        if (key === 'food_list') {
+                            el.innerHTML = texts[key];
+                        } else {
+                            el.innerText = texts[key];
+                        }
+                    }
+                });
+
+                // 翻译下拉选项
+                const activityOptions = document.querySelectorAll('#activity-level option');
+                activityOptions.forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+                
+                const goalOptions = document.querySelectorAll('#goal option');
+                goalOptions.forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                ProteinCalc.calc();
+            },
+
+            calc: () => {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                const lang = document.getElementById('protein-lang').value;
+                const texts = ProteinCalc.i18n[lang];
+
+                let weightKg, proteinFactor;
+
+                // 获取输入值
+                if (isMetric) {
+                    weightKg = parseFloat(document.getElementById('weight-kg').value) || 0;
+                } else {
+                    const weightLbs = parseFloat(document.getElementById('weight-lbs').value) || 0;
+                    weightKg = weightLbs * 0.453592; // 转换为千克
+                }
+                
+                proteinFactor = parseFloat(document.getElementById('protein-factor').value) || 0;
+
+                // 获取结果元素
+                const proteinEl = document.getElementById('protein-result');
+                const perKgEl = document.getElementById('protein-per-kg');
+                const caloriesEl = document.getElementById('protein-calories');
+
+                // 验证输入
+                if (isNaN(weightKg) || isNaN(proteinFactor) || 
+                    weightKg <= 0 || proteinFactor <= 0) {
+                    proteinEl.innerText = texts.err_invalid;
+                    proteinEl.className = "text-2xl font-bold text-red-600";
+                    perKgEl.innerText = '--';
+                    caloriesEl.innerText = '--';
+                    return;
+                }
+
+                // 计算蛋白质需求
+                const proteinGrams = Math.round(weightKg * proteinFactor);
+                const proteinCalories = proteinGrams * 4; // 每克蛋白质提供4卡路里
+
+                // 显示结果
+                proteinEl.className = "text-3xl font-bold text-red-800";
+                proteinEl.innerText = `${proteinGrams} ${texts.grams}`;
+                
+                perKgEl.innerText = `${proteinFactor} ${texts.grams_per_kg}`;
+                
+                caloriesEl.innerText = `${proteinCalories} ${texts.calories_unit}`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', ProteinCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('protein-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    ProteinCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

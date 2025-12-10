@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marriage Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="marriage_calculator">
+    <meta name="category" content="life">
+    <meta name="icon" content="💍">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Marriage Calculator">
+    <meta name="description" content="Estimate your marriage compatibility based on personal information.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="婚姻计算器">
+    <meta name="lang-description-zh-CN" content="根据个人信息估算婚姻 compatibility。">
+    
+    <meta name="lang-title-zh-TW" content="婚姻計算器">
+    <meta name="lang-description-zh-TW" content="根據個人信息估算婚姻相容性。">
+    
+    <meta name="lang-title-ja" content="結婚計算機">
+    <meta name="lang-description-ja" content="個人情報に基づいて結婚の相性を推定します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор брака">
+    <meta name="lang-description-ru" content="Оцените совместимость вашего брака на основе личной информации.">
+    
+    <meta name="lang-title-es" content="Calculadora de matrimonio">
+    <meta name="lang-description-es" content="Estime su compatibilidad matrimonial según la información personal.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .compatibility-bar { height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; margin: 10px 0; }
+        .compatibility-fill { height: 100%; background: linear-gradient(90deg, #10b981 0%, #34d399 100%); transition: width 1s ease-in-out; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/life/marriage-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="marriage_calculator" 
+         data-category="relationship" 
+         data-title="Marriage Calculator" 
+         data-icon="💍">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="marriage-lang" onchange="MarriageCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💍 Marriage Calculator</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="partner1_age_label">Partner 1 Age</label>
+                <input type="number" id="partner1_age" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 30" min="18" max="100" value="30">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="partner2_age_label">Partner 2 Age</label>
+                <input type="number" id="partner2_age" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 28" min="18" max="100" value="28">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="relationship_length_label">Relationship Length (months)</label>
+                <input type="number" id="relationship_length" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 24" min="1" max="120" value="24">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common_interests_label">Common Interests (0-10)</label>
+                <input type="number" id="common_interests" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 7" min="0" max="10" value="7">
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="communication_label">Communication Quality (0-10)</label>
+                <input type="number" id="communication" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 8" min="0" max="10" value="8">
+            </div>
+        </div>
+
+        <button onclick="MarriageCalc.calc()" class="w-full bg-pink-600 text-white py-2 rounded font-bold hover:bg-pink-700 transition mb-6" data-i18n="btn_calc">Calculate Compatibility</button>
+
+        <div class="bg-pink-50 p-6 rounded-lg border border-pink-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Marriage Compatibility Score</div>
+            <div id="marriage-result" class="text-3xl font-bold text-pink-800">--</div>
+            
+            <div class="compatibility-bar">
+                <div id="compatibility-fill" class="compatibility-fill" style="width: 0%"></div>
+            </div>
+            
+            <div id="marriage-comment" class="mt-4 p-3 bg-white rounded border border-gray-100 text-left"></div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is for entertainment only. Real relationships are complex and unique.</div>
+        </div>
+    </div>
+
+    <script>
+        const MarriageCalc = {
+            i18n: {
+                'en': {
+                    title: '💍 Marriage Calculator',
+                    partner1_age_label: 'Partner 1 Age',
+                    partner2_age_label: 'Partner 2 Age',
+                    relationship_length_label: 'Relationship Length (months)',
+                    common_interests_label: 'Common Interests (0-10)',
+                    communication_label: 'Communication Quality (0-10)',
+                    btn_calc: 'Calculate Compatibility',
+                    res_label: 'Marriage Compatibility Score',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is for entertainment only. Real relationships are complex and unique.',
+                    comments: {
+                        30: 'Low compatibility. Significant work would be needed for a successful marriage.',
+                        50: 'Moderate compatibility. There are potential challenges to address.',
+                        70: 'Good compatibility. Strong foundation for a successful marriage.',
+                        90: 'Excellent compatibility. Very strong potential for a lasting marriage.'
+                    }
+                },
+                'zh-CN': {
+                    title: '💍 婚姻计算器',
+                    partner1_age_label: '伴侣1年龄',
+                    partner2_age_label: '伴侣2年龄',
+                    relationship_length_label: '恋爱时长（月）',
+                    common_interests_label: '共同兴趣（0-10）',
+                    communication_label: '沟通质量（0-10）',
+                    btn_calc: '计算相容性',
+                    res_label: '婚姻相容性得分',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：仅供娱乐。真实的关系是复杂且独特的。',
+                    comments: {
+                        30: '相容性低。成功的婚姻需要大量努力。',
+                        50: '相容性中等。有一些潜在挑战需要解决。',
+                        70: '相容性良好。有坚实的基础建立成功的婚姻。',
+                        90: '相容性极佳。非常有可能建立持久的婚姻。'
+                    }
+                },
+                'zh-TW': {
+                    title: '💍 婚姻計算器',
+                    partner1_age_label: '伴侶1年齡',
+                    partner2_age_label: '伴侶2年齡',
+                    relationship_length_label: '戀愛時長（月）',
+                    common_interests_label: '共同興趣（0-10）',
+                    communication_label: '溝通品質（0-10）',
+                    btn_calc: '計算相容性',
+                    res_label: '婚姻相容性得分',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：僅供娛樂。真實的關係是複雜且獨特的。',
+                    comments: {
+                        30: '相容性低。成功的婚姻需要大量努力。',
+                        50: '相容性中等。有一些潛在挑戰需要解決。',
+                        70: '相容性良好。有堅實的基礎建立成功的婚姻。',
+                        90: '相容性極佳。非常有可能建立持久的婚姻。'
+                    }
+                },
+                'ja': {
+                    title: '💍 結婚計算機',
+                    partner1_age_label: 'パートナー1の年齢',
+                    partner2_age_label: 'パートナー2の年齢',
+                    relationship_length_label: '恋愛期間（月）',
+                    common_interests_label: '共通の興味（0-10）',
+                    communication_label: 'コミュニケーションの質（0-10）',
+                    btn_calc: '相性を計算',
+                    res_label: '結婚相性スコア',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：娯楽目的のみです。実際の人間関係は複雑で独特です。',
+                    comments: {
+                        30: '相性が低いです。成功した結婚には多くの努力が必要です。',
+                        50: '相性が普通です。解決すべき潜在的な課題があります。',
+                        70: '相性が良好です。成功した結婚のための強固な基盤があります。',
+                        90: '相性が非常に良好です。長続きする結婚の可能性が非常に高いです。'
+                    }
+                },
+                'ru': {
+                    title: '💍 Калькулятор брака',
+                    partner1_age_label: 'Возраст партнера 1',
+                    partner2_age_label: 'Возраст партнера 2',
+                    relationship_length_label: 'Продолжительность отношений (месяцы)',
+                    common_interests_label: 'Общие интересы (0-10)',
+                    communication_label: 'Качество общения (0-10)',
+                    btn_calc: 'Вычислить совместимость',
+                    res_label: 'Оценка совместимости в браке',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только для развлечения. Реальные отношения сложны и уникальны.',
+                    comments: {
+                        30: 'Низкая совместимость. Для успешного брака потребуется значительный труд.',
+                        50: 'Средняя совместимость. Существуют потенциальные проблемы, которые нужно решить.',
+                        70: 'Хорошая совместимость. Прочная основа для успешного брака.',
+                        90: 'Отличная совместимость. Очень высокий потенциал для долговечного брака.'
+                    }
+                },
+                'es': {
+                    title: '💍 Calculadora de matrimonio',
+                    partner1_age_label: 'Edad de la pareja 1',
+                    partner2_age_label: 'Edad de la pareja 2',
+                    relationship_length_label: 'Duración de la relación (meses)',
+                    common_interests_label: 'Intereses comunes (0-10)',
+                    communication_label: 'Calidad de la comunicación (0-10)',
+                    btn_calc: 'Calcular compatibilidad',
+                    res_label: 'Puntuación de compatibilidad matrimonial',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo para entretenimiento. Las relaciones reales son complejas y únicas.',
+                    comments: {
+                        30: 'Baja compatibilidad. Se necesitaría un trabajo significativo para un matrimonio exitoso.',
+                        50: 'Compatibilidad moderada. Hay desafíos potenciales que abordar.',
+                        70: 'Buena compatibilidad. Base sólida para un matrimonio exitoso.',
+                        90: 'Excelente compatibilidad. Potencial muy fuerte para un matrimonio duradero.'
+                    }
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('marriage-lang').value;
+                const texts = MarriageCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="marriage_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                MarriageCalc.calc();
+            },
+
+            getComment: (score, texts) => {
+                if (score >= 90) return texts.comments[90];
+                if (score >= 70) return texts.comments[70];
+                if (score >= 50) return texts.comments[50];
+                return texts.comments[30];
+            },
+
+            calc: () => {
+                const age1 = parseInt(document.getElementById('partner1_age').value) || 0;
+                const age2 = parseInt(document.getElementById('partner2_age').value) || 0;
+                const length = parseInt(document.getElementById('relationship_length').value) || 0;
+                const interests = parseInt(document.getElementById('common_interests').value) || 0;
+                const communication = parseInt(document.getElementById('communication').value) || 0;
+                const lang = document.getElementById('marriage-lang').value;
+                const texts = MarriageCalc.i18n[lang];
+
+                const resultEl = document.getElementById('marriage-result');
+                const barEl = document.getElementById('compatibility-fill');
+                const commentEl = document.getElementById('marriage-comment');
+
+                // 验证输入
+                if (isNaN(age1) || isNaN(age2) || isNaN(length) || 
+                    isNaN(interests) || isNaN(communication) || 
+                    age1 < 18 || age2 < 18 || length < 1 ||
+                    interests < 0 || interests > 10 || 
+                    communication < 0 || communication > 10) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600";
+                    barEl.style.width = "0%";
+                    commentEl.innerText = "";
+                    return;
+                }
+
+                // 计算相容性得分
+                const ageDiff = Math.abs(age1 - age2);
+                const ageScore = Math.max(0, 20 - (ageDiff * 2)); // 年龄差异得分
+                
+                const lengthScore = Math.min(20, length / 6 * 10); // 恋爱时长得分
+                
+                const interestScore = interests * 3; // 共同兴趣得分
+                
+                const communicationScore = communication * 3; // 沟通质量得分
+                
+                let totalScore = Math.round(ageScore + lengthScore + interestScore + communicationScore);
+                totalScore = Math.max(0, Math.min(100, totalScore)); // 确保在0-100之间
+
+                // 显示结果
+                resultEl.className = "text-3xl font-bold text-pink-800";
+                resultEl.innerText = totalScore + '%';
+                barEl.style.width = totalScore + '%';
+                commentEl.innerText = MarriageCalc.getComment(totalScore, texts);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', MarriageCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('marriage-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    MarriageCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

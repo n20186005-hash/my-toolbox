@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    
+    <!-- 基礎信息 -->
+    <meta name="tool-id" content="qr_generator">
+    <meta name="category" content="Development Tools">
+    <meta name="icon" content="📱">
+    
+    <!-- 默認英文內容 -->
+    <meta name="title" content="QR Code Generator">
+    <meta name="description" content="Generate QR codes from text, URLs, or other information.">
+    
+    <!-- 多語言配置 -->
+    <meta name="lang-title-zh-CN" content="二维码生成器">
+    <meta name="lang-description-zh-CN" content="根据文本、URL或其他信息生成二维码。">
+    
+    <meta name="lang-title-zh-TW" content="二維碼生成器">
+    <meta name="lang-description-zh-TW" content="根據文本、URL或其他信息生成二維碼。">
+    
+    <meta name="lang-title-ja" content="QRコードジェネレーター">
+    <meta name="lang-description-ja" content="テキスト、URL、またはその他の情報からQRコードを生成します。">
+    
+    <meta name="lang-title-ru" content="Генератор QR-кодов">
+    <meta name="lang-description-ru" content="Генерируйте QR-коды из текста, URL или другой информации.">
+    
+    <meta name="lang-title-es" content="Generador de Códigos QR">
+    <meta name="lang-description-es" content="Genere códigos QR a partir de texto, URL u otra información.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 確保引用正確的庫文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        body { 
+            padding: 20px; 
+            background: #f0f9ff; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0;
+        }
+        .tool-module { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            max-width: 800px; 
+            margin: 0 auto; 
+            position: relative; 
+        }
+        .input-group { margin-bottom: 16px; }
+        label { 
+            display: block; 
+            margin-bottom: 4px; 
+            font-weight: 500; 
+            color: #4b5563; 
+        }
+        textarea { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            min-height: 100px; 
+            box-sizing: border-box;
+        }
+        .options { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 16px; 
+            margin-bottom: 16px; 
+        }
+        @media (max-width: 600px) {
+            .options { grid-template-columns: 1fr; }
+        }
+        .qr-container { 
+            text-align: center; 
+            padding: 20px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+        /* 確保canvas正確居中顯示 */
+        #qr-canvas { 
+            max-width: 100%;
+            height: auto;
+            background: white; 
+            border-radius: 4px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            margin-bottom: 16px;
+        }
+        select, input[type="color"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/qr-code-generator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="qr_generator" 
+         data-category="utilities" 
+         data-title="QR Code Generator" 
+         data-icon="📱">
+        
+        <!-- 語言選擇器 -->
+        <div class="absolute top-4 right-4">
+            <select id="qr-lang" onchange="QRGenerator.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📱 QR Code Generator</h2>
+        
+        <div class="space-y-4">
+            <div class="input-group">
+                <label data-i18n="input_label">Enter Text/URL</label>
+                <textarea id="qr-content" class="focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://example.com or any text"></textarea>
+            </div>
+            
+            <div class="options">
+                <div>
+                    <label data-i18n="size_label">QR Code Size</label>
+                    <select id="qr-size" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="128">128x128</option>
+                        <option value="256" selected>256x256</option>
+                        <option value="384">384x384</option>
+                        <option value="512">512x512</option>
+                    </select>
+                </div>
+                <div>
+                    <label data-i18n="color_label">Foreground Color</label>
+                    <input type="color" id="qr-color" value="#000000" class="w-full h-10 p-0 border rounded">
+                </div>
+            </div>
+            
+            <button onclick="QRGenerator.generate()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_generate">Generate QR Code</button>
+
+            <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 qr-container">
+                <div id="qr-result" class="text-gray-500" data-i18n="result_placeholder">QR code will appear here</div>
+                
+                <!-- 使用顯式的 canvas 標籤 -->
+                <canvas id="qr-canvas" style="display: none;"></canvas>
+                
+                <button onclick="QRGenerator.download()" id="download-btn" style="display: none; padding: 8px 16px; background: green; color: white; border: none; border-radius: 4px; cursor: pointer;" data-i18n="btn_download">Download QR Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.QRGenerator = {
+                i18n: {
+                    'en': {
+                        title: '📱 QR Code Generator',
+                        input_label: 'Enter Text/URL',
+                        size_label: 'QR Code Size',
+                        color_label: 'Foreground Color',
+                        btn_generate: 'Generate QR Code',
+                        result_placeholder: 'QR code will appear here',
+                        btn_download: 'Download QR Code',
+                        err_empty: 'Please enter content to generate QR code',
+                        err_generic: 'Failed to generate QR code',
+                        err_lib: 'Library not loaded. Please check your internet connection.'
+                    },
+                    'zh-CN': {
+                        title: '📱 二维码生成器',
+                        input_label: '输入文本/URL',
+                        size_label: '二维码尺寸',
+                        color_label: '前景色',
+                        btn_generate: '生成二维码',
+                        result_placeholder: '二维码将显示在这里',
+                        btn_download: '下载二维码',
+                        err_empty: '请输入内容以生成二维码',
+                        err_generic: '生成二维码失败',
+                        err_lib: '库未加载，请检查网络连接'
+                    },
+                    'zh-TW': {
+                        title: '📱 二維碼生成器',
+                        input_label: '輸入文本/URL',
+                        size_label: '二維碼尺寸',
+                        color_label: '前景色',
+                        btn_generate: '生成二維碼',
+                        result_placeholder: '二維碼將顯示在這裡',
+                        btn_download: '下載二維碼',
+                        err_empty: '請輸入內容以生成二維碼',
+                        err_generic: '生成二維碼失敗',
+                        err_lib: '庫未加載，請檢查網絡連接'
+                    },
+                    'ja': {
+                        title: '📱 QRコードジェネレーター',
+                        input_label: 'テキスト/URLを入力',
+                        size_label: 'QRコードサイズ',
+                        color_label: '前景色',
+                        btn_generate: 'QRコードを生成',
+                        result_placeholder: 'QRコードはここに表示されます',
+                        btn_download: 'QRコードをダウンロード',
+                        err_empty: 'QRコードを生成するにはコンテンツを入力してください',
+                        err_generic: 'QRコードの生成に失敗しました',
+                        err_lib: 'ライブラリがロードされていません。インターネット接続を確認してください'
+                    },
+                    'ru': {
+                        title: '📱 Генератор QR-кодов',
+                        input_label: 'Введите текст/URL',
+                        size_label: 'Размер QR-кода',
+                        color_label: 'Цвет переднего плана',
+                        btn_generate: 'Сгенерировать QR-код',
+                        result_placeholder: 'QR-код появится здесь',
+                        btn_download: 'Скачать QR-код',
+                        err_empty: 'Пожалуйста, введите содержимое для генерации QR-кода',
+                        err_generic: 'Не удалось сгенерировать QR-код',
+                        err_lib: 'Библиотека не загружена. Проверьте подключение к Интернету'
+                    },
+                    'es': {
+                        title: '📱 Generador de Códigos QR',
+                        input_label: 'Ingrese texto/URL',
+                        size_label: 'Tamaño del código QR',
+                        color_label: 'Color de primer plano',
+                        btn_generate: 'Generar código QR',
+                        result_placeholder: 'El código QR aparecerá aquí',
+                        btn_download: 'Descargar código QR',
+                        err_empty: 'Por favor, ingrese contenido para generar el código QR',
+                        err_generic: 'No se pudo generar el código QR',
+                        err_lib: 'Librería no cargada. Verifique su conexión a internet'
+                    }
+                },
+
+                init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                    this.changeLang();
+                },
+
+                changeLang: function() {
+                    const lang = document.getElementById('qr-lang').value;
+                    const texts = this.i18n[lang] || this.i18n['en'];
+                    
+                    document.querySelectorAll('[data-id="qr_generator"] [data-i18n]').forEach(el => {
+                        const key = el.getAttribute('data-i18n');
+                        if (texts[key]) {
+                            el.innerText = texts[key];
+                        }
+                    });
+                    
+                    const contentInput = document.getElementById('qr-content');
+                    if (contentInput) {
+                        const placeholders = {
+                            'zh-CN': 'https://示例.com 或任何文本',
+                            'zh-TW': 'https://示例.com 或任何文本',
+                            'ja': 'https://例.com または任意のテキスト',
+                            'ru': 'https://пример.com или любой текст',
+                            'es': 'https://ejemplo.com o cualquier texto',
+                            'en': 'https://example.com or any text'
+                        };
+                        contentInput.placeholder = placeholders[lang] || placeholders['en'];
+                    }
+                },
+
+                generate: function() {
+                    const lang = document.getElementById('qr-lang').value;
+                    const texts = this.i18n[lang] || this.i18n['en'];
+                    const resultEl = document.getElementById('qr-result');
+                    
+                    // 檢查庫是否加載
+                    if (typeof QRCode === 'undefined') {
+                        resultEl.innerText = texts.err_lib;
+                        resultEl.className = "text-red-600 font-bold";
+                        resultEl.style.display = 'block';
+                        return;
+                    }
+
+                    const content = document.getElementById('qr-content').value.trim();
+                    const size = parseInt(document.getElementById('qr-size').value);
+                    const color = document.getElementById('qr-color').value;
+                    
+                    const canvas = document.getElementById('qr-canvas');
+                    const downloadBtn = document.getElementById('download-btn');
+                    
+                    if (!content) {
+                        resultEl.innerText = texts.err_empty;
+                        resultEl.className = "text-red-600";
+                        resultEl.style.display = 'block';
+                        canvas.style.display = 'none';
+                        downloadBtn.style.display = 'none';
+                        return;
+                    }
+                    
+                    try {
+                        // 使用 toCanvas 並傳入具體的 canvas 元素
+                        QRCode.toCanvas(canvas, content, {
+                            width: size,
+                            margin: 2,
+                            color: {
+                                dark: color,
+                                light: '#ffffff'
+                            }
+                        }, function (error) {
+                            if (error) {
+                                console.error('QR Code generation error:', error);
+                                resultEl.innerText = texts.err_generic;
+                                resultEl.className = "text-red-600";
+                                resultEl.style.display = 'block';
+                                canvas.style.display = 'none';
+                                downloadBtn.style.display = 'none';
+                            } else {
+                                // 成功
+                                resultEl.style.display = 'none';
+                                canvas.style.display = 'inline-block';
+                                downloadBtn.style.display = 'inline-block';
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error in generate function:', error);
+                        resultEl.innerText = texts.err_generic + ": " + error.message;
+                        resultEl.className = "text-red-600";
+                        resultEl.style.display = 'block';
+                        canvas.style.display = 'none';
+                        downloadBtn.style.display = 'none';
+                    }
+                },
+
+                download: function() {
+                    try {
+                        const canvas = document.getElementById('qr-canvas');
+                        if (canvas) {
+                            const link = document.createElement('a');
+                            link.download = 'qrcode.png';
+                            link.href = canvas.toDataURL('image/png');
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+                    } catch (error) {
+                        console.error('Download error:', error);
+                        alert('Failed to download QR code');
+                    }
+                }
+            };
+
+            window.QRGenerator.init();
+
+            // 自動語言檢測
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('qr-lang');
+                if (langSelect) {
+                    langSelect.value = targetLang;
+                    window.QRGenerator.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>
+

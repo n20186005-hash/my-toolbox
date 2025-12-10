@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="grade_calc">
+    <meta name="category" content="education">
+    <meta name="icon" content="📚">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Grade Calculator">
+    <meta name="description" content="Calculate your overall course grade based on weighted assignments.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="成绩计算器">
+    <meta name="lang-description-zh-CN" content="根据加权作业计算你的整体课程成绩。">
+    
+    <meta name="lang-title-zh-TW" content="成績計算器">
+    <meta name="lang-description-zh-TW" content="根據加權作業計算你的整體課程成績。">
+    
+    <meta name="lang-title-ja" content="成績計算ツール">
+    <meta name="lang-description-ja" content="加重平均の課題に基づいて総合的なコース成績を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор оценок">
+    <meta name="lang-description-ru" content="Вычислите общую оценку за курс на основе взвешенных заданий.">
+    
+    <meta name="lang-title-es" content="Calculadora de Calificaciones">
+    <meta name="lang-description-es" content="Calcula tu calificación general del curso según las tareas ponderadas.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .assignment-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/education/grade-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="grade_calc" 
+         data-category="education" 
+         data-title="Grade Calculator" 
+         data-icon="📚">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="grade-lang" onchange="GradeCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📚 Grade Calculator</h2>
+        
+        <div class="space-y-4">
+            <div id="assignments-container">
+                <div class="assignment-row font-medium text-gray-700">
+                    <div data-i18n="assignment_label">Assignment</div>
+                    <div data-i18n="score_label">Score</div>
+                    <div data-i18n="max_score_label">Max Score</div>
+                    <div data-i18n="weight_label">Weight (%)</div>
+                    <div></div>
+                </div>
+                
+                <!-- 作业行1 -->
+                <div class="assignment-row" id="assignment-1">
+                    <input type="text" class="assignment-name p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Midterm">
+                    <input type="number" class="assignment-score p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" value="85">
+                    <input type="number" class="assignment-max p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="1" value="100">
+                    <input type="number" class="assignment-weight p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" max="100" value="30">
+                    <button onclick="GradeCalc.removeAssignment(1)" class="text-red-500 hover:text-red-700" disabled>×</button>
+                </div>
+            </div>
+            
+            <button onclick="GradeCalc.addAssignment()" class="w-full bg-gray-200 text-gray-800 py-2 rounded font-medium hover:bg-gray-300 transition mb-4" data-i18n="add_assignment">Add Another Assignment</button>
+            
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 mb-4">
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium text-gray-700" data-i18n="desired_label">Desired Final Grade:</label>
+                    <div class="flex items-center">
+                        <input type="number" id="desired-grade" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none w-20" min="0" max="100" value="90">
+                        <span class="ml-2 text-gray-600">%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="GradeCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Grade</button>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="current_label">Current Grade</div>
+                    <div id="current-grade" class="text-3xl font-bold text-blue-800">--</div>
+                    <div class="text-sm text-gray-600 mt-2" data-i18n="current_desc">Based on completed assignments</div>
+                </div>
+                
+                <div class="bg-green-50 p-6 rounded-lg border border-green-100 text-center">
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="needed_label">Needed on Remaining</div>
+                    <div id="needed-grade" class="text-3xl font-bold text-green-800">--</div>
+                    <div class="text-sm text-gray-600 mt-2" data-i18n="needed_desc">To reach desired grade</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GradeCalc = {
+            assignmentCount: 1,
+            
+            i18n: {
+                'en': {
+                    title: '📚 Grade Calculator',
+                    assignment_label: 'Assignment',
+                    score_label: 'Score',
+                    max_score_label: 'Max Score',
+                    weight_label: 'Weight (%)',
+                    add_assignment: 'Add Another Assignment',
+                    desired_label: 'Desired Final Grade:',
+                    btn_calc: 'Calculate Grade',
+                    current_label: 'Current Grade',
+                    current_desc: 'Based on completed assignments',
+                    needed_label: 'Needed on Remaining',
+                    needed_desc: 'To reach desired grade',
+                    err_no_data: 'Please enter assignment data',
+                    percent: '%'
+                },
+                'zh-CN': {
+                    title: '📚 成绩计算器',
+                    assignment_label: '作业',
+                    score_label: '得分',
+                    max_score_label: '满分',
+                    weight_label: '权重 (%)',
+                    add_assignment: '添加另一项作业',
+                    desired_label: '期望最终成绩：',
+                    btn_calc: '计算成绩',
+                    current_label: '当前成绩',
+                    current_desc: '基于已完成的作业',
+                    needed_label: '剩余作业所需分数',
+                    needed_desc: '以达到期望成绩',
+                    err_no_data: '请输入作业数据',
+                    percent: '%'
+                },
+                'zh-TW': {
+                    title: '📚 成績計算器',
+                    assignment_label: '作業',
+                    score_label: '得分',
+                    max_score_label: '滿分',
+                    weight_label: '權重 (%)',
+                    add_assignment: '添加另一項作業',
+                    desired_label: '期望最終成績：',
+                    btn_calc: '計算成績',
+                    current_label: '當前成績',
+                    current_desc: '基於已完成的作業',
+                    needed_label: '剩餘作業所需分數',
+                    needed_desc: '以達到期望成績',
+                    err_no_data: '請輸入作業數據',
+                    percent: '%'
+                },
+                'ja': {
+                    title: '📚 成績計算ツール',
+                    assignment_label: '課題',
+                    score_label: '得点',
+                    max_score_label: '満点',
+                    weight_label: 'ウェイト (%)',
+                    add_assignment: '別の課題を追加',
+                    desired_label: '目標の最終成績：',
+                    btn_calc: '成績を計算',
+                    current_label: '現在の成績',
+                    current_desc: '完了した課題に基づく',
+                    needed_label: '残りの課題で必要な得点',
+                    needed_desc: '目標の成績を達成するため',
+                    err_no_data: '課題データを入力してください',
+                    percent: '%'
+                },
+                'ru': {
+                    title: '📚 Калькулятор оценок',
+                    assignment_label: 'Задание',
+                    score_label: 'Баллы',
+                    max_score_label: 'Максимум баллов',
+                    weight_label: 'Вес (%)',
+                    add_assignment: 'Добавить другое задание',
+                    desired_label: 'Желаемая итоговая оценка：',
+                    btn_calc: 'Вычислить оценку',
+                    current_label: 'Текущая оценка',
+                    current_desc: 'На основе выполненных заданий',
+                    needed_label: 'Нужно на оставшихся',
+                    needed_desc: 'Чтобы достичь желаемой оценки',
+                    err_no_data: 'Пожалуйста, введите данные о заданиях',
+                    percent: '%'
+                },
+                'es': {
+                    title: '📚 Calculadora de Calificaciones',
+                    assignment_label: 'Tarea',
+                    score_label: 'Puntuación',
+                    max_score_label: 'Puntuación máxima',
+                    weight_label: 'Peso (%)',
+                    add_assignment: 'Agregar otra tarea',
+                    desired_label: 'Calificación final deseada：',
+                    btn_calc: 'Calcular calificación',
+                    current_label: 'Calificación actual',
+                    current_desc: 'Basado en tareas completadas',
+                    needed_label: 'Necesario en el resto',
+                    needed_desc: 'Para alcanzar la calificación deseada',
+                    err_no_data: 'Por favor, ingrese datos de la tarea',
+                    percent: '%'
+                }
+            },
+
+            init: () => {
+                // 初始设置已在HTML中
+            },
+
+            addAssignment: () => {
+                GradeCalc.assignmentCount++;
+                const container = document.getElementById('assignments-container');
+                
+                const newAssignment = document.createElement('div');
+                newAssignment.className = 'assignment-row';
+                newAssignment.id = `assignment-${GradeCalc.assignmentCount}`;
+                newAssignment.innerHTML = `
+                    <input type="text" class="assignment-name p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="${GradeCalc.getPlaceholderText()}">
+                    <input type="number" class="assignment-score p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" value="85">
+                    <input type="number" class="assignment-max p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="1" value="100">
+                    <input type="number" class="assignment-weight p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" min="0" max="100" value="${30 / GradeCalc.assignmentCount}">
+                    <button onclick="GradeCalc.removeAssignment(${GradeCalc.assignmentCount})" class="text-red-500 hover:text-red-700">×</button>
+                `;
+                
+                container.appendChild(newAssignment);
+                
+                // 启用第一行的删除按钮（如果有多个作业）
+                if (GradeCalc.assignmentCount > 1) {
+                    document.querySelector('#assignment-1 button').disabled = false;
+                }
+            },
+            
+            getPlaceholderText: () => {
+                const lang = document.getElementById('grade-lang').value;
+                switch(lang) {
+                    case 'zh-CN': return '例如：期中考试';
+                    case 'zh-TW': return '例如：期中考試';
+                    case 'ja': return '例：中間試験';
+                    case 'ru': return 'например: Промежуточный экзамен';
+                    case 'es': return 'ej: Examen parcial';
+                    default: return 'e.g. Midterm';
+                }
+            },
+
+            removeAssignment: (id) => {
+                const assignment = document.getElementById(`assignment-${id}`);
+                if (assignment) assignment.remove();
+                
+                GradeCalc.assignmentCount--;
+                
+                // 如果只剩一个作业，禁用删除按钮
+                if (GradeCalc.assignmentCount === 1) {
+                    document.querySelector('#assignment-1 button').disabled = true;
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('grade-lang').value;
+                const texts = GradeCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="grade_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                
+                // 更新占位符
+                document.querySelectorAll('.assignment-name').forEach(input => {
+                    input.placeholder = GradeCalc.getPlaceholderText();
+                });
+
+                if (document.getElementById('current-grade').innerText !== '--') {
+                    GradeCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const lang = document.getElementById('grade-lang').value;
+                const texts = GradeCalc.i18n[lang];
+                
+                const assignments = document.querySelectorAll('.assignment-row');
+                let totalPoints = 0;
+                let totalWeight = 0;
+                let hasData = false;
+                
+                assignments.forEach((assignment, index) => {
+                    // 跳过标题行
+                    if (index === 0) return;
+                    
+                    const score = parseFloat(assignment.querySelector('.assignment-score').value);
+                    const max = parseFloat(assignment.querySelector('.assignment-max').value);
+                    const weight = parseFloat(assignment.querySelector('.assignment-weight').value);
+                    
+                    if (!isNaN(score) && !isNaN(max) && !isNaN(weight) && max > 0 && weight > 0) {
+                        // 计算该作业的加权分数
+                        const percentage = score / max;
+                        totalPoints += percentage * weight;
+                        totalWeight += weight;
+                        hasData = true;
+                    }
+                });
+                
+                const currentEl = document.getElementById('current-grade');
+                const neededEl = document.getElementById('needed-grade');
+                const desiredGrade = parseFloat(document.getElementById('desired-grade').value) || 0;
+                
+                if (!hasData) {
+                    currentEl.innerText = texts.err_no_data;
+                    currentEl.className = "text-xl font-bold text-red-600";
+                    neededEl.innerText = '--';
+                    neededEl.className = "text-3xl font-bold text-green-800";
+                    return;
+                }
+                
+                // 计算当前成绩
+                const currentGrade = (totalPoints / totalWeight) * 100;
+                currentEl.className = "text-3xl font-bold text-blue-800";
+                currentEl.innerText = currentGrade.toFixed(1) + texts.percent;
+                
+                // 计算剩余权重
+                const remainingWeight = 100 - totalWeight;
+                
+                // 计算需要的分数
+                if (remainingWeight <= 0) {
+                    neededEl.innerText = '-';
+                } else {
+                    // 公式：(当前得分 + (需要的分数 × 剩余权重)) / 100 = 期望成绩
+                    const neededScore = ((desiredGrade * 100) - totalPoints) / remainingWeight * 100;
+                    const displayScore = neededScore > 100 ? 100 : neededScore < 0 ? 0 : neededScore;
+                    
+                    neededEl.className = "text-3xl font-bold text-green-800";
+                    neededEl.innerText = displayScore.toFixed(1) + texts.percent;
+                    
+                    // 如果需要超过100%，显示红色
+                    if (neededScore > 100) {
+                        neededEl.className = "text-3xl font-bold text-red-600";
+                    }
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', GradeCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('grade-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    GradeCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

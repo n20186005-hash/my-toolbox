@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tire Size Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="tire_size_calc">
+    <meta name="category" content="auto">
+    <meta name="icon" content="🚗">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Tire Size Calculator">
+    <meta name="description" content="Calculate tire dimensions and compare different tire sizes.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="轮胎尺寸计算器">
+    <meta name="lang-description-zh-CN" content="计算轮胎尺寸并比较不同的轮胎规格。">
+    
+    <meta name="lang-title-zh-TW" content="輪胎尺寸計算器">
+    <meta name="lang-description-zh-TW" content="計算輪胎尺寸並比較不同的輪胎規格。">
+    
+    <meta name="lang-title-ja" content="タイヤサイズ計算ツール">
+    <meta name="lang-description-ja" content="タイヤの寸法を計算し、さまざまなタイヤサイズを比較します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор размеров шипов">
+    <meta name="lang-description-ru" content="Вычислите размеры шин и сравните разные размеры шин.">
+    
+    <meta name="lang-title-es" content="Calculadora de Tamaño de Neumáticos">
+    <meta name="lang-description-es" content="Calcula dimensiones de neumáticos y compara diferentes tamaños.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .tire-size-input { display: flex; gap: 10px; align-items: center; }
+        .tire-size-input input { flex: 1; }
+        .size-label { white-space: nowrap; }
+        .result-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .result-table th, .result-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+        .result-table th { background-color: #f8fafc; }
+        .difference-positive { color: #10b981; }
+        .difference-negative { color: #ef4444; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/auto/tire-size-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="tire_size_calc" 
+         data-category="automotive" 
+         data-title="Tire Size Calculator" 
+         data-icon="🚗">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="ts-lang" onchange="TireSize.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🚗 Tire Size Calculator</h2>
+        
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="original_tire">Original Tire Size</label>
+            <div class="tire-size-input">
+                <input type="number" id="orig-width" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="205" min="100">
+                <span class="size-label" data-i18n="mm">mm</span>
+                <span class="size-label">/</span>
+                <input type="number" id="orig-aspect" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="55" min="30" max="90">
+                <span class="size-label">%</span>
+                <span class="size-label">R</span>
+                <input type="number" id="orig-rim" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="16" min="10" max="32">
+                <span class="size-label" data-i18n="inch">in</span>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="new_tire">New Tire Size</label>
+            <div class="tire-size-input">
+                <input type="number" id="new-width" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="215" min="100">
+                <span class="size-label" data-i18n="mm">mm</span>
+                <span class="size-label">/</span>
+                <input type="number" id="new-aspect" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="50" min="30" max="90">
+                <span class="size-label">%</span>
+                <span class="size-label">R</span>
+                <input type="number" id="new-rim" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="17" min="10" max="32">
+                <span class="size-label" data-i18n="inch">in</span>
+            </div>
+        </div>
+
+        <button onclick="TireSize.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Differences</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-4" data-i18n="res_label">Tire Comparison Results</div>
+            <div id="ts-result">
+                <div class="text-center text-gray-500" data-i18n="res_placeholder">Enter tire sizes and calculate</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TireSize = {
+            i18n: {
+                'en': {
+                    title: '🚗 Tire Size Calculator',
+                    original_tire: 'Original Tire Size',
+                    new_tire: 'New Tire Size',
+                    mm: 'mm',
+                    inch: 'in',
+                    btn_calc: 'Calculate Differences',
+                    res_label: 'Tire Comparison Results',
+                    res_placeholder: 'Enter tire sizes and calculate',
+                    err_invalid: 'Please enter valid tire sizes',
+                    diameter: 'Overall Diameter',
+                    width: 'Section Width',
+                    circumference: 'Circumference',
+                    revs_per_mile: 'Revolutions per Mile',
+                    revs_per_km: 'Revolutions per Km',
+                    difference: 'Difference',
+                    original: 'Original',
+                    new: 'New'
+                },
+                'zh-CN': {
+                    title: '🚗 轮胎尺寸计算器',
+                    original_tire: '原始轮胎尺寸',
+                    new_tire: '新轮胎尺寸',
+                    mm: '毫米',
+                    inch: '英寸',
+                    btn_calc: '计算差异',
+                    res_label: '轮胎比较结果',
+                    res_placeholder: '输入轮胎尺寸并计算',
+                    err_invalid: '请输入有效的轮胎尺寸',
+                    diameter: '总直径',
+                    width: '截面宽度',
+                    circumference: '周长',
+                    revs_per_mile: '每英里转数',
+                    revs_per_km: '每公里转数',
+                    difference: '差异',
+                    original: '原始',
+                    new: '新'
+                },
+                'zh-TW': {
+                    title: '🚗 輪胎尺寸計算器',
+                    original_tire: '原始輪胎尺寸',
+                    new_tire: '新輪胎尺寸',
+                    mm: '毫米',
+                    inch: '英寸',
+                    btn_calc: '計算差異',
+                    res_label: '輪胎比較結果',
+                    res_placeholder: '輸入輪胎尺寸並計算',
+                    err_invalid: '請輸入有效的輪胎尺寸',
+                    diameter: '總直徑',
+                    width: '截面寬度',
+                    circumference: '周長',
+                    revs_per_mile: '每英里轉數',
+                    revs_per_km: '每公里轉數',
+                    difference: '差異',
+                    original: '原始',
+                    new: '新'
+                },
+                'ja': {
+                    title: '🚗 タイヤサイズ計算ツール',
+                    original_tire: '元のタイヤサイズ',
+                    new_tire: '新しいタイヤサイズ',
+                    mm: 'mm',
+                    inch: 'インチ',
+                    btn_calc: '差分を計算',
+                    res_label: 'タイヤ比較結果',
+                    res_placeholder: 'タイヤサイズを入力して計算',
+                    err_invalid: '有効なタイヤサイズを入力してください',
+                    diameter: '全直径',
+                    width: 'セクション幅',
+                    circumference: '円周',
+                    revs_per_mile: '1マイルあたりの回転数',
+                    revs_per_km: '1kmあたりの回転数',
+                    difference: '差分',
+                    original: '元の',
+                    new: '新しい'
+                },
+                'ru': {
+                    title: '🚗 Калькулятор размеров шипов',
+                    original_tire: 'Оригинальный размер шины',
+                    new_tire: 'Новый размер шины',
+                    mm: 'мм',
+                    inch: 'дюйм',
+                    btn_calc: 'Вычислить различия',
+                    res_label: 'Результаты сравнения шин',
+                    res_placeholder: 'Введите размеры шин и вычислите',
+                    err_invalid: 'Пожалуйста, введите действительные размеры шин',
+                    diameter: 'Общий диаметр',
+                    width: 'Ширина поперечного сечения',
+                    circumference: 'Окружность',
+                    revs_per_mile: 'Оборотов на милю',
+                    revs_per_km: 'Оборотов на км',
+                    difference: 'Разница',
+                    original: 'Оригинальный',
+                    new: 'Новый'
+                },
+                'es': {
+                    title: '🚗 Calculadora de Tamaño de Neumáticos',
+                    original_tire: 'Tamaño de Neumático Original',
+                    new_tire: 'Nuevo Tamaño de Neumático',
+                    mm: 'mm',
+                    inch: 'pulg',
+                    btn_calc: 'Calcular Diferencias',
+                    res_label: 'Resultados de Comparación',
+                    res_placeholder: 'Ingrese tamaños de neumáticos y calcule',
+                    err_invalid: 'Por favor ingrese tamaños de neumáticos válidos',
+                    diameter: 'Diámetro Total',
+                    width: 'Ancho de Sección',
+                    circumference: 'Circunferencia',
+                    revs_per_mile: 'Revoluciones por Milla',
+                    revs_per_km: 'Revoluciones por Km',
+                    difference: 'Diferencia',
+                    original: 'Original',
+                    new: 'Nuevo'
+                }
+            },
+
+            init: () => {
+                // 初始化默认值
+                document.getElementById('orig-width').value = 205;
+                document.getElementById('orig-aspect').value = 55;
+                document.getElementById('orig-rim').value = 16;
+                
+                document.getElementById('new-width').value = 215;
+                document.getElementById('new-aspect').value = 50;
+                document.getElementById('new-rim').value = 17;
+            },
+
+            getCurrentLang: () => {
+                return document.getElementById('ts-lang').value;
+            },
+
+            changeLang: () => {
+                const lang = TireSize.getCurrentLang();
+                const texts = TireSize.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="tire_size_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            calculateTireData: (width, aspect, rim) => {
+                // 计算轮胎数据（单位转换：1英寸 = 25.4毫米）
+                const sidewallHeight = (width * aspect) / 100; // 毫米
+                const diameterMM = (rim * 25.4) + (sidewallHeight * 2); // 总直径（毫米）
+                const diameterIN = diameterMM / 25.4; // 总直径（英寸）
+                const circumferenceMM = diameterMM * Math.PI; // 周长（毫米）
+                const circumferenceIN = circumferenceMM / 25.4; // 周长（英寸）
+                const revsPerMile = 63360 / circumferenceIN; // 每英里转数（1英里=63360英寸）
+                const revsPerKm = 1000000 / circumferenceMM; // 每公里转数（1公里=1000000毫米）
+                
+                return {
+                    width: width,
+                    aspect: aspect,
+                    rim: rim,
+                    diameter: {
+                        mm: diameterMM.toFixed(1),
+                        in: diameterIN.toFixed(2)
+                    },
+                    circumference: {
+                        mm: circumferenceMM.toFixed(1),
+                        in: circumferenceIN.toFixed(2)
+                    },
+                    revsPerMile: revsPerMile.toFixed(0),
+                    revsPerKm: revsPerKm.toFixed(0)
+                };
+            },
+
+            calc: () => {
+                // 获取输入值
+                const origWidth = parseInt(document.getElementById('orig-width').value);
+                const origAspect = parseInt(document.getElementById('orig-aspect').value);
+                const origRim = parseInt(document.getElementById('orig-rim').value);
+                
+                const newWidth = parseInt(document.getElementById('new-width').value);
+                const newAspect = parseInt(document.getElementById('new-aspect').value);
+                const newRim = parseInt(document.getElementById('new-rim').value);
+                
+                const lang = TireSize.getCurrentLang();
+                const texts = TireSize.i18n[lang];
+                const resultEl = document.getElementById('ts-result');
+
+                // 验证输入
+                if (isNaN(origWidth) || isNaN(origAspect) || isNaN(origRim) ||
+                    isNaN(newWidth) || isNaN(newAspect) || isNaN(newRim)) {
+                    resultEl.innerHTML = `<div class="text-center text-red-600">${texts.err_invalid}</div>`;
+                    return;
+                }
+
+                // 计算轮胎数据
+                const origData = TireSize.calculateTireData(origWidth, origAspect, origRim);
+                const newData = TireSize.calculateTireData(newWidth, newAspect, newRim);
+
+                // 计算差异百分比
+                const getPercentDiff = (orig, newValue) => {
+                    return ((newValue - orig) / orig * 100).toFixed(1);
+                };
+
+                const diameterDiff = getPercentDiff(parseFloat(origData.diameter.mm), parseFloat(newData.diameter.mm));
+                const widthDiff = getPercentDiff(origData.width, newData.width);
+                const circDiff = getPercentDiff(parseFloat(origData.circumference.mm), parseFloat(newData.circumference.mm));
+                const revDiff = getPercentDiff(parseFloat(origData.revsPerMile), parseFloat(newData.revsPerMile));
+
+                // 生成结果表格
+                resultEl.innerHTML = `
+                    <table class="result-table">
+                        <tr>
+                            <th></th>
+                            <th>${texts.original}</th>
+                            <th>${texts.new}</th>
+                            <th>${texts.difference}</th>
+                        </tr>
+                        <tr>
+                            <td>${texts.diameter}</td>
+                            <td>${origData.diameter.mm} ${texts.mm} (${origData.diameter.in} ${texts.inch})</td>
+                            <td>${newData.diameter.mm} ${texts.mm} (${newData.diameter.in} ${texts.inch})</td>
+                            <td class="${diameterDiff >= 0 ? 'difference-positive' : 'difference-negative'}">
+                                ${diameterDiff >= 0 ? '+' : ''}${diameterDiff}%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>${texts.width}</td>
+                            <td>${origData.width} ${texts.mm}</td>
+                            <td>${newData.width} ${texts.mm}</td>
+                            <td class="${widthDiff >= 0 ? 'difference-positive' : 'difference-negative'}">
+                                ${widthDiff >= 0 ? '+' : ''}${widthDiff}%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>${texts.circumference}</td>
+                            <td>${origData.circumference.mm} ${texts.mm} (${origData.circumference.in} ${texts.inch})</td>
+                            <td>${newData.circumference.mm} ${texts.mm} (${newData.circumference.in} ${texts.inch})</td>
+                            <td class="${circDiff >= 0 ? 'difference-positive' : 'difference-negative'}">
+                                ${circDiff >= 0 ? '+' : ''}${circDiff}%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>${texts.revs_per_mile}</td>
+                            <td>${origData.revsPerMile}</td>
+                            <td>${newData.revsPerMile}</td>
+                            <td class="${revDiff >= 0 ? 'difference-positive' : 'difference-negative'}">
+                                ${revDiff >= 0 ? '+' : ''}${revDiff}%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>${texts.revs_per_km}</td>
+                            <td>${origData.revsPerKm}</td>
+                            <td>${newData.revsPerKm}</td>
+                            <td class="${revDiff >= 0 ? 'difference-positive' : 'difference-negative'}">
+                                ${revDiff >= 0 ? '+' : ''}${revDiff}%
+                            </td>
+                        </tr>
+                    </table>
+                `;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', TireSize.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('ts-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    TireSize.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

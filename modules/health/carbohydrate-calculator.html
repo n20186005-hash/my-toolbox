@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carbohydrate Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="carbohydrate_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="🍞">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Carbohydrate Calculator">
+    <meta name="description" content="Calculate your recommended daily carbohydrate intake.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="碳水化合物计算器">
+    <meta name="lang-description-zh-CN" content="计算您推荐的每日碳水化合物摄入量。">
+    
+    <meta name="lang-title-zh-TW" content="碳水化合物計算器">
+    <meta name="lang-description-zh-TW" content="計算您推薦的每日碳水化合物攝取量。">
+    
+    <meta name="lang-title-ja" content="炭水化物計算機">
+    <meta name="lang-description-ja" content="推奨される1日の炭水化物摂取量を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор углеводов">
+    <meta name="lang-description-ru" content="Вычислите рекомендуемое суточное потребление углеводов.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-box { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 5px; margin-top: 10px; text-align: center; }
+        .food-examples { margin-top: 10px; padding-left: 20px; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/health/carbohydrate-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="carbohydrate_calculator" 
+         data-category="health" 
+         data-title="Carbohydrate Calculator" 
+         data-icon="🍞">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="carb-lang" onchange="CarbCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🍞 Carbohydrate Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="unit_system">Unit System</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="metric" checked class="text-yellow-600 focus:ring-yellow-500">
+                        <span data-i18n="metric">Metric (cm, kg)</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="imperial" class="text-yellow-600 focus:ring-yellow-500">
+                        <span data-i18n="imperial">Imperial (ft, lbs)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="weight-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_kg">Weight (kg)</label>
+                <input type="number" id="weight-kg" class="w-full p-2 border rounded focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="e.g. 70" min="30" max="250" value="70">
+            </div>
+            <div id="weight-imperial" style="display: none;">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_lbs">Weight (lbs)</label>
+                <input type="number" id="weight-lbs" class="w-full p-2 border rounded focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="e.g. 154" min="66" max="550" value="154">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="age">Age (years)</label>
+                <input type="number" id="age" class="w-full p-2 border rounded focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="e.g. 30" min="18" max="120" value="30">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gender">Gender</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="male" checked class="text-yellow-600 focus:ring-yellow-500">
+                        <span data-i18n="male">Male</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="female" class="text-yellow-600 focus:ring-yellow-500">
+                        <span data-i18n="female">Female</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="activity_level">Activity Level</label>
+                <select id="activity-level" class="w-full p-2 border rounded focus:ring-2 focus:ring-yellow-500 outline-none">
+                    <option value="sedentary" data-i18n="sedentary">Sedentary (little exercise)</option>
+                    <option value="lightly" data-i18n="lightly">Lightly Active (light exercise)</option>
+                    <option value="moderately" data-i18n="moderately" selected>Moderately Active (moderate exercise)</option>
+                    <option value="very" data-i18n="very">Very Active (hard exercise)</option>
+                    <option value="extra" data-i18n="extra">Extra Active (very hard exercise)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="goal">Goal</label>
+                <select id="goal" class="w-full p-2 border rounded focus:ring-2 focus:ring-yellow-500 outline-none">
+                    <option value="lose" data-i18n="lose">Lose Weight</option>
+                    <option value="maintain" data-i18n="maintain" selected>Maintain Weight</option>
+                    <option value="gain" data-i18n="gain">Gain Weight</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="carb_percent">Carbohydrate Percentage of Calories (%)</label>
+                <input type="range" id="carb-percent" min="20" max="70" value="50" 
+                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>20%</span>
+                    <span id="carb-percent-display">50%</span>
+                    <span>70%</span>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="CarbCalc.calc()" class="w-full bg-yellow-600 text-white py-2 rounded font-bold hover:bg-yellow-700 transition mb-6" data-i18n="btn_calc">Calculate Carbohydrates</button>
+
+        <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="daily_carbs">Daily Carbohydrate Requirement</div>
+            <div id="carbs-result" class="text-3xl font-bold text-yellow-800">--</div>
+            
+            <div class="result-box mt-6">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="daily_calories">Total Daily Calories</div>
+                <div id="calories-result" class="text-xl font-bold text-yellow-800">--</div>
+            </div>
+            
+            <div class="mt-6">
+                <div class="text-sm font-medium text-gray-700 mb-2" data-i18n="food_examples">Example Food Sources:</div>
+                <ul class="food-examples text-sm text-gray-600" data-i18n="food_list">
+                    <li>1 slice of bread: ~15g carbs</li>
+                    <li>1 medium potato: ~30g carbs</li>
+                    <li>1 cup of rice: ~45g carbs</li>
+                    <li>1 medium banana: ~27g carbs</li>
+                </ul>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is a general guide. Individual needs may vary.</div>
+        </div>
+    </div>
+
+    <script>
+        const CarbCalc = {
+            i18n: {
+                'en': {
+                    title: '🍞 Carbohydrate Calculator',
+                    unit_system: 'Unit System',
+                    metric: 'Metric (cm, kg)',
+                    imperial: 'Imperial (ft, lbs)',
+                    weight_kg: 'Weight (kg)',
+                    weight_lbs: 'Weight (lbs)',
+                    age: 'Age (years)',
+                    gender: 'Gender',
+                    male: 'Male',
+                    female: 'Female',
+                    activity_level: 'Activity Level',
+                    sedentary: 'Sedentary (little exercise)',
+                    lightly: 'Lightly Active (light exercise)',
+                    moderately: 'Moderately Active (moderate exercise)',
+                    very: 'Very Active (hard exercise)',
+                    extra: 'Extra Active (very hard exercise)',
+                    goal: 'Goal',
+                    lose: 'Lose Weight',
+                    maintain: 'Maintain Weight',
+                    gain: 'Gain Weight',
+                    carb_percent: 'Carbohydrate Percentage of Calories (%)',
+                    btn_calc: 'Calculate Carbohydrates',
+                    daily_carbs: 'Daily Carbohydrate Requirement',
+                    daily_calories: 'Total Daily Calories',
+                    food_examples: 'Example Food Sources:',
+                    food_list: `
+                        <li>1 slice of bread: ~15g carbs</li>
+                        <li>1 medium potato: ~30g carbs</li>
+                        <li>1 cup of rice: ~45g carbs</li>
+                        <li>1 medium banana: ~27g carbs</li>
+                    `,
+                    disclaimer: 'Disclaimer: This is a general guide. Individual needs may vary.',
+                    err_invalid: 'Please enter valid numbers',
+                    grams: 'grams',
+                    calories_unit: 'calories'
+                },
+                'zh-CN': {
+                    title: '🍞 碳水化合物计算器',
+                    unit_system: '单位系统',
+                    metric: '公制（厘米，千克）',
+                    imperial: '英制（英尺，磅）',
+                    weight_kg: '体重（千克）',
+                    weight_lbs: '体重（磅）',
+                    age: '年龄（岁）',
+                    gender: '性别',
+                    male: '男',
+                    female: '女',
+                    activity_level: '活动水平',
+                    sedentary: '久坐（很少运动）',
+                    lightly: '轻度活动（少量运动）',
+                    moderately: '中度活动（适度运动）',
+                    very: '高度活动（大量运动）',
+                    extra: '极高活动（剧烈运动）',
+                    goal: '目标',
+                    lose: '减重',
+                    maintain: '维持体重',
+                    gain: '增重',
+                    carb_percent: '碳水化合物占卡路里的百分比（%）',
+                    btn_calc: '计算碳水化合物',
+                    daily_carbs: '每日碳水化合物需求量',
+                    daily_calories: '每日总卡路里',
+                    food_examples: '食物来源示例：',
+                    food_list: `
+                        <li>1片面包：约15克碳水化合物</li>
+                        <li>1个中等大小的土豆：约30克碳水化合物</li>
+                        <li>1杯米饭：约45克碳水化合物</li>
+                        <li>1个中等大小的香蕉：约27克碳水化合物</li>
+                    `,
+                    disclaimer: '免责声明：这是一般指南。个人需求可能有所不同。',
+                    err_invalid: '请输入有效的数字',
+                    grams: '克',
+                    calories_unit: '卡路里'
+                },
+                'zh-TW': {
+                    title: '🍞 碳水化合物計算器',
+                    unit_system: '單位系統',
+                    metric: '公制（公分，公斤）',
+                    imperial: '英制（英尺，磅）',
+                    weight_kg: '體重（公斤）',
+                    weight_lbs: '體重（磅）',
+                    age: '年齡（歲）',
+                    gender: '性別',
+                    male: '男',
+                    female: '女',
+                    activity_level: '活動水平',
+                    sedentary: '久坐（很少運動）',
+                    lightly: '輕度活動（少量運動）',
+                    moderately: '中度活動（適度運動）',
+                    very: '高度活動（大量運動）',
+                    extra: '極高活動（劇烈運動）',
+                    goal: '目標',
+                    lose: '減重',
+                    maintain: '維持體重',
+                    gain: '增重',
+                    carb_percent: '碳水化合物占卡路里的百分比（%）',
+                    btn_calc: '計算碳水化合物',
+                    daily_carbs: '每日碳水化合物需求量',
+                    daily_calories: '每日總卡路里',
+                    food_examples: '食物來源示例：',
+                    food_list: `
+                        <li>1片麵包：約15克碳水化合物</li>
+                        <li>1個中等大小的馬鈴薯：約30克碳水化合物</li>
+                        <li>1杯米飯：約45克碳水化合物</li>
+                        <li>1個中等大小的香蕉：約27克碳水化合物</li>
+                    `,
+                    disclaimer: '免責聲明：這是一般指南。個人需求可能有所不同。',
+                    err_invalid: '請輸入有效的數字',
+                    grams: '克',
+                    calories_unit: '卡路里'
+                },
+                'ja': {
+                    title: '🍞 炭水化物計算機',
+                    unit_system: '単位系',
+                    metric: 'メートル法（cm、kg）',
+                    imperial: '帝国法（フィート、ポンド）',
+                    weight_kg: '体重（kg）',
+                    weight_lbs: '体重（ポンド）',
+                    age: '年齢（歳）',
+                    gender: '性別',
+                    male: '男性',
+                    female: '女性',
+                    activity_level: '活動レベル',
+                    sedentary: '久坐型（ほとんど運動なし）',
+                    lightly: '軽度活動（軽い運動）',
+                    moderately: '中等度活動（適度な運動）',
+                    very: '高度活動（激しい運動）',
+                    extra: '超高度活動（非常に激しい運動）',
+                    goal: '目標',
+                    lose: '減量',
+                    maintain: '体重維持',
+                    gain: '増量',
+                    carb_percent: 'カロリーに占める炭水化物の割合（%）',
+                    btn_calc: '炭水化物を計算',
+                    daily_carbs: '1日の炭水化物必要量',
+                    daily_calories: '1日の総カロリー',
+                    food_examples: '食品例：',
+                    food_list: `
+                        <li>パン1枚：約15gの炭水化物</li>
+                        <li>じゃがいも中1個：約30gの炭水化物</li>
+                        <li>ご飯1カップ：約45gの炭水化物</li>
+                        <li>バナナ中1本：約27gの炭水化物</li>
+                    `,
+                    disclaimer: '免責事項：これは一般的なガイドです。個人の必要量は異なる場合があります。',
+                    err_invalid: '有効な数字を入力してください',
+                    grams: 'グラム',
+                    calories_unit: 'カロリー'
+                },
+                'ru': {
+                    title: '🍞 Калькулятор углеводов',
+                    unit_system: 'Система единиц',
+                    metric: 'Метрическая (см, кг)',
+                    imperial: 'Имперская (футы, фунты)',
+                    weight_kg: 'Вес (кг)',
+                    weight_lbs: 'Вес (фунты)',
+                    age: 'Возраст (лет)',
+                    gender: 'Пол',
+                    male: 'Мужской',
+                    female: 'Женский',
+                    activity_level: 'Уровень активности',
+                    sedentary: 'Сидячий образ жизни (малое количество упражнений)',
+                    lightly: 'Легкоактивный (легкие упражнения)',
+                    moderately: 'Умеренноактивный (умеренные упражнения)',
+                    very: 'Очень активный (напряженные упражнения)',
+                    extra: 'Экстраактивный (очень напряженные упражнения)',
+                    goal: 'Цель',
+                    lose: 'Сброс веса',
+                    maintain: 'Сохранение веса',
+                    gain: 'Набор веса',
+                    carb_percent: 'Процент углеводов от общей калорийности (%)',
+                    btn_calc: 'Вычислить углеводы',
+                    daily_carbs: 'Суточная потребность в углеводах',
+                    daily_calories: 'Общая суточная калорийность',
+                    food_examples: 'Примеры продуктов:',
+                    food_list: `
+                        <li>1 ломтик хлеба: ~15г углеводов</li>
+                        <li>1 средняя картошка: ~30г углеводов</li>
+                        <li>1 чашка риса: ~45г углеводов</li>
+                        <li>1 средняя банан: ~27г углеводов</li>
+                    `,
+                    disclaimer: 'Отказ от ответственности: Это общие рекомендации. Индивидуальные нужды могут отличаться.',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    grams: 'грамм',
+                    calories_unit: 'калорий'
+                }
+            },
+
+            init: () => {
+                // 监听单位切换
+                document.querySelectorAll('input[name="units"]').forEach(radio => {
+                    radio.addEventListener('change', CarbCalc.toggleUnits);
+                });
+                
+                // 监听碳水化合物百分比滑块变化
+                const carbSlider = document.getElementById('carb-percent');
+                const carbDisplay = document.getElementById('carb-percent-display');
+                
+                carbSlider.addEventListener('input', () => {
+                    carbDisplay.innerText = `${carbSlider.value}%`;
+                });
+            },
+
+            toggleUnits: () => {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                
+                // 显示/隐藏重量输入框
+                document.getElementById('weight-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('weight-imperial').style.display = isMetric ? 'none' : 'block';
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('carb-lang').value;
+                const texts = CarbCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="carbohydrate_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        if (key === 'food_list') {
+                            el.innerHTML = texts[key];
+                        } else {
+                            el.innerText = texts[key];
+                        }
+                    }
+                });
+
+                // 翻译下拉选项
+                const activityOptions = document.querySelectorAll('#activity-level option');
+                activityOptions.forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+                
+                const goalOptions = document.querySelectorAll('#goal option');
+                goalOptions.forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                CarbCalc.calc();
+            },
+
+            // 计算基础代谢率 (Mifflin-St Jeor公式)
+            calculateBMR: (weightKg, age, gender) => {
+                // 为简化计算，这里使用简化版公式
+                if (gender === 'male') {
+                    return 10 * weightKg + 6.25 * 170 - 5 * age + 5; // 假设平均身高170cm
+                } else {
+                    return 10 * weightKg + 6.25 * 160 - 5 * age - 161; // 假设平均身高160cm
+                }
+            },
+
+            // 根据活动水平获取系数
+            getActivityFactor: (level) => {
+                const factors = {
+                    'sedentary': 1.2,
+                    'lightly': 1.375,
+                    'moderately': 1.55,
+                    'very': 1.725,
+                    'extra': 1.9
+                };
+                return factors[level] || 1.55;
+            },
+
+            // 根据目标调整卡路里
+            adjustCaloriesForGoal: (tdee, goal) => {
+                switch(goal) {
+                    case 'lose': return tdee * 0.85; // 减少15%用于减重
+                    case 'gain': return tdee * 1.15; // 增加15%用于增重
+                    default: return tdee; // 维持体重
+                }
+            },
+
+            calc: () => {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                const lang = document.getElementById('carb-lang').value;
+                const texts = CarbCalc.i18n[lang];
+
+                let weightKg, age, gender, activityLevel, goal, carbPercent;
+
+                // 获取输入值
+                if (isMetric) {
+                    weightKg = parseFloat(document.getElementById('weight-kg').value) || 0;
+                } else {
+                    weightKg = parseFloat(document.getElementById('weight-lbs').value) * 0.453592 || 0; // 转换为千克
+                }
+                
+                age = parseFloat(document.getElementById('age').value) || 0;
+                gender = document.querySelector('input[name="gender"]:checked').value;
+                activityLevel = document.getElementById('activity-level').value;
+                goal = document.getElementById('goal').value;
+                carbPercent = parseFloat(document.getElementById('carb-percent').value) / 100 || 0;
+
+                // 获取结果元素
+                const carbsEl = document.getElementById('carbs-result');
+                const caloriesEl = document.getElementById('calories-result');
+
+                // 验证输入
+                if (isNaN(weightKg) || isNaN(age) || 
+                    weightKg <= 0 || age < 18 || age > 120) {
+                    carbsEl.innerText = texts.err_invalid;
+                    carbsEl.className = "text-2xl font-bold text-red-600";
+                    caloriesEl.innerText = '--';
+                    return;
+                }
+
+                // 计算碳水化合物需求
+                const bmr = CarbCalc.calculateBMR(weightKg, age, gender);
+                const tdee = bmr * CarbCalc.getActivityFactor(activityLevel);
+                const calories = Math.round(CarbCalc.adjustCaloriesForGoal(tdee, goal));
+                
+                // 碳水化合物每克提供4卡路里
+                const carbsGrams = Math.round((calories * carbPercent) / 4);
+
+                // 显示结果
+                carbsEl.className = "text-3xl font-bold text-yellow-800";
+                carbsEl.innerText = `${carbsGrams} ${texts.grams}`;
+                
+                caloriesEl.innerText = `${calories} ${texts.calories_unit}`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', CarbCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('carb-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    CarbCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="category" content="development-tools">
+    <meta charset="UTF-8">
+    <title>Chinese RMB Converter Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #fffbe6; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/chinese-capital-number.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="rmb_conv" 
+         data-category="finance" 
+         data-title="Text Tools" 
+         data-icon="💴">
+        
+        <div class="absolute top-4 right-4">
+            <select id="rc-lang" onchange="RMBConv.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💴 Chinese Capital Number</h2>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_input">Input Amount (Number)</label>
+            <input type="number" id="rc-input" class="w-full p-3 border rounded text-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="1234.56" oninput="RMBConv.convert()">
+        </div>
+
+        <div class="bg-red-50 p-4 rounded-lg border border-red-100 min-h-[100px] flex flex-col justify-center">
+            <span class="text-gray-500 text-xs mb-1" data-i18n="lbl_result">Capitalized Chinese</span>
+            <div id="rc-result" class="text-xl font-bold text-red-800 break-words leading-relaxed">--</div>
+        </div>
+
+        <div class="mt-4 flex justify-end">
+            <button onclick="RMBConv.copy()" class="text-sm text-red-600 hover:text-red-800 font-bold" data-i18n="btn_copy">Copy Result</button>
+        </div>
+        <div class="text-center text-xs text-green-600 h-4 mt-1" id="rc-msg"></div>
+
+        <div class="mt-4 text-xs text-gray-400 border-t pt-2">
+            <p data-i18n="note">Used for financial documents in China (RMB/CNY).</p>
+        </div>
+    </div>
+
+    <script>
+        const RMBConv = {
+            i18n: {
+                'en': {
+                    title: '💴 Chinese Capital Number',
+                    lbl_input: 'Input Amount (Number)',
+                    lbl_result: 'Capitalized Chinese',
+                    btn_copy: 'Copy Result',
+                    msg_copied: 'Copied!',
+                    note: 'Used for financial documents in China (RMB/CNY).'
+                },
+                'zh-CN': {
+                    title: '💴 人民币大写转换',
+                    lbl_input: '输入金额 (小写)',
+                    lbl_result: '大写金额',
+                    btn_copy: '复制结果',
+                    msg_copied: '已复制！',
+                    note: '用于财务报销、发票填写的标准大写格式。'
+                },
+                'zh-TW': {
+                    title: '💴 人民幣大寫轉換',
+                    lbl_input: '輸入金額 (小寫)',
+                    lbl_result: '大寫金額',
+                    btn_copy: '複製結果',
+                    msg_copied: '已複製！',
+                    note: '用於財務報銷、發票填寫的標準大寫格式。'
+                },
+                'ja': {
+                    title: '💴 中国語大字変換',
+                    lbl_input: '金額入力 (数字)',
+                    lbl_result: '大字 (大写)',
+                    btn_copy: 'コピー',
+                    msg_copied: 'コピーしました！',
+                    note: '中国の財務書類で使用される形式です。'
+                },
+                'ru': {
+                    title: '💴 Конвертер в пропись (CNY)',
+                    lbl_input: 'Сумма (число)',
+                    lbl_result: 'Прописью (китайский)',
+                    btn_copy: 'Копировать',
+                    msg_copied: 'Скопировано!',
+                    note: 'Используется для финансовых документов в Китае.'
+                },
+                'es': {
+                    title: '💴 Conversor a Chino Mayúscula',
+                    lbl_input: 'Monto (Número)',
+                    lbl_result: 'En Chino',
+                    btn_copy: 'Copiar',
+                    msg_copied: '¡Copiado!',
+                    note: 'Usado para documentos financieros en China.'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('rc-lang').value;
+                const texts = RMBConv.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="rmb_conv"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            convert: () => {
+                const n = document.getElementById('rc-input').value;
+                const resEl = document.getElementById('rc-result');
+                
+                if (!n || isNaN(n)) {
+                    resEl.innerText = '--';
+                    return;
+                }
+
+                resEl.innerText = RMBConv.digitUppercase(parseFloat(n));
+            },
+
+            digitUppercase: (n) => {
+                const fraction = ['角', '分'];
+                const digit = [
+                    '零', '壹', '贰', '叁', '肆',
+                    '伍', '陆', '柒', '捌', '玖'
+                ];
+                const unit = [
+                    ['元', '万', '亿'],
+                    ['', '拾', '佰', '仟']
+                ];
+                
+                let head = n < 0 ? '欠' : '';
+                n = Math.abs(n);
+                
+                let s = '';
+                
+                // Decimal part
+                for (let i = 0; i < fraction.length; i++) {
+                    s += (digit[Math.floor(n * 10 * Math.pow(10, i)) % 10] + fraction[i]).replace(/零./, '');
+                }
+                s = s || '整';
+                
+                // Integer part
+                n = Math.floor(n);
+                for (let i = 0; i < unit[0].length && n > 0; i++) {
+                    let p = '';
+                    for (let j = 0; j < unit[1].length && n > 0; j++) {
+                        p = digit[n % 10] + unit[1][j] + p;
+                        n = Math.floor(n / 10);
+                    }
+                    s = p.replace(/(零.)*零$/, '').replace(/^$/, '零') + unit[0][i] + s;
+                }
+                
+                return head + s.replace(/(零.)*零元/, '元')
+                    .replace(/(零.)+/g, '零')
+                    .replace(/^整$/, '零元整');
+            },
+
+            copy: () => {
+                const text = document.getElementById('rc-result').innerText;
+                if (text === '--') return;
+
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                const lang = document.getElementById('rc-lang').value;
+                const msg = RMBConv.i18n[lang].msg_copied;
+                const msgEl = document.getElementById('rc-msg');
+                msgEl.innerText = msg;
+                setTimeout(() => msgEl.innerText = '', 2000);
+            }
+        };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

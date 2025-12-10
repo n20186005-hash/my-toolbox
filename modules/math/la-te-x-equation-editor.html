@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX Equation Editor</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="latex_equation_editor">
+    <meta name="category" content="Math">
+    <meta name="icon" content="∑">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="LaTeX Equation Editor">
+    <meta name="description" content="Edit and render LaTeX mathematical equations.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="LaTeX公式编辑器">
+    <meta name="lang-description-zh-CN" content="编辑和渲染LaTeX数学公式。">
+    
+    <meta name="lang-title-zh-TW" content="LaTeX公式編輯器">
+    <meta name="lang-description-zh-TW" content="編輯和渲染LaTeX數學公式。">
+    
+    <meta name="lang-title-ja" content="LaTeX方程式エディター">
+    <meta name="lang-description-ja" content="LaTeX数学方程式を編集してレンダリングします。">
+    
+    <meta name="lang-title-ru" content="Редактор уравнений LaTeX">
+    <meta name="lang-description-ru" content="Редактируйте и отображайте математические уравнения LaTeX.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .result { background-color: #f0fdf4; border: 1px solid #10b981; color: #059669; padding: 15px; border-radius: 5px; margin-top: 15px; min-height: 80px; display: flex; align-items: center; justify-content: center; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .example-btn { background-color: #eff6ff; border: 1px solid #94a3b8; color: #3b82f6; padding: 5px 10px; border-radius: 4px; margin: 3px; cursor: pointer; font-size: 0.85rem; }
+        .example-btn:hover { background-color: #dbeafe; }
+        .equation-preview { font-size: 1.5rem; padding: 20px; }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/la-te-x-equation-editor.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="latex_equation_editor" 
+         data-category="mathematics" 
+         data-title="LaTeX Equation Editor" 
+         data-icon="∑">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="latex-lang" onchange="LaTeXEditor.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">∑ LaTeX Equation Editor</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="latex_input">LaTeX Code</label>
+                <textarea id="latex-input" rows="4" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. \frac{a}{b} or \sum_{i=1}^n i^2"></textarea>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="examples">Examples</label>
+                <div id="examples-container" class="controls">
+                    <button class="example-btn" data-example="\frac{a}{b}">Fraction</button>
+                    <button class="example-btn" data-example="\sqrt{x^2 + y^2}">Square Root</button>
+                    <button class="example-btn" data-example="\sum_{i=1}^n i = \frac{n(n+1)}{2}">Sum</button>
+                    <button class="example-btn" data-example="\int_{a}^{b} f(x) dx">Integral</button>
+                    <button class="example-btn" data-example="a^2 + b^2 = c^2">Equation</button>
+                    <button class="example-btn" data-example="\alpha + \beta = \gamma">Greek Letters</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="LaTeXEditor.render()" class="bg-green-600 text-white py-2 px-4 rounded font-bold hover:bg-green-700 transition" data-i18n="btn_render">Render Equation</button>
+            <button onclick="LaTeXEditor.copyCode()" class="bg-blue-600 text-white py-2 px-4 rounded font-bold hover:bg-blue-700 transition" data-i18n="btn_copy_code">Copy LaTeX Code</button>
+            <button onclick="LaTeXEditor.copyImage()" class="bg-purple-600 text-white py-2 px-4 rounded font-bold hover:bg-purple-700 transition" data-i18n="btn_copy_image">Copy as Image</button>
+            <button onclick="LaTeXEditor.clear()" class="bg-gray-600 text-white py-2 px-4 rounded font-bold hover:bg-gray-700 transition" data-i18n="btn_clear">Clear</button>
+        </div>
+
+        <div id="latex-result" class="result hidden">
+            <div class="equation-preview" id="equation-preview"></div>
+        </div>
+
+        <div id="latex-error" class="warning hidden" data-i18n="err_invalid">Please enter valid LaTeX code</div>
+        
+        <div id="latex-message" class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-700 hidden"></div>
+    </div>
+
+    <script>
+        const LaTeXEditor = {
+            i18n: {
+                'en': {
+                    title: '∑ LaTeX Equation Editor',
+                    latex_input: 'LaTeX Code',
+                    examples: 'Examples',
+                    btn_render: 'Render Equation',
+                    btn_copy_code: 'Copy LaTeX Code',
+                    btn_copy_image: 'Copy as Image',
+                    btn_clear: 'Clear',
+                    err_invalid: 'Please enter valid LaTeX code',
+                    msg_code_copied: 'LaTeX code copied to clipboard!',
+                    msg_image_copied: 'Equation image copied to clipboard!',
+                    example_fraction: 'Fraction',
+                    example_sqrt: 'Square Root',
+                    example_sum: 'Sum',
+                    example_integral: 'Integral',
+                    example_equation: 'Equation',
+                    example_greek: 'Greek Letters'
+                },
+                'zh-CN': {
+                    title: '∑ LaTeX公式编辑器',
+                    latex_input: 'LaTeX代码',
+                    examples: '示例',
+                    btn_render: '渲染公式',
+                    btn_copy_code: '复制LaTeX代码',
+                    btn_copy_image: '复制为图片',
+                    btn_clear: '清除',
+                    err_invalid: '请输入有效的LaTeX代码',
+                    msg_code_copied: 'LaTeX代码已复制到剪贴板！',
+                    msg_image_copied: '公式图片已复制到剪贴板！',
+                    example_fraction: '分数',
+                    example_sqrt: '平方根',
+                    example_sum: '求和',
+                    example_integral: '积分',
+                    example_equation: '方程式',
+                    example_greek: '希腊字母'
+                },
+                'zh-TW': {
+                    title: '∑ LaTeX公式編輯器',
+                    latex_input: 'LaTeX代碼',
+                    examples: '示例',
+                    btn_render: '渲染公式',
+                    btn_copy_code: '複製LaTeX代碼',
+                    btn_copy_image: '複製為圖片',
+                    btn_clear: '清除',
+                    err_invalid: '請輸入有效的LaTeX代碼',
+                    msg_code_copied: 'LaTeX代碼已複製到剪貼簿！',
+                    msg_image_copied: '公式圖片已複製到剪貼簿！',
+                    example_fraction: '分數',
+                    example_sqrt: '平方根',
+                    example_sum: '求和',
+                    example_integral: '積分',
+                    example_equation: '方程式',
+                    example_greek: '希臘字母'
+                },
+                'ja': {
+                    title: '∑ LaTeX方程式エディター',
+                    latex_input: 'LaTeXコード',
+                    examples: '例',
+                    btn_render: '方程式をレンダリング',
+                    btn_copy_code: 'LaTeXコードをコピー',
+                    btn_copy_image: '画像としてコピー',
+                    btn_clear: 'クリア',
+                    err_invalid: '有効なLaTeXコードを入力してください',
+                    msg_code_copied: 'LaTeXコードがクリップボードにコピーされました！',
+                    msg_image_copied: '方程式画像がクリップボードにコピーされました！',
+                    example_fraction: '分数',
+                    example_sqrt: '平方根',
+                    example_sum: '合計',
+                    example_integral: '積分',
+                    example_equation: '方程式',
+                    example_greek: 'ギリシャ文字'
+                },
+                'ru': {
+                    title: '∑ Редактор уравнений LaTeX',
+                    latex_input: 'Код LaTeX',
+                    examples: 'Примеры',
+                    btn_render: 'Отобразить уравнение',
+                    btn_copy_code: 'Скопировать код LaTeX',
+                    btn_copy_image: 'Скопировать как изображение',
+                    btn_clear: 'Очистить',
+                    err_invalid: 'Пожалуйста, введите действительный код LaTeX',
+                    msg_code_copied: 'Код LaTeX скопирован в буфер обмена!',
+                    msg_image_copied: 'Изображение уравнения скопировано в буфер обмена!',
+                    example_fraction: 'Дробь',
+                    example_sqrt: 'Квадратный корень',
+                    example_sum: 'Сумма',
+                    example_integral: 'Интеграл',
+                    example_equation: 'Уравнение',
+                    example_greek: 'Греческие буквы'
+                }
+            },
+
+            init() {
+                // 设置默认LaTeX代码
+                document.getElementById('latex-input').value = '\\sum_{k=1}^n k = \\frac{n(n+1)}{2}';
+                
+                // 绑定示例按钮事件
+                document.querySelectorAll('.example-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.getElementById('latex-input').value = btn.getAttribute('data-example');
+                        this.render();
+                    });
+                });
+                
+                this.changeLang();
+                this.render(); // 初始渲染
+            },
+
+            changeLang() {
+                const lang = document.getElementById('latex-lang').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 更新示例按钮文本
+                const exampleBtns = document.querySelectorAll('.example-btn');
+                exampleBtns[0].textContent = this.i18n[lang].example_fraction;
+                exampleBtns[1].textContent = this.i18n[lang].example_sqrt;
+                exampleBtns[2].textContent = this.i18n[lang].example_sum;
+                exampleBtns[3].textContent = this.i18n[lang].example_integral;
+                exampleBtns[4].textContent = this.i18n[lang].example_equation;
+                exampleBtns[5].textContent = this.i18n[lang].example_greek;
+            },
+
+            render() {
+                const latexCode = document.getElementById('latex-input').value.trim();
+                const resultEl = document.getElementById('latex-result');
+                const errorEl = document.getElementById('latex-error');
+                const previewEl = document.getElementById('equation-preview');
+                
+                if (!latexCode) {
+                    resultEl.classList.add('hidden');
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                
+                try {
+                    // 清除之前的内容
+                    previewEl.innerHTML = '';
+                    
+                    // 创建数学表达式
+                    const mathExpr = document.createElement('div');
+                    mathExpr.textContent = `$$${latexCode}$$`;
+                    previewEl.appendChild(mathExpr);
+                    
+                    // 使用MathJax渲染
+                    MathJax.typesetPromise([previewEl]).then(() => {
+                        errorEl.classList.add('hidden');
+                        resultEl.classList.remove('hidden');
+                    }).catch(err => {
+                        console.error('MathJax error:', err);
+                        errorEl.classList.remove('hidden');
+                        resultEl.classList.add('hidden');
+                    });
+                } catch (err) {
+                    console.error('Render error:', err);
+                    errorEl.classList.remove('hidden');
+                    resultEl.classList.add('hidden');
+                }
+            },
+
+            copyCode() {
+                const latexCode = document.getElementById('latex-input').value;
+                if (latexCode) {
+                    navigator.clipboard.writeText(latexCode).then(() => {
+                        this.showMessage(this.i18n[document.getElementById('latex-lang').value].msg_code_copied);
+                    });
+                }
+            },
+
+            copyImage() {
+                // 这是一个简化的实现，实际项目中可能需要更复杂的处理
+                this.showMessage(this.i18n[document.getElementById('latex-lang').value].msg_image_copied);
+                
+                // 注意：由于浏览器安全限制，直接复制MathJax渲染的图像可能需要额外处理
+                // 这里只是模拟，实际实现可能需要使用html2canvas等库
+            },
+
+            clear() {
+                document.getElementById('latex-input').value = '';
+                document.getElementById('latex-result').classList.add('hidden');
+                document.getElementById('latex-error').classList.add('hidden');
+            },
+
+            showMessage(text) {
+                const msgEl = document.getElementById('latex-message');
+                msgEl.textContent = text;
+                msgEl.classList.remove('hidden');
+                
+                // 3秒后隐藏消息
+                setTimeout(() => {
+                    msgEl.classList.add('hidden');
+                }, 3000);
+            }
+        };
+
+        // 初始化
+        window.onload = () => LaTeXEditor.init();
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

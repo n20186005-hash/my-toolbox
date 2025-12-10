@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heat Index Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="heat_index_calc">
+    <meta name="category" content="weather_health">
+    <meta name="icon" content="🌡️">
+    
+    <!-- 默认英文内容 (供宿主环境读取) -->
+    <meta name="title" content="Heat Index Calculator">
+    <meta name="description" content="Calculate the heat index based on air temperature and relative humidity.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="热指数计算器">
+    <meta name="lang-description-zh-CN" content="根据气温和相对湿度计算体感热指数。">
+    
+    <meta name="lang-title-zh-TW" content="熱指數計算器">
+    <meta name="lang-description-zh-TW" content="根據氣溫和相對濕度計算體感熱指數。">
+    
+    <meta name="lang-title-ja" content="不快指数（ヒートインデックス）計算機">
+    <meta name="lang-description-ja" content="気温と相対湿度に基づいてヒートインデックス（体感温度）を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор теплового индекса">
+    <meta name="lang-description-ru" content="Рассчитайте тепловой индекс на основе температуры воздуха и относительной влажности.">
+    
+    <meta name="lang-title-es" content="Calculadora de Índice de Calor">
+    <meta name="lang-description-es" content="Calcula el índice de calor basado en la temperatura del aire y la humedad relativa.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 模拟主程序环境样式 */
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/weather_health/heat-index-calculator.html" />
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 1：HTML 积木 (复制到 tools-wrapper) -->
+    <!-- ================================================================= -->
+    
+    <div class="tool-module active" 
+         data-id="heat_index_calc" 
+         data-category="weather_health" 
+         data-title="Heat Index Calculator" 
+         data-icon="🌡️">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="hi-lang" onchange="HeatIndexCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🌡️ Heat Index Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-6">
+            <!-- Temperature -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="temp_label">Air Temperature</label>
+                <div class="flex">
+                    <input type="number" id="hi-temp" class="flex-1 p-2 border rounded-l focus:ring-2 focus:ring-orange-500 outline-none" placeholder="e.g. 90">
+                    <select id="hi-unit" onchange="HeatIndexCalc.updatePlaceholder()" class="bg-gray-100 border border-l-0 rounded-r p-2 text-gray-600 focus:outline-none">
+                        <option value="F">°F</option>
+                        <option value="C">°C</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Humidity -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="humid_label">Relative Humidity (%)</label>
+                <div class="relative">
+                    <input type="number" id="hi-humid" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 40" min="0" max="100">
+                    <span class="absolute right-3 top-2 text-gray-400">%</span>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="HeatIndexCalc.calc()" class="w-full bg-orange-600 text-white py-2 rounded font-bold hover:bg-orange-700 transition mb-6 shadow-md" data-i18n="btn_calc">Calculate</button>
+
+        <!-- Result Section -->
+        <div id="hi-result-box" class="hidden bg-gray-50 p-6 rounded-lg border border-gray-200 text-center transition-colors duration-300">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Heat Index</div>
+            <div id="hi-value" class="text-4xl font-bold text-gray-800 mb-2">--</div>
+            <div id="hi-level" class="inline-block px-3 py-1 rounded-full text-sm font-semibold text-white bg-gray-400">--</div>
+            <div id="hi-desc" class="text-xs text-gray-600 mt-3 italic px-4"></div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 1 结束 -->
+    <!-- ================================================================= -->
+
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 2：JS 积木 (复制到 script 标签中) -->
+    <!-- ================================================================= -->
+    <script>
+        const HeatIndexCalc = {
+            i18n: {
+                'en': {
+                    title: '🌡️ Heat Index Calculator',
+                    temp_label: 'Air Temperature',
+                    humid_label: 'Relative Humidity (%)',
+                    btn_calc: 'Calculate',
+                    res_label: 'Heat Index (Feels Like)',
+                    levels: ['Safe', 'Caution', 'Extreme Caution', 'Danger', 'Extreme Danger'],
+                    descs: [
+                        'No significant risk.',
+                        'Fatigue is possible with prolonged exposure and activity.',
+                        'Heat stroke, heat cramps, or heat exhaustion possible.',
+                        'Heat cramps or heat exhaustion likely; heat stroke possible.',
+                        'Heat stroke highly likely.'
+                    ]
+                },
+                'zh-CN': {
+                    title: '🌡️ 热指数计算器',
+                    temp_label: '空气温度',
+                    humid_label: '相对湿度 (%)',
+                    btn_calc: '计算',
+                    res_label: '热指数 (体感温度)',
+                    levels: ['安全', '注意', '极度注意', '危险', '极度危险'],
+                    descs: [
+                        '无显著风险。',
+                        '长时间暴露和活动可能导致疲劳。',
+                        '可能发生中暑、热痉挛或热衰竭。',
+                        '很可能发生热痉挛或热衰竭；可能中暑。',
+                        '极有可能发生中暑，危及生命。'
+                    ]
+                },
+                'zh-TW': {
+                    title: '🌡️ 熱指數計算器',
+                    temp_label: '空氣溫度',
+                    humid_label: '相對濕度 (%)',
+                    btn_calc: '計算',
+                    res_label: '熱指數 (體感溫度)',
+                    levels: ['安全', '注意', '極度注意', '危險', '極度危險'],
+                    descs: [
+                        '無顯著風險。',
+                        '長時間暴露和活動可能導致疲勞。',
+                        '可能發生中暑、熱痙攣或熱衰竭。',
+                        '很可能發生熱痙攣或熱衰竭；可能中暑。',
+                        '極有可能發生中暑，危及生命。'
+                    ]
+                },
+                'ja': {
+                    title: '🌡️ 不快指数（ヒートインデックス）',
+                    temp_label: '気温',
+                    humid_label: '相対湿度 (%)',
+                    btn_calc: '計算する',
+                    res_label: '体感温度',
+                    levels: ['安全', '注意', '厳重注意', '危険', '極めて危険'],
+                    descs: [
+                        '特に危険はありません。',
+                        '長時間の露出や活動で疲労の可能性あり。',
+                        '熱中症、熱けいれん、熱疲労の可能性あり。',
+                        '熱けいれんや熱疲労の可能性が高く、熱中症の恐れも。',
+                        '熱中症のリスクが非常に高い状態です。'
+                    ]
+                },
+                'ru': {
+                    title: '🌡️ Калькулятор теплового индекса',
+                    temp_label: 'Температура воздуха',
+                    humid_label: 'Влажность (%)',
+                    btn_calc: 'Рассчитать',
+                    res_label: 'Тепловой индекс (Ощущается как)',
+                    levels: ['Безопасно', 'Осторожно', 'Особая осторожность', 'Опасно', 'Чрезвычайно опасно'],
+                    descs: [
+                        'Нет значительного риска.',
+                        'Возможна усталость при длительном воздействии.',
+                        'Возможен тепловой удар или судороги.',
+                        'Вероятен тепловой удар или тепловое истощение.',
+                        'Высокая вероятность теплового удара.'
+                    ]
+                },
+                'es': {
+                    title: '🌡️ Calculadora de Índice de Calor',
+                    temp_label: 'Temperatura del Aire',
+                    humid_label: 'Humedad Relativa (%)',
+                    btn_calc: 'Calcular',
+                    res_label: 'Índice de Calor (Sensación)',
+                    levels: ['Seguro', 'Precaución', 'Precaución Extrema', 'Peligro', 'Peligro Extremo'],
+                    descs: [
+                        'Sin riesgo significativo.',
+                        'Posible fatiga con exposición prolongada.',
+                        'Posible golpe de calor o calambres.',
+                        'Probable agotamiento por calor o calambres.',
+                        'Golpe de calor altamente probable.'
+                    ]
+                }
+            },
+
+            updatePlaceholder: () => {
+                const unit = document.getElementById('hi-unit').value;
+                const input = document.getElementById('hi-temp');
+                if (unit === 'F') {
+                    input.placeholder = "e.g. 90";
+                    input.value = input.value ? Math.round((input.value * 9/5) + 32) : '';
+                } else {
+                    input.placeholder = "e.g. 32";
+                    input.value = input.value ? Math.round((input.value - 32) * 5/9) : '';
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('hi-lang').value;
+                const texts = HeatIndexCalc.i18n[lang];
+                
+                document.querySelectorAll('[data-id="heat_index_calc"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                
+                // Re-calculate to update result text if visible
+                const resultBox = document.getElementById('hi-result-box');
+                if (!resultBox.classList.contains('hidden')) {
+                    HeatIndexCalc.calc();
+                }
+            },
+
+            // 核心算法：NOAA Rothfusz Regression
+            calculateHeatIndex: (T, RH) => {
+                // T must be in Fahrenheit
+                let HI = 0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (RH * 0.094));
+
+                if (HI > 79) {
+                    HI = -42.379 + 2.04901523 * T + 10.14333127 * RH - 0.22475541 * T * RH - 0.00683783 * T * T - 0.05481717 * RH * RH + 0.00122874 * T * T * RH + 0.00085282 * T * RH * RH - 0.00000199 * T * T * RH * RH;
+
+                    if (RH < 13 && T > 80 && T < 112) {
+                        HI -= ((13 - RH) / 4) * Math.sqrt((17 - Math.abs(T - 95)) / 17);
+                    } else if (RH > 85 && T > 80 && T < 87) {
+                        HI += ((RH - 85) / 10) * ((87 - T) / 5);
+                    }
+                }
+                return HI;
+            },
+
+            calc: () => {
+                let temp = parseFloat(document.getElementById('hi-temp').value);
+                const humid = parseFloat(document.getElementById('hi-humid').value);
+                const unit = document.getElementById('hi-unit').value;
+                const lang = document.getElementById('hi-lang').value;
+                const texts = HeatIndexCalc.i18n[lang];
+
+                if (isNaN(temp) || isNaN(humid)) return;
+                
+                // Validate Humidity
+                if (humid < 0 || humid > 100) {
+                    alert("Humidity must be between 0 and 100%");
+                    return;
+                }
+
+                // 统一转为华氏度进行计算
+                let tempF = (unit === 'C') ? (temp * 9/5) + 32 : temp;
+
+                // NOAA 算法
+                let hiF = HeatIndexCalc.calculateHeatIndex(tempF, humid);
+                
+                // 如果输入是摄氏度，输出也转回摄氏度
+                let finalHI = (unit === 'C') ? (hiF - 32) * 5/9 : hiF;
+                
+                // 结果展示
+                const resultBox = document.getElementById('hi-result-box');
+                const valueEl = document.getElementById('hi-value');
+                const levelEl = document.getElementById('hi-level');
+                const descEl = document.getElementById('hi-desc');
+                
+                resultBox.classList.remove('hidden');
+                valueEl.innerText = `${Math.round(finalHI * 10) / 10}°${unit}`;
+
+                // 确定风险等级 (基于华氏度标准)
+                // < 80: Safe
+                // 80 - 90: Caution
+                // 90 - 103: Extreme Caution
+                // 103 - 124: Danger
+                // > 124: Extreme Danger
+                let levelIndex = 0;
+                let bgColor = "bg-green-500";
+                let boxBorder = "border-green-200";
+                let boxBg = "bg-green-50";
+
+                if (hiF < 80) {
+                    levelIndex = 0;
+                    bgColor = "bg-green-500";
+                } else if (hiF < 91) { // 80-90
+                    levelIndex = 1;
+                    bgColor = "bg-yellow-400"; // Caution
+                    boxBorder = "border-yellow-200";
+                    boxBg = "bg-yellow-50";
+                } else if (hiF < 103) { // 91-103
+                    levelIndex = 2;
+                    bgColor = "bg-orange-500"; // Extreme Caution
+                    boxBorder = "border-orange-200";
+                    boxBg = "bg-orange-50";
+                } else if (hiF < 125) { // 103-124
+                    levelIndex = 3;
+                    bgColor = "bg-red-500"; // Danger
+                    boxBorder = "border-red-200";
+                    boxBg = "bg-red-50";
+                } else { // > 125
+                    levelIndex = 4;
+                    bgColor = "bg-purple-600"; // Extreme Danger
+                    boxBorder = "border-purple-200";
+                    boxBg = "bg-purple-50";
+                }
+
+                levelEl.innerText = texts.levels[levelIndex];
+                levelEl.className = `inline-block px-4 py-1 rounded-full text-sm font-bold text-white shadow-sm ${bgColor}`;
+                descEl.innerText = texts.descs[levelIndex];
+                
+                // 更新盒子颜色以匹配警告级别
+                resultBox.className = `mt-6 p-6 rounded-lg border text-center transition-colors duration-300 ${boxBg} ${boxBorder}`;
+            }
+        };
+
+        // Initialize default placeholder
+        document.addEventListener('DOMContentLoaded', () => {
+            HeatIndexCalc.updatePlaceholder();
+        });
+    </script>
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 2 结束 -->
+    <!-- ================================================================= -->
+
+    <!-- 宿主环境语言自适应脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) targetLang = 'ja';
+            else if (userLang.startsWith('ru')) targetLang = 'ru';
+            else if (userLang.startsWith('es')) targetLang = 'es';
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('hi-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    HeatIndexCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

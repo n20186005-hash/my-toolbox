@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Right Triangle Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="right_triangle_calc">
+    <meta name="category" content="Math">
+    <meta name="icon" content="🔺">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Right Triangle Calculator">
+    <meta name="description" content="Calculate sides, angles, area and perimeter of a right triangle.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="直角三角形计算器">
+    <meta name="lang-description-zh-CN" content="计算直角三角形的边长、角度、面积和周长。">
+    
+    <meta name="lang-title-zh-TW" content="直角三角形計算器">
+    <meta name="lang-description-zh-TW" content="計算直角三角形的邊長、角度、面積和周長。">
+    
+    <meta name="lang-title-ja" content="直角三角形計算ツール">
+    <meta name="lang-description-ja" content="直角三角形の辺の長さ、角度、面積、周囲長を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор прямоугольного треугольника">
+    <meta name="lang-description-ru" content="Рассчитайте стороны, углы, площадь и периметр прямоугольного треугольника.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 700px; margin: 0 auto; position: relative; }
+        .result-container { word-break: break-all; }
+        .input-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+        .input-item { flex: 1; min-width: 150px; }
+        .triangle-diagram { text-align: center; margin: 20px 0; }
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .result-card { background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/right-triangle-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="right_triangle_calc" 
+         data-category="math" 
+         data-title="Right Triangle Calculator" 
+         data-icon="🔺">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="triangle-lang" onchange="RightTriangleCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔺 Right Triangle Calculator</h2>
+        
+        <div class="triangle-diagram">
+            <svg width="200" height="200" viewBox="0 0 200 200">
+                <path d="M20,180 L180,180 L20,40 Z" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                <line x1="20" y1="180" x2="40" y2="180" stroke="#ef4444" stroke-width="2"/>
+                <line x1="40" y1="180" x2="40" y2="160" stroke="#ef4444" stroke-width="2"/>
+                <text x="100" y="190" font-size="12" fill="#64748b">a (adjacent)</text>
+                <text x="10" y="100" font-size="12" fill="#64748b">b (opposite)</text>
+                <text x="100" y="100" font-size="12" fill="#64748b">c (hypotenuse)</text>
+                <text x="170" y="170" font-size="14" fill="#ef4444">90°</text>
+            </svg>
+        </div>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 计算模式选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="calc_mode">Calculation Mode</label>
+                <select id="triangle-mode" onchange="RightTriangleCalc.toggleInputs()" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="sides" data-i18n="mode_sides">Two Sides (a, b, c)</option>
+                    <option value="side_angle" data-i18n="mode_side_angle">One Side + One Angle</option>
+                </select>
+            </div>
+            
+            <!-- 边长输入区域 -->
+            <div id="sides-inputs" class="input-group">
+                <div class="input-item">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_a">Side a (adjacent)</label>
+                    <input type="number" id="side-a" min="0.001" step="0.001" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 3">
+                </div>
+                <div class="input-item">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_b">Side b (opposite)</label>
+                    <input type="number" id="side-b" min="0.001" step="0.001" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 4">
+                </div>
+                <div class="input-item">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_c">Side c (hypotenuse)</label>
+                    <input type="number" id="side-c" min="0.001" step="0.001" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 5">
+                </div>
+            </div>
+            
+            <!-- 边+角输入区域 -->
+            <div id="side-angle-inputs" class="input-group hidden">
+                <div class="input-item">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_value">Side Value</label>
+                    <input type="number" id="side-value" min="0.001" step="0.001" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 3">
+                </div>
+                <div class="input-item">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="side_type">Side Type</label>
+                    <select id="side-type" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="a" data-i18n="side_a">a (adjacent)</option>
+                        <option value="b" data-i18n="side_b">b (opposite)</option>
+                        <option value="c" data-i18n="side_c">c (hypotenuse)</option>
+                    </select>
+                </div>
+                <div class="input-item">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="angle_value">Angle (°)</label>
+                    <input type="number" id="angle-value" min="0.1" max="89.9" step="0.1" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 37">
+                </div>
+            </div>
+            
+            <!-- 精度选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="precision">Precision (decimal places)</label>
+                <input type="number" id="triangle-precision" min="0" max="10" value="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 计算按钮 -->
+            <button onclick="RightTriangleCalc.calc()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate Triangle</button>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="triangle-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div class="result-grid">
+            <div class="result-card">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="side_a">Side a</div>
+                <div id="result-a" class="text-lg font-bold text-blue-800">--</div>
+            </div>
+            <div class="result-card">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="side_b">Side b</div>
+                <div id="result-b" class="text-lg font-bold text-blue-800">--</div>
+            </div>
+            <div class="result-card">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="side_c">Side c</div>
+                <div id="result-c" class="text-lg font-bold text-blue-800">--</div>
+            </div>
+            <div class="result-card">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="angle_alpha">Angle α (°)</div>
+                <div id="result-alpha" class="text-lg font-bold text-blue-800">--</div>
+            </div>
+            <div class="result-card">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="angle_beta">Angle β (°)</div>
+                <div id="result-beta" class="text-lg font-bold text-blue-800">--</div>
+            </div>
+            <div class="result-card">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="area">Area</div>
+                <div id="result-area" class="text-lg font-bold text-blue-800">--</div>
+            </div>
+            <div class="result-card">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="perimeter">Perimeter</div>
+                <div id="result-perimeter" class="text-lg font-bold text-blue-800">--</div>
+            </div>
+            <div class="result-card">
+                <div class="text-sm text-gray-500 mb-1" data-i18n="height">Height (to hypotenuse)</div>
+                <div id="result-height" class="text-lg font-bold text-blue-800">--</div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" data-i18n="notes_list">
+                <li>Pythagorean theorem: a² + b² = c²</li>
+                <li>Trigonometric ratios: sin(α) = b/c, cos(α) = a/c, tan(α) = b/a</li>
+                <li>Angles sum: α + β = 90°</li>
+                <li>Area = (a × b) / 2</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const RightTriangleCalc = {
+            i18n: {
+                'en': {
+                    title: '🔺 Right Triangle Calculator',
+                    calc_mode: 'Calculation Mode',
+                    mode_sides: 'Two Sides (a, b, c)',
+                    mode_side_angle: 'One Side + One Angle',
+                    side_a: 'Side a (adjacent)',
+                    side_b: 'Side b (opposite)',
+                    side_c: 'Side c (hypotenuse)',
+                    side_value: 'Side Value',
+                    side_type: 'Side Type',
+                    angle_value: 'Angle (°)',
+                    precision: 'Precision (decimal places)',
+                    calculate: 'Calculate Triangle',
+                    angle_alpha: 'Angle α (°)',
+                    angle_beta: 'Angle β (°)',
+                    area: 'Area',
+                    perimeter: 'Perimeter',
+                    height: 'Height (to hypotenuse)',
+                    notes: 'Notes:',
+                    notes_list: `
+                        <li>Pythagorean theorem: a² + b² = c²</li>
+                        <li>Trigonometric ratios: sin(α) = b/c, cos(α) = a/c, tan(α) = b/a</li>
+                        <li>Angles sum: α + β = 90°</li>
+                        <li>Area = (a × b) / 2</li>
+                    `,
+                    err_no_input: 'Please enter at least two valid values',
+                    err_invalid_value: 'All values must be positive numbers',
+                    err_invalid_angle: 'Angle must be between 0.1° and 89.9°',
+                    err_pythagoras: 'Values do not satisfy Pythagorean theorem',
+                    err_insufficient_data: 'Insufficient data to calculate'
+                },
+                'zh-CN': {
+                    title: '🔺 直角三角形计算器',
+                    calc_mode: '计算模式',
+                    mode_sides: '两边计算 (a, b, c)',
+                    mode_side_angle: '一边一角计算',
+                    side_a: '边a (邻边)',
+                    side_b: '边b (对边)',
+                    side_c: '边c (斜边)',
+                    side_value: '边长值',
+                    side_type: '边类型',
+                    angle_value: '角度 (°)',
+                    precision: '精度（小数位数）',
+                    calculate: '计算三角形参数',
+                    angle_alpha: '角度 α (°)',
+                    angle_beta: '角度 β (°)',
+                    area: '面积',
+                    perimeter: '周长',
+                    height: '斜边上的高',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>勾股定理：a² + b² = c²</li>
+                        <li>三角函数：sin(α) = b/c, cos(α) = a/c, tan(α) = b/a</li>
+                        <li>角度和：α + β = 90°</li>
+                        <li>面积 = (a × b) / 2</li>
+                    `,
+                    err_no_input: '请至少输入两个有效值',
+                    err_invalid_value: '所有值必须为正数',
+                    err_invalid_angle: '角度必须在0.1°到89.9°之间',
+                    err_pythagoras: '输入值不满足勾股定理',
+                    err_insufficient_data: '数据不足，无法计算'
+                },
+                'zh-TW': {
+                    title: '🔺 直角三角形計算器',
+                    calc_mode: '計算模式',
+                    mode_sides: '兩邊計算 (a, b, c)',
+                    mode_side_angle: '一邊一角計算',
+                    side_a: '邊a (鄰邊)',
+                    side_b: '邊b (對邊)',
+                    side_c: '邊c (斜邊)',
+                    side_value: '邊長值',
+                    side_type: '邊類型',
+                    angle_value: '角度 (°)',
+                    precision: '精度（小數位數）',
+                    calculate: '計算三角形參數',
+                    angle_alpha: '角度 α (°)',
+                    angle_beta: '角度 β (°)',
+                    area: '面積',
+                    perimeter: '周長',
+                    height: '斜邊上的高',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>勾股定理：a² + b² = c²</li>
+                        <li>三角函數：sin(α) = b/c, cos(α) = a/c, tan(α) = b/a</li>
+                        <li>角度和：α + β = 90°</li>
+                        <li>面積 = (a × b) / 2</li>
+                    `,
+                    err_no_input: '請至少輸入兩個有效值',
+                    err_invalid_value: '所有值必須為正數',
+                    err_invalid_angle: '角度必須在0.1°到89.9°之間',
+                    err_pythagoras: '輸入值不滿足勾股定理',
+                    err_insufficient_data: '數據不足，無法計算'
+                },
+                'ja': {
+                    title: '🔺 直角三角形計算ツール',
+                    calc_mode: '計算モード',
+                    mode_sides: '2辺から計算 (a, b, c)',
+                    mode_side_angle: '1辺+1角度から計算',
+                    side_a: '辺a (隣辺)',
+                    side_b: '辺b (対辺)',
+                    side_c: '辺c (斜辺)',
+                    side_value: '辺の長さ',
+                    side_type: '辺の種類',
+                    angle_value: '角度 (°)',
+                    precision: '精度（小数桁数）',
+                    calculate: '三角形のパラメータを計算',
+                    angle_alpha: '角度 α (°)',
+                    angle_beta: '角度 β (°)',
+                    area: '面積',
+                    perimeter: '周囲長',
+                    height: '斜辺への高さ',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>ピタゴラスの定理：a² + b² = c²</li>
+                        <li>三角関数：sin(α) = b/c, cos(α) = a/c, tan(α) = b/a</li>
+                        <li>角度の和：α + β = 90°</li>
+                        <li>面積 = (a × b) / 2</li>
+                    `,
+                    err_no_input: '少なくとも2つの有効な値を入力してください',
+                    err_invalid_value: 'すべての値は正数でなければなりません',
+                    err_invalid_angle: '角度は0.1°から89.9°の間でなければなりません',
+                    err_pythagoras: '値がピタゴラスの定理を満たしていません',
+                    err_insufficient_data: '計算するためのデータが不足しています'
+                },
+                'ru': {
+                    title: '🔺 Калькулятор прямоугольного треугольника',
+                    calc_mode: 'Режим расчета',
+                    mode_sides: 'Две стороны (a, b, c)',
+                    mode_side_angle: 'Одна сторона + один угол',
+                    side_a: 'Сторона a (прилежащая)',
+                    side_b: 'Сторона b (противоположная)',
+                    side_c: 'Сторона c (гипотенуза)',
+                    side_value: 'Значение стороны',
+                    side_type: 'Тип стороны',
+                    angle_value: 'Угол (°)',
+                    precision: 'Точность (десятичные знаки)',
+                    calculate: 'Рассчитать параметры треугольника',
+                    angle_alpha: 'Угол α (°)',
+                    angle_beta: 'Угол β (°)',
+                    area: 'Площадь',
+                    perimeter: 'Периметр',
+                    height: 'Высота (к гипотенузе)',
+                    notes: 'Примечания:',
+                    notes_list: `
+                        <li>Теорема Пифагора：a² + b² = c²</li>
+                        <li>Тригонометрические отношения：sin(α) = b/c, cos(α) = a/c, tan(α) = b/a</li>
+                        <li>Сумма углов：α + β = 90°</li>
+                        <li>Площадь = (a × b) / 2</li>
+                    `,
+                    err_no_input: 'Пожалуйста, введите хотя бы два действительных значения',
+                    err_invalid_value: 'Все значения должны быть положительными числами',
+                    err_invalid_angle: 'Угол должен быть между 0.1° и 89.9°',
+                    err_pythagoras: 'Значения не удовлетворяют теореме Пифагора',
+                    err_insufficient_data: 'Недостаточно данных для расчета'
+                }
+            },
+
+            init: () => {
+                // 设置默认值
+                document.getElementById('side-a').value = '3';
+                document.getElementById('side-b').value = '4';
+                document.getElementById('triangle-precision').value = '2';
+                
+                // 初始化输入框切换
+                RightTriangleCalc.toggleInputs();
+            },
+
+            toggleInputs: () => {
+                const mode = document.getElementById('triangle-mode').value;
+                const sidesInputs = document.getElementById('sides-inputs');
+                const sideAngleInputs = document.getElementById('side-angle-inputs');
+                
+                if (mode === 'sides') {
+                    sidesInputs.classList.remove('hidden');
+                    sideAngleInputs.classList.add('hidden');
+                } else {
+                    sidesInputs.classList.add('hidden');
+                    sideAngleInputs.classList.remove('hidden');
+                }
+                
+                // 清空错误提示
+                RightTriangleCalc.clearError();
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('triangle-lang').value;
+                const texts = RightTriangleCalc.i18n[lang];
+                
+                // 更新普通文本
+                document.querySelectorAll('[data-id="right_triangle_calc"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        if (key === 'notes_list') {
+                            el.innerHTML = texts[key];
+                        } else {
+                            el.innerText = texts[key];
+                        }
+                    }
+                });
+                
+                // 更新下拉选项
+                const modeSelect = document.getElementById('triangle-mode');
+                Array.from(modeSelect.options).forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+                
+                const sideTypeSelect = document.getElementById('side-type');
+                Array.from(sideTypeSelect.options).forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+            },
+
+            showError: (message) => {
+                const errorEl = document.getElementById('triangle-error');
+                errorEl.innerText = message;
+                errorEl.classList.remove('hidden');
+            },
+
+            clearError: () => {
+                const errorEl = document.getElementById('triangle-error');
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+            },
+
+            // 格式化数字显示
+            formatNumber: (num, precision) => {
+                return num.toFixed(precision).replace(/\.?0+$/, '').replace(/\.$/, '');
+            },
+
+            // 计算直角三角形
+            calc: () => {
+                const lang = document.getElementById('triangle-lang').value;
+                const texts = RightTriangleCalc.i18n[lang];
+                const precision = parseInt(document.getElementById('triangle-precision').value) || 2;
+                
+                RightTriangleCalc.clearError();
+                
+                let a, b, c, alpha, beta;
+                const mode = document.getElementById('triangle-mode').value;
+                
+                try {
+                    if (mode === 'sides') {
+                        // 两边模式
+                        const aVal = parseFloat(document.getElementById('side-a').value);
+                        const bVal = parseFloat(document.getElementById('side-b').value);
+                        const cVal = parseFloat(document.getElementById('side-c').value);
+                        
+                        // 验证输入
+                        const values = [aVal, bVal, cVal].filter(v => !isNaN(v) && v > 0);
+                        if (values.length < 2) {
+                            throw new Error(texts.err_no_input);
+                        }
+                        
+                        // 计算缺失的边
+                        if (!isNaN(aVal) && !isNaN(bVal)) {
+                            a = aVal;
+                            b = bVal;
+                            c = Math.sqrt(a*a + b*b);
+                        } else if (!isNaN(aVal) && !isNaN(cVal)) {
+                            a = aVal;
+                            c = cVal;
+                            if (c <= a) throw new Error(texts.err_pythagoras);
+                            b = Math.sqrt(c*c - a*a);
+                        } else if (!isNaN(bVal) && !isNaN(cVal)) {
+                            b = bVal;
+                            c = cVal;
+                            if (c <= b) throw new Error(texts.err_pythagoras);
+                            a = Math.sqrt(c*c - b*b);
+                        } else {
+                            throw new Error(texts.err_insufficient_data);
+                        }
+                        
+                        // 验证勾股定理
+                        const pythagorasCheck = Math.abs(a*a + b*b - c*c);
+                        if (pythagorasCheck > 0.0001) {
+                            throw new Error(texts.err_pythagoras);
+                        }
+                        
+                    } else {
+                        // 边+角模式
+                        const sideVal = parseFloat(document.getElementById('side-value').value);
+                        const sideType = document.getElementById('side-type').value;
+                        const angleVal = parseFloat(document.getElementById('angle-value').value);
+                        
+                        // 验证输入
+                        if (isNaN(sideVal) || sideVal <= 0) throw new Error(texts.err_invalid_value);
+                        if (isNaN(angleVal) || angleVal <= 0 || angleVal >= 90) throw new Error(texts.err_invalid_angle);
+                        
+                        alpha = angleVal;
+                        beta = 90 - alpha;
+                        
+                        // 根据边类型计算其他边
+                        if (sideType === 'a') {
+                            a = sideVal;
+                            b = a * Math.tan(alpha * Math.PI / 180);
+                            c = a / Math.cos(alpha * Math.PI / 180);
+                        } else if (sideType === 'b') {
+                            b = sideVal;
+                            a = b / Math.tan(alpha * Math.PI / 180);
+                            c = b / Math.sin(alpha * Math.PI / 180);
+                        } else if (sideType === 'c') {
+                            c = sideVal;
+                            a = c * Math.cos(alpha * Math.PI / 180);
+                            b = c * Math.sin(alpha * Math.PI / 180);
+                        }
+                    }
+                    
+                    // 计算角度（如果是两边模式）
+                    if (mode === 'sides') {
+                        alpha = Math.atan2(b, a) * 180 / Math.PI;
+                        beta = 90 - alpha;
+                    }
+                    
+                    // 计算面积、周长、高
+                    const area = (a * b) / 2;
+                    const perimeter = a + b + c;
+                    const height = (a * b) / c;
+                    
+                    // 格式化并显示结果
+                    document.getElementById('result-a').innerText = RightTriangleCalc.formatNumber(a, precision);
+                    document.getElementById('result-b').innerText = RightTriangleCalc.formatNumber(b, precision);
+                    document.getElementById('result-c').innerText = RightTriangleCalc.formatNumber(c, precision);
+                    document.getElementById('result-alpha').innerText = RightTriangleCalc.formatNumber(alpha, precision);
+                    document.getElementById('result-beta').innerText = RightTriangleCalc.formatNumber(beta, precision);
+                    document.getElementById('result-area').innerText = RightTriangleCalc.formatNumber(area, precision);
+                    document.getElementById('result-perimeter').innerText = RightTriangleCalc.formatNumber(perimeter, precision);
+                    document.getElementById('result-height').innerText = RightTriangleCalc.formatNumber(height, precision);
+                    
+                } catch (e) {
+                    RightTriangleCalc.showError(e.message);
+                    // 清空结果
+                    document.querySelectorAll('[id^="result-"]').forEach(el => {
+                        el.innerText = '--';
+                    });
+                }
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', RightTriangleCalc.init);
+        
+        // 自动匹配浏览器语言
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('triangle-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    RightTriangleCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

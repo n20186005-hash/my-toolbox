@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Age & Zodiac Calculator Module</title>
+    <meta name="tool-id" content="age_zod">
+    <meta name="category" content="life">
+    <meta name="icon" content="🎂">
+    <meta name="description" content="输入出生日期，查询年龄、生肖、星座和距离下次生日的天数。">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #fff1f2; font-family: 'Inter', sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto; position: relative; border: 1px solid #fecaca; }
+        .grid-item { padding: 12px; background-color: #fef2f2; border-radius: 8px; }
+        .grid-title { font-size: 0.75rem; color: #ef4444; font-weight: 600; }
+        .grid-value { font-size: 1.25rem; color: #1f2937; font-weight: 700; margin-top: 4px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/life/age-zodiac-sign-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="age_zod" 
+         data-category="life" 
+         data-title="Age & Zodiac Calculator" 
+         data-icon="🎂">
+        
+        <div class="absolute top-4 right-4">
+            <select id="az-lang" onchange="AgeZod.changeLang(this.value)" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none focus:ring-red-300 focus:border-red-300 transition">
+                <option value="en">🇺🇸 English</option>
+                <option value="zh-CN">🇨🇳 简体中文</option>
+                <option value="zh-TW">🇭🇰 繁體中文</option>
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="ru">🇷🇺 Русский</option>
+            </select>
+        </div>
+
+        <h1 class="text-2xl font-bold text-gray-800 mb-6" data-i18n="title">Age & Zodiac Calculator</h1>
+
+        <div class="mb-6 space-y-4">
+            <div class="flex flex-col">
+                <label for="az-dob" class="text-sm font-medium text-gray-600 mb-1" data-i18n="input_label">Date of Birth</label>
+                <input type="date" id="az-dob" value="2000-01-01" class="p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition">
+            </div>
+            
+            <button onclick="AgeZod.calculate()" class="w-full bg-red-500 text-white font-semibold py-3 rounded-lg hover:bg-red-600 transition shadow-md" data-i18n="calc_btn">Calculate Age and Signs</button>
+        </div>
+
+        <div id="az-result-box" class="hidden mt-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4" data-i18n="result_title">Calculation Results</h2>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Age -->
+                <div class="grid-item">
+                    <div class="grid-title" data-i18n="res_age_title">Age (Years)</div>
+                    <div class="grid-value" id="res-age">24</div>
+                </div>
+
+                <!-- Zodiac Sign -->
+                <div class="grid-item">
+                    <div class="grid-title" data-i18n="res_zodiac_title">Zodiac Sign</div>
+                    <div class="grid-value" id="res-zodiac">Aries</div>
+                </div>
+
+                <!-- Chinese Zodiac -->
+                <div class="grid-item">
+                    <div class="grid-title" data-i18n="res_czodiac_title">Chinese Zodiac</div>
+                    <div class="grid-value" id="res-c-zodiac">Dragon</div>
+                </div>
+
+                <!-- Days to Next Birthday -->
+                <div class="grid-item">
+                    <div class="grid-title" data-i18n="res_days_title">Days to Next Birthday</div>
+                    <div class="grid-value" id="res-days">200</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            "en": {
+                title: "Age & Zodiac Calculator",
+                input_label: "Date of Birth",
+                calc_btn: "Calculate Age and Signs",
+                result_title: "Calculation Results",
+                res_age_title: "Age (Years)",
+                res_zodiac_title: "Zodiac Sign",
+                res_czodiac_title: "Chinese Zodiac",
+                res_days_title: "Days to Next Birthday",
+                czodiac: ["Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake", "Horse", "Goat", "Monkey", "Rooster", "Dog", "Pig"],
+                zodiac: ["Capricorn", "Aquarius", "Pisces", "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius"],
+                err_date: "Please enter a valid date of birth."
+            },
+            "zh-CN": {
+                title: "年龄与星座生肖计算器",
+                input_label: "出生日期",
+                calc_btn: "计算年龄与生肖星座",
+                result_title: "计算结果",
+                res_age_title: "年龄 (周岁)",
+                res_zodiac_title: "星座",
+                res_czodiac_title: "生肖",
+                res_days_title: "距离下次生日",
+                czodiac: ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"],
+                zodiac: ["摩羯座", "水瓶座", "双鱼座", "白羊座", "金牛座", "双子座", "巨蟹座", "狮子座", "处女座", "天秤座", "天蝎座", "射手座"],
+                err_date: "请输入有效的出生日期。"
+            },
+            "zh-TW": {
+                title: "年齡與星座生肖計算器",
+                input_label: "出生日期",
+                calc_btn: "計算年齡與生肖星座",
+                result_title: "計算結果",
+                res_age_title: "年齡 (周歲)",
+                res_zodiac_title: "星座",
+                res_czodiac_title: "生肖",
+                res_days_title: "距離下次生日",
+                czodiac: ["鼠", "牛", "虎", "兔", "龍", "蛇", "馬", "羊", "猴", "雞", "狗", "豬"],
+                zodiac: ["摩羯座", "水瓶座", "雙魚座", "白羊座", "金牛座", "雙子座", "巨蟹座", "獅子座", "處女座", "天秤座", "天蠍座", "射手座"],
+                err_date: "請輸入有效的出生日期。"
+            },
+            "ja": {
+                title: "年齢と干支・星座計算機",
+                input_label: "生年月日",
+                calc_btn: "年齢とサインを計算",
+                result_title: "計算結果",
+                res_age_title: "年齢 (満)",
+                res_zodiac_title: "星座",
+                res_czodiac_title: "干支",
+                res_days_title: "次の誕生日までの日数",
+                czodiac: ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"],
+                zodiac: ["山羊座", "水瓶座", "魚座", "牡羊座", "牡牛座", "双子座", "蟹座", "獅子座", "乙女座", "天秤座", "蠍座", "射手座"],
+                err_date: "有効な生年月日を入力してください。"
+            },
+            "ru": {
+                title: "Калькулятор Возраста и Знаков",
+                input_label: "Дата рождения",
+                calc_btn: "Рассчитать возраст и знаки",
+                result_title: "Результаты расчета",
+                res_age_title: "Возраст (лет)",
+                res_zodiac_title: "Знак Зодиака",
+                res_czodiac_title: "Китайский Знак",
+                res_days_title: "Дней до следующего Дня рождения",
+                czodiac: ["Крыса", "Бык", "Тигр", "Кролик", "Дракон", "Змея", "Лошадь", "Коза", "Обезьяна", "Петух", "Собака", "Свинья"],
+                zodiac: ["Козерог", "Водолей", "Рыбы", "Овен", "Телец", "Близнецы", "Рак", "Лев", "Дева", "Весы", "Скорпион", "Стрелец"],
+                err_date: "Пожалуйста, введите действительную дату рождения."
+            }
+        };
+        
+        const AgeZod = {
+            currentLang: localStorage.getItem('app_lang') || 'en',
+
+            init: () => {
+                document.getElementById('az-lang').value = AgeZod.currentLang;
+                AgeZod.applyLanguage(AgeZod.currentLang);
+                document.getElementById('az-dob').value = '2000-01-01'; // Default value
+                AgeZod.calculate(); // Calculate with default date
+            },
+
+            changeLang: (lang) => {
+                AgeZod.currentLang = lang;
+                localStorage.setItem('app_lang', lang);
+                AgeZod.applyLanguage(lang);
+                AgeZod.calculate(); // Re-calculate to update any language-dependent results
+            },
+
+            applyLanguage: (lang) => {
+                const t = translations[lang] || translations['en'];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (t[key]) {
+                        el.textContent = t[key];
+                    }
+                });
+            },
+
+            calculate: () => {
+                const dobInput = document.getElementById('az-dob').value;
+                const dob = new Date(dobInput);
+                const today = new Date();
+                
+                if (isNaN(dob.getTime())) {
+                    document.getElementById('az-result-box').classList.add('hidden');
+                    alert(translations[AgeZod.currentLang].err_date);
+                    return;
+                }
+
+                const txt = translations[AgeZod.currentLang];
+                
+                // 1. Calculate Age
+                let age = today.getFullYear() - dob.getFullYear();
+                const m = today.getMonth() - dob.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                    age--;
+                }
+                document.getElementById('res-age').innerText = age;
+
+                // 2. Calculate Chinese Zodiac
+                const czodiacIndex = (dob.getFullYear() - 4) % 12;
+                document.getElementById('res-c-zodiac').innerText = txt.czodiac[czodiacIndex];
+
+                // 3. Calculate Western Zodiac Sign
+                const month = dob.getMonth() + 1; // 1-12
+                const day = dob.getDate();
+                let zIndex = 0;
+                // Capricorn (摩羯座): Dec 22 - Jan 19
+                if ((month == 1 && day <= 19) || (month == 12 && day >= 22)) zIndex = 0;
+                // Aquarius (水瓶座): Jan 20 - Feb 18
+                else if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) zIndex = 1;
+                // Pisces (双鱼座): Feb 19 - Mar 20
+                else if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) zIndex = 2;
+                // Aries (白羊座): Mar 21 - Apr 19
+                else if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) zIndex = 3;
+                // Taurus (金牛座): Apr 20 - May 20
+                else if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) zIndex = 4;
+                // Gemini (双子座): May 21 - Jun 20
+                else if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) zIndex = 5;
+                // Cancer (巨蟹座): Jun 21 - Jul 22
+                else if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) zIndex = 6;
+                // Leo (狮子座): Jul 23 - Aug 22
+                else if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) zIndex = 7;
+                // Virgo (处女座): Aug 23 - Sep 22
+                else if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) zIndex = 8;
+                // Libra (天秤座): Sep 23 - Oct 22
+                else if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) zIndex = 9;
+                // Scorpio (天蝎座): Oct 23 - Nov 21
+                else if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) zIndex = 10;
+                // Sagittarius (射手座): Nov 22 - Dec 21
+                else if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) zIndex = 11;
+                
+                document.getElementById('res-zodiac').innerText = txt.zodiac[zIndex];
+
+                // 4. Calculate Days to Next Birthday
+                let nextBirthday = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+                
+                // If this year's birthday has passed, use next year's date
+                if (nextBirthday < today) {
+                    nextBirthday.setFullYear(today.getFullYear() + 1);
+                }
+                
+                // Special handling for February 29th
+                if (dob.getMonth() === 1 && dob.getDate() === 29) {
+                    while (nextBirthday.getMonth() !== 1 || nextBirthday.getDate() !== 29) {
+                        nextBirthday.setDate(nextBirthday.getDate() + 1); // Move to March 1st if current year isn't leap
+                    }
+                }
+
+                const diffTime = nextBirthday.getTime() - today.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                document.getElementById('res-days').innerText = diffDays;
+
+                document.getElementById('az-result-box').classList.remove('hidden');
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', AgeZod.init);
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

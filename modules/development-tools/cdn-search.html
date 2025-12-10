@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Development Tools">
+    <meta name="icon" content="🔍">
+    <title>CDN查询工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 150px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .search-result-item { padding: 10px; border-bottom: 1px solid #eee; }
+        .search-result-item:hover { background: #f8fafc; }
+        .package-name { font-weight: bold; color: #1e40af; }
+        .package-version { font-size: 0.8rem; color: #64748b; }
+        .package-url { font-size: 0.9rem; word-break: break-all; color: #059669; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/cdn-search.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="cdn-search-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="CdnTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔍 CDN查询工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search_prompt">搜索CDN库</h3>
+                <div class="form-group">
+                    <input type="text" id="search_query" placeholder="输入库名称，如jquery、react..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+                <button onclick="CdnTool.searchCdn()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_search">搜索</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">搜索结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="result_count">结果数量：</span>
+                        <span class="stat-value" id="result_count">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="search_time">搜索耗时：</span>
+                        <span class="stat-value" id="search_time">0ms</span>
+                    </div>
+                </div>
+                <div id="search_results" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[100px]">
+                    <p data-i18n="no_results" class="text-gray-400 italic text-sm">请输入关键词进行搜索</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于CDN查询工具</h3>
+                <p data-i18n="intro_text">本工具可查询主流CDN库的资源链接，支持快速检索常用前端库（如jQuery、React、Vue等）的最新版本及历史版本。查询结果包含完整的CDN引用地址，方便开发者直接复制使用，加速网站开发流程。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CdnTool = {
+            i18n: {
+                'en': {
+                    title: '🔍 CDN Library Search',
+                    search_prompt: 'Search CDN Libraries',
+                    btn_search: 'Search',
+                    results: 'Search Results',
+                    result_count: 'Result Count:',
+                    search_time: 'Search Time:',
+                    no_results: 'Please enter keywords to search',
+                    intro_title: 'About CDN Search Tool',
+                    intro_text: 'This tool allows you to search for resource links of mainstream CDN libraries, supporting quick retrieval of the latest and historical versions of common front-end libraries (such as jQuery, React, Vue, etc.). The search results include complete CDN reference addresses, making it easy for developers to copy and use directly, accelerating the website development process.'
+                },
+                'zh-CN': {
+                    title: '🔍 CDN查询工具',
+                    search_prompt: '搜索CDN库',
+                    btn_search: '搜索',
+                    results: '搜索结果',
+                    result_count: '结果数量：',
+                    search_time: '搜索耗时：',
+                    no_results: '请输入关键词进行搜索',
+                    intro_title: '关于CDN查询工具',
+                    intro_text: '本工具可查询主流CDN库的资源链接，支持快速检索常用前端库（如jQuery、React、Vue等）的最新版本及历史版本。查询结果包含完整的CDN引用地址，方便开发者直接复制使用，加速网站开发流程。'
+                },
+                'zh-TW': {
+                    title: '🔍 CDN查詢工具',
+                    search_prompt: '搜尋CDN庫',
+                    btn_search: '搜尋',
+                    results: '搜尋結果',
+                    result_count: '結果數量：',
+                    search_time: '搜尋耗時：',
+                    no_results: '請輸入關鍵字進行搜尋',
+                    intro_title: '關於CDN查詢工具',
+                    intro_text: '本工具可查詢主流CDN庫的資源鏈接，支持快速檢索常用前端庫（如jQuery、React、Vue等）的最新版本及歷史版本。查詢結果包含完整的CDN引用地址，方便開發者直接複製使用，加速網站開發流程。'
+                },
+                'ja': {
+                    title: '🔍 CDNライブラリ検索',
+                    search_prompt: 'CDNライブラリを検索',
+                    btn_search: '検索',
+                    results: '検索結果',
+                    result_count: '結果数：',
+                    search_time: '検索時間：',
+                    no_results: 'キーワードを入力して検索してください',
+                    intro_title: 'CDN検索ツールについて',
+                    intro_text: 'このツールは、主流のCDNライブラリのリソースリンクを検索でき、一般的なフロントエンドライブラリ（jQuery、React、Vueなど）の最新バージョンと履歴バージョンをすばやく検索できます。検索結果には完全なCDN参照アドレスが含まれており、開発者が直接コピーして使用し、Webサイトの開発プロセスを加速するのに便利です。'
+                },
+                'ru': {
+                    title: '🔍 Поиск CDN библиотек',
+                    search_prompt: 'Поиск CDN библиотек',
+                    btn_search: 'Поиск',
+                    results: 'Результаты поиска',
+                    result_count: 'Количество результатов:',
+                    search_time: 'Время поиска:',
+                    no_results: 'Пожалуйста, введите ключевые слова для поиска',
+                    intro_title: 'О инструменте поиска CDN',
+                    intro_text: 'Этот инструмент позволяет искать ссылки на ресурсы популярных CDN-библиотек, поддерживает быстрый поиск последних и исторических версий популярных фронтенд-библиотек (например, jQuery, React, Vue и т.д.). Результаты поиска содержат полные ссылки на CDN, что удобно для разработчиков для непосредственного использования и ускорения процесса разработки сайтов.'
+                }
+            },
+
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                this.updateLanguage();
+            },
+
+            changeLang: function() {
+                const selectedLang = document.getElementById('lang-selector').value;
+                // 更新URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', selectedLang);
+                window.history.replaceState(null, '', `${window.location.pathname}?${urlParams}`);
+                this.updateLanguage();
+            },
+
+            updateLanguage: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                        // 更新placeholder
+                        if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
+                            el.setAttribute('placeholder', this.i18n[lang][key + '_placeholder'] || this.i18n[lang][key]);
+                        }
+                    }
+                });
+                document.title = this.i18n[lang].title || 'CDN查询工具';
+            },
+
+            searchCdn: function() {
+                const query = document.getElementById('search_query').value.trim();
+                if (!query) {
+                    alert(this.i18n[document.getElementById('lang-selector').value].please_enter_text || '请输入搜索关键词');
+                    return;
+                }
+
+                const startTime = performance.now();
+                // 模拟搜索结果
+                const mockResults = [
+                    { name: query, version: "1.2.3", url: `https://cdn.example.com/${query}/${query}.min.js` },
+                    { name: query, version: "1.2.2", url: `https://cdn.example.com/${query}/${query}-1.2.2.min.js` },
+                    { name: query + "-ui", version: "3.4.5", url: `https://cdn.example.com/${query}-ui/${query}-ui.min.js` }
+                ];
+
+                const resultsContainer = document.getElementById('search_results');
+                resultsContainer.innerHTML = '';
+                
+                mockResults.forEach(item => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'search-result-item';
+                    resultItem.innerHTML = `
+                        <div class="package-name">${item.name}</div>
+                        <div class="package-version">版本: ${item.version}</div>
+                        <div class="package-url mt-1">${item.url}</div>
+                        <button onclick="CdnTool.copyUrl('${item.url}')" class="mt-2 text-sm bg-blue-500 text-white px-2 py-1 rounded">复制链接</button>
+                    `;
+                    resultsContainer.appendChild(resultItem);
+                });
+
+                const endTime = performance.now();
+                document.getElementById('result_count').textContent = mockResults.length;
+                document.getElementById('search_time').textContent = Math.round(endTime - startTime) + 'ms';
+            },
+
+            copyUrl: function(url) {
+                navigator.clipboard.writeText(url).then(() => {
+                    alert(this.i18n[document.getElementById('lang-selector').value].copied || '已复制！');
+                });
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            CdnTool.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

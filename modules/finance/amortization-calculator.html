@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amortization Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="amortization_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="📋">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Amortization Calculator">
+    <meta name="description" content="Calculate loan amortization schedule and monthly payments.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="摊销计算器">
+    <meta name="lang-description-zh-CN" content="计算贷款摊销表和每月还款额。">
+    
+    <meta name="lang-title-zh-TW" content="攤銷計算器">
+    <meta name="lang-description-zh-TW" content="計算貸款攤銷表和每月還款額。">
+    
+    <meta name="lang-title-ja" content="返済計算機">
+    <meta name="lang-description-ja" content="ローンの返済スケジュールと月々の支払いを計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор амортизации">
+    <meta name="lang-description-ru" content="Вычислите график амортизации кредита и ежемесячные платежи.">
+    
+    <meta name="lang-title-es" content="Calculadora de amortización">
+    <meta name="lang-description-es" content="Calcule el calendario de amortización del préstamo y los pagos mensuales.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .amort-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .amort-table th, .amort-table td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+        .amort-table th { background-color: #f8f9fa; }
+        .amort-table tr:nth-child(even) { background-color: #f8f9fa; }
+        .scrollable { max-height: 300px; overflow-y: auto; margin-top: 10px; }
+        /* 增加对 table 单元格的左右对齐控制，以适应中文 */
+        .amort-table th:first-child, .amort-table td:first-child { text-align: center; }
+        .text-left-align { text-align: left !important; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/finance/amortization-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="amortization_calculator" 
+         data-category="finance" 
+         data-title="Amortization Calculator" 
+         data-icon="📋">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="amort-lang" onchange="AmortCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📋 Amortization Calculator</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="loan_amount_label">Loan Amount</label>
+                <!-- 添加 oninput 事件，优化用户体验 -->
+                <input type="number" id="loan-amount" oninput="AmortCalc.debounceCalc()" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 200000" min="0" step="any">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="interest_rate_label">Interest Rate (% per year)</label>
+                <input type="number" id="interest-rate" oninput="AmortCalc.debounceCalc()" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 4.5" min="0" step="0.01">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="loan_term_label">Loan Term (years)</label>
+                <input type="number" id="loan-term" oninput="AmortCalc.debounceCalc()" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 30" min="1" step="1">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="payments_year_label">Payments per Year</label>
+                <!-- 添加 onchange 事件，优化用户体验 -->
+                <select id="payments-year" onchange="AmortCalc.debounceCalc()" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none">
+                    <option value="12">12 (Monthly)</option>
+                    <option value="6">6 (Bi-monthly)</option>
+                    <option value="4">4 (Quarterly)</option>
+                    <option value="2">2 (Semi-annually)</option>
+                    <option value="1">1 (Annually)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 移除点击按钮，改为自动计算以提升流畅度，但保留按钮作为手动触发备份 -->
+        <button onclick="AmortCalc.calc()" class="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700 transition mb-6" data-i18n="btn_calc">Calculate Amortization</button>
+
+        <div class="bg-purple-50 p-6 rounded-lg border border-purple-100 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="monthly_payment_label">Payment per Period</div>
+                    <div id="monthly-payment" class="text-xl font-bold text-purple-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="total_principal_label">Total Principal Paid</div>
+                    <div id="total-principal" class="text-xl font-bold text-purple-800">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="total_interest_label">Total Interest Paid</div>
+                    <div id="total-interest" class="text-xl font-bold text-purple-800">--</div>
+                </div>
+            </div>
+            <div class="p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">Payment Formula: P = (r*PV) / (1 - (1+r)^-n)</div>
+                <div id="amort-formula" class="text-gray-600">--</div>
+                <div id="amort-message" class="text-green-600 mt-2"></div>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="text-lg font-semibold mb-2" data-i18n="schedule_label">Amortization Schedule</h3>
+            <div class="scrollable">
+                <table class="amort-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="period_header">Period</th>
+                            <th data-i18n="payment_header">Payment</th>
+                            <th data-i18n="principal_header">Principal</th>
+                            <th data-i18n="interest_header">Interest</th>
+                            <th data-i18n="balance_header">Remaining Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="amort-schedule">
+                        <tr><td colspan="5" class="text-center" data-i18n="schedule_empty">Please calculate to see schedule</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AmortCalc = {
+            // 缓存计时器，用于防抖
+            calcTimeout: null,
+            // 存储当前语言
+            currentLang: 'en',
+            
+            i18n: {
+                'en': {
+                    title: '📋 Amortization Calculator',
+                    loan_amount_label: 'Loan Amount',
+                    interest_rate_label: 'Interest Rate (% per year)',
+                    loan_term_label: 'Loan Term (years)',
+                    payments_year_label: 'Payments per Year',
+                    btn_calc: 'Calculate Amortization',
+                    monthly_payment_label: 'Payment per Period',
+                    total_principal_label: 'Total Principal Paid',
+                    total_interest_label: 'Total Interest Paid',
+                    formula_label: 'Payment Formula: P = (r*PV) / (1 - (1+r)^-n)',
+                    schedule_label: 'Amortization Schedule',
+                    period_header: 'Period',
+                    payment_header: 'Payment',
+                    principal_header: 'Principal',
+                    interest_header: 'Interest',
+                    balance_header: 'Remaining Balance',
+                    schedule_empty: 'Please calculate to see schedule',
+                    err_invalid: 'Please enter valid numbers',
+                    schedule_truncated: (total) => `Schedule truncated. Showing first 50 and last 50 periods. Total periods: ${total}.`,
+                    currency: '$'
+                },
+                'zh-CN': {
+                    title: '📋 摊销计算器',
+                    loan_amount_label: '贷款金额',
+                    interest_rate_label: '年利率（%）',
+                    loan_term_label: '贷款期限（年）',
+                    payments_year_label: '每年还款次数',
+                    btn_calc: '计算摊销',
+                    monthly_payment_label: '每期还款额',
+                    total_principal_label: '总本金支付',
+                    total_interest_label: '总利息支付',
+                    formula_label: '还款公式：每期还款 = (期利率*贷款金额) / (1 - (1+期利率)^-总期数)',
+                    schedule_label: '摊销表',
+                    period_header: '期数',
+                    payment_header: '还款额',
+                    principal_header: '本金',
+                    interest_header: '利息',
+                    balance_header: '剩余本金',
+                    schedule_empty: '请计算以查看摊销表',
+                    err_invalid: '请输入有效的数字',
+                    schedule_truncated: (total) => `表格已截断。显示前50期和后50期。总期数：${total}。`,
+                    currency: '¥'
+                },
+                'zh-TW': {
+                    title: '📋 攤銷計算器',
+                    loan_amount_label: '貸款金額',
+                    interest_rate_label: '年利率（%）',
+                    loan_term_label: '貸款期限（年）',
+                    payments_year_label: '每年還款次數',
+                    btn_calc: '計算攤銷',
+                    monthly_payment_label: '每期還款額',
+                    total_principal_label: '總本金支付',
+                    total_interest_label: '總利息支付',
+                    formula_label: '還款公式：每期還款 = (期利率*貸款金額) / (1 - (1+期利率)^-總期數)',
+                    schedule_label: '攤銷表',
+                    period_header: '期數',
+                    payment_header: '還款額',
+                    principal_header: '本金',
+                    interest_header: '利息',
+                    balance_header: '剩餘本金',
+                    schedule_empty: '請計算以查看攤銷表',
+                    err_invalid: '請輸入有效的數字',
+                    schedule_truncated: (total) => `表格已截斷。顯示前50期和後50期。總期數：${total}。`,
+                    currency: 'NT$'
+                },
+                'ja': {
+                    title: '📋 返済計算機',
+                    loan_amount_label: 'ローン金額',
+                    interest_rate_label: '年利率（%）',
+                    loan_term_label: 'ローン期間（年）',
+                    payments_year_label: '年間返済回数',
+                    btn_calc: '返済計算',
+                    monthly_payment_label: '毎期返済額',
+                    total_principal_label: '総元本支払い',
+                    total_interest_label: '総利息支払い',
+                    formula_label: '返済公式：毎期返済 = (期利率*ローン金額) / (1 - (1+期利率)^-総期数)',
+                    schedule_label: '返済スケジュール',
+                    period_header: '期数',
+                    payment_header: '返済額',
+                    principal_header: '元本',
+                    interest_header: '利息',
+                    balance_header: '残元本',
+                    schedule_empty: '計算を実行してスケジュールを表示',
+                    err_invalid: '有効な数字を入力してください',
+                    schedule_truncated: (total) => `スケジュールを短縮しました。最初の50期間と最後の50期間を表示します。総期間：${total}。`,
+                    currency: '¥'
+                },
+                'ru': {
+                    title: '📋 Калькулятор амортизации',
+                    loan_amount_label: 'Сумма кредита',
+                    interest_rate_label: 'Процентная ставка (% в год)',
+                    loan_term_label: 'Срок кредита (лет)',
+                    payments_year_label: 'Платежей в год',
+                    btn_calc: 'Вычислить амортизацию',
+                    monthly_payment_label: 'Платеж за период',
+                    total_principal_label: 'Всего выплачено основного долга',
+                    total_interest_label: 'Всего выплачено процентов',
+                    formula_label: 'Формула платежа: П = (п*СК) / (1 - (1+п)^-п)',
+                    schedule_label: 'График амортизации',
+                    period_header: 'Период',
+                    payment_header: 'Платеж',
+                    principal_header: 'Основной долг',
+                    interest_header: 'Проценты',
+                    balance_header: 'Оставшийся долг',
+                    schedule_empty: 'Вычислите, чтобы увидеть график',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    schedule_truncated: (total) => `График усечен. Показаны первые 50 и последние 50 периодов. Всего периодов: ${total}.`,
+                    currency: '₽'
+                },
+                'es': {
+                    title: '📋 Calculadora de amortización',
+                    loan_amount_label: 'Monto del préstamo',
+                    interest_rate_label: 'Tasa de interés (% anual)',
+                    loan_term_label: 'Plazo del préstamo (años)',
+                    payments_year_label: 'Pagos por año',
+                    btn_calc: 'Calcular amortización',
+                    monthly_payment_label: 'Pago por período',
+                    total_principal_label: 'Total pagado en principal',
+                    total_interest_label: 'Total pagado en intereses',
+                    formula_label: 'Fórmula de pago: P = (t*VP) / (1 - (1+t)^-n)',
+                    schedule_label: 'Calendario de amortización',
+                    period_header: 'Periodo',
+                    payment_header: 'Pago',
+                    principal_header: 'Principal',
+                    interest_header: 'Intereses',
+                    balance_header: 'Saldo restante',
+                    schedule_empty: 'Por favor, calcule para ver el calendario',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    schedule_truncated: (total) => `Calendario truncado. Mostrando los primeros 50 y los últimos 50 períodos. Total de períodos: ${total}.`,
+                    currency: '€'
+                }
+            },
+
+            init: () => {
+                // 初始化示例值
+                document.getElementById('loan-amount').value = 200000;
+                document.getElementById('interest-rate').value = 4.5;
+                document.getElementById('loan-term').value = 30;
+                document.getElementById('payments-year').value = 12;
+
+                // 初始计算
+                AmortCalc.calc();
+            },
+            
+            // 性能优化：防抖函数，避免输入时连续触发 calc 造成卡顿
+            debounceCalc: function() {
+                clearTimeout(this.calcTimeout);
+                this.calcTimeout = setTimeout(this.calc, 300); // 延迟 300ms 后执行计算
+            },
+
+            // 语言切换
+            changeLang: () => {
+                const lang = document.getElementById('amort-lang').value;
+                AmortCalc.currentLang = lang; // 更新当前语言
+                const texts = AmortCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="amortization_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key] && typeof texts[key] === 'string') {
+                        el.innerText = texts[key];
+                    }
+                });
+
+                // 重新计算以更新结果和消息的语言
+                AmortCalc.calc();
+            },
+
+            // 核心计算函数
+            calc: () => {
+                const loanAmount = parseFloat(document.getElementById('loan-amount').value) || 0;
+                const annualRate = parseFloat(document.getElementById('interest-rate').value) / 100 || 0;
+                const years = parseFloat(document.getElementById('loan-term').value) || 0;
+                const paymentsPerYear = parseInt(document.getElementById('payments-year').value) || 12;
+                const texts = AmortCalc.i18n[AmortCalc.currentLang];
+                const currency = texts.currency;
+
+                const paymentEl = document.getElementById('monthly-payment');
+                const principalEl = document.getElementById('total-principal');
+                const interestEl = document.getElementById('total-interest');
+                const formulaEl = document.getElementById('amort-formula');
+                const scheduleEl = document.getElementById('amort-schedule');
+                const messageEl = document.getElementById('amort-message');
+
+
+                // 验证输入
+                if (isNaN(loanAmount) || isNaN(annualRate) || isNaN(years) || years <= 0 || loanAmount <= 0) {
+                    paymentEl.innerText = texts.err_invalid;
+                    paymentEl.className = "text-xl font-bold text-red-600";
+                    principalEl.innerText = "--";
+                    interestEl.innerText = "--";
+                    formulaEl.innerText = "";
+                    messageEl.innerText = "";
+                    scheduleEl.innerHTML = `<tr><td colspan="5" class="text-center">${texts.err_invalid}</td></tr>`;
+                    return;
+                }
+
+                // 贷款参数
+                const ratePerPeriod = annualRate / paymentsPerYear;
+                const totalPayments = years * paymentsPerYear;
+                
+                // P = (r*PV) / (1 - (1+r)^-n)
+                let monthlyPayment = 0;
+                
+                if (ratePerPeriod > 0) {
+                    monthlyPayment = (ratePerPeriod * loanAmount) / (1 - Math.pow(1 + ratePerPeriod, -totalPayments));
+                } else {
+                    // 零利率计算
+                    monthlyPayment = loanAmount / totalPayments;
+                }
+                
+                const totalPaid = monthlyPayment * totalPayments;
+                const totalInterest = totalPaid - loanAmount;
+
+                // 显示结果
+                paymentEl.className = "text-xl font-bold text-purple-800";
+                principalEl.className = "text-xl font-bold text-purple-800";
+                interestEl.className = "text-xl font-bold text-purple-800";
+                
+                paymentEl.innerText = `${currency}${monthlyPayment.toFixed(2)}`;
+                principalEl.innerText = `${currency}${loanAmount.toFixed(2)}`;
+                interestEl.innerText = `${currency}${totalInterest.toFixed(2)}`;
+                
+                // 显示计算公式
+                formulaEl.innerText = `${currency}${monthlyPayment.toFixed(2)} = (${(ratePerPeriod*100).toFixed(4)}% * ${currency}${loanAmount.toFixed(2)}) / (1 - (1+${(ratePerPeriod*100).toFixed(4)}%)^-${totalPayments})`;
+                
+                // --- 性能优化：生成摊销表 (限制行数) ---
+                let remainingBalance = loanAmount;
+                let scheduleHtml = '';
+                const displayLimit = 50; // 显示开头和结尾的期数
+                const shouldTruncate = totalPayments > (displayLimit * 2 + 1);
+                
+                messageEl.innerText = shouldTruncate ? texts.schedule_truncated(totalPayments) : '';
+                messageEl.className = shouldTruncate ? "text-green-600 mt-2" : "";
+
+                for (let i = 1; i <= totalPayments; i++) {
+                    let interestPayment = remainingBalance * ratePerPeriod;
+                    let principalPayment = monthlyPayment - interestPayment;
+                    
+                    // 确保最后一期还清，避免浮点数误差
+                    if (i === totalPayments) {
+                        principalPayment = remainingBalance; // 最后一期的本金等于剩余本金
+                        monthlyPayment = principalPayment + interestPayment; // 最后一期的还款额
+                        remainingBalance = 0;
+                    } else {
+                        remainingBalance = remainingBalance - principalPayment;
+                        // 修正浮点数误差，确保余额不为负且小数点后两位精度
+                        remainingBalance = parseFloat(remainingBalance.toFixed(2));
+                        if (remainingBalance < 0) remainingBalance = 0;
+                    }
+                    
+                    // 仅在需要显示的行数范围内生成 HTML
+                    if (i <= displayLimit || (shouldTruncate && i > totalPayments - displayLimit)) {
+                        scheduleHtml += `
+                            <tr>
+                                <td class="text-center">${i}</td>
+                                <td>${currency}${monthlyPayment.toFixed(2)}</td>
+                                <td>${currency}${principalPayment.toFixed(2)}</td>
+                                <td>${currency}${interestPayment.toFixed(2)}</td>
+                                <td>${currency}${remainingBalance.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    }
+                    
+                    // 插入省略号
+                    if (shouldTruncate && i === displayLimit) {
+                        scheduleHtml += `<tr><td colspan="5" class="text-center">...</td></tr>`;
+                        // 跳到最后一部分
+                        i = totalPayments - displayLimit;
+                    }
+                }
+                
+                // 一次性更新 DOM，避免卡顿
+                scheduleEl.innerHTML = scheduleHtml;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            AmortCalc.currentLang = targetLang; // 设置初始语言
+            
+            const langSelect = document.getElementById('amort-lang');
+            if(langSelect) {
+                langSelect.value = targetLang;
+                AmortCalc.changeLang();
+            } else {
+                AmortCalc.init(); // 如果没有选择器，则只初始化数据并计算
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

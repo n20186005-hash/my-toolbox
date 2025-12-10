@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Color Tool">
+    <meta name="icon" content="🎨">
+    <title>常用颜色名称及颜色值参考工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .color-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .color-table th, .color-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        .color-table th { background-color: #f0fdf4; font-weight: 600; color: #4b5563; }
+        .color-table tr:hover { background-color: #f8fafc; }
+        .color-swatch { width: 30px; height: 30px; border-radius: 4px; display: inline-block; margin-right: 10px; vertical-align: middle; border: 1px solid #ddd; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+        .footer { margin-top: 30px; text-align: center; color: #6b7280; font-size: 0.9rem; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/color-tool/color-names-and-values-reference-tool.html" />
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🎨 常用颜色名称及颜色值参考工具</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">搜索颜色名称或颜色值</h3>
+                <div class="form-group">
+                    <label data-i18n="search_keyword">关键词</label>
+                    <input type="text" id="search-input" onkeyup="Tool.search()" placeholder="输入颜色名称或颜色值..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="results">颜色列表</h3>
+                    <span class="text-sm text-gray-500" id="count-display"></span>
+                </div>
+                <div id="results-container">
+                    <table class="color-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="color_swatch">色样</th>
+                                <th data-i18n="color_name">颜色名称</th>
+                                <th data-i18n="hex_value">HEX值</th>
+                                <th data-i18n="rgb_value">RGB值</th>
+                            </tr>
+                        </thead>
+                        <tbody id="color-list">
+                            <!-- 数据将通过JS动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于颜色参考工具</h3>
+                <p data-i18n="intro_text">本工具提供常用颜色的名称及对应颜色值（HEX和RGB）参考，方便设计师、开发者在设计和开发过程中快速查询和使用标准颜色值。支持多语言切换，便于不同语言背景的用户使用。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>
+            <span data-i18n="footer_prefix">更多工具可访问：</span>
+            <a href="https://toolboxpro.top" target="_blank" class="text-green-600 hover:underline">toolboxpro.top</a>
+        </p>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '🎨 Color Names and Values Reference Tool',
+                    search: 'Search Color Name or Value',
+                    'search_keyword': 'Keyword',
+                    'results': 'Color List',
+                    'color_swatch': 'Swatch',
+                    'color_name': 'Color Name',
+                    'hex_value': 'HEX Value',
+                    'rgb_value': 'RGB Value',
+                    'copied': 'Copied!',
+                    'intro_title': 'About Color Reference Tool',
+                    'intro_text': 'This tool provides reference for common color names and their corresponding values (HEX and RGB), making it easy for designers and developers to quickly look up and use standard color values in their design and development process. Supports multi-language switching for users with different language backgrounds.',
+                    'footer_prefix': 'More tools at: ',
+                    'search_placeholder': 'Enter color name or value...',
+                    'results_count': 'results found'
+                },
+                'zh-CN': {
+                    title: '🎨 常用颜色名称及颜色值参考工具',
+                    search: '搜索颜色名称或颜色值',
+                    'search_keyword': '关键词',
+                    'results': '颜色列表',
+                    'color_swatch': '色样',
+                    'color_name': '颜色名称',
+                    'hex_value': 'HEX值',
+                    'rgb_value': 'RGB值',
+                    'copied': '已复制！',
+                    'intro_title': '关于颜色参考工具',
+                    'intro_text': '本工具提供常用颜色的名称及对应颜色值（HEX和RGB）参考，方便设计师、开发者在设计和开发过程中快速查询和使用标准颜色值。支持多语言切换，便于不同语言背景的用户使用。',
+                    'footer_prefix': '更多工具可访问：',
+                    'search_placeholder': '输入颜色名称或颜色值...',
+                    'results_count': '条结果'
+                },
+                'zh-TW': {
+                    title: '🎨 常用顏色名稱及顏色值參考工具',
+                    search: '搜索顏色名稱或顏色值',
+                    'search_keyword': '關鍵詞',
+                    'results': '顏色列表',
+                    'color_swatch': '色樣',
+                    'color_name': '顏色名稱',
+                    'hex_value': 'HEX值',
+                    'rgb_value': 'RGB值',
+                    'copied': '已複製！',
+                    'intro_title': '關於顏色參考工具',
+                    'intro_text': '本工具提供常用顏色的名稱及對應顏色值（HEX和RGB）參考，方便設計師、開發者在設計和開發過程中快速查詢和使用標準顏色值。支持多語言切換，便於不同語言背景的用戶使用。',
+                    'footer_prefix': '更多工具可訪問：',
+                    'search_placeholder': '輸入顏色名稱或顏色值...',
+                    'results_count': '條結果'
+                },
+                'ja': {
+                    title: '🎨 一般的な色名と色値参照ツール',
+                    search: '色名または色値を検索',
+                    'search_keyword': 'キーワード',
+                    'results': '色の一覧',
+                    'color_swatch': 'カラースワッチ',
+                    'color_name': '色名',
+                    'hex_value': 'HEX値',
+                    'rgb_value': 'RGB値',
+                    'copied': 'コピーしました！',
+                    'intro_title': 'カラーリファレンスツールについて',
+                    'intro_text': 'このツールは、一般的な色の名前とそれに対応する色値（HEXおよびRGB）を提供し、デザイナーや開発者がデザインと開発の過程で標準的な色値をすばやく検索して使用するのに役立ちます。多言語切り替えに対応しているため、異なる言語背景を持つユーザーにも便利です。',
+                    'footer_prefix': 'その他のツール：',
+                    'search_placeholder': '色名または色値を入力...',
+                    'results_count': '件の結果'
+                },
+                'ru': {
+                    title: '🎨 Средства справочной информации о названиях и значениях цветов',
+                    search: 'Поиск названия или значения цвета',
+                    'search_keyword': 'Ключевое слово',
+                    'results': 'Список цветов',
+                    'color_swatch': 'Образец',
+                    'color_name': 'Название цвета',
+                    'hex_value': 'HEX значение',
+                    'rgb_value': 'RGB значение',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О инструменте для работы с цветами',
+                    'intro_text': 'Этот инструмент предоставляет справочную информацию о названиях обычных цветов и их соответствующих значениях (HEX и RGB), что облегчает дизайнерам и разработчикам быстрое получение и использование стандартных цветовых значений в процессе проектирования и разработки. Поддерживает многоязычность, что удобно для пользователей с разным языковым фоном.',
+                    'footer_prefix': 'Больше инструментов: ',
+                    'search_placeholder': 'Введите название или значение цвета...',
+                    'results_count': 'результатов'
+                }
+            },
+
+            // 颜色数据
+            colorData: [
+                { 
+                    name: "红色", nameEn: "Red", nameJa: "赤", nameTw: "紅色", nameRu: "Красный",
+                    hex: "#FF0000", rgb: "rgb(255, 0, 0)"
+                },
+                { 
+                    name: "绿色", nameEn: "Green", nameJa: "緑", nameTw: "綠色", nameRu: "Зеленый",
+                    hex: "#008000", rgb: "rgb(0, 128, 0)"
+                },
+                { 
+                    name: "蓝色", nameEn: "Blue", nameJa: "青", nameTw: "藍色", nameRu: "Синий",
+                    hex: "#0000FF", rgb: "rgb(0, 0, 255)"
+                },
+                { 
+                    name: "黄色", nameEn: "Yellow", nameJa: "黄", nameTw: "黃色", nameRu: "Желтый",
+                    hex: "#FFFF00", rgb: "rgb(255, 255, 0)"
+                },
+                { 
+                    name: "青色", nameEn: "Cyan", nameJa: "シアン", nameTw: "青色", nameRu: "Голубой",
+                    hex: "#00FFFF", rgb: "rgb(0, 255, 255)"
+                },
+                { 
+                    name: "品红", nameEn: "Magenta", nameJa: "マゼンタ", nameTw: "洋紅", nameRu: "Пурпурный",
+                    hex: "#FF00FF", rgb: "rgb(255, 0, 255)"
+                },
+                { 
+                    name: "黑色", nameEn: "Black", nameJa: "黒", nameTw: "黑色", nameRu: "Черный",
+                    hex: "#000000", rgb: "rgb(0, 0, 0)"
+                },
+                { 
+                    name: "白色", nameEn: "White", nameJa: "白", nameTw: "白色", nameRu: "Белый",
+                    hex: "#FFFFFF", rgb: "rgb(255, 255, 255)"
+                },
+                { 
+                    name: "灰色", nameEn: "Gray", nameJa: "灰", nameTw: "灰色", nameRu: "Серый",
+                    hex: "#808080", rgb: "rgb(128, 128, 128)"
+                },
+                { 
+                    name: "银色", nameEn: "Silver", nameJa: "銀色", nameTw: "銀色", nameRu: "Серебряный",
+                    hex: "#C0C0C0", rgb: "rgb(192, 192, 192)"
+                },
+                { 
+                    name: "栗色", nameEn: "Maroon", nameJa: "栗色", nameTw: "栗色", nameRu: "Красновато-коричневый",
+                    hex: "#800000", rgb: "rgb(128, 0, 0)"
+                },
+                { 
+                    name: "橄榄色", nameEn: "Olive", nameJa: "オリーブ", nameTw: "橄欖色", nameRu: "Оливковый",
+                    hex: "#808000", rgb: "rgb(128, 128, 0)"
+                },
+                { 
+                    name: "紫色", nameEn: "Purple", nameJa: "紫", nameTw: "紫色", nameRu: "Фиолетовый",
+                    hex: "#800080", rgb: "rgb(128, 0, 128)"
+                },
+                { 
+                    name: "茶色", nameEn: "Teal", nameJa: "ティール", nameTw: "茶色", nameRu: "Бирюзовый",
+                    hex: "#008080", rgb: "rgb(0, 128, 128)"
+                },
+                { 
+                    name: "海军蓝", nameEn: "Navy", nameJa: "ネイビー", nameTw: "海軍藍", nameRu: "Темно-синий",
+                    hex: "#000080", rgb: "rgb(0, 0, 128)"
+                },
+                { 
+                    name: "粉红色", nameEn: "Pink", nameJa: "ピンク", nameTw: "粉紅色", nameRu: "Розовый",
+                    hex: "#FFC0CB", rgb: "rgb(255, 192, 203)"
+                },
+                { 
+                    name: "橙色", nameEn: "Orange", nameJa: "オレンジ", nameTw: "橙色", nameRu: "Оранжевый",
+                    hex: "#FFA500", rgb: "rgb(255, 165, 0)"
+                },
+                { 
+                    name: "棕色", nameEn: "Brown", nameJa: "茶色", nameTw: "棕色", nameRu: "Коричневый",
+                    hex: "#A52A2A", rgb: "rgb(165, 42, 42)"
+                },
+                { 
+                    name: "藏青色", nameEn: "Indigo", nameJa: "インディゴ", nameTw: "靛藍色", nameRu: "Индиго",
+                    hex: "#4B0082", rgb: "rgb(75, 0, 130)"
+                },
+                { 
+                    name: "金色", nameEn: "Gold", nameJa: "金色", nameTw: "金色", nameRu: "Золотой",
+                    hex: "#FFD700", rgb: "rgb(255, 215, 0)"
+                },
+                { 
+                    name: "珊瑚色", nameEn: "Coral", nameJa: "サンゴ色", nameTw: "珊瑚色", nameRu: "Коралловый",
+                    hex: "#FF7F50", rgb: "rgb(255, 127, 80)"
+                },
+                { 
+                    name: "淡紫色", nameEn: "Lavender", nameJa: "ラベンダー", nameTw: "淡紫色", nameRu: "Лавандовый",
+                    hex: "#E6E6FA", rgb: "rgb(230, 230, 250)"
+                },
+                { 
+                    name: "淡绿色", nameEn: "Lime", nameJa: "ライム", nameTw: "萊姆綠", nameRu: "Лаймовый",
+                    hex: "#00FF00", rgb: "rgb(0, 255, 0)"
+                },
+                { 
+                    name: "天蓝色", nameEn: "SkyBlue", nameJa: "空色", nameTw: "天藍色", nameRu: "Голубой",
+                    hex: "#87CEEB", rgb: "rgb(135, 206, 235)"
+                },
+                { 
+                    name: "番茄红", nameEn: "Tomato", nameJa: "トマト紅", nameTw: "番茄紅", nameRu: "Томатный",
+                    hex: "#FF6347", rgb: "rgb(255, 99, 71)"
+                }
+            ],
+
+            init: function() {
+                // 从URL获取语言参数
+                let lang = 'zh-CN';
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    lang = urlParams.get('lang') || 'zh-CN';
+                } catch (e) {
+                    console.log('Unable to access URL params:', e);
+                }
+                
+                // 设置语言选择器
+                document.getElementById('lang-selector').value = lang;
+                
+                // 初始化翻译
+                this.changeLang();
+                
+                // 初始加载所有数据
+                this.search();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                
+                // 更新URL参数
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('lang', lang);
+                    window.history.replaceState(null, null, '?' + urlParams.toString());
+                } catch (e) {
+                    console.warn('History API not supported in this environment');
+                }
+                
+                // 应用翻译
+                document.querySelectorAll('[data-i18n]').forEach(element => {
+                    const key = element.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        element.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 更新占位符
+                if(this.i18n[lang] && this.i18n[lang]['search_placeholder']) {
+                    document.getElementById('search-input').placeholder = this.i18n[lang]['search_placeholder'];
+                }
+                
+                // 重新搜索以更新显示
+                this.search();
+            },
+
+            search: function() {
+                const searchTerm = document.getElementById('search-input').value.toLowerCase();
+                const lang = document.getElementById('lang-selector').value;
+                const resultsContainer = document.getElementById('color-list');
+                let filteredData = [];
+                
+                // 根据当前语言过滤数据
+                this.colorData.forEach(item => {
+                    let colorName;
+                    
+                    switch(lang) {
+                        case 'en':
+                            colorName = item.nameEn.toLowerCase();
+                            break;
+                        case 'ja':
+                            colorName = item.nameJa.toLowerCase();
+                            break;
+                        case 'zh-TW':
+                            colorName = item.nameTw.toLowerCase();
+                            break;
+                        case 'ru':
+                            colorName = item.nameRu.toLowerCase();
+                            break;
+                        default: // zh-CN
+                            colorName = item.name.toLowerCase();
+                    }
+                    
+                    const hexValue = item.hex.toLowerCase();
+                    const rgbValue = item.rgb.toLowerCase();
+                    
+                    if (colorName.includes(searchTerm) || hexValue.includes(searchTerm) || rgbValue.includes(searchTerm)) {
+                        filteredData.push(item);
+                    }
+                });
+                
+                // 更新计数显示
+                const countText = this.i18n[lang] && this.i18n[lang]['results_count'] ? this.i18n[lang]['results_count'] : '条结果';
+                document.getElementById('count-display').textContent = `${filteredData.length} ${countText}`;
+                
+                // 清空并填充结果
+                resultsContainer.innerHTML = '';
+                filteredData.forEach(item => {
+                    const row = document.createElement('tr');
+                    
+                    // 根据当前语言显示相应内容
+                    let colorNameText;
+                    switch(lang) {
+                        case 'en':
+                            colorNameText = item.nameEn;
+                            break;
+                        case 'ja':
+                            colorNameText = item.nameJa;
+                            break;
+                        case 'zh-TW':
+                            colorNameText = item.nameTw;
+                            break;
+                        case 'ru':
+                            colorNameText = item.nameRu;
+                            break;
+                        default: // zh-CN
+                            colorNameText = item.name;
+                    }
+                    
+                    row.innerHTML = `
+                        <td><span class="color-swatch" style="background-color: ${item.hex};"></span></td>
+                        <td>${colorNameText}</td>
+                        <td>${item.hex}</td>
+                        <td>${item.rgb}</td>
+                    `;
+                    
+                    // 添加点击复制功能
+                    row.addEventListener('click', () => {
+                        const textToCopy = `${colorNameText}: ${item.hex} / ${item.rgb}`;
+                        const textArea = document.createElement("textarea");
+                        textArea.value = textToCopy;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        try {
+                            document.execCommand('copy');
+                            this.showNotification();
+                        } catch (err) {
+                            console.error('Copy failed', err);
+                        }
+                        document.body.removeChild(textArea);
+                    });
+                    
+                    resultsContainer.appendChild(row);
+                });
+            },
+
+            showNotification: function() {
+                const notification = document.getElementById('copy-notification');
+                notification.style.opacity = '1';
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, 2000);
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            Tool.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

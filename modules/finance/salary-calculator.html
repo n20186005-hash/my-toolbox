@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="salary_calc">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💼">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Salary Calculator">
+    <meta name="description" content="Convert between hourly, daily, weekly, monthly, and annual salaries with this salary calculator.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="薪资计算器">
+    <meta name="lang-description-zh-CN" content="使用此薪资计算器在时薪、日薪、周薪、月薪和年薪之间进行转换。">
+    
+    <meta name="lang-title-zh-TW" content="薪資計算器">
+    <meta name="lang-description-zh-TW" content="使用此薪資計算器在時薪、日薪、周薪、月薪和年薪之間進行轉換。">
+    
+    <meta name="lang-title-ja" content="給与計算ツール">
+    <meta name="lang-description-ja" content="この給与計算ツールで、時給、日給、週給、月給、年収を相互に変換できます。">
+    
+    <meta name="lang-title-ru" content="Калькулятор зарплаты">
+    <meta name="lang-description-ru" content="Конвертируйте почасовую, дневную, еженедельную, ежемесячную и годовую зарплату с помощью этого калькулятора зарплаты.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .result-container { word-break: break-all; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: #e8f4f8; padding: 15px; border-radius: 8px; }
+        .stat-label { font-size: 0.85rem; color: #4b5563; margin-bottom: 5px; }
+        .stat-value { font-size: 1.1rem; font-weight: bold; color: #1e40af; }
+        .form-group { margin-bottom: 15px; }
+        .radio-group { display: flex; flex-wrap: wrap; gap: 15px; margin: 10px 0; }
+        .radio-item { display: flex; align-items: center; gap: 5px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/finance/salary-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="salary_calc" 
+         data-category="finance" 
+         data-title="Salary Calculator" 
+         data-icon="💼">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="salary-lang" onchange="SalaryCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💼 Salary Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 薪资输入 -->
+            <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="salary_amount">Salary Amount</label>
+                <div class="flex gap-2">
+                    <input type="number" id="salary-amount" min="0" step="0.01" value="50000" class="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <select id="salary-type" onchange="SalaryCalc.updateInputs()" class="p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="hourly" data-i18n="hourly">Hourly</option>
+                        <option value="daily" data-i18n="daily">Daily</option>
+                        <option value="weekly" data-i18n="weekly">Weekly</option>
+                        <option value="monthly" data-i18n="monthly">Monthly</option>
+                        <option value="annual" data-i18n="annual" selected>Annual</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 工作时间设置 -->
+            <div id="work-hours-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="work_hours">Work Hours Settings</label>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1" data-i18n="hours_per_day">Hours per Day</label>
+                        <input type="number" id="hours-per-day" min="1" max="24" value="8" step="0.5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1" data-i18n="days_per_week">Days per Week</label>
+                        <input type="number" id="days-per-week" min="1" max="7" value="5" step="0.5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1" data-i18n="weeks_per_year">Weeks per Year</label>
+                        <input type="number" id="weeks-per-year" min="1" max="52" value="52" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1" data-i18n="holidays_per_year">Holidays per Year</label>
+                        <input type="number" id="holidays-per-year" min="0" max="100" value="10" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 税费设置 -->
+            <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="tax_settings">Tax Settings</label>
+                <input type="number" id="tax-rate" min="0" max="100" value="25" step="0.1" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                <div class="text-xs text-gray-500 mt-1" data-i18n="tax_note">Estimated tax rate (%) - used to calculate net salary</div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="SalaryCalc.loadSampleData()" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition" data-i18n="load_sample">Load Sample Data</button>
+                <button onclick="SalaryCalc.clearData()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear_data">Clear Data</button>
+                <button onclick="SalaryCalc.calc()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate Salary</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="salary-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="salary-results" class="hidden">
+            <div class="mb-4">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="gross_salary">Gross Salary (Before Taxes)</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="hourly">Hourly</div>
+                        <div class="stat-value" id="gross-hourly">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="daily">Daily</div>
+                        <div class="stat-value" id="gross-daily">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="weekly">Weekly</div>
+                        <div class="stat-value" id="gross-weekly">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="monthly">Monthly</div>
+                        <div class="stat-value" id="gross-monthly">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="annual">Annual</div>
+                        <div class="stat-value" id="gross-annual">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <div class="text-sm text-gray-500 mb-2" data-i18n="net_salary">Net Salary (After Taxes)</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="hourly">Hourly</div>
+                        <div class="stat-value" id="net-hourly">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="daily">Daily</div>
+                        <div class="stat-value" id="net-daily">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="weekly">Weekly</div>
+                        <div class="stat-value" id="net-weekly">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="monthly">Monthly</div>
+                        <div class="stat-value" id="net-monthly">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="annual">Annual</div>
+                        <div class="stat-value" id="net-annual">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 工作时间摘要 -->
+            <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="work_summary">Work Schedule Summary</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="annual_hours">Total Annual Hours</div>
+                        <div class="stat-value" id="total-annual-hours">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="monthly_days">Average Monthly Days</div>
+                        <div class="stat-value" id="avg-monthly-days">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label" data-i18n="total_tax">Total Annual Tax</div>
+                        <div class="stat-value" id="total-annual-tax">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" data-i18n="notes_list">
+                <li>Calculations are based on the provided work schedule and tax rate</li>
+                <li>Monthly calculations use an average of 12 months per year</li>
+                <li>Tax rate is applied uniformly across all salary types for estimation purposes</li>
+                <li>Results are estimates and may not reflect actual take-home pay</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const SalaryCalc = {
+            i18n: {
+                'en': {
+                    title: '💼 Salary Calculator',
+                    salary_amount: 'Salary Amount',
+                    hourly: 'Hourly',
+                    daily: 'Daily',
+                    weekly: 'Weekly',
+                    monthly: 'Monthly',
+                    annual: 'Annual',
+                    work_hours: 'Work Hours Settings',
+                    hours_per_day: 'Hours per Day',
+                    days_per_week: 'Days per Week',
+                    weeks_per_year: 'Weeks per Year',
+                    holidays_per_year: 'Holidays per Year',
+                    tax_settings: 'Tax Settings',
+                    tax_note: 'Estimated tax rate (%) - used to calculate net salary',
+                    load_sample: 'Load Sample Data',
+                    clear_data: 'Clear Data',
+                    calculate: 'Calculate Salary',
+                    gross_salary: 'Gross Salary (Before Taxes)',
+                    net_salary: 'Net Salary (After Taxes)',
+                    work_summary: 'Work Schedule Summary',
+                    annual_hours: 'Total Annual Hours',
+                    monthly_days: 'Average Monthly Days',
+                    total_tax: 'Total Annual Tax',
+                    notes: 'Notes:',
+                    notes_list: `
+                        <li>Calculations are based on the provided work schedule and tax rate</li>
+                        <li>Monthly calculations use an average of 12 months per year</li>
+                        <li>Tax rate is applied uniformly across all salary types for estimation purposes</li>
+                        <li>Results are estimates and may not reflect actual take-home pay</li>
+                    `,
+                    err_invalid_input: 'Please enter valid positive values for all fields',
+                    currency: '$',
+                    hours: 'hours'
+                },
+                'zh-CN': {
+                    title: '💼 薪资计算器',
+                    salary_amount: '薪资数额',
+                    hourly: '时薪',
+                    daily: '日薪',
+                    weekly: '周薪',
+                    monthly: '月薪',
+                    annual: '年薪',
+                    work_hours: '工作时间设置',
+                    hours_per_day: '每日工作小时',
+                    days_per_week: '每周工作日',
+                    weeks_per_year: '每年工作周数',
+                    holidays_per_year: '每年节假日天数',
+                    tax_settings: '税费设置',
+                    tax_note: '估计税率 (%) - 用于计算税后薪资',
+                    load_sample: '加载示例数据',
+                    clear_data: '清除数据',
+                    calculate: '计算薪资',
+                    gross_salary: '税前薪资',
+                    net_salary: '税后薪资',
+                    work_summary: '工作时间摘要',
+                    annual_hours: '全年工作总小时',
+                    monthly_days: '月平均工作日',
+                    total_tax: '全年总税费',
+                    notes: '说明：',
+                    notes_list: `
+                        <li>计算基于提供的工作时间安排和税率</li>
+                        <li>月薪计算使用每年12个月的平均值</li>
+                        <li>为估算目的，税率统一应用于所有薪资类型</li>
+                        <li>结果为估计值，可能与实际到手薪资有所不同</li>
+                    `,
+                    err_invalid_input: '请为所有字段输入有效的正值',
+                    currency: '¥',
+                    hours: '小时'
+                },
+                'zh-TW': {
+                    title: '💼 薪資計算器',
+                    salary_amount: '薪資數額',
+                    hourly: '時薪',
+                    daily: '日薪',
+                    weekly: '周薪',
+                    monthly: '月薪',
+                    annual: '年薪',
+                    work_hours: '工作時間設置',
+                    hours_per_day: '每日工作小時',
+                    days_per_week: '每週工作日',
+                    weeks_per_year: '每年工作周數',
+                    holidays_per_year: '每年節假日天數',
+                    tax_settings: '稅費設置',
+                    tax_note: '估計稅率 (%) - 用於計算稅後薪資',
+                    load_sample: '加載示例數據',
+                    clear_data: '清除數據',
+                    calculate: '計算薪資',
+                    gross_salary: '稅前薪資',
+                    net_salary: '稅後薪資',
+                    work_summary: '工作時間摘要',
+                    annual_hours: '全年工作總小時',
+                    monthly_days: '月平均工作日',
+                    total_tax: '全年總稅費',
+                    notes: '說明：',
+                    notes_list: `
+                        <li>計算基於提供的工作時間安排和稅率</li>
+                        <li>月薪計算使用每年12個月的平均值</li>
+                        <li>為估算目的，稅率統一應用於所有薪資類型</li>
+                        <li>結果為估計值，可能與實際到手薪資有所不同</li>
+                    `,
+                    err_invalid_input: '請為所有欄位輸入有效的正值',
+                    currency: 'NT$',
+                    hours: '小時'
+                },
+                'ja': {
+                    title: '💼 給与計算ツール',
+                    salary_amount: '給与額',
+                    hourly: '時給',
+                    daily: '日給',
+                    weekly: '週給',
+                    monthly: '月給',
+                    annual: '年収',
+                    work_hours: '労働時間設定',
+                    hours_per_day: '1日の労働時間',
+                    days_per_week: '1週間の労働日数',
+                    weeks_per_year: '1年の労働週数',
+                    holidays_per_year: '1年の休日数',
+                    tax_settings: '税設定',
+                    tax_note: '推定税率（％） - 税引後給与の計算に使用',
+                    load_sample: 'サンプルデータを読み込む',
+                    clear_data: 'データをクリア',
+                    calculate: '給与を計算',
+                    gross_salary: '税引前給与',
+                    net_salary: '税引後給与',
+                    work_summary: '労働時間サマリー',
+                    annual_hours: '総年間労働時間',
+                    monthly_days: '月平均労働日数',
+                    total_tax: '総年間税額',
+                    notes: '注釈：',
+                    notes_list: `
+                        <li>計算は指定された労働時間と税率に基づいています</li>
+                        <li>月額計算は年間12ヶ月の平均を使用しています</li>
+                        <li>推定のため、税率はすべての給与タイプに均一に適用されます</li>
+                        <li>結果は推定値であり、実際の手取り額とは異なる場合があります</li>
+                    `,
+                    err_invalid_input: 'すべてのフィールドに有効な正数を入力してください',
+                    currency: '円',
+                    hours: '時間'
+                },
+                'ru': {
+                    title: '💼 Калькулятор зарплаты',
+                    salary_amount: 'Сумма зарплаты',
+                    hourly: 'Почасовая',
+                    daily: 'Дневная',
+                    weekly: 'Еженедельная',
+                    monthly: 'Ежемесячная',
+                    annual: 'Годовая',
+                    work_hours: 'Настройки рабочих часов',
+                    hours_per_day: 'Часов в день',
+                    days_per_week: 'Дней в неделю',
+                    weeks_per_year: 'Недель в году',
+                    holidays_per_year: 'Праздничных дней в году',
+                    tax_settings: 'Настройки налогов',
+                    tax_note: 'Предполагаемая налоговая ставка (%) - используется для расчета чистой зарплаты',
+                    load_sample: 'Загрузить пример данных',
+                    clear_data: 'Очистить данные',
+                    calculate: 'Рассчитать зарплату',
+                    gross_salary: 'Базовая зарплата (до вычета налогов)',
+                    net_salary: 'Чистая зарплата (после вычета налогов)',
+                    work_summary: 'Сводка рабочего графика',
+                    annual_hours: 'Общее количество рабочих часов в году',
+                    monthly_days: 'Среднее количество рабочих дней в месяце',
+                    total_tax: 'Общий годовой налог',
+                    notes: 'Примечания:',
+                    notes_list: `
+                        <li>Расчеты основаны на предоставленном рабочем графике и налоговой ставке</li>
+                        <li>Ежемесячные расчеты используют среднее значение 12 месяцев в году</li>
+                        <li>Налоговая ставка применяется равномерно ко всем типам зарплаты в целях оценки</li>
+                        <li>Результаты являются оценкой и могут не соответствовать фактической полученной зарплате</li>
+                    `,
+                    err_invalid_input: 'Пожалуйста, введите действительные положительные значения для всех полей',
+                    currency: '₽',
+                    hours: 'часов'
+                }
+            },
+            
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                // 初始化语言
+                this.changeLang();
+            },
+            
+            changeLang: function() {
+                const lang = document.getElementById('salary-lang').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.innerHTML = this.i18n[lang][key];
+                    }
+                });
+                
+                // 更新选项文本
+                const selectOptions = document.querySelectorAll('option[data-i18n]');
+                selectOptions.forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        option.text = this.i18n[lang][key];
+                    }
+                });
+            },
+            
+            updateInputs: function() {
+                // 根据选择的薪资类型调整输入提示
+                const salaryType = document.getElementById('salary-type').value;
+                const input = document.getElementById('salary-amount');
+                
+                switch(salaryType) {
+                    case 'hourly':
+                        input.placeholder = 'e.g. 25';
+                        break;
+                    case 'daily':
+                        input.placeholder = 'e.g. 200';
+                        break;
+                    case 'weekly':
+                        input.placeholder = 'e.g. 1000';
+                        break;
+                    case 'monthly':
+                        input.placeholder = 'e.g. 4333';
+                        break;
+                    case 'annual':
+                        input.placeholder = 'e.g. 52000';
+                        break;
+                }
+            },
+            
+            loadSampleData: function() {
+                document.getElementById('salary-amount').value = 50000;
+                document.getElementById('salary-type').value = 'annual';
+                document.getElementById('hours-per-day').value = 8;
+                document.getElementById('days-per-week').value = 5;
+                document.getElementById('weeks-per-year').value = 52;
+                document.getElementById('holidays-per-year').value = 10;
+                document.getElementById('tax-rate').value = 25;
+            },
+            
+            clearData: function() {
+                document.getElementById('salary-amount').value = 50000;
+                document.getElementById('salary-type').value = 'annual';
+                document.getElementById('hours-per-day').value = 8;
+                document.getElementById('days-per-week').value = 5;
+                document.getElementById('weeks-per-year').value = 52;
+                document.getElementById('holidays-per-year').value = 10;
+                document.getElementById('tax-rate').value = 25;
+                document.getElementById('salary-error').classList.add('hidden');
+                document.getElementById('salary-results').classList.add('hidden');
+            },
+            
+            calc: function() {
+                try {
+                    // 获取输入值
+                    const salaryAmount = parseFloat(document.getElementById('salary-amount').value);
+                    const salaryType = document.getElementById('salary-type').value;
+                    const hoursPerDay = parseFloat(document.getElementById('hours-per-day').value);
+                    const daysPerWeek = parseFloat(document.getElementById('days-per-week').value);
+                    const weeksPerYear = parseFloat(document.getElementById('weeks-per-year').value);
+                    const holidaysPerYear = parseFloat(document.getElementById('holidays-per-year').value);
+                    const taxRate = parseFloat(document.getElementById('tax-rate').value) / 100;
+                    
+                    // 验证输入
+                    if (isNaN(salaryAmount) || isNaN(hoursPerDay) || isNaN(daysPerWeek) || 
+                        isNaN(weeksPerYear) || isNaN(holidaysPerYear) || isNaN(taxRate) ||
+                        salaryAmount < 0 || hoursPerDay <= 0 || daysPerWeek <= 0 || 
+                        weeksPerYear <= 0 || holidaysPerYear < 0 || taxRate < 0 || taxRate > 1) {
+                        throw new Error('err_invalid_input');
+                    }
+                    
+                    // 计算工作时间
+                    const workingDaysPerYear = (weeksPerYear * daysPerWeek) - holidaysPerYear;
+                    const annualHours = workingDaysPerYear * hoursPerDay;
+                    const monthlyDays = workingDaysPerYear / 12;
+                    
+                    // 计算年薪（作为基准）
+                    let annualSalary;
+                    switch(salaryType) {
+                        case 'hourly':
+                            annualSalary = salaryAmount * annualHours;
+                            break;
+                        case 'daily':
+                            annualSalary = salaryAmount * workingDaysPerYear;
+                            break;
+                        case 'weekly':
+                            annualSalary = salaryAmount * weeksPerYear;
+                            break;
+                        case 'monthly':
+                            annualSalary = salaryAmount * 12;
+                            break;
+                        case 'annual':
+                            annualSalary = salaryAmount;
+                            break;
+                    }
+                    
+                    // 计算其他薪资类型
+                    const monthlySalary = annualSalary / 12;
+                    const weeklySalary = annualSalary / weeksPerYear;
+                    const dailySalary = weeklySalary / daysPerWeek;
+                    const hourlySalary = dailySalary / hoursPerDay;
+                    
+                    // 计算税后薪资
+                    const netAnnual = annualSalary * (1 - taxRate);
+                    const netMonthly = monthlySalary * (1 - taxRate);
+                    const netWeekly = weeklySalary * (1 - taxRate);
+                    const netDaily = dailySalary * (1 - taxRate);
+                    const netHourly = hourlySalary * (1 - taxRate);
+                    
+                    // 计算总税费
+                    const totalTax = annualSalary - netAnnual;
+                    
+                    // 格式化结果
+                    const lang = document.getElementById('salary-lang').value;
+                    const currency = this.i18n[lang]['currency'];
+                    const hoursText = this.i18n[lang]['hours'];
+                    
+                    // 显示结果
+                    document.getElementById('gross-hourly').textContent = currency + hourlySalary.toFixed(2) + '/' + this.i18n[lang]['hourly'].toLowerCase();
+                    document.getElementById('gross-daily').textContent = currency + dailySalary.toFixed(2) + '/' + this.i18n[lang]['daily'].toLowerCase();
+                    document.getElementById('gross-weekly').textContent = currency + weeklySalary.toFixed(2) + '/' + this.i18n[lang]['weekly'].toLowerCase();
+                    document.getElementById('gross-monthly').textContent = currency + monthlySalary.toFixed(2) + '/' + this.i18n[lang]['monthly'].toLowerCase();
+                    document.getElementById('gross-annual').textContent = currency + annualSalary.toFixed(2) + '/' + this.i18n[lang]['annual'].toLowerCase();
+                    
+                    document.getElementById('net-hourly').textContent = currency + netHourly.toFixed(2) + '/' + this.i18n[lang]['hourly'].toLowerCase();
+                    document.getElementById('net-daily').textContent = currency + netDaily.toFixed(2) + '/' + this.i18n[lang]['daily'].toLowerCase();
+                    document.getElementById('net-weekly').textContent = currency + netWeekly.toFixed(2) + '/' + this.i18n[lang]['weekly'].toLowerCase();
+                    document.getElementById('net-monthly').textContent = currency + netMonthly.toFixed(2) + '/' + this.i18n[lang]['monthly'].toLowerCase();
+                    document.getElementById('net-annual').textContent = currency + netAnnual.toFixed(2) + '/' + this.i18n[lang]['annual'].toLowerCase();
+                    
+                    document.getElementById('total-annual-hours').textContent = annualHours.toFixed(0) + ' ' + hoursText;
+                    document.getElementById('avg-monthly-days').textContent = monthlyDays.toFixed(1);
+                    document.getElementById('total-annual-tax').textContent = currency + totalTax.toFixed(2);
+                    
+                    document.getElementById('salary-results').classList.remove('hidden');
+                    document.getElementById('salary-error').classList.add('hidden');
+                    
+                } catch (e) {
+                    // 显示错误
+                    const lang = document.getElementById('salary-lang').value;
+                    const errorEl = document.getElementById('salary-error');
+                    errorEl.textContent = this.i18n[lang][e.message] || e.message;
+                    errorEl.classList.remove('hidden');
+                    document.getElementById('salary-results').classList.add('hidden');
+                }
+            }
+        };
+        
+        // 初始化计算器
+        document.addEventListener('DOMContentLoaded', function() {
+            SalaryCalc.init();
+            SalaryCalc.updateInputs();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

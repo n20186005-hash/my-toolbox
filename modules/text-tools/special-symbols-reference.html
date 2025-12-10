@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="🔣">
+    <title>特殊符号参考工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .symbol-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .symbol-card { padding: 15px; border: 1px solid #e5e7eb; border-radius: 6px; transition: all 0.2s; text-align: center; }
+        .symbol-card:hover { background-color: #f0fdf4; border-color: #a7f3d0; transform: translateY(-2px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .symbol-char { font-size: 1.8rem; margin-bottom: 8px; }
+        .symbol-name { font-size: 0.9rem; color: #1e293b; margin-bottom: 4px; }
+        .symbol-code { font-family: monospace; font-size: 0.8rem; color: #6b7280; background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background-color: #f8fafc; font-weight: 600; color: #1e293b; }
+        tr:hover { background-color: #f0fdf4; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/text-tools/special-symbols-reference.html" />
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔣 特殊符号参考工具</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">搜索符号</h3>
+                <div class="form-group">
+                    <label data-i18n="search_keyword">关键词</label>
+                    <input type="text" id="search-input" onkeyup="Tool.search()" placeholder="输入符号名称或代码..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="results">符号列表</h3>
+                    <span class="text-sm text-gray-500" id="count-display"></span>
+                </div>
+                <div id="results-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-i18n="symbol">符号</th>
+                                <th data-i18n="name">名称</th>
+                                <th data-i18n="code">HTML代码</th>
+                            </tr>
+                        </thead>
+                        <tbody id="symbol-table-body">
+                            <!-- 符号数据将通过JS动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于特殊符号参考工具</h3>
+                <p data-i18n="intro_text">本工具整理了常用的特殊符号，包括数学符号、希腊字母、箭头符号、货币符号等，每个符号都提供对应的HTML代码。点击符号或代码可复制到剪贴板，方便在文档和网页中使用。</p>
+                <p class="mt-4" data-i18n="more_tools">更多工具可访问：<a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '🔣 Special Symbols Reference',
+                    search: 'Search Symbols',
+                    'search_keyword': 'Keyword',
+                    'results': 'Symbols List',
+                    'symbol': 'Symbol',
+                    'name': 'Name',
+                    'code': 'HTML Code',
+                    'copied': 'Copied!',
+                    'intro_title': 'About Special Symbols Reference',
+                    'intro_text': 'This tool collects common special symbols, including mathematical symbols, Greek letters, arrow symbols, currency symbols, etc. Each symbol provides the corresponding HTML code. Click the symbol or code to copy to clipboard, convenient for use in documents and web pages.',
+                    'more_tools': 'More tools: <a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                },
+                'zh-CN': {
+                    title: '🔣 特殊符号参考工具',
+                    search: '搜索符号',
+                    'search_keyword': '关键词',
+                    'results': '符号列表',
+                    'symbol': '符号',
+                    'name': '名称',
+                    'code': 'HTML代码',
+                    'copied': '已复制！',
+                    'intro_title': '关于特殊符号参考工具',
+                    'intro_text': '本工具整理了常用的特殊符号，包括数学符号、希腊字母、箭头符号、货币符号等，每个符号都提供对应的HTML代码。点击符号或代码可复制到剪贴板，方便在文档和网页中使用。',
+                    'more_tools': '更多工具可访问：<a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                },
+                'zh-TW': {
+                    title: '🔣 特殊符號參考工具',
+                    search: '搜索符號',
+                    'search_keyword': '關鍵詞',
+                    'results': '符號列表',
+                    'symbol': '符號',
+                    'name': '名稱',
+                    'code': 'HTML程式碼',
+                    'copied': '已複製！',
+                    'intro_title': '關於特殊符號參考工具',
+                    'intro_text': '本工具整理了常用的特殊符號，包括數學符號、希臘字母、箭頭符號、貨幣符號等，每個符號都提供對應的HTML程式碼。點擊符號或程式碼可複製到剪貼簿，方便在文件和網頁中使用。',
+                    'more_tools': '更多工具可訪問：<a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                },
+                'ja': {
+                    title: '🔣 特殊記号参照ツール',
+                    search: '記号検索',
+                    'search_keyword': 'キーワード',
+                    'results': '記号一覧',
+                    'symbol': '記号',
+                    'name': '名前',
+                    'code': 'HTMLコード',
+                    'copied': 'コピーしました！',
+                    'intro_title': '特殊記号参照ツールについて',
+                    'intro_text': 'このツールは、数学記号、ギリシャ文字、矢印記号、通貨記号などの一般的な特殊記号を収集しています。各記号には対応するHTMLコードが提供されています。記号またはコードをクリックするとクリップボードにコピーされ、文書やWebページで簡単に使用できます。',
+                    'more_tools': 'その他のツール：<a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                },
+                'ru': {
+                    title: '🔣 Специальные символы справочник',
+                    search: 'Поиск символов',
+                    'search_keyword': 'Ключевое слово',
+                    'results': 'Список символов',
+                    'symbol': 'Символ',
+                    'name': 'Название',
+                    'code': 'HTML-код',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О справочнике специальных символов',
+                    'intro_text': 'Этот инструмент собирает часто используемые специальные символы, включая математические символы, греческие буквы, стрелки, валютные символы и т.д. Для каждого символа предоставлен соответствующий HTML-код. Нажмите на символ или код, чтобы скопировать его в буфер обмена, что удобно для использования в документах и веб-страницах.',
+                    'more_tools': 'Больше инструментов: <a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                }
+            },
+
+            // 符号数据
+            symbolData: [
+                { symbol: '©', code: '&copy;', name: '版权符号', en: 'Copyright Sign', zhTW: '版權符號', ja: '著作権記号', ru: 'Знак копирайта' },
+                { symbol: '®', code: '&reg;', name: '注册商标', en: 'Registered Trademark', zhTW: '註冊商標', ja: '登録商標', ru: 'Зарегистрированный товарный знак' },
+                { symbol: '™', code: '&trade;', name: '商标符号', en: 'Trademark', zhTW: '商標符號', ja: '商標記号', ru: 'Товарный знак' },
+                { symbol: '§', code: '&sect;', name: '章节符号', en: 'Section Sign', zhTW: '章節符號', ja: '節記号', ru: 'Знак абзаца' },
+                { symbol: '¶', code: '&para;', name: '段落符号', en: 'Paragraph Sign', zhTW: '段落符號', ja: '段落記号', ru: 'Знак параграфа' },
+                { symbol: '†', code: '&dagger;', name: '匕首符号', en: 'Dagger', zhTW: '匕首符號', ja: '短剣記号', ru: 'Кинжал' },
+                { symbol: '‡', code: '&Dagger;', name: '双匕首符号', en: 'Double Dagger', zhTW: '雙匕首符號', ja: '二重短剣記号', ru: 'Двойной кинжал' },
+                { symbol: '•', code: '&bull;', name: '项目符号', en: 'Bullet', zhTW: '項目符號', ja: 'リストマーカー', ru: 'Маркер списка' },
+                { symbol: '…', code: '&hellip;', name: '省略号', en: 'Ellipsis', zhTW: '省略號', ja: '省略記号', ru: 'Эллипс' },
+                { symbol: '♠', code: '&spades;', name: '黑桃', en: 'Spades', zhTW: '黑桃', ja: 'スペード', ru: 'Пики' },
+                { symbol: '♥', code: '&hearts;', name: '红心', en: 'Hearts', zhTW: '紅心', ja: 'ハート', ru: 'Черви' },
+                { symbol: '♦', code: '&diams;', name: '方块', en: 'Diamonds', zhTW: '方塊', ja: 'ダイヤ', ru: 'Бубны' },
+                { symbol: '♣', code: '&clubs;', name: '梅花', en: 'Clubs', zhTW: '梅花', ja: 'クラブ', ru: 'Трефы' },
+                { symbol: 'α', code: '&alpha;', name: '希腊字母阿尔法', en: 'Greek Alpha', zhTW: '希臘字母阿爾法', ja: 'ギリシャ文字アルファ', ru: 'Греческая альфа' },
+                { symbol: 'β', code: '&beta;', name: '希腊字母贝塔', en: 'Greek Beta', zhTW: '希臘字母貝塔', ja: 'ギリシャ文字ベータ', ru: 'Греческая бета' },
+                { symbol: 'γ', code: '&gamma;', name: '希腊字母伽马', en: 'Greek Gamma', zhTW: '希臘字母伽馬', ja: 'ギリシャ文字ガンマ', ru: 'Греческая гамма' },
+                { symbol: '±', code: '&plusmn;', name: '正负号', en: 'Plus-Minus', zhTW: '正負號', ja: 'プラスマイナス', ru: 'Плюс-минус' },
+                { symbol: '×', code: '&times;', name: '乘号', en: 'Multiplication', zhTW: '乘號', ja: '掛け算記号', ru: 'Знак умножения' },
+                { symbol: '÷', code: '&divide;', name: '除号', en: 'Division', zhTW: '除號', ja: '割り算記号', ru: 'Знак деления' },
+                { symbol: '≠', code: '&ne;', name: '不等于', en: 'Not Equal', zhTW: '不等於', ja: '等しくない', ru: 'Не равно' },
+                { symbol: '≤', code: '&le;', name: '小于等于', en: 'Less Than or Equal', zhTW: '小於等於', ja: '以下', ru: 'Меньше или равно' },
+                { symbol: '≥', code: '&ge;', name: '大于等于', en: 'Greater Than or Equal', zhTW: '大於等於', ja: '以上', ru: 'Больше или равно' },
+                { symbol: '←', code: '&larr;', name: '左箭头', en: 'Left Arrow', zhTW: '左箭頭', ja: '左矢印', ru: 'Левая стрелка' },
+                { symbol: '→', code: '&rarr;', name: '右箭头', en: 'Right Arrow', zhTW: '右箭頭', ja: '右矢印', ru: 'Правая стрелка' },
+                { symbol: '↑', code: '&uarr;', name: '上箭头', en: 'Up Arrow', zhTW: '上箭頭', ja: '上矢印', ru: 'Верхняя стрелка' },
+                { symbol: '↓', code: '&darr;', name: '下箭头', en: 'Down Arrow', zhTW: '下箭頭', ja: '下矢印', ru: 'Нижняя стрелка' },
+                { symbol: '€', code: '&euro;', name: '欧元符号', en: 'Euro', zhTW: '歐元符號', ja: 'ユーロ記号', ru: 'Евро' },
+                { symbol: '£', code: '&pound;', name: '英镑符号', en: 'Pound Sterling', zhTW: '英鎊符號', ja: 'ポンド記号', ru: 'Фунт стерлингов' },
+                { symbol: '$', code: '&dollar;', name: '美元符号', en: 'Dollar', zhTW: '美元符號', ja: 'ドル記号', ru: 'Доллар' },
+                { symbol: '¥', code: '&yen;', name: '日元符号', en: 'Yen', zhTW: '日元符號', ja: '円記号', ru: 'Ена' },
+                { symbol: '§', code: '&sect;', name: '章节符号', en: 'Section', zhTW: '章節符號', ja: '節記号', ru: 'Раздел' },
+                { symbol: '°', code: '&deg;', name: '度数符号', en: 'Degree', zhTW: '度數符號', ja: '度記号', ru: 'Градус' },
+                { symbol: '√', code: '&radic;', name: '平方根', en: 'Square Root', zhTW: '平方根', ja: '平方根', ru: 'Квадратный корень' },
+                { symbol: '∞', code: '&infin;', name: '无限符号', en: 'Infinity', zhTW: '無限符號', ja: '無限大記号', ru: 'Бесконечность' },
+                { symbol: '∫', code: '&int;', name: '积分符号', en: 'Integral', zhTW: '積分符號', ja: '積分記号', ru: 'Интеграл' }
+            ],
+
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang') || 'zh-CN';
+                if (this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                this.changeLang();
+                this.renderSymbols();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                // 更新URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, null, '?' + urlParams.toString());
+                
+                // 更新页面文本
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.innerHTML = this.i18n[lang][key];
+                    }
+                });
+                
+                // 重新渲染符号列表以更新名称
+                this.renderSymbols();
+            },
+
+            renderSymbols: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const tableBody = document.getElementById('symbol-table-body');
+                tableBody.innerHTML = '';
+                
+                this.symbolData.forEach(item => {
+                    let nameText = item.name;
+                    // 根据当前语言获取对应的名称
+                    switch(lang) {
+                        case 'en':
+                            nameText = item.en || item.name;
+                            break;
+                        case 'zh-TW':
+                            nameText = item.zhTW || item.name;
+                            break;
+                        case 'ja':
+                            nameText = item.ja || item.name;
+                            break;
+                        case 'ru':
+                            nameText = item.ru || item.name;
+                            break;
+                    }
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><span class="symbol-char" onclick="Tool.copyToClipboard('${item.symbol}')">${item.symbol}</span></td>
+                        <td>${nameText}</td>
+                        <td><span class="symbol-code" onclick="Tool.copyToClipboard('${item.code}')">${item.code}</span></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                this.updateCount();
+            },
+
+            search: function() {
+                const searchTerm = document.getElementById('search-input').value.toLowerCase();
+                const lang = document.getElementById('lang-selector').value;
+                const rows = document.querySelectorAll('#symbol-table-body tr');
+                let count = 0;
+                
+                rows.forEach((row, index) => {
+                    const item = this.symbolData[index];
+                    let nameText = item.name.toLowerCase();
+                    
+                    // 根据当前语言获取对应的名称进行搜索
+                    switch(lang) {
+                        case 'en':
+                            nameText = (item.en || item.name).toLowerCase();
+                            break;
+                        case 'zh-TW':
+                            nameText = (item.zhTW || item.name).toLowerCase();
+                            break;
+                        case 'ja':
+                            nameText = (item.ja || item.name).toLowerCase();
+                            break;
+                        case 'ru':
+                            nameText = (item.ru || item.name).toLowerCase();
+                            break;
+                    }
+                    
+                    const symbol = item.symbol.toLowerCase();
+                    const code = item.code.toLowerCase();
+                    
+                    if (nameText.includes(searchTerm) || symbol.includes(searchTerm) || code.includes(searchTerm)) {
+                        row.style.display = '';
+                        count++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                document.getElementById('count-display').textContent = `${count} ${this.i18n[lang]['results'].toLowerCase()}`;
+            },
+
+            updateCount: function() {
+                const lang = document.getElementById('lang-selector').value;
+                document.getElementById('count-display').textContent = `${this.symbolData.length} ${this.i18n[lang]['results'].toLowerCase()}`;
+            },
+
+            copyToClipboard: function(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const notification = document.getElementById('copy-notification');
+                    notification.style.opacity = '1';
+                    setTimeout(() => {
+                        notification.style.opacity = '0';
+                    }, 2000);
+                });
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            Tool.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

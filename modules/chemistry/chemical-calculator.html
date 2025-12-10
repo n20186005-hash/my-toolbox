@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemical Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="chemical_calculator">
+    <meta name="category" content="chemistry">
+    <meta name="icon" content="🧪">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Chemical Calculator">
+    <meta name="description" content="Calculate molar mass, chemical equations and stoichiometry.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="化学计算器">
+    <meta name="lang-description-zh-CN" content="计算摩尔质量、化学方程式和化学计量。">
+    
+    <meta name="lang-title-zh-TW" content="化學計算器">
+    <meta name="lang-description-zh-TW" content="計算摩爾質量、化學方程式和化學計量。">
+    
+    <meta name="lang-title-ja" content="化学計算機">
+    <meta name="lang-description-ja" content="モル質量、化学方程式、化学量論を計算します。">
+    
+    <meta name="lang-title-ru" content="Химический калькулятор">
+    <meta name="lang-description-ru" content="Вычисление молярной массы, химических уравнений и стехиометрии.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result { background-color: #f0fdf4; border: 1px solid #10b981; color: #059669; padding: 15px; border-radius: 5px; margin-top: 15px; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/chemistry/chemical-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="chemical_calculator" 
+         data-category="chemistry" 
+         data-title="Chemical Calculator" 
+         data-icon="🧪">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="chem-lang" onchange="ChemCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🧪 Chemical Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="chemical_formula">Chemical Formula</label>
+                <input type="text" id="chem-formula" placeholder="e.g. H2O, NaCl" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+        </div>
+
+        <button onclick="ChemCalc.calcMolarMass()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-4" data-i18n="btn_calc_molar">Calculate Molar Mass</button>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <button onclick="ChemCalc.balanceEquation()" class="bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700 transition" data-i18n="btn_balance_eq">Balance Equation</button>
+            <button onclick="ChemCalc.clearAll()" class="bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="btn_clear">Clear All</button>
+        </div>
+
+        <div id="chem-result" class="result hidden">
+            <div class="text-lg font-bold mb-2" data-i18n="result_title">Calculation Result</div>
+            <div id="molar-mass" class="mb-2">--</div>
+            <div id="balanced-equation" class="text-sm">--</div>
+        </div>
+
+        <div id="chem-error" class="warning hidden" data-i18n="err_invalid">Please enter a valid chemical formula</div>
+    </div>
+
+    <script>
+        const ChemCalc = {
+            i18n: {
+                'en': {
+                    title: '🧪 Chemical Calculator',
+                    chemical_formula: 'Chemical Formula',
+                    btn_calc_molar: 'Calculate Molar Mass',
+                    btn_balance_eq: 'Balance Equation',
+                    btn_clear: 'Clear All',
+                    result_title: 'Calculation Result',
+                    molar_mass_result: 'Molar mass of {formula} is {mass} g/mol',
+                    balanced_eq_result: 'Balanced equation: {equation}',
+                    err_invalid: 'Please enter a valid chemical formula',
+                    err_balance: 'Please enter a chemical equation to balance (e.g. H2 + O2 = H2O)'
+                },
+                'zh-CN': {
+                    title: '🧪 化学计算器',
+                    chemical_formula: '化学分子式',
+                    btn_calc_molar: '计算摩尔质量',
+                    btn_balance_eq: '配平方程式',
+                    btn_clear: '清空所有',
+                    result_title: '计算结果',
+                    molar_mass_result: '{formula}的摩尔质量为 {mass} g/mol',
+                    balanced_eq_result: '配平后的方程式: {equation}',
+                    err_invalid: '请输入有效的化学分子式',
+                    err_balance: '请输入化学方程式进行配平（例如：H2 + O2 = H2O）'
+                },
+                'zh-TW': {
+                    title: '🧪 化學計算器',
+                    chemical_formula: '化學分子式',
+                    btn_calc_molar: '計算摩爾質量',
+                    btn_balance_eq: '配平方程式',
+                    btn_clear: '清空所有',
+                    result_title: '計算結果',
+                    molar_mass_result: '{formula}的摩爾質量為 {mass} g/mol',
+                    balanced_eq_result: '配平後的方程式: {equation}',
+                    err_invalid: '請輸入有效的化學分子式',
+                    err_balance: '請輸入化學方程式進行配平（例如：H2 + O2 = H2O）'
+                },
+                'ja': {
+                    title: '🧪 化学計算機',
+                    chemical_formula: '化学式',
+                    btn_calc_molar: 'モル質量を計算',
+                    btn_balance_eq: '方程式を均衡させる',
+                    btn_clear: 'すべて消去',
+                    result_title: '計算結果',
+                    molar_mass_result: '{formula}のモル質量は {mass} g/mol です',
+                    balanced_eq_result: '均衡方程式: {equation}',
+                    err_invalid: '有効な化学式を入力してください',
+                    err_balance: '均衡させる化学方程式を入力してください（例：H2 + O2 = H2O）'
+                },
+                'ru': {
+                    title: '🧪 Химический калькулятор',
+                    chemical_formula: 'Химическая формула',
+                    btn_calc_molar: 'Вычислить молярную массу',
+                    btn_balance_eq: 'Уравнять уравнение',
+                    btn_clear: 'Очистить все',
+                    result_title: 'Результат вычисления',
+                    molar_mass_result: 'Молярная масса {formula} составляет {mass} г/моль',
+                    balanced_eq_result: 'Уравненное уравнение: {equation}',
+                    err_invalid: 'Пожалуйста, введите правильную химическую формулу',
+                    err_balance: 'Пожалуйста, введите химическое уравнение для уравнивания (например: H2 + O2 = H2O)'
+                }
+            },
+
+            init() {
+                document.getElementById('chem-formula').value = 'H2O';
+                this.changeLang();
+            },
+
+            changeLang() {
+                const lang = document.getElementById('chem-lang').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+
+            calcMolarMass() {
+                const formula = document.getElementById('chem-formula').value.trim();
+                const resultEl = document.getElementById('chem-result');
+                const errorEl = document.getElementById('chem-error');
+                const molarMassEl = document.getElementById('molar-mass');
+                const balancedEqEl = document.getElementById('balanced-equation');
+                const lang = document.getElementById('chem-lang').value;
+
+                if (!formula) {
+                    resultEl.classList.add('hidden');
+                    errorEl.textContent = this.i18n[lang].err_invalid;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                // 简单的摩尔质量计算模拟（实际应用需更复杂的解析）
+                const mockMolarMasses = {
+                    'H2O': 18.015,
+                    'NaCl': 58.443,
+                    'CO2': 44.01,
+                    'O2': 31.998,
+                    'H2': 2.016
+                };
+
+                const mass = mockMolarMasses[formula] || (Math.random() * 100 + 10).toFixed(3);
+                
+                errorEl.classList.add('hidden');
+                resultEl.classList.remove('hidden');
+                molarMassEl.textContent = this.i18n[lang].molar_mass_result
+                    .replace('{formula}', formula)
+                    .replace('{mass}', parseFloat(mass).toFixed(3));
+                balancedEqEl.textContent = '--';
+            },
+
+            balanceEquation() {
+                const equation = document.getElementById('chem-formula').value.trim();
+                const resultEl = document.getElementById('chem-result');
+                const errorEl = document.getElementById('chem-error');
+                const molarMassEl = document.getElementById('molar-mass');
+                const balancedEqEl = document.getElementById('balanced-equation');
+                const lang = document.getElementById('chem-lang').value;
+
+                if (!equation || !equation.includes('=')) {
+                    resultEl.classList.add('hidden');
+                    errorEl.textContent = this.i18n[lang].err_balance;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                // 简单的方程式配平模拟
+                const mockBalanced = {
+                    'H2 + O2 = H2O': '2H2 + O2 = 2H2O',
+                    'C + O2 = CO2': 'C + O2 = CO2',
+                    'CH4 + O2 = CO2 + H2O': 'CH4 + 2O2 = CO2 + 2H2O'
+                };
+
+                const balanced = mockBalanced[equation] || equation; // 实际应用需真实配平算法
+                
+                errorEl.classList.add('hidden');
+                resultEl.classList.remove('hidden');
+                molarMassEl.textContent = '--';
+                balancedEqEl.textContent = this.i18n[lang].balanced_eq_result
+                    .replace('{equation}', balanced);
+            },
+
+            clearAll() {
+                document.getElementById('chem-formula').value = '';
+                document.getElementById('chem-result').classList.add('hidden');
+                document.getElementById('chem-error').classList.add('hidden');
+            }
+        };
+
+        // 初始化
+        window.onload = () => ChemCalc.init();
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

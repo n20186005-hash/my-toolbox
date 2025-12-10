@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Development Tools">
+    <meta name="icon" content="🔍">
+    <title>Regular Expression Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1200px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 100px; resize: vertical; font-family: monospace; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-row { padding: 6px 0; border-bottom: 1px dashed #a7f3d0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #1e3a8a; font-weight: 500; }
+        .result-value { font-weight: 600; color: #065f46; font-family: monospace; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; line-height: 1.6; }
+        .regex-categories { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
+        .category-tag { padding: 4px 12px; background: #e0f2fe; color: #0369a1; border-radius: 16px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .category-tag:hover { background: #bae6fd; }
+        .category-tag.active { background: #0ea5e9; color: white; }
+        .regex-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin: 20px 0; }
+        .regex-item { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; transition: all 0.2s; background: white; }
+        .regex-item:hover { border-color: #34d399; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transform: translateY(-1px); }
+        .regex-title { font-weight: 600; color: #1f2937; margin-bottom: 8px; }
+        .regex-pattern { background: #f9fafb; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.9rem; margin: 8px 0; color: #dc2626; word-break: break-all; }
+        .regex-desc { font-size: 0.85rem; color: #6b7280; margin-top: 8px; }
+        .test-area { margin-top: 20px; }
+        .btn-copy { background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-left: 8px; transition: background 0.2s; }
+        .btn-copy:hover { background: #2563eb; }
+        .btn-test { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; margin-top: 10px; transition: background 0.2s; }
+        .btn-test:hover { background: #059669; }
+        .match-result { margin-top: 10px; padding: 10px; border-radius: 6px; font-family: monospace; }
+        .match-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .match-fail { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .search-box { max-width: 500px; margin: 20px 0; position: relative; }
+        
+        /* Toast Notification */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+        .toast { background: rgba(31, 41, 55, 0.9); color: white; padding: 10px 20px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: opacity 0.3s ease; opacity: 0; }
+        .toast.show { opacity: 1; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/regex-library.html" />
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div class="tool-module" id="regex-library-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4 z-10">
+            <select id="lang-selector" onchange="RegexLibrary.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none cursor-pointer hover:bg-white">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2 flex items-center gap-2">
+            <span>🔍</span>
+            <span data-i18n="title">Regular Expression Library</span>
+        </h2>
+
+        <div class="space-y-6">
+            <!-- Search Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search_regex">Search & Filter Regular Expressions</h3>
+                <div class="search-box">
+                    <input type="text" id="search_input" placeholder="Search regex patterns..." oninput="RegexLibrary.filterRegex()" class="w-full focus:ring-2 focus:ring-green-500 outline-none border-gray-300 rounded-lg pl-4 pr-10 py-2">
+                    <span class="absolute right-3 top-2.5 text-gray-400">🔍</span>
+                </div>
+                
+                <div class="text-sm text-gray-500 mb-2" data-i18n="categories">Categories:</div>
+                <div class="regex-categories" id="category_tags">
+                    <div class="category-tag active" data-category="all">All</div>
+                    <div class="category-tag" data-category="phone">Phone</div>
+                    <div class="category-tag" data-category="email">Email</div>
+                    <div class="category-tag" data-category="idcard">ID Card</div>
+                    <div class="category-tag" data-category="url">URL</div>
+                    <div class="category-tag" data-category="date">Date</div>
+                    <div class="category-tag" data-category="number">Number</div>
+                    <div class="category-tag" data-category="string">String</div>
+                    <div class="category-tag" data-category="password">Password</div>
+                    <div class="category-tag" data-category="ip">IP Address</div>
+                </div>
+            </div>
+
+            <!-- Regex Library Display -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="regex_library">Regular Expression Library</h3>
+                <div class="regex-list" id="regex_list">
+                    <!-- Regex items will be populated here dynamically -->
+                </div>
+            </div>
+
+            <!-- Test Regex Section -->
+            <div class="section test-area bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                    <span data-i18n="test_regex">Test Regular Expression</span>
+                    <span class="text-xs font-normal text-gray-400 bg-white px-2 py-0.5 rounded border border-gray-200">Live Preview</span>
+                </h3>
+                <div class="form-group">
+                    <label data-i18n="regex_pattern">Regular Expression Pattern</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="test_regex" placeholder="/^[a-zA-Z0-9]+$/" class="focus:ring-2 focus:ring-green-500 outline-none flex-1 font-mono text-gray-700">
+                        <button class="btn-copy" onclick="RegexLibrary.copyTestRegex()" data-i18n="copy">Copy</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label data-i18n="test_text">Test Text</label>
+                    <textarea id="test_text" placeholder="Enter text to test against the regex pattern..." class="focus:ring-2 focus:ring-green-500 outline-none w-full p-3 font-mono text-sm text-gray-700 bg-white"></textarea>
+                </div>
+                
+                <button onclick="RegexLibrary.testRegex()" class="btn-test w-full md:w-auto" data-i18n="test_btn">Test Match</button>
+                
+                <div id="match_result" class="match-result hidden transition-all duration-300"></div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-3 text-gray-800" data-i18n="intro_title">About This Tool</h3>
+                <div data-i18n="intro_text" class="text-gray-600 text-sm">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const RegexLibrary = {
+            // Regex database with multi-language support
+            regexData: {
+                'phone': [
+                    {
+                        title: { 'en': 'Mobile Phone Number (China)', 'zh-CN': '手机号 (中国)', 'zh-TW': '手機號 (中國)', 'ja': '携帯電話番号 (中国)', 'ru': 'Мобильный номер (Китай)' },
+                        pattern: /^1[3-9]\d{9}$/,
+                        desc: { 'en': 'Matches Chinese mobile phone numbers starting with 13-19 followed by 9 digits', 'zh-CN': '匹配中国大陆手机号码，以13-19开头，后接9位数字', 'zh-TW': '匹配中國大陸手機號碼，以13-19開頭，後接9位數字', 'ja': '中国本土の携帯電話番号に一致します', 'ru': 'Соответствует мобильным номерам Китая' }
+                    },
+                    {
+                        title: { 'en': 'Landline Phone Number (China)', 'zh-CN': '固定电话 (中国)', 'zh-TW': '固定電話 (中國)', 'ja': '固定電話番号 (中国)', 'ru': 'Городской номер телефона (Китай)' },
+                        pattern: /^\d{3,4}-\d{7,8}$/,
+                        desc: { 'en': 'Matches Chinese landline numbers with area code and hyphen', 'zh-CN': '匹配中国固定电话号码，包含区号和连字符', 'zh-TW': '匹配中國固定電話號碼，包含區號和連字符', 'ja': '地域コードとハイフンを含む中国の固定電話番号', 'ru': 'Соответствует городским номерам телефона Китая' }
+                    }
+                ],
+                'email': [
+                    {
+                        title: { 'en': 'Email Address', 'zh-CN': '电子邮箱', 'zh-TW': '電子郵箱', 'ja': 'メールアドレス', 'ru': 'Электронная почта' },
+                        pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                        desc: { 'en': 'Standard email address validation', 'zh-CN': '标准电子邮箱格式验证', 'zh-TW': '標準電子郵箱格式驗證', 'ja': '標準的なメールアドレス形式の検証', 'ru': 'Проверка стандартного формата электронной почты' }
+                    }
+                ],
+                'idcard': [
+                    {
+                        title: { 'en': 'ID Card (China, 18 digits)', 'zh-CN': '身份证号码 (18位)', 'zh-TW': '身份證號碼 (18位)', 'ja': '身分証明書番号 (18桁)', 'ru': 'Номер удостоверения личности (18 цифр)' },
+                        pattern: /^[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/,
+                        desc: { 'en': '18-digit Chinese resident identity card number', 'zh-CN': '18位中国大陆居民身份证号码验证', 'zh-TW': '18位中國大陸居民身份證號碼驗證', 'ja': '18桁の中国本土の住民身分証明書番号の検証', 'ru': 'Проверка 18-значного номера удостоверения личности жителя Китая' }
+                    }
+                ],
+                'url': [
+                    {
+                        title: { 'en': 'URL Address', 'zh-CN': '网址链接', 'zh-TW': '網址鏈接', 'ja': 'URLアドレス', 'ru': 'URL-адрес' },
+                        pattern: /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/,
+                        desc: { 'en': 'Matches HTTP/HTTPS URLs with optional protocol', 'zh-CN': '匹配HTTP/HTTPS网址，协议可选', 'zh-TW': '匹配HTTP/HTTPS網址，協議可選', 'ja': 'HTTP/HTTPS URLに一致します', 'ru': 'Соответствует HTTP/HTTPS URL' }
+                    }
+                ],
+                'date': [
+                    {
+                        title: { 'en': 'Date (YYYY-MM-DD)', 'zh-CN': '日期 (YYYY-MM-DD)', 'zh-TW': '日期 (YYYY-MM-DD)', 'ja': '日付 (YYYY-MM-DD)', 'ru': 'Дата (ГГГГ-ММ-ДД)' },
+                        pattern: /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/,
+                        desc: { 'en': 'Matches date in ISO format (YYYY-MM-DD)', 'zh-CN': '匹配ISO格式的日期 (年-月-日)', 'zh-TW': '匹配ISO格式的日期 (年-月-日)', 'ja': 'ISO形式の日付に一致します', 'ru': 'Соответствует дате в формате ISO' }
+                    }
+                ],
+                'number': [
+                    {
+                        title: { 'en': 'Positive Integer', 'zh-CN': '正整数', 'zh-TW': '正整數', 'ja': '正の整数', 'ru': 'Положительное целое число' },
+                        pattern: /^[1-9]\d*$/,
+                        desc: { 'en': 'Matches positive integers (no leading zeros)', 'zh-CN': '匹配正整数，不包含前导零', 'zh-TW': '匹配正整數，不包含前導零', 'ja': '正の整数に一致します', 'ru': 'Соответствует положительным целым числам' }
+                    },
+                    {
+                        title: { 'en': 'Decimal Number', 'zh-CN': '小数', 'zh-TW': '小數', 'ja': '小数', 'ru': 'Десятичное число' },
+                        pattern: /^-?\d+(\.\d+)?$/,
+                        desc: { 'en': 'Matches positive/negative decimal numbers', 'zh-CN': '匹配正负小数，包括整数', 'zh-TW': '匹配正負小數，包括整數', 'ja': '正または負の小数に一致します', 'ru': 'Соответствует положительным/отрицательным десятичным числам' }
+                    }
+                ],
+                'string': [
+                    {
+                        title: { 'en': 'Chinese Characters', 'zh-CN': '中文字符', 'zh-TW': '中文字元', 'ja': '中国語の文字', 'ru': 'Китайские символы' },
+                        pattern: /^[\u4e00-\u9fa5]+$/,
+                        desc: { 'en': 'Matches only Chinese characters (no numbers or symbols)', 'zh-CN': '只匹配中文字符，不包含数字和符号', 'zh-TW': '只匹配中文字元，不包含數字和符號', 'ja': '中国語の文字のみに一致します', 'ru': 'Соответствует только китайским символам' }
+                    },
+                    {
+                        title: { 'en': 'Alphanumeric String', 'zh-CN': '字母数字字符串', 'zh-TW': '字母數字字串', 'ja': '英数字文字列', 'ru': 'Буквенно-цифровая строка' },
+                        pattern: /^[a-zA-Z0-9]+$/,
+                        desc: { 'en': 'Matches letters (upper/lower case) and numbers only', 'zh-CN': '只匹配字母（大小写）和数字', 'zh-TW': '只匹配字母（大小寫）和數字', 'ja': 'アルファベットと数字のみ', 'ru': 'Только буквы и цифры' }
+                    }
+                ],
+                'password': [
+                    {
+                        title: { 'en': 'Strong Password', 'zh-CN': '强密码', 'zh-TW': '強密碼', 'ja': '強いパスワード', 'ru': 'Сильный пароль' },
+                        pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+                        desc: { 'en': 'Min 8 chars, 1 upper, 1 lower, 1 number, 1 special char', 'zh-CN': '至少8个字符，包含大写字母、小写字母、数字和特殊字符', 'zh-TW': '至少8個字元，包含大寫字母、小寫字母、數字和特殊字元', 'ja': '最小8文字、大文字/小文字/数字/特殊文字を含む', 'ru': 'Мин. 8 символов, заглавные/строчные/цифры/спецсимволы' }
+                    }
+                ],
+                'ip': [
+                    {
+                        title: { 'en': 'IPv4 Address', 'zh-CN': 'IPv4地址', 'zh-TW': 'IPv4位址', 'ja': 'IPv4アドレス', 'ru': 'IPv4-адрес' },
+                        pattern: /^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$/,
+                        desc: { 'en': 'Valid IPv4 address format (0.0.0.0 to 255.255.255.255)', 'zh-CN': '有效的IPv4地址格式（0.0.0.0 到 255.255.255.255）', 'zh-TW': '有效的IPv4位址格式（0.0.0.0 到 255.255.255.255）', 'ja': '有効なIPv4アドレス形式', 'ru': 'Допустимый формат IPv4-адреса' }
+                    }
+                ]
+            },
+
+            i18n: {
+                'en': {
+                    title: '🔍 Regular Expression Library',
+                    search_regex: 'Search & Filter Regular Expressions',
+                    categories: 'Categories:',
+                    regex_library: 'Regular Expression Library',
+                    test_regex: 'Test Regular Expression',
+                    regex_pattern: 'Regular Expression Pattern',
+                    test_text: 'Test Text',
+                    test_btn: 'Test Match',
+                    copy: 'Copy',
+                    copy_success: 'Copied to clipboard!',
+                    intro_title: 'About This Tool',
+                    intro_text: '<ul class="list-disc pl-5 space-y-2"><li><strong>🔍 Search & Filter:</strong> Use category tags to filter by type, or type keywords in the search bar.</li><li><strong>📋 Copy & Use:</strong> Click "Copy" to get the code, or "Use" to auto-fill the test area below.</li><li><strong>✅ Live Testing:</strong> Enter a pattern (with or without / delimiters) and text, then click "Test Match" to validate.</li><li><strong>🌐 Language:</strong> Use the selector to switch languages.</li></ul>',
+                    match_success: '✅ Match found!',
+                    match_fail: '❌ No match found!',
+                    fill_fields: 'Please fill in both fields!',
+                    invalid_regex: 'Invalid regular expression',
+                    all: 'All', phone: 'Phone', email: 'Email', idcard: 'ID Card', url: 'URL', date: 'Date', number: 'Number', string: 'String', password: 'Password', ip: 'IP Address'
+                },
+                'zh-CN': {
+                    title: '🔍 正则表达式大全',
+                    search_regex: '搜索和筛选正则表达式',
+                    categories: '分类:',
+                    regex_library: '正则表达式库',
+                    test_regex: '测试正则表达式',
+                    regex_pattern: '正则表达式模式',
+                    test_text: '测试文本',
+                    test_btn: '测试匹配',
+                    copy: '复制',
+                    copy_success: '已复制到剪贴板！',
+                    intro_title: '功能使用说明',
+                    intro_text: '<ul class="list-disc pl-5 space-y-2"><li><strong>🔍 搜索与筛选：</strong> 点击顶部的分类标签（如“手机号”、“邮箱”）可快速筛选；或在搜索框输入关键词查找特定正则。</li><li><strong>📋 复制与引用：</strong> 列表中的正则可直接点击“复制”；点击“使用”按钮会自动将该正则填充到下方的测试区域。</li><li><strong>✅ 在线测试：</strong> 在“测试区域”输入正则表达式（支持带或不带 / 定界符）和待测文本，点击“测试匹配”即可验证结果。</li><li><strong>🌐 多语言支持：</strong> 点击右上角下拉菜单可切换界面语言。</li></ul>',
+                    match_success: '✅ 匹配成功！',
+                    match_fail: '❌ 匹配失败！',
+                    fill_fields: '请填写所有字段！',
+                    invalid_regex: '无效的正则表达式',
+                    all: '全部', phone: '电话', email: '邮箱', idcard: '身份证', url: '网址', date: '日期', number: '数字', string: '字符串', password: '密码', ip: 'IP地址'
+                },
+                'zh-TW': {
+                    title: '🔍 正則表達式大全',
+                    search_regex: '搜尋和篩選正則表達式',
+                    categories: '分類:',
+                    regex_library: '正則表達式庫',
+                    test_regex: '測試正則表達式',
+                    regex_pattern: '正則表達式模式',
+                    test_text: '測試文本',
+                    test_btn: '測試匹配',
+                    copy: '複製',
+                    copy_success: '已複製到剪貼簿！',
+                    intro_title: '功能使用說明',
+                    intro_text: '<ul class="list-disc pl-5 space-y-2"><li><strong>🔍 搜尋與篩選：</strong> 點擊頂部的分類標籤（如「手機號」、「信箱」）可快速篩選；或在搜尋框輸入關鍵字查找特定正則。</li><li><strong>📋 複製與引用：</strong> 列表中的正則可直接點擊「複製」；點擊「使用」按鈕會自動將該正則填充到下方的測試區域。</li><li><strong>✅ 線上測試：</strong> 在「測試區域」輸入正則表達式（支援帶或不帶 / 定界符）和待測文本，點擊「測試匹配」即可驗證結果。</li><li><strong>🌐 多語言支援：</strong> 點擊右上角下拉選單可切換介面語言。</li></ul>',
+                    match_success: '✅ 匹配成功！',
+                    match_fail: '❌ 匹配失敗！',
+                    fill_fields: '請填寫所有欄位！',
+                    invalid_regex: '無效的正則表達式',
+                    all: '全部', phone: '電話', email: '信箱', idcard: '身份證', url: '網址', date: '日期', number: '數字', string: '字串', password: '密碼', ip: 'IP位址'
+                },
+                'ja': {
+                    title: '🔍 正規表現ライブラリ',
+                    search_regex: '検索とフィルタリング',
+                    categories: 'カテゴリ:',
+                    regex_library: '正規表現一覧',
+                    test_regex: 'テストエリア',
+                    regex_pattern: '正規表現パターン',
+                    test_text: 'テストテキスト',
+                    test_btn: '判定する',
+                    copy: 'コピー',
+                    copy_success: 'クリップボードにコピーしました！',
+                    intro_title: '使い方',
+                    intro_text: '<ul class="list-disc pl-5 space-y-2"><li><strong>🔍 検索：</strong> カテゴリタグをクリックするか、キーワードを入力して検索します。</li><li><strong>📋 コピーと使用：</strong> 「コピー」でコードを取得、「使用」で下のテストエリアに自動入力します。</li><li><strong>✅ テスト：</strong> パターンとテキストを入力し、「判定する」をクリックして結果を確認します。</li></ul>',
+                    match_success: '✅ 一致しました！',
+                    match_fail: '❌ 一致しませんでした！',
+                    fill_fields: '両方のフィールドを入力してください！',
+                    invalid_regex: '無効な正規表現です',
+                    all: 'すべて', phone: '電話', email: 'メール', idcard: '身分証', url: 'URL', date: '日付', number: '数字', string: '文字列', password: 'パスワード', ip: 'IPアドレス'
+                },
+                'ru': {
+                    title: '🔍 Библиотека Regex',
+                    search_regex: 'Поиск и фильтр',
+                    categories: 'Категории:',
+                    regex_library: 'Список выражений',
+                    test_regex: 'Тест',
+                    regex_pattern: 'Шаблон',
+                    test_text: 'Текст',
+                    test_btn: 'Проверить',
+                    copy: 'Копировать',
+                    copy_success: 'Скопировано!',
+                    intro_title: 'Как использовать',
+                    intro_text: '<ul class="list-disc pl-5 space-y-2"><li><strong>🔍 Поиск:</strong> Используйте теги или поиск для фильтрации.</li><li><strong>📋 Использование:</strong> «Копировать» в буфер, «Использовать» для автозаполнения теста.</li><li><strong>✅ Тест:</strong> Введите шаблон и текст, нажмите «Проверить».</li></ul>',
+                    match_success: '✅ Совпадение!',
+                    match_fail: '❌ Нет совпадений!',
+                    fill_fields: 'Заполните все поля!',
+                    invalid_regex: 'Ошибка в выражении',
+                    all: 'Все', phone: 'Телефон', email: 'Email', idcard: 'ID', url: 'URL', date: 'Дата', number: 'Число', string: 'Строка', password: 'Пароль', ip: 'IP'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                
+                this.changeLang();
+                
+                document.querySelectorAll('.category-tag').forEach(tag => {
+                    tag.addEventListener('click', () => {
+                        document.querySelectorAll('.category-tag').forEach(t => {
+                            t.classList.remove('active');
+                        });
+                        tag.classList.add('active');
+                        this.filterRegex();
+                    });
+                });
+                
+                this.populateRegexList();
+                
+                // Placeholder update logic
+                const currentLang = document.getElementById('lang-selector').value;
+                const placeholders = {
+                    'en': 'Search regex patterns...',
+                    'zh-CN': '搜索正则表达式...',
+                    'zh-TW': '搜尋正則表達式...',
+                    'ja': '正規表現を検索...',
+                    'ru': 'Поиск...'
+                };
+                document.getElementById('search_input').placeholder = placeholders[currentLang] || 'Search...';
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                
+                // Update URL parameter (wrapped in try-catch for sandbox safety)
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {
+                    console.log('URL update suppressed in sandbox environment');
+                }
+                
+                const texts = this.i18n[lang];
+                if (!texts) return;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    // Changed from innerText to innerHTML to support list tags in intro
+                    if (texts[key]) el.innerHTML = texts[key];
+                });
+                
+                document.querySelectorAll('.category-tag').forEach(tag => {
+                    const category = tag.getAttribute('data-category');
+                    if (texts[category]) {
+                        tag.innerText = texts[category];
+                    }
+                });
+                
+                this.populateRegexList(document.querySelector('.category-tag.active').getAttribute('data-category'), document.getElementById('search_input').value);
+            },
+
+            populateRegexList: function(filter = 'all', searchTerm = '') {
+                const lang = document.getElementById('lang-selector').value;
+                const regexList = document.getElementById('regex_list');
+                regexList.innerHTML = '';
+                
+                let allRegex = [];
+                if (filter === 'all') {
+                    Object.keys(this.regexData).forEach(category => {
+                        allRegex = allRegex.concat(this.regexData[category].map(item => ({...item, category})));
+                    });
+                } else if (this.regexData[filter]) {
+                    allRegex = this.regexData[filter].map(item => ({...item, category: filter}));
+                }
+                
+                if (searchTerm) {
+                    const searchLower = searchTerm.toLowerCase();
+                    allRegex = allRegex.filter(item => {
+                        const title = item.title[lang] || item.title.en || '';
+                        const desc = item.desc[lang] || item.desc.en || '';
+                        const pattern = item.pattern.toString();
+                        return title.toLowerCase().includes(searchLower) || 
+                               desc.toLowerCase().includes(searchLower) ||
+                               pattern.toLowerCase().includes(searchLower);
+                    });
+                }
+                
+                allRegex.forEach(item => {
+                    const regexItem = document.createElement('div');
+                    regexItem.className = 'regex-item';
+                    
+                    const title = item.title[lang] || item.title.en;
+                    const pattern = item.pattern.toString();
+                    const desc = item.desc[lang] || item.desc.en;
+                    
+                    regexItem.innerHTML = `
+                        <div class="regex-title">${title}</div>
+                        <div class="regex-pattern">${pattern}</div>
+                        <div class="regex-desc">${desc}</div>
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <button class="btn-copy" onclick="RegexLibrary.copyRegex('${pattern.replace(/\\/g, '\\\\')}')" data-i18n="copy">${this.i18n[lang].copy || 'Copy'}</button>
+                            <button class="btn-copy" style="background: #6366f1;" onclick="RegexLibrary.useRegex('${pattern.replace(/\\/g, '\\\\')}')">Use</button>
+                        </div>
+                    `;
+                    regexList.appendChild(regexItem);
+                });
+                
+                if (allRegex.length === 0) {
+                    regexList.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #6b7280;">${lang === 'zh-CN' ? '未找到相关结果' : 'No results found'}</div>`;
+                }
+            },
+
+            filterRegex: function() {
+                const activeCategory = document.querySelector('.category-tag.active').getAttribute('data-category');
+                const searchTerm = document.getElementById('search_input').value;
+                this.populateRegexList(activeCategory, searchTerm);
+            },
+
+            showToast: function(message) {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.innerText = message;
+                container.appendChild(toast);
+                
+                // Trigger reflow
+                void toast.offsetWidth;
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        container.removeChild(toast);
+                    }, 300);
+                }, 2000);
+            },
+
+            copyRegex: function(pattern) {
+                navigator.clipboard.writeText(pattern).then(() => {
+                    const lang = document.getElementById('lang-selector').value;
+                    this.showToast(this.i18n[lang].copy_success || 'Copied!');
+                });
+            },
+
+            copyTestRegex: function() {
+                const regex = document.getElementById('test_regex').value;
+                if (regex) {
+                    navigator.clipboard.writeText(regex).then(() => {
+                        const lang = document.getElementById('lang-selector').value;
+                        this.showToast(this.i18n[lang].copy_success || 'Copied!');
+                    });
+                }
+            },
+
+            useRegex: function(pattern) {
+                document.getElementById('test_regex').value = pattern;
+                document.querySelector('.test-area').scrollIntoView({ behavior: 'smooth' });
+                // Flash effect
+                const input = document.getElementById('test_regex');
+                input.style.backgroundColor = '#d1fae5';
+                setTimeout(() => { input.style.backgroundColor = ''; }, 300);
+            },
+
+            testRegex: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const regexStr = document.getElementById('test_regex').value;
+                const testText = document.getElementById('test_text').value;
+                const resultEl = document.getElementById('match_result');
+                
+                resultEl.classList.remove('hidden', 'match-success', 'match-fail');
+                
+                if (!regexStr || !testText) {
+                    resultEl.textContent = this.i18n[lang].fill_fields || 'Please fill fields!';
+                    resultEl.className = 'match-result match-fail';
+                    resultEl.classList.remove('hidden');
+                    return;
+                }
+                
+                try {
+                    let regexPattern = regexStr;
+                    // Improved delimiter handling: check for matching start/end delimiters
+                    if (regexPattern.length > 2 && regexPattern.startsWith('/') && regexPattern.endsWith('/')) {
+                        regexPattern = regexPattern.slice(1, -1);
+                    }
+                    
+                    const regex = new RegExp(regexPattern);
+                    const isMatch = regex.test(testText);
+                    
+                    if (isMatch) {
+                        resultEl.textContent = this.i18n[lang].match_success;
+                        resultEl.className = 'match-result match-success';
+                    } else {
+                        resultEl.textContent = this.i18n[lang].match_fail;
+                        resultEl.className = 'match-result match-fail';
+                    }
+                } catch (e) {
+                    resultEl.textContent = `${this.i18n[lang].invalid_regex}: ${e.message}`;
+                    resultEl.className = 'match-result match-fail';
+                }
+                resultEl.classList.remove('hidden');
+            }
+        };
+
+        window.onload = function() {
+            RegexLibrary.init();
+        };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

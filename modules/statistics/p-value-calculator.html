@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-value Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="pvalue_calc">
+    <meta name="category" content="statistics">
+    <meta name="icon" content="📈">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="P-value Calculator">
+    <meta name="description" content="Calculate the p-value for a given test statistic.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="P值计算器">
+    <meta name="lang-description-zh-CN" content="计算给定检验统计量的P值。">
+    
+    <meta name="lang-title-zh-TW" content="P值計算器">
+    <meta name="lang-description-zh-TW" content="計算給定檢驗統計量的P值。">
+    
+    <meta name="lang-title-ja" content="P値計算ツール">
+    <meta name="lang-description-ja" content="特定の検定統計量のP値を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор P-значения">
+    <meta name="lang-description-ru" content="Вычислите p-значение для заданной статистики теста.">
+    
+    <meta name="lang-title-es" content="Calculadora de Valor P">
+    <meta name="lang-description-es" content="Calcule el valor p para una estadística de prueba dada.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .radio-group { display: flex; gap: 15px; margin-bottom: 10px; }
+        .radio-item { display: flex; align-items: center; gap: 5px; }
+        .result-item { margin: 10px 0; padding: 8px; background: #f8fafc; border-radius: 4px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/statistics/p-value-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="pvalue_calc" 
+         data-category="statistics" 
+         data-title="P-value Calculator" 
+         data-icon="📈">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="pv-lang" onchange="PValueCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📈 P-value Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <!-- 检验类型 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="test_type_label">Test Type</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" id="tt-z" name="test-type" value="z" checked>
+                        <label for="tt-z" data-i18n="z_test">Z-test</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="tt-t" name="test-type" value="t">
+                        <label for="tt-t" data-i18n="t_test">T-test</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 尾部类型 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="tail_type_label">Tail Type</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" id="tail-2" name="tail-type" value="two" checked>
+                        <label for="tail-2" data-i18n="two_tailed">Two-tailed</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="tail-1r" name="tail-type" value="right">
+                        <label for="tail-1r" data-i18n="right_tailed">Right-tailed</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="tail-1l" name="tail-type" value="left">
+                        <label for="tail-1l" data-i18n="left_tailed">Left-tailed</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 统计量值 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="statistic_label">Test Statistic Value</label>
+                <input type="number" id="pv-statistic" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 1.96" step="0.001">
+            </div>
+            
+            <!-- 自由度 (仅t检验) -->
+            <div id="df-container">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="df_label">Degrees of Freedom (for t-test)</label>
+                <input type="number" id="pv-df" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 20" min="1">
+            </div>
+        </div>
+
+        <button onclick="PValueCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate P-value</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-3" data-i18n="result_label">Result</div>
+            
+            <div id="pv-results" class="space-y-3">
+                <div class="result-item">
+                    <span data-i18n="pvalue_label" class="font-medium">P-value:</span>
+                    <span id="pv-pvalue" class="ml-2 text-2xl font-bold text-blue-800">--</span>
+                </div>
+                <div class="result-item">
+                    <span data-i18n="interpretation_label" class="font-medium">Interpretation:</span>
+                    <div id="pv-interpretation" class="ml-2 text-gray-700">--</div>
+                </div>
+            </div>
+            
+            <div id="pv-error" class="mt-4 text-red-600 hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const PValueCalc = {
+            i18n: {
+                'en': {
+                    title: '📈 P-value Calculator',
+                    test_type_label: 'Test Type',
+                    z_test: 'Z-test',
+                    t_test: 'T-test',
+                    tail_type_label: 'Tail Type',
+                    two_tailed: 'Two-tailed',
+                    right_tailed: 'Right-tailed',
+                    left_tailed: 'Left-tailed',
+                    statistic_label: 'Test Statistic Value',
+                    df_label: 'Degrees of Freedom (for t-test)',
+                    btn_calc: 'Calculate P-value',
+                    result_label: 'Result',
+                    pvalue_label: 'P-value:',
+                    interpretation_label: 'Interpretation:',
+                    interpret_sig: 'The result is statistically significant (p ≤ 0.05)',
+                    interpret_not_sig: 'The result is not statistically significant (p > 0.05)',
+                    err_invalid_stat: 'Please enter a valid test statistic',
+                    err_invalid_df: 'Please enter valid degrees of freedom (≥ 1)'
+                },
+                'zh-CN': {
+                    title: '📈 P值计算器',
+                    test_type_label: '检验类型',
+                    z_test: 'Z检验',
+                    t_test: 'T检验',
+                    tail_type_label: '尾部类型',
+                    two_tailed: '双尾',
+                    right_tailed: '右尾',
+                    left_tailed: '左尾',
+                    statistic_label: '检验统计量值',
+                    df_label: '自由度（适用于t检验）',
+                    btn_calc: '计算P值',
+                    result_label: '结果',
+                    pvalue_label: 'P值：',
+                    interpretation_label: '解释：',
+                    interpret_sig: '结果具有统计显著性（p ≤ 0.05）',
+                    interpret_not_sig: '结果不具有统计显著性（p > 0.05）',
+                    err_invalid_stat: '请输入有效的检验统计量',
+                    err_invalid_df: '请输入有效的自由度（≥ 1）'
+                },
+                'zh-TW': {
+                    title: '📈 P值計算器',
+                    test_type_label: '檢驗類型',
+                    z_test: 'Z檢驗',
+                    t_test: 'T檢驗',
+                    tail_type_label: '尾部類型',
+                    two_tailed: '雙尾',
+                    right_tailed: '右尾',
+                    left_tailed: '左尾',
+                    statistic_label: '檢驗統計量值',
+                    df_label: '自由度（適用於t檢驗）',
+                    btn_calc: '計算P值',
+                    result_label: '結果',
+                    pvalue_label: 'P值：',
+                    interpretation_label: '解釋：',
+                    interpret_sig: '結果具有統計顯著性（p ≤ 0.05）',
+                    interpret_not_sig: '結果不具有統計顯著性（p > 0.05）',
+                    err_invalid_stat: '請輸入有效的檢驗統計量',
+                    err_invalid_df: '請輸入有效的自由度（≥ 1）'
+                },
+                'ja': {
+                    title: '📈 P値計算ツール',
+                    test_type_label: '検定の種類',
+                    z_test: 'Z検定',
+                    t_test: 'T検定',
+                    tail_type_label: '裾の種類',
+                    two_tailed: '両側検定',
+                    right_tailed: '右側検定',
+                    left_tailed: '左側検定',
+                    statistic_label: '検定統計量の値',
+                    df_label: '自由度（t検定用）',
+                    btn_calc: 'P値を計算',
+                    result_label: '結果',
+                    pvalue_label: 'P値：',
+                    interpretation_label: '解釈：',
+                    interpret_sig: '結果は統計的に有意です（p ≤ 0.05）',
+                    interpret_not_sig: '結果は統計的に有意ではありません（p > 0.05）',
+                    err_invalid_stat: '有効な検定統計量を入力してください',
+                    err_invalid_df: '有効な自由度を入力してください（≥ 1）'
+                },
+                'ru': {
+                    title: '📈 Калькулятор P-значения',
+                    test_type_label: 'Тип теста',
+                    z_test: 'Z-тест',
+                    t_test: 'T-тест',
+                    tail_type_label: 'Тип хвоста',
+                    two_tailed: 'Двусторонний',
+                    right_tailed: 'Правосторонний',
+                    left_tailed: 'Левосторонний',
+                    statistic_label: 'Значение статистики теста',
+                    df_label: 'Степени свободы (для t-теста)',
+                    btn_calc: 'Вычислить P-значение',
+                    result_label: 'Результат',
+                    pvalue_label: 'P-значение:',
+                    interpretation_label: 'Интерпретация:',
+                    interpret_sig: 'Результат статистически значим (p ≤ 0.05)',
+                    interpret_not_sig: 'Результат не является статистически значимым (p > 0.05)',
+                    err_invalid_stat: 'Введите действительную статистику теста',
+                    err_invalid_df: 'Введите действительные степени свободы (≥ 1)'
+                },
+                'es': {
+                    title: '📈 Calculadora de Valor P',
+                    test_type_label: 'Tipo de Prueba',
+                    z_test: 'Prueba Z',
+                    t_test: 'Prueba T',
+                    tail_type_label: 'Tipo de Cola',
+                    two_tailed: 'De dos colas',
+                    right_tailed: 'De cola derecha',
+                    left_tailed: 'De cola izquierda',
+                    statistic_label: 'Valor de la Estadística de Prueba',
+                    df_label: 'Grados de Libertad (para prueba t)',
+                    btn_calc: 'Calcular Valor P',
+                    result_label: 'Resultado',
+                    pvalue_label: 'Valor P:',
+                    interpretation_label: 'Interpretación:',
+                    interpret_sig: 'El resultado es estadísticamente significativo (p ≤ 0.05)',
+                    interpret_not_sig: 'El resultado no es estadísticamente significativo (p > 0.05)',
+                    err_invalid_stat: 'Por favor, ingrese una estadística de prueba válida',
+                    err_invalid_df: 'Por favor, ingrese grados de libertad válidos (≥ 1)'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('pv-lang').value;
+                const texts = PValueCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="pvalue_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                const currentPValue = document.getElementById('pv-pvalue').innerText;
+                if (currentPValue !== '--') {
+                    PValueCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const lang = document.getElementById('pv-lang').value;
+                const texts = PValueCalc.i18n[lang];
+                const errorEl = document.getElementById('pv-error');
+                
+                // 重置错误状态
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+                
+                // 获取输入值
+                const testType = document.querySelector('input[name="test-type"]:checked').value;
+                const tailType = document.querySelector('input[name="tail-type"]:checked').value;
+                const statistic = parseFloat(document.getElementById('pv-statistic').value);
+                
+                // 验证统计量
+                if (isNaN(statistic)) {
+                    errorEl.innerText = texts.err_invalid_stat;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                
+                // 对于t检验，验证自由度
+                let df;
+                if (testType === 't') {
+                    df = parseInt(document.getElementById('pv-df').value);
+                    if (isNaN(df) || df < 1) {
+                        errorEl.innerText = texts.err_invalid_df;
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+                }
+                
+                // 计算P值
+                let pValue;
+                if (testType === 'z') {
+                    // Z检验
+                    if (tailType === 'two') {
+                        pValue = 2 * (1 - jStat.normal.cdf(Math.abs(statistic), 0, 1));
+                    } else if (tailType === 'right') {
+                        pValue = 1 - jStat.normal.cdf(statistic, 0, 1);
+                    } else { // left
+                        pValue = jStat.normal.cdf(statistic, 0, 1);
+                    }
+                } else {
+                    // T检验
+                    if (tailType === 'two') {
+                        pValue = 2 * (1 - jStat.studentt.cdf(Math.abs(statistic), df));
+                    } else if (tailType === 'right') {
+                        pValue = 1 - jStat.studentt.cdf(statistic, df);
+                    } else { // left
+                        pValue = jStat.studentt.cdf(statistic, df);
+                    }
+                }
+                
+                // 显示结果
+                document.getElementById('pv-pvalue').innerText = pValue.toFixed(6);
+                
+                // 解释结果
+                const interpretationEl = document.getElementById('pv-interpretation');
+                interpretationEl.innerText = pValue <= 0.05 ? texts.interpret_sig : texts.interpret_not_sig;
+            }
+        };
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('pv-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    PValueCalc.changeLang();
+                }
+            }
+            
+            // 监听检验类型变化，控制自由度字段显示
+            const testTypeRadios = document.querySelectorAll('input[name="test-type"]');
+            testTypeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const dfContainer = document.getElementById('df-container');
+                    if (this.value === 't') {
+                        dfContainer.style.display = 'block';
+                    } else {
+                        dfContainer.style.display = 'none';
+                    }
+                });
+            });
+            
+            // 初始隐藏自由度字段（Z检验默认选中）
+            document.getElementById('df-container').style.display = 'none';
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

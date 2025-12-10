@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Development Tools">
+    <meta name="icon" content="⭐">
+    <title>GitHub Star历史记录查询</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .chart-container { width: 100%; height: 400px; margin: 20px 0; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-item { flex: 1; min-width: 150px; background: white; padding: 10px; border-radius: 6px; text-align: center; }
+        .stat-label { color: #1e3a8a; font-size: 0.9rem; display: block; }
+        .stat-value { font-weight: 600; color: #065f46; font-size: 1.5rem; margin-top: 5px; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+        .history-list { max-height: 300px; overflow-y: auto; margin-top: 10px; }
+        .history-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .history-item:hover { background-color: #f8fafc; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/star-history.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="star-history-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="StarHistoryTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">⭐ GitHub Star历史记录查询</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="repo_input">GitHub仓库地址</h3>
+                <div class="form-group">
+                    <input type="text" id="repo_input" placeholder="例如: https://github.com/owner/repo 或 owner/repo" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    <p class="language-note" data-i18n="repo_example">示例: facebook/react 或 https://github.com/vuejs/vue</p>
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="time_range">时间范围</h3>
+                
+                <div class="options-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label data-i18n="range_type">范围类型</label>
+                        <select id="range_type" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="30days" data-i18n="last_30_days">最近30天</option>
+                            <option value="90days" data-i18n="last_90_days">最近90天</option>
+                            <option value="1year" data-i18n="last_year">最近1年</option>
+                            <option value="all" data-i18n="all_time" selected>所有时间</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="data_points">数据点数量</label>
+                        <select id="data_points" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="30">30</option>
+                            <option value="60" selected>60</option>
+                            <option value="120">120</option>
+                            <option value="240">240</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="StarHistoryTool.fetchStarHistory()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_fetch">获取Star历史</button>
+                <button onclick="StarHistoryTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">查询结果</h3>
+                
+                <div class="result-stats">
+                    <div class="stat-item">
+                        <span class="stat-label" data-i18n="current_stars">当前Star数</span>
+                        <span class="stat-value" id="current_stars">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label" data-i18n="total_growth">总增长数</span>
+                        <span class="stat-value" id="total_growth">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label" data-i18n="avg_daily_growth">日均增长</span>
+                        <span class="stat-value" id="avg_daily_growth">-</span>
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="chart-container">
+                        <canvas id="star_chart"></canvas>
+                    </div>
+                </div>
+                
+                <h4 class="text-md font-semibold mt-6 mb-2 text-gray-700" data-i18n="recent_data">最近数据</h4>
+                <div class="history-list" id="recent_data">
+                    <p data-i18n="no_data" class="text-gray-400 italic text-sm">暂无数据</p>
+                </div>
+                
+                <button onclick="StarHistoryTool.copyResult()" class="w-full mt-4 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- Recent Queries -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="recent_queries">最近查询</h3>
+                <div id="query_history" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[60px]">
+                    <p data-i18n="no_history" class="text-gray-400 italic text-sm">暂无查询记录</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">GitHub Star历史记录查询工具可以获取指定仓库的Star增长历史数据，并以图表形式展示。通过分析Star增长趋势，可以了解项目的受欢迎程度和发展势头，为开发者选择开源项目提供参考。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const StarHistoryTool = {
+            i18n: {
+                'en': {
+                    title: '⭐ GitHub Star History Query',
+                    repo_input: 'GitHub Repository URL',
+                    repo_example: 'Example: facebook/react or https://github.com/vuejs/vue',
+                    time_range: 'Time Range',
+                    range_type: 'Range Type',
+                    last_30_days: 'Last 30 days',
+                    last_90_days: 'Last 90 days',
+                    last_year: 'Last year',
+                    all_time: 'All time',
+                    data_points: 'Number of data points',
+                    btn_fetch: 'Get Star History',
+                    btn_clear: 'Clear All',
+                    results: 'Query Results',
+                    current_stars: 'Current Stars',
+                    total_growth: 'Total Growth',
+                    avg_daily_growth: 'Avg Daily Growth',
+                    recent_data: 'Recent Data',
+                    no_data: 'No data available',
+                    btn_copy: 'Copy Results',
+                    recent_queries: 'Recent Queries',
+                    no_history: 'No query history yet',
+                    please_enter_repo: 'Please enter a GitHub repository',
+                    invalid_repo: 'Invalid repository format',
+                    fetching: 'Fetching data...',
+                    error_fetching: 'Error fetching data',
+                    copied: 'Copied!',
+                    date: 'Date',
+                    stars: 'Stars',
+                    growth: 'Growth',
+                    intro_title: 'About This Tool',
+                    intro_text: 'The GitHub Star History tool retrieves star growth data for specified repositories and displays it in chart form. By analyzing star growth trends, you can understand a project\'s popularity and development momentum, providing reference for developers choosing open source projects.'
+                },
+                'zh-CN': {
+                    title: '⭐ GitHub Star历史记录查询',
+                    repo_input: 'GitHub仓库地址',
+                    repo_example: '示例: facebook/react 或 https://github.com/vuejs/vue',
+                    time_range: '时间范围',
+                    range_type: '范围类型',
+                    last_30_days: '最近30天',
+                    last_90_days: '最近90天',
+                    last_year: '最近1年',
+                    all_time: '所有时间',
+                    data_points: '数据点数量',
+                    btn_fetch: '获取Star历史',
+                    btn_clear: '清空所有',
+                    results: '查询结果',
+                    current_stars: '当前Star数',
+                    total_growth: '总增长数',
+                    avg_daily_growth: '日均增长',
+                    recent_data: '最近数据',
+                    no_data: '暂无数据',
+                    btn_copy: '复制结果',
+                    recent_queries: '最近查询',
+                    no_history: '暂无查询记录',
+                    please_enter_repo: '请输入GitHub仓库地址',
+                    invalid_repo: '无效的仓库格式',
+                    fetching: '正在获取数据...',
+                    error_fetching: '获取数据失败',
+                    copied: '已复制！',
+                    date: '日期',
+                    stars: 'Star数',
+                    growth: '增长数',
+                    intro_title: '关于本工具',
+                    intro_text: 'GitHub Star历史记录查询工具可以获取指定仓库的Star增长历史数据，并以图表形式展示。通过分析Star增长趋势，可以了解项目的受欢迎程度和发展势头，为开发者选择开源项目提供参考。'
+                },
+                'zh-TW': {
+                    title: '⭐ GitHub Star歷史記錄查詢',
+                    repo_input: 'GitHub倉庫地址',
+                    repo_example: '示例: facebook/react 或 https://github.com/vuejs/vue',
+                    time_range: '時間範圍',
+                    range_type: '範圍類型',
+                    last_30_days: '最近30天',
+                    last_90_days: '最近90天',
+                    last_year: '最近1年',
+                    all_time: '所有時間',
+                    data_points: '數據點數量',
+                    btn_fetch: '獲取Star歷史',
+                    btn_clear: '清空所有',
+                    results: '查詢結果',
+                    current_stars: '當前Star數',
+                    total_growth: '總增長數',
+                    avg_daily_growth: '日均增長',
+                    recent_data: '最近數據',
+                    no_data: '暫無數據',
+                    btn_copy: '複製結果',
+                    recent_queries: '最近查詢',
+                    no_history: '暫無查詢記錄',
+                    please_enter_repo: '請輸入GitHub倉庫地址',
+                    invalid_repo: '無效的倉庫格式',
+                    fetching: '正在獲取數據...',
+                    error_fetching: '獲取數據失敗',
+                    copied: '已複製！',
+                    date: '日期',
+                    stars: 'Star數',
+                    growth: '增長數',
+                    intro_title: '關於本工具',
+                    intro_text: 'GitHub Star歷史記錄查詢工具可以獲取指定倉庫的Star增長歷史數據，並以圖表形式展示。通過分析Star增長趨勢，可以了解項目的受歡迎程度和發展勢頭，為開發者選擇開源項目提供參考。'
+                },
+                'ja': {
+                    title: '⭐ GitHub Star履歴查询',
+                    repo_input: 'GitHubリポジトリURL',
+                    repo_example: '例: facebook/react または https://github.com/vuejs/vue',
+                    time_range: '期間',
+                    range_type: '範囲タイプ',
+                    last_30_days: '過去30日間',
+                    last_90_days: '過去90日間',
+                    last_year: '過去1年間',
+                    all_time: 'すべての期間',
+                    data_points: 'データポイント数',
+                    btn_fetch: 'Star履歴を取得',
+                    btn_clear: 'すべてクリア',
+                    results: 'クエリ結果',
+                    current_stars: '現在のStar数',
+                    total_growth: '総増加数',
+                    avg_daily_growth: '1日あたりの平均増加',
+                    recent_data: '最近のデータ',
+                    no_data: 'データはありません',
+                    btn_copy: '結果をコピー',
+                    recent_queries: '最近のクエリ',
+                    no_history: 'クエリ履歴はまだありません',
+                    please_enter_repo: 'GitHubリポジトリを入力してください',
+                    invalid_repo: '無効なリポジトリ形式',
+                    fetching: 'データを取得中...',
+                    error_fetching: 'データの取得に失敗しました',
+                    copied: 'コピーしました！',
+                    date: '日付',
+                    stars: 'Star数',
+                    growth: '増加数',
+                    intro_title: 'このツールについて',
+                    intro_text: 'GitHub Star履歴查询ツールは、指定されたリポジトリのStar増加履歴データを取得し、グラフ形式で表示することができます。Starの増加傾向を分析することで、プロジェクトの人気や発展の勢いを把握し、開発者がオープンソースプロジェクトを選択する際の参考にすることができます。'
+                },
+                'ru': {
+                    title: '⭐ Запрос истории звезд GitHub',
+                    repo_input: 'URL репозитория GitHub',
+                    repo_example: 'Пример: facebook/react или https://github.com/vuejs/vue',
+                    time_range: 'Диапазон времени',
+                    range_type: 'Тип диапазона',
+                    last_30_days: 'Последние 30 дней',
+                    last_90_days: 'Последние 90 дней',
+                    last_year: 'Последний год',
+                    all_time: 'Все время',
+                    data_points: 'Количество точек данных',
+                    btn_fetch: 'Получить историю звезд',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты запроса',
+                    current_stars: 'Текущее количество звезд',
+                    total_growth: 'Общий рост',
+                    avg_daily_growth: 'Среднесуточный рост',
+                    recent_data: 'Недавние данные',
+                    no_data: 'Данные отсутствуют',
+                    btn_copy: 'Скопировать результаты',
+                    recent_queries: 'Недавние запросы',
+                    no_history: 'Истории запросов пока нет',
+                    please_enter_repo: 'Пожалуйста, введите репозиторий GitHub',
+                    invalid_repo: 'Неверный формат репозитория',
+                    fetching: 'Получение данных...',
+                    error_fetching: 'Ошибка получения данных',
+                    copied: 'Скопировано!',
+                    date: 'Дата',
+                    stars: 'Количество звезд',
+                    growth: 'Рост',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Инструмент для查询 истории звезд GitHub может получать данные о росте звезд для указанного репозитория и отображать их в виде диаграммы. Анализируя тенденции роста звезд, можно понять популярность проекта и его динамику развития, что поможет разработчикам при выборе открытых проектов.'
+                }
+            },
+
+            chart: null,
+            
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false);
+                } else {
+                    this.changeLang(false);
+                }
+
+                // 初始化图表
+                const ctx = document.getElementById('star_chart').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: this.getI18nText('stars'),
+                            data: [],
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: this.getI18nText('date')
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: this.getI18nText('stars')
+                                },
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    }
+                });
+                
+                // 尝试从本地存储加载查询历史
+                this.loadQueryHistory();
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                // 更新HTML元素
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                // 更新图表标签
+                if (this.chart) {
+                    this.chart.data.datasets[0].label = i18nData['stars'];
+                    this.chart.options.scales.x.title.text = i18nData['date'];
+                    this.chart.options.scales.y.title.text = i18nData['stars'];
+                    this.chart.update();
+                }
+
+                // 更新URL参数
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                // 特别更新页面标题
+                document.title = i18nData['title'];
+            },
+
+            fetchStarHistory: function() {
+                const repoInput = document.getElementById('repo_input').value.trim();
+                if (!repoInput) {
+                    alert(this.getI18nText('please_enter_repo'));
+                    return;
+                }
+                
+                // 解析仓库路径
+                let repoPath = repoInput;
+                if (repoPath.includes('github.com/')) {
+                    const match = repoPath.match(/github\.com\/([^\/]+\/[^\/]+)/);
+                    if (match && match[1]) {
+                        repoPath = match[1];
+                    } else {
+                        alert(this.getI18nText('invalid_repo'));
+                        return;
+                    }
+                }
+                
+                if (!repoPath.includes('/')) {
+                    alert(this.getI18nText('invalid_repo'));
+                    return;
+                }
+                
+                const rangeType = document.getElementById('range_type').value;
+                const dataPoints = parseInt(document.getElementById('data_points').value);
+                
+                // 显示加载状态
+                const fetchButton = document.querySelector('[data-i18n="btn_fetch"]');
+                const originalButtonText = fetchButton.textContent;
+                fetchButton.textContent = this.getI18nText('fetching');
+                fetchButton.disabled = true;
+                
+                // 模拟数据获取 (实际项目中应替换为真实API调用)
+                setTimeout(() => {
+                    try {
+                        const mockData = this.generateMockData(rangeType, dataPoints);
+                        this.displayStarData(repoPath, mockData);
+                        
+                        // 保存到历史记录
+                        this.saveToHistory(repoPath);
+                    } catch (e) {
+                        alert(this.getI18nText('error_fetching'));
+                        console.error(e);
+                    } finally {
+                        // 恢复按钮状态
+                        fetchButton.textContent = originalButtonText;
+                        fetchButton.disabled = false;
+                    }
+                }, 1000);
+            },
+
+            generateMockData: function(rangeType, dataPoints) {
+                // 根据范围类型确定时间范围
+                let days;
+                switch (rangeType) {
+                    case '30days': days = 30; break;
+                    case '90days': days = 90; break;
+                    case '1year': days = 365; break;
+                    case 'all_time': days = 365 * 5; break; // 模拟5年数据
+                    default: days = 365;
+                }
+                
+                // 计算数据点间隔
+                const interval = Math.max(1, Math.floor(days / dataPoints));
+                
+                const data = [];
+                let currentStars = Math.floor(Math.random() * 1000) + 100; // 初始Star数
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - days);
+                
+                for (let i = 0; i < days; i += interval) {
+                    const date = new Date(startDate);
+                    date.setDate(startDate.getDate() + i);
+                    
+                    // 随机增长
+                    const growth = Math.floor(Math.random() * 20) + 1;
+                    currentStars += growth;
+                    
+                    data.push({
+                        date: date,
+                        stars: currentStars,
+                        growth: growth
+                    });
+                }
+                
+                return data;
+            },
+
+            displayStarData: function(repo, data) {
+                if (!data || data.length === 0) {
+                    document.getElementById('recent_data').innerHTML = `<p data-i18n="no_data" class="text-gray-400 italic text-sm">${this.getI18nText('no_data')}</p>`;
+                    return;
+                }
+                
+                // 更新统计数据
+                const currentStars = data[data.length - 1].stars;
+                const firstStars = data[0].stars;
+                const totalGrowth = currentStars - firstStars;
+                const days = Math.ceil((data[data.length - 1].date - data[0].date) / (1000 * 60 * 60 * 24));
+                const avgDailyGrowth = days > 0 ? (totalGrowth / days).toFixed(1) : '0';
+                
+                document.getElementById('current_stars').textContent = currentStars.toLocaleString();
+                document.getElementById('total_growth').textContent = totalGrowth.toLocaleString();
+                document.getElementById('avg_daily_growth').textContent = avgDailyGrowth;
+                
+                // 更新图表
+                this.chart.data.labels = data.map(item => {
+                    return `${item.date.getFullYear()}-${(item.date.getMonth() + 1).toString().padStart(2, '0')}-${item.date.getDate().toString().padStart(2, '0')}`;
+                });
+                this.chart.data.datasets[0].data = data.map(item => item.stars);
+                this.chart.update();
+                
+                // 更新最近数据列表
+                const recentDataContainer = document.getElementById('recent_data');
+                const recentItems = data.slice(-10).reverse(); // 取最近10条并反转顺序
+                
+                let html = '';
+                recentItems.forEach(item => {
+                    const dateStr = `${item.date.getFullYear()}-${(item.date.getMonth() + 1).toString().padStart(2, '0')}-${item.date.getDate().toString().padStart(2, '0')}`;
+                    html += `
+                        <div class="history-item">
+                            <div>
+                                <div class="font-medium">${dateStr}</div>
+                                <div class="text-sm text-gray-500">${this.getI18nText('growth')}: ${item.growth}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-medium">${item.stars.toLocaleString()}</div>
+                                <div class="text-sm text-gray-500">${this.getI18nText('stars')}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                recentDataContainer.innerHTML = html;
+            },
+
+            clearAll: function() {
+                document.getElementById('repo_input').value = '';
+                document.getElementById('current_stars').textContent = '-';
+                document.getElementById('total_growth').textContent = '-';
+                document.getElementById('avg_daily_growth').textContent = '-';
+                
+                // 清空图表
+                this.chart.data.labels = [];
+                this.chart.data.datasets[0].data = [];
+                this.chart.update();
+                
+                document.getElementById('recent_data').innerHTML = `<p data-i18n="no_data" class="text-gray-400 italic text-sm">${this.getI18nText('no_data')}</p>`;
+            },
+
+            copyResult: function() {
+                const repo = document.getElementById('repo_input').value.trim();
+                const currentStars = document.getElementById('current_stars').textContent;
+                const totalGrowth = document.getElementById('total_growth').textContent;
+                const avgDailyGrowth = document.getElementById('avg_daily_growth').textContent;
+                const rangeType = document.getElementById('range_type').options[document.getElementById('range_type').selectedIndex].text;
+                
+                let resultText = `${repo}\n` +
+                                `${this.getI18nText('current_stars')}: ${currentStars}\n` +
+                                `${this.getI18nText('total_growth')} (${rangeType}): ${totalGrowth}\n` +
+                                `${this.getI18nText('avg_daily_growth')}: ${avgDailyGrowth}`;
+
+                navigator.clipboard.writeText(resultText).then(() => {
+                    const originalText = document.querySelector('[data-i18n="btn_copy"]').textContent;
+                    document.querySelector('[data-i18n="btn_copy"]').textContent = this.getI18nText('copied');
+                    setTimeout(() => {
+                        document.querySelector('[data-i18n="btn_copy"]').textContent = originalText;
+                    }, 2000);
+                });
+            },
+
+            saveToHistory: function(repo) {
+                let history = JSON.parse(localStorage.getItem('starHistoryQueries') || '[]');
+                
+                // 检查是否已存在相同记录
+                const existingIndex = history.findIndex(item => item.repo === repo);
+                if (existingIndex !== -1) {
+                    history.splice(existingIndex, 1);
+                }
+                
+                // 限制历史记录长度
+                if (history.length >= 10) {
+                    history.pop();
+                }
+                
+                // 添加新记录到开头
+                history.unshift({
+                    timestamp: new Date().toISOString(),
+                    repo: repo
+                });
+                
+                localStorage.setItem('starHistoryQueries', JSON.stringify(history));
+                this.loadQueryHistory();
+            },
+
+            loadQueryHistory: function() {
+                const historyContainer = document.getElementById('query_history');
+                const history = JSON.parse(localStorage.getItem('starHistoryQueries') || '[]');
+                
+                if (history.length === 0) {
+                    historyContainer.innerHTML = `<p data-i18n="no_history" class="text-gray-400 italic text-sm">${this.getI18nText('no_history')}</p>`;
+                    return;
+                }
+                
+                let html = '<div class="space-y-2">';
+                history.forEach((item, index) => {
+                    const date = new Date(item.timestamp);
+                    html += `
+                        <div class="p-2 bg-white rounded border border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="StarHistoryTool.loadHistoryItem(${index})">
+                            <div class="text-sm font-medium">${item.repo}</div>
+                            <div class="text-xs text-gray-500">${date.toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                historyContainer.innerHTML = html;
+            },
+
+            loadHistoryItem: function(index) {
+                const history = JSON.parse(localStorage.getItem('starHistoryQueries') || '[]');
+                if (history[index]) {
+                    document.getElementById('repo_input').value = history[index].repo;
+                    this.fetchStarHistory();
+                }
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang] && this.i18n[lang][key] ? this.i18n[lang][key] : this.i18n['en'][key];
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            StarHistoryTool.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

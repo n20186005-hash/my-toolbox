@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Derivative Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="derivative_calculator">
+    <meta name="category" content="Math">
+    <meta name="icon" content="📈">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Derivative Calculator">
+    <meta name="description" content="Calculate derivatives of functions step by step">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="导数计算器">
+    <meta name="lang-description-zh-CN" content="逐步计算函数的导数">
+    
+    <meta name="lang-title-zh-TW" content="導數計算器">
+    <meta name="lang-description-zh-TW" content="逐步計算函數的導數">
+    
+    <meta name="lang-title-ja" content="導関数計算ツール">
+    <meta name="lang-description-ja" content="関数の導関数を段階的に計算">
+    
+    <meta name="lang-title-ru" content="Калькулятор производных">
+    <meta name="lang-description-ru" content="Вычисление производных функций пошагово">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .calculation-result { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        textarea { min-height: 80px; }
+        .steps-container { margin-top: 15px; padding: 10px; background: white; border-radius: 4px; font-size: 0.9rem; }
+        .step-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .step-item:last-child { border-bottom: none; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/derivative-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="derivative_calculator" 
+         data-category="calculus" 
+         data-title="Derivative Calculator" 
+         data-icon="📈">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="deriv-lang" onchange="DerivativeCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📈 Derivative Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 函数输入 -->
+            <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="function">Function f(x)</label>
+                <textarea id="function-input" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. x^2 + 3x - sin(x)"></textarea>
+            </div>
+            
+            <!-- 变量选择 -->
+            <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="variable">Variable</label>
+                <select id="variable-select" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="x" selected>x</option>
+                    <option value="y">y</option>
+                    <option value="t">t</option>
+                    <option value="u">u</option>
+                    <option value="v">v</option>
+                </select>
+            </div>
+            
+            <!-- 导数阶数 -->
+            <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="order">Derivative Order</label>
+                <input type="number" id="deriv-order" min="1" max="10" value="1" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="DerivativeCalc.clearInput()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="DerivativeCalc.calculate()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate Derivative</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="deriv-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="deriv-results" class="hidden">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="result">Result</div>
+            <div class="calculation-result">
+                <div class="text-lg font-medium mb-3" id="main-result">f'(x) = 2x + 3</div>
+                
+                <div class="text-sm text-gray-500 mb-2" data-i18n="steps">Calculation Steps</div>
+                <div class="steps-container" id="calculation-steps">
+                    <!-- 计算步骤将在这里显示 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" id="notes-list">
+                <li data-i18n="note1">Use standard mathematical notation (e.g., x^2 for x squared, sin(x) for sine function)</li>
+                <li data-i18n="note2">Supported functions: sin, cos, tan, cot, sec, csc, log, ln, exp, sqrt</li>
+                <li data-i18n="note3">Use * for multiplication (e.g., 2*x instead of 2x)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const DerivativeCalc = {
+            // 多语言文本
+            i18n: {
+                'en': {
+                    title: '📈 Derivative Calculator',
+                    function: 'Function f(x)',
+                    variable: 'Variable',
+                    order: 'Derivative Order',
+                    clear: 'Clear',
+                    calculate: 'Calculate Derivative',
+                    result: 'Result',
+                    steps: 'Calculation Steps',
+                    notes: 'Notes:',
+                    note1: 'Use standard mathematical notation (e.g., x^2 for x squared, sin(x) for sine function)',
+                    note2: 'Supported functions: sin, cos, tan, cot, sec, csc, log, ln, exp, sqrt',
+                    note3: 'Use * for multiplication (e.g., 2*x instead of 2x)',
+                    err_invalid_function: 'Please enter a valid function'
+                },
+                'zh-CN': {
+                    title: '📈 导数计算器',
+                    function: '函数 f(x)',
+                    variable: '变量',
+                    order: '导数阶数',
+                    clear: '清除',
+                    calculate: '计算导数',
+                    result: '结果',
+                    steps: '计算步骤',
+                    notes: '说明：',
+                    note1: '使用标准数学符号（例如，x^2 表示x的平方，sin(x)表示正弦函数）',
+                    note2: '支持的函数：sin, cos, tan, cot, sec, csc, log, ln, exp, sqrt',
+                    note3: '使用*表示乘法（例如，2*x而不是2x）',
+                    err_invalid_function: '请输入有效的函数'
+                },
+                'zh-TW': {
+                    title: '📈 導數計算器',
+                    function: '函數 f(x)',
+                    variable: '變量',
+                    order: '導數階數',
+                    clear: '清除',
+                    calculate: '計算導數',
+                    result: '結果',
+                    steps: '計算步驟',
+                    notes: '說明：',
+                    note1: '使用標準數學符號（例如，x^2 表示x的平方，sin(x)表示正弦函數）',
+                    note2: '支持的函數：sin, cos, tan, cot, sec, csc, log, ln, exp, sqrt',
+                    note3: '使用*表示乘法（例如，2*x而不是2x）',
+                    err_invalid_function: '請輸入有效的函數'
+                },
+                'ja': {
+                    title: '📈 導関数計算ツール',
+                    function: '関数 f(x)',
+                    variable: '変数',
+                    order: '導関数の次数',
+                    clear: 'クリア',
+                    calculate: '導関数を計算',
+                    result: '結果',
+                    steps: '計算手順',
+                    notes: '注釈：',
+                    note1: '標準的な数学表記を使用してください（例：x^2はxの2乗、sin(x)は正弦関数）',
+                    note2: 'サポートされている関数：sin、cos、tan、cot、sec、csc、log、ln、exp、sqrt',
+                    note3: '乗算には*を使用してください（例：2xの代わりに2*x）',
+                    err_invalid_function: '有効な関数を入力してください'
+                },
+                'ru': {
+                    title: '📈 Калькулятор производных',
+                    function: 'Функция f(x)',
+                    variable: 'Переменная',
+                    order: 'Порядок производной',
+                    clear: 'Очистить',
+                    calculate: 'Вычислить производную',
+                    result: 'Результат',
+                    steps: 'Шаги вычисления',
+                    notes: 'Примечания:',
+                    note1: 'Используйте стандартную математическую нотацию (например, x^2 для x в квадрате, sin(x) для синуса)',
+                    note2: 'Поддерживаемые функции: sin, cos, tan, cot, sec, csc, log, ln, exp, sqrt',
+                    note3: 'Используйте * для умножения (например, 2*x вместо 2x)',
+                    err_invalid_function: 'Пожалуйста, введите действительную функцию'
+                }
+            },
+            
+            // 初始化
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                // 初始化操作
+            },
+            
+            // 计算导数
+            calculate: function() {
+                const functionInput = document.getElementById('function-input').value.trim();
+                const variable = document.getElementById('variable-select').value;
+                const order = parseInt(document.getElementById('deriv-order').value) || 1;
+                
+                const errorEl = document.getElementById('deriv-error');
+                const resultsEl = document.getElementById('deriv-results');
+                
+                // 验证输入
+                if (!functionInput) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_function;
+                    errorEl.classList.remove('hidden');
+                    resultsEl.classList.add('hidden');
+                    return;
+                }
+                
+                // 清除错误
+                errorEl.classList.add('hidden');
+                
+                // 这里应该有实际的导数计算逻辑
+                // 以下是模拟结果
+                const mainResultEl = document.getElementById('main-result');
+                const stepsContainer = document.getElementById('calculation-steps');
+                
+                // 模拟结果 - 实际应用中应替换为真实计算
+                mainResultEl.textContent = `f${this.getDerivativeSymbol(order)}(${variable}) = ${this.simulateDerivative(functionInput, variable, order)}`;
+                
+                // 模拟步骤
+                stepsContainer.innerHTML = this.generateSampleSteps(functionInput, variable, order);
+                
+                // 显示结果
+                resultsEl.classList.remove('hidden');
+            },
+            
+            // 生成导数符号 (', '', ''', 等)
+            getDerivativeSymbol: function(order) {
+                return '\''.repeat(order);
+            },
+            
+            // 模拟导数计算 (实际应用中替换为真实计算)
+            simulateDerivative: function(func, varName, order) {
+                // 简单模拟几个常见函数的导数
+                if (func.includes('^2') && func.includes(varName)) {
+                    return `2${varName}`;
+                } else if (func.includes('sin(') && func.includes(varName)) {
+                    return `cos(${varName})`;
+                } else if (func.includes('cos(') && func.includes(varName)) {
+                    return `-sin(${varName})`;
+                } else if (func.includes('^3') && func.includes(varName)) {
+                    return `3${varName}^2`;
+                }
+                return `d${order}${varName}/${varName}${order}`; // 默认占位符
+            },
+            
+            // 生成示例计算步骤 (实际应用中替换为真实步骤)
+            generateSampleSteps: function(func, varName, order) {
+                const steps = [
+                    `<div class="step-item"><strong>1.</strong> ${this.i18n[this.getCurrentLang()].note1}</div>`,
+                    `<div class="step-item"><strong>2.</strong> ${this.i18n[this.getCurrentLang()].note2}</div>`,
+                    `<div class="step-item"><strong>3.</strong> ${this.i18n[this.getCurrentLang()].note3}</div>`
+                ];
+                return steps.join('');
+            },
+            
+            // 清除输入
+            clearInput: function() {
+                document.getElementById('function-input').value = '';
+                document.getElementById('deriv-results').classList.add('hidden');
+                document.getElementById('deriv-error').classList.add('hidden');
+            },
+            
+            // 切换语言
+            changeLang: function() {
+                const lang = this.getCurrentLang();
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 如果有值，重新计算以更新结果语言
+                if (document.getElementById('function-input').value) {
+                    this.calculate();
+                }
+            },
+            
+            // 获取当前语言
+            getCurrentLang: function() {
+                return document.getElementById('deriv-lang').value;
+            }
+        };
+        
+        // 初始化计算器
+        DerivativeCalc.init();
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pregnancy Weight Gain Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="pregnancy_weight_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="👶">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Pregnancy Weight Gain Calculator">
+    <meta name="description" content="Estimate recommended weight gain during pregnancy based on pre-pregnancy BMI.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="孕期增重计算器">
+    <meta name="lang-description-zh-CN" content="根据孕前BMI估算孕期推荐增重量。">
+    
+    <meta name="lang-title-zh-TW" content="孕期增重計算器">
+    <meta name="lang-description-zh-TW" content="根據孕前BMI估算孕期推薦增重量。">
+    
+    <meta name="lang-title-ja" content="妊娠中の体重増加計算機">
+    <meta name="lang-description-ja" content="妊娠前のBMIに基づいて、妊娠中の推奨される体重増加を推定します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор прибавки веса во время беременности">
+    <meta name="lang-description-ru" content="Оцените рекомендуемую прибавку веса во время беременности на основе ИМТ до беременности.">
+    
+    <meta name="lang-title-es" content="Calculadora de ganancia de peso durante el embarazo">
+    <meta name="lang-description-es" content="Estime la ganancia de peso recomendada durante el embarazo según el IMC pregestacional.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .info { background-color: #eff8ff; border: 1px solid #3b82f6; color: #1e40af; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .recommendation { background-color: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/health/pregnancy-weight-gain-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="pregnancy_weight_calculator" 
+         data-category="health" 
+         data-title="Pregnancy Weight Gain Calculator" 
+         data-icon="👶">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="pregnancy-lang" onchange="PregnancyCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">👶 Pregnancy Weight Gain Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="pregnancy_type">Pregnancy Type</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="pregnancy-type" value="single" checked class="text-pink-600 focus:ring-pink-500">
+                        <span data-i18n="single">Single</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="pregnancy-type" value="twin" class="text-pink-600 focus:ring-pink-500">
+                        <span data-i18n="twin">Twins</span>
+                    </label>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="unit_system">Unit System</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="metric" checked class="text-pink-600 focus:ring-pink-500">
+                        <span data-i18n="metric">Metric (cm, kg)</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="imperial" class="text-pink-600 focus:ring-pink-500">
+                        <span data-i18n="imperial">Imperial (ft, lbs)</span>
+                    </label>
+                </div>
+            </div>
+            <div id="pre-pregnancy-height-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="pre_pregnancy_height_cm">Pre-pregnancy Height (cm)</label>
+                <input type="number" id="pre-height-cm" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 165" min="100" max="200" value="165">
+            </div>
+            <div id="pre-pregnancy-height-imperial" style="display: none;">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="pre_pregnancy_height_ft">Pre-pregnancy Height (ft)</label>
+                        <input type="number" id="pre-height-ft" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 5" min="3" max="7" value="5">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="pre_pregnancy_height_in">Pre-pregnancy Height (in)</label>
+                        <input type="number" id="pre-height-in" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 5" min="0" max="11" value="5">
+                    </div>
+                </div>
+            </div>
+            <div id="pre-pregnancy-weight-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="pre_pregnancy_weight_kg">Pre-pregnancy Weight (kg)</label>
+                <input type="number" id="pre-weight-kg" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 60" min="30" max="200" value="60">
+            </div>
+            <div id="pre-pregnancy-weight-imperial" style="display: none;">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="pre_pregnancy_weight_lbs">Pre-pregnancy Weight (lbs)</label>
+                <input type="number" id="pre-weight-lbs" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 132" min="66" max="440" value="132">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="current_weight">Current Weight (at this stage of pregnancy)</label>
+                <input type="number" id="current-weight" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 65" min="30" max="250" value="65">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weeks_pregnant">Weeks Pregnant</label>
+                <input type="number" id="weeks-pregnant" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 outline-none" placeholder="e.g. 20" min="1" max="42" value="20">
+            </div>
+        </div>
+
+        <button onclick="PregnancyCalc.calc()" class="w-full bg-pink-600 text-white py-2 rounded font-bold hover:bg-pink-700 transition mb-6" data-i18n="btn_calc">Calculate Recommended Weight Gain</button>
+
+        <div class="bg-pink-50 p-6 rounded-lg border border-pink-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="pre_bmi_result">Pre-pregnancy BMI Result</div>
+            <div id="pre-bmi-result" class="text-2xl font-bold text-pink-800">--</div>
+            <div id="pre-bmi-category" class="mt-1 text-lg font-medium"></div>
+            
+            <div class="mt-6 text-sm text-gray-500 mb-2" data-i18n="recommended_gain">Recommended Total Weight Gain</div>
+            <div id="recommended-gain" class="text-2xl font-bold text-pink-800">--</div>
+            
+            <div class="mt-6 text-sm text-gray-500 mb-2" data-i18n="current_progress">Current Progress</div>
+            <div id="current-progress" class="text-2xl font-bold text-pink-800">--</div>
+            
+            <div id="weekly-gain" class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="weekly_gain_recommendation" class="font-medium mb-1">Recommended Weekly Weight Gain (Second & Third Trimester):</div>
+                <div id="weekly-gain-value" class="text-gray-600">--</div>
+            </div>
+            
+            <div class="info text-sm mt-4" data-i18n="source_info">Recommendations based on guidelines from health organizations.</div>
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: Consult with your healthcare provider for personalized advice.</div>
+        </div>
+    </div>
+
+    <script>
+        const PregnancyCalc = {
+            i18n: {
+                'en': {
+                    title: '👶 Pregnancy Weight Gain Calculator',
+                    pregnancy_type: 'Pregnancy Type',
+                    single: 'Single',
+                    twin: 'Twins',
+                    unit_system: 'Unit System',
+                    metric: 'Metric (cm, kg)',
+                    imperial: 'Imperial (ft, lbs)',
+                    pre_pregnancy_height_cm: 'Pre-pregnancy Height (cm)',
+                    pre_pregnancy_height_ft: 'Pre-pregnancy Height (ft)',
+                    pre_pregnancy_height_in: 'Pre-pregnancy Height (in)',
+                    pre_pregnancy_weight_kg: 'Pre-pregnancy Weight (kg)',
+                    pre_pregnancy_weight_lbs: 'Pre-pregnancy Weight (lbs)',
+                    current_weight: 'Current Weight (at this stage of pregnancy)',
+                    weeks_pregnant: 'Weeks Pregnant',
+                    btn_calc: 'Calculate Recommended Weight Gain',
+                    pre_bmi_result: 'Pre-pregnancy BMI Result',
+                    recommended_gain: 'Recommended Total Weight Gain',
+                    current_progress: 'Current Progress',
+                    weekly_gain_recommendation: 'Recommended Weekly Weight Gain (Second & Third Trimester):',
+                    source_info: 'Recommendations based on guidelines from health organizations.',
+                    disclaimer: 'Disclaimer: Consult with your healthcare provider for personalized advice.',
+                    err_invalid: 'Please enter valid numbers',
+                    bmi_categories: {
+                        underweight: 'Underweight (BMI < 18.5)',
+                        normal: 'Normal weight (BMI 18.5 - 24.9)',
+                        overweight: 'Overweight (BMI 25 - 29.9)',
+                        obese: 'Obese (BMI ≥ 30)'
+                    },
+                    weight_gain: {
+                        single: {
+                            underweight: '28 - 40 lbs (12.7 - 18.1 kg)',
+                            normal: '25 - 35 lbs (11.3 - 15.9 kg)',
+                            overweight: '15 - 25 lbs (6.8 - 11.3 kg)',
+                            obese: '11 - 20 lbs (5 - 9.1 kg)'
+                        },
+                        twin: {
+                            underweight: '37 - 54 lbs (16.8 - 24.5 kg)',
+                            normal: '31 - 50 lbs (14.1 - 22.7 kg)',
+                            overweight: '25 - 42 lbs (11.3 - 19.1 kg)',
+                            obese: '25 - 42 lbs (11.3 - 19.1 kg)'
+                        }
+                    },
+                    weekly_gain: {
+                        single: {
+                            underweight: '1 (0.45 kg) per week',
+                            normal: '0.8 (0.35 kg) per week',
+                            overweight: '0.5 (0.23 kg) per week',
+                            obese: '0.4 (0.18 kg) per week'
+                        },
+                        twin: {
+                            underweight: '1.5 (0.7 kg) per week',
+                            normal: '1.5 (0.7 kg) per week',
+                            overweight: '1.5 (0.7 kg) per week',
+                            obese: '1.5 (0.7 kg) per week'
+                        }
+                    },
+                    current_progress_text: 'Gained {gain} of recommended {total}'
+                },
+                'zh-CN': {
+                    title: '👶 孕期增重计算器',
+                    pregnancy_type: '妊娠类型',
+                    single: '单胎',
+                    twin: '双胞胎',
+                    unit_system: '单位系统',
+                    metric: '公制（厘米，千克）',
+                    imperial: '英制（英尺，磅）',
+                    pre_pregnancy_height_cm: '孕前身高（厘米）',
+                    pre_pregnancy_height_ft: '孕前身高（英尺）',
+                    pre_pregnancy_height_in: '孕前身高（英寸）',
+                    pre_pregnancy_weight_kg: '孕前体重（千克）',
+                    pre_pregnancy_weight_lbs: '孕前体重（磅）',
+                    current_weight: '当前体重（妊娠现阶段）',
+                    weeks_pregnant: '怀孕周数',
+                    btn_calc: '计算推荐增重量',
+                    pre_bmi_result: '孕前BMI结果',
+                    recommended_gain: '推荐总增重量',
+                    current_progress: '当前进度',
+                    weekly_gain_recommendation: '推荐每周增重量（第二和第三孕期）：',
+                    source_info: '建议基于健康组织的指南。',
+                    disclaimer: '免责声明：请咨询您的医疗服务提供者以获得个性化建议。',
+                    err_invalid: '请输入有效的数字',
+                    bmi_categories: {
+                        underweight: '偏瘦（BMI < 18.5）',
+                        normal: '正常体重（BMI 18.5 - 24.9）',
+                        overweight: '超重（BMI 25 - 29.9）',
+                        obese: '肥胖（BMI ≥ 30）'
+                    },
+                    weight_gain: {
+                        single: {
+                            underweight: '28 - 40磅（12.7 - 18.1千克）',
+                            normal: '25 - 35磅（11.3 - 15.9千克）',
+                            overweight: '15 - 25磅（6.8 - 11.3千克）',
+                            obese: '11 - 20磅（5 - 9.1千克）'
+                        },
+                        twin: {
+                            underweight: '37 - 54磅（16.8 - 24.5千克）',
+                            normal: '31 - 50磅（14.1 - 22.7千克）',
+                            overweight: '25 - 42磅（11.3 - 19.1千克）',
+                            obese: '25 - 42磅（11.3 - 19.1千克）'
+                        }
+                    },
+                    weekly_gain: {
+                        single: {
+                            underweight: '每周1磅（0.45千克）',
+                            normal: '每周0.8磅（0.35千克）',
+                            overweight: '每周0.5磅（0.23千克）',
+                            obese: '每周0.4磅（0.18千克）'
+                        },
+                        twin: {
+                            underweight: '每周1.5磅（0.7千克）',
+                            normal: '每周1.5磅（0.7千克）',
+                            overweight: '每周1.5磅（0.7千克）',
+                            obese: '每周1.5磅（0.7千克）'
+                        }
+                    },
+                    current_progress_text: '已增重 {gain}，推荐增重 {total}'
+                },
+                'zh-TW': {
+                    title: '👶 孕期增重計算器',
+                    pregnancy_type: '妊娠類型',
+                    single: '單胎',
+                    twin: '雙胞胎',
+                    unit_system: '單位系統',
+                    metric: '公制（公分，公斤）',
+                    imperial: '英制（英尺，磅）',
+                    pre_pregnancy_height_cm: '孕前身高（公分）',
+                    pre_pregnancy_height_ft: '孕前身高（英尺）',
+                    pre_pregnancy_height_in: '孕前身高（英寸）',
+                    pre_pregnancy_weight_kg: '孕前體重（公斤）',
+                    pre_pregnancy_weight_lbs: '孕前體重（磅）',
+                    current_weight: '當前體重（妊娠現階段）',
+                    weeks_pregnant: '懷孕周數',
+                    btn_calc: '計算推薦增重量',
+                    pre_bmi_result: '孕前BMI結果',
+                    recommended_gain: '推薦總增重量',
+                    current_progress: '當前進度',
+                    weekly_gain_recommendation: '推薦每周增重量（第二和第三孕期）：',
+                    source_info: '建議基於健康組織的指南。',
+                    disclaimer: '免責聲明：請諮詢您的醫療服務提供者以獲得個性化建議。',
+                    err_invalid: '請輸入有效的數字',
+                    bmi_categories: {
+                        underweight: '偏瘦（BMI < 18.5）',
+                        normal: '正常體重（BMI 18.5 - 24.9）',
+                        overweight: '超重（BMI 25 - 29.9）',
+                        obese: '肥胖（BMI ≥ 30）'
+                    },
+                    weight_gain: {
+                        single: {
+                            underweight: '28 - 40磅（12.7 - 18.1公斤）',
+                            normal: '25 - 35磅（11.3 - 15.9公斤）',
+                            overweight: '15 - 25磅（6.8 - 11.3公斤）',
+                            obese: '11 - 20磅（5 - 9.1公斤）'
+                        },
+                        twin: {
+                            underweight: '37 - 54磅（16.8 - 24.5公斤）',
+                            normal: '31 - 50磅（14.1 - 22.7公斤）',
+                            overweight: '25 - 42磅（11.3 - 19.1公斤）',
+                            obese: '25 - 42磅（11.3 - 19.1公斤）'
+                        }
+                    },
+                    weekly_gain: {
+                        single: {
+                            underweight: '每週1磅（0.45公斤）',
+                            normal: '每週0.8磅（0.35公斤）',
+                            overweight: '每週0.5磅（0.23公斤）',
+                            obese: '每週0.4磅（0.18公斤）'
+                        },
+                        twin: {
+                            underweight: '每週1.5磅（0.7公斤）',
+                            normal: '每週1.5磅（0.7公斤）',
+                            overweight: '每週1.5磅（0.7公斤）',
+                            obese: '每週1.5磅（0.7公斤）'
+                        }
+                    },
+                    current_progress_text: '已增重 {gain}，推薦增重 {total}'
+                },
+                'ja': {
+                    title: '👶 妊娠中の体重増加計算機',
+                    pregnancy_type: '妊娠の種類',
+                    single: '単胎',
+                    twin: '双子',
+                    unit_system: '単位系',
+                    metric: 'メートル法（cm、kg）',
+                    imperial: '帝国法（フィート、ポンド）',
+                    pre_pregnancy_height_cm: '妊娠前の身長（cm）',
+                    pre_pregnancy_height_ft: '妊娠前の身長（フィート）',
+                    pre_pregnancy_height_in: '妊娠前の身長（インチ）',
+                    pre_pregnancy_weight_kg: '妊娠前の体重（kg）',
+                    pre_pregnancy_weight_lbs: '妊娠前の体重（ポンド）',
+                    current_weight: '現在の体重（妊娠のこの段階で）',
+                    weeks_pregnant: '妊娠週数',
+                    btn_calc: '推奨される体重増加を計算',
+                    pre_bmi_result: '妊娠前のBMI結果',
+                    recommended_gain: '推奨される総体重増加',
+                    current_progress: '現在の進捗状況',
+                    weekly_gain_recommendation: '推奨される毎週の体重増加（第二および第三期）：',
+                    source_info: '推奨事項は、健康機関のガイドラインに基づいています。',
+                    disclaimer: '免責事項：個別のアドバイスについては、医療提供者に相談してください。',
+                    err_invalid: '有効な数字を入力してください',
+                    bmi_categories: {
+                        underweight: '低体重（BMI < 18.5）',
+                        normal: '標準体重（BMI 18.5 - 24.9）',
+                        overweight: '過体重（BMI 25 - 29.9）',
+                        obese: '肥満（BMI ≥ 30）'
+                    },
+                    weight_gain: {
+                        single: {
+                            underweight: '28 - 40ポンド（12.7 - 18.1 kg）',
+                            normal: '25 - 35ポンド（11.3 - 15.9 kg）',
+                            overweight: '15 - 25ポンド（6.8 - 11.3 kg）',
+                            obese: '11 - 20ポンド（5 - 9.1 kg）'
+                        },
+                        twin: {
+                            underweight: '37 - 54ポンド（16.8 - 24.5 kg）',
+                            normal: '31 - 50ポンド（14.1 - 22.7 kg）',
+                            overweight: '25 - 42ポンド（11.3 - 19.1 kg）',
+                            obese: '25 - 42ポンド（11.3 - 19.1 kg）'
+                        }
+                    },
+                    weekly_gain: {
+                        single: {
+                            underweight: '毎週1ポンド（0.45 kg）',
+                            normal: '毎週0.8ポンド（0.35 kg）',
+                            overweight: '毎週0.5ポンド（0.23 kg）',
+                            obese: '毎週0.4ポンド（0.18 kg）'
+                        },
+                        twin: {
+                            underweight: '毎週1.5ポンド（0.7 kg）',
+                            normal: '毎週1.5ポンド（0.7 kg）',
+                            overweight: '毎週1.5ポンド（0.7 kg）',
+                            obese: '毎週1.5ポンド（0.7 kg）'
+                        }
+                    },
+                    current_progress_text: '推奨される {total} のうち {gain} 増加しました'
+                },
+                'ru': {
+                    title: '👶 Калькулятор прибавки веса во время беременности',
+                    pregnancy_type: 'Тип беременности',
+                    single: 'Одиночная',
+                    twin: 'Близнецы',
+                    unit_system: 'Система единиц',
+                    metric: 'Метрическая (см, кг)',
+                    imperial: 'Имперская (футы, фунты)',
+                    pre_pregnancy_height_cm: 'Рост до беременности (см)',
+                    pre_pregnancy_height_ft: 'Рост до беременности (футы)',
+                    pre_pregnancy_height_in: 'Рост до беременности (дюймы)',
+                    pre_pregnancy_weight_kg: 'Вес до беременности (кг)',
+                    pre_pregnancy_weight_lbs: 'Вес до беременности (фунты)',
+                    current_weight: 'Текущий вес (на этой стадии беременности)',
+                    weeks_pregnant: 'Недели беременности',
+                    btn_calc: 'Вычислить рекомендуемую прибавку веса',
+                    pre_bmi_result: 'Результат ИМТ до беременности',
+                    recommended_gain: 'Рекомендуемая общая прибавка веса',
+                    current_progress: 'Текущий прогресс',
+                    weekly_gain_recommendation: 'Рекомендуемая еженедельная прибавка веса (второй и третий триместр):',
+                    source_info: 'Рекомендации основаны на руководящих принципах медицинских организаций.',
+                    disclaimer: 'Отказ от ответственности: Обратитесь к вашему лечащему врачу за индивидуальные рекомендации.',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    bmi_categories: {
+                        underweight: 'Недостаток веса (ИМТ < 18.5)',
+                        normal: 'Нормальный вес (ИМТ 18.5 - 24.9)',
+                        overweight: 'Избыточный вес (ИМТ 25 - 29.9)',
+                        obese: 'Ожирение (ИМТ ≥ 30)'
+                    },
+                    weight_gain: {
+                        single: {
+                            underweight: '28 - 40 фунтов (12.7 - 18.1 кг)',
+                            normal: '25 - 35 фунтов (11.3 - 15.9 кг)',
+                            overweight: '15 - 25 фунтов (6.8 - 11.3 кг)',
+                            obese: '11 - 20 фунтов (5 - 9.1 кг)'
+                        },
+                        twin: {
+                            underweight: '37 - 54 фунта (16.8 - 24.5 кг)',
+                            normal: '31 - 50 фунтов (14.1 - 22.7 кг)',
+                            overweight: '25 - 42 фунта (11.3 - 19.1 кг)',
+                            obese: '25 - 42 фунта (11.3 - 19.1 кг)'
+                        }
+                    },
+                    weekly_gain: {
+                        single: {
+                            underweight: '1 фунт (0.45 кг) в неделю',
+                            normal: '0.8 фунта (0.35 кг) в неделю',
+                            overweight: '0.5 фунта (0.23 кг) в неделю',
+                            obese: '0.4 фунта (0.18 кг) в неделю'
+                        },
+                        twin: {
+                            underweight: '1.5 фунта (0.7 кг) в неделю',
+                            normal: '1.5 фунта (0.7 кг) в неделю',
+                            overweight: '1.5 фунта (0.7 кг) в неделю',
+                            obese: '1.5 фунта (0.7 кг) в неделю'
+                        }
+                    },
+                    current_progress_text: 'Прибавлено {gain} из рекомендуемых {total}'
+                },
+                'es': {
+                    title: '👶 Calculadora de ganancia de peso durante el embarazo',
+                    pregnancy_type: 'Tipo de embarazo',
+                    single: 'Único',
+                    twin: 'Gemelos',
+                    unit_system: 'Sistema de unidades',
+                    metric: 'Métrico (cm, kg)',
+                    imperial: 'Imperial (pies, libras)',
+                    pre_pregnancy_height_cm: 'Altura pregestacional (cm)',
+                    pre_pregnancy_height_ft: 'Altura pregestacional (pies)',
+                    pre_pregnancy_height_in: 'Altura pregestacional (pulgadas)',
+                    pre_pregnancy_weight_kg: 'Peso pregestacional (kg)',
+                    pre_pregnancy_weight_lbs: 'Peso pregestacional (libras)',
+                    current_weight: 'Peso actual (en esta etapa del embarazo)',
+                    weeks_pregnant: 'Semanas de gestación',
+                    btn_calc: 'Calcular ganancia de peso recomendada',
+                    pre_bmi_result: 'Resultado de IMC pregestacional',
+                    recommended_gain: 'Ganancia total de peso recomendada',
+                    current_progress: 'Progreso actual',
+                    weekly_gain_recommendation: 'Ganancia de peso semanal recomendada (segundo y tercer trimestre):',
+                    source_info: 'Las recomendaciones se basan en las pautas de las organizaciones de salud.',
+                    disclaimer: 'Descargo de responsabilidad: Consulte a su proveedor de atención médica para obtener asesoramiento personalizado.',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    bmi_categories: {
+                        underweight: 'Bajo peso (IMC < 18.5)',
+                        normal: 'Peso normal (IMC 18.5 - 24.9)',
+                        overweight: 'Sobrepeso (IMC 25 - 29.9)',
+                        obese: 'Obesidad (IMC ≥ 30)'
+                    },
+                    weight_gain: {
+                        single: {
+                            underweight: '28 - 40 libras (12.7 - 18.1 kg)',
+                            normal: '25 - 35 libras (11.3 - 15.9 kg)',
+                            overweight: '15 - 25 libras (6.8 - 11.3 kg)',
+                            obese: '11 - 20 libras (5 - 9.1 kg)'
+                        },
+                        twin: {
+                            underweight: '37 - 54 libras (16.8 - 24.5 kg)',
+                            normal: '31 - 50 libras (14.1 - 22.7 kg)',
+                            overweight: '25 - 42 libras (11.3 - 19.1 kg)',
+                            obese: '25 - 42 libras (11.3 - 19.1 kg)'
+                        }
+                    },
+                    weekly_gain: {
+                        single: {
+                            underweight: '1 libra (0.45 kg) por semana',
+                            normal: '0.8 libras (0.35 kg) por semana',
+                            overweight: '0.5 libras (0.23 kg) por semana',
+                            obese: '0.4 libras (0.18 kg) por semana'
+                        },
+                        twin: {
+                            underweight: '1.5 libras (0.7 kg) por semana',
+                            normal: '1.5 libras (0.7 kg) por semana',
+                            overweight: '1.5 libras (0.7 kg) por semana',
+                            obese: '1.5 libras (0.7 kg) por semana'
+                        }
+                    },
+                    current_progress_text: 'Ha ganado {gain} de las {total} recomendadas'
+                }
+            },
+
+            init: () => {
+                // 监听单位切换
+                document.querySelectorAll('input[name="units"]').forEach(radio => {
+                    radio.addEventListener('change', PregnancyCalc.toggleUnits);
+                });
+            },
+
+            toggleUnits: () => {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                
+                // 显示/隐藏高度输入框
+                document.getElementById('pre-pregnancy-height-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('pre-pregnancy-height-imperial').style.display = isMetric ? 'none' : 'block';
+                
+                // 显示/隐藏重量输入框
+                document.getElementById('pre-pregnancy-weight-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('pre-pregnancy-weight-imperial').style.display = isMetric ? 'none' : 'block';
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('pregnancy-lang').value;
+                const texts = PregnancyCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="pregnancy_weight_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                PregnancyCalc.calc();
+            },
+
+            getBMICategory: (bmi, texts) => {
+                if (bmi < 18.5) return { key: 'underweight', text: texts.bmi_categories.underweight };
+                if (bmi < 25) return { key: 'normal', text: texts.bmi_categories.normal };
+                if (bmi < 30) return { key: 'overweight', text: texts.bmi_categories.overweight };
+                return { key: 'obese', text: texts.bmi_categories.obese };
+            },
+
+            calc: () => {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                const pregnancyType = document.querySelector('input[name="pregnancy-type"]:checked').value;
+                const lang = document.getElementById('pregnancy-lang').value;
+                const texts = PregnancyCalc.i18n[lang];
+
+                let heightM, preWeight, currentWeight, weeksPregnant;
+
+                // 获取输入值
+                if (isMetric) {
+                    const heightCm = parseFloat(document.getElementById('pre-height-cm').value) || 0;
+                    preWeight = parseFloat(document.getElementById('pre-weight-kg').value) || 0;
+                    currentWeight = parseFloat(document.getElementById('current-weight').value) || 0;
+                    heightM = heightCm / 100; // 转换为米
+                } else {
+                    const feet = parseFloat(document.getElementById('pre-height-ft').value) || 0;
+                    const inches = parseFloat(document.getElementById('pre-height-in').value) || 0;
+                    const heightIn = feet * 12 + inches; // 转换为英寸
+                    heightM = heightIn * 0.0254; // 转换为米
+                    preWeight = parseFloat(document.getElementById('pre-weight-lbs').value) || 0;
+                    currentWeight = parseFloat(document.getElementById('current-weight').value) || 0;
+                }
+                
+                weeksPregnant = parseFloat(document.getElementById('weeks-pregnant').value) || 0;
+
+                const bmiResultEl = document.getElementById('pre-bmi-result');
+                const bmiCategoryEl = document.getElementById('pre-bmi-category');
+                const recommendedGainEl = document.getElementById('recommended-gain');
+                const currentProgressEl = document.getElementById('current-progress');
+                const weeklyGainEl = document.getElementById('weekly-gain-value');
+
+                // 验证输入
+                if (isNaN(heightM) || isNaN(preWeight) || isNaN(currentWeight) || isNaN(weeksPregnant) || 
+                    heightM <= 0 || preWeight <= 0 || currentWeight <= 0 || weeksPregnant <= 0 || weeksPregnant > 42) {
+                    bmiResultEl.innerText = texts.err_invalid;
+                    bmiResultEl.className = "text-xl font-bold text-red-600";
+                    bmiCategoryEl.innerText = "";
+                    recommendedGainEl.innerText = "";
+                    currentProgressEl.innerText = "";
+                    weeklyGainEl.innerText = "";
+                    return;
+                }
+
+                // 计算孕前BMI
+                let preBMI = preWeight / (heightM * heightM);
+                if (!isMetric) {
+                    // 英制单位下的BMI计算需要调整
+                    preBMI = preWeight / (heightM * heightM) * 0.453592 / (0.0254 * 0.0254);
+                }
+                preBMI = parseFloat(preBMI.toFixed(1));
+
+                // 获取BMI分类
+                const bmiCategory = PregnancyCalc.getBMICategory(preBMI, texts);
+
+                // 获取推荐增重
+                const recommendedGain = texts.weight_gain[pregnancyType][bmiCategory.key];
+                
+                // 获取每周增重推荐
+                const weeklyGain = texts.weekly_gain[pregnancyType][bmiCategory.key];
+
+                // 计算当前增重
+                const currentGain = (currentWeight - preWeight).toFixed(1);
+                const gainUnit = isMetric ? 'kg' : 'lbs';
+
+                // 显示结果
+                bmiResultEl.className = "text-2xl font-bold text-pink-800";
+                bmiResultEl.innerText = preBMI;
+                
+                bmiCategoryEl.innerText = bmiCategory.text;
+                
+                recommendedGainEl.innerText = recommendedGain;
+                
+                currentProgressEl.innerText = texts.current_progress_text
+                    .replace('{gain}', `${currentGain} ${gainUnit}`)
+                    .replace('{total}', recommendedGain);
+                
+                weeklyGainEl.innerText = weeklyGain;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', PregnancyCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('pregnancy-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    PregnancyCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

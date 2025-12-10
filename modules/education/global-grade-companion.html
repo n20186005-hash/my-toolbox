@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Grade Companion</title>
+    
+    <meta name="tool-id" content="global_grade_companion">
+    <meta name="category" content="education">
+    <meta name="icon" content="🌍">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background: #f3f4f6; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .nav-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
+        
+        /* Custom scrollbar for tables */
+        .overflow-x-auto::-webkit-scrollbar { height: 8px; }
+        .overflow-x-auto::-webkit-scrollbar-track { background: #f1f1f1; }
+        .overflow-x-auto::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .overflow-x-auto::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        
+        /* Animation for result cards */
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .result-card { animation: popIn 0.3s ease-out; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/education/global-grade-companion.html" />
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden min-h-[600px]">
+        
+        <!-- Header & Language Switcher -->
+        <div class="bg-gray-50 border-b p-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-blue-600 text-xl"></i>
+                <h1 class="text-xl font-bold text-gray-800" data-i18n="app_title">Global Grade Companion</h1>
+            </div>
+            <select id="lang-selector" onchange="App.changeLang()" class="text-sm border border-gray-300 rounded-lg p-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex border-b overflow-x-auto bg-white">
+            <button class="nav-btn active flex-1 py-4 px-4 text-center text-gray-500 hover:text-blue-500 transition whitespace-nowrap" onclick="App.switchTab('emotional')" data-i18n="tab_emotional">
+                <i class="fa-solid fa-face-smile mr-2"></i><span data-i18n="nav_emotional">Freshman Mood</span>
+            </button>
+            <button class="nav-btn flex-1 py-4 px-4 text-center text-gray-500 hover:text-blue-500 transition whitespace-nowrap" onclick="App.switchTab('gpa')" data-i18n="tab_gpa">
+                <i class="fa-solid fa-calculator mr-2"></i><span data-i18n="nav_gpa">Academic GPA</span>
+            </button>
+            <button class="nav-btn flex-1 py-4 px-4 text-center text-gray-500 hover:text-blue-500 transition whitespace-nowrap" onclick="App.switchTab('language')" data-i18n="tab_language">
+                <i class="fa-solid fa-language mr-2"></i><span data-i18n="nav_lang">Language Exams</span>
+            </button>
+            <button class="nav-btn flex-1 py-4 px-4 text-center text-gray-500 hover:text-blue-500 transition whitespace-nowrap" onclick="App.switchTab('reference')" data-i18n="tab_reference">
+                <i class="fa-solid fa-book mr-2"></i><span data-i18n="nav_ref">Global Standards</span>
+            </button>
+        </div>
+
+        <!-- CONTENT: Emotional Calculator -->
+        <div id="tab-emotional" class="tab-content active p-6">
+            <div class="max-w-xl mx-auto space-y-6">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2" data-i18n="emo_title">The "Praise/Roast" Calculator</h2>
+                    <p class="text-gray-500 text-sm" data-i18n="emo_subtitle">Select your vibe and enter your score.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="emo_max_score">Max Score</label>
+                        <input type="number" id="emo-max" value="100" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="100, 150, 160...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="emo_my_score">My Score</label>
+                        <input type="number" id="emo-score" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 85">
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button onclick="EmotionalCalc.calculate('praise')" class="flex-1 bg-green-100 text-green-700 py-4 rounded-xl font-bold hover:bg-green-200 transition flex items-center justify-center gap-2 border border-green-200">
+                        <i class="fa-solid fa-hand-holding-heart"></i> <span data-i18n="btn_praise">Praise Me</span>
+                    </button>
+                    <button onclick="EmotionalCalc.calculate('roast')" class="flex-1 bg-red-100 text-red-700 py-4 rounded-xl font-bold hover:bg-red-200 transition flex items-center justify-center gap-2 border border-red-200">
+                        <i class="fa-solid fa-gavel"></i> <span data-i18n="btn_roast">Roast Me</span>
+                    </button>
+                </div>
+
+                <div id="emo-result" class="hidden result-card bg-white border-2 border-dashed border-gray-300 rounded-xl p-6 text-center mt-6">
+                    <div id="emo-icon" class="text-6xl mb-4">🤔</div>
+                    <div id="emo-percentage" class="text-gray-400 text-sm font-mono mb-2">--%</div>
+                    <div id="emo-text" class="text-2xl font-bold text-gray-800 leading-relaxed"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT: GPA Calculator -->
+        <div id="tab-gpa" class="tab-content p-6">
+            <div class="flex flex-col md:flex-row gap-4 mb-6 items-end md:items-center justify-between border-b pb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gpa_system_label">Grading System</label>
+                    <select id="gpa-system" onchange="GPACalc.updateSystem()" class="p-2 border rounded-lg bg-gray-50 focus:ring-blue-500 outline-none min-w-[200px]">
+                        <option value="us">🇺🇸 North America (4.0 Scale)</option>
+                        <option value="uk">🇬🇧 UK (Honours Degree)</option>
+                        <option value="de">🇩🇪 Germany (1.0-6.0)</option>
+                        <option value="cn_hundred">🇨🇳 Percentage (0-100)</option>
+                    </select>
+                </div>
+                <button onclick="GPACalc.addCourse()" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    <i class="fa-solid fa-plus-circle"></i> <span data-i18n="add_course">Add Course</span>
+                </button>
+            </div>
+
+            <div id="course-list" class="space-y-3 mb-6 max-h-[400px] overflow-y-auto">
+                <!-- Courses injected here -->
+            </div>
+
+            <button onclick="GPACalc.calculate()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-md mb-6" data-i18n="btn_calc_gpa">
+                Calculate Result
+            </button>
+
+            <div class="bg-gray-800 text-white rounded-xl p-6 flex justify-between items-center shadow-lg">
+                <div>
+                    <div class="text-gray-400 text-sm mb-1" data-i18n="gpa_result_label">Calculated GPA / Class</div>
+                    <div id="gpa-final-score" class="text-4xl font-bold">--</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-gray-400 text-xs" data-i18n="total_credits">Total Credits</div>
+                    <div id="gpa-total-credits" class="text-xl font-mono">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT: Language Exams -->
+        <div id="tab-language" class="tab-content p-6">
+            <div class="max-w-2xl mx-auto text-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-800" data-i18n="lang_title">Language Score Converter</h2>
+                <p class="text-gray-500 mt-2 text-sm" data-i18n="lang_desc">Approximate comparisons between IELTS, TOEFL iBT, and CEFR.</p>
+            </div>
+
+            <div class="bg-blue-50 rounded-xl p-8 max-w-xl mx-auto border border-blue-100">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    
+                    <!-- Input Section -->
+                    <div class="md:col-span-3">
+                        <label class="block text-sm font-bold text-gray-700 mb-2" data-i18n="lang_select_input">I have a score in:</label>
+                        <div class="flex gap-2 mb-4">
+                            <select id="lang-input-type" class="flex-1 p-2 border rounded shadow-sm focus:ring-blue-500 outline-none" onchange="LangCalc.updateInputPlaceholder()">
+                                <option value="ielts">IELTS (0-9)</option>
+                                <option value="toefl">TOEFL iBT (0-120)</option>
+                                <option value="cefr">CEFR (Goethe)</option>
+                            </select>
+                            <input type="text" id="lang-input-val" class="w-24 p-2 border rounded shadow-sm focus:ring-blue-500 outline-none text-center font-mono font-bold" placeholder="7.0">
+                        </div>
+                        <button onclick="LangCalc.convert()" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition font-medium" data-i18n="btn_convert">Convert</button>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div class="md:col-span-3 grid grid-cols-3 gap-4 mt-4 pt-6 border-t border-blue-200">
+                        <div class="text-center p-3 bg-white rounded-lg shadow-sm">
+                            <div class="text-xs text-gray-500 font-bold">IELTS</div>
+                            <div id="res-ielts" class="text-xl font-bold text-blue-900 mt-1">--</div>
+                        </div>
+                        <div class="text-center p-3 bg-white rounded-lg shadow-sm">
+                            <div class="text-xs text-gray-500 font-bold">TOEFL iBT</div>
+                            <div id="res-toefl" class="text-xl font-bold text-blue-900 mt-1">--</div>
+                        </div>
+                        <div class="text-center p-3 bg-white rounded-lg shadow-sm">
+                            <div class="text-xs text-gray-500 font-bold">CEFR/Goethe</div>
+                            <div id="res-cefr" class="text-xl font-bold text-blue-900 mt-1">--</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-center text-gray-400 mt-6">* <span data-i18n="lang_disclaimer">Estimates only. Institutions vary.</span></p>
+            </div>
+        </div>
+
+        <!-- CONTENT: Reference Table -->
+        <div id="tab-reference" class="tab-content p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4" data-i18n="ref_title">Global Grading Standards</h2>
+            
+            <div class="overflow-x-auto border rounded-lg shadow-sm">
+                <table class="w-full text-sm text-left text-gray-600">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-6 py-3" data-i18n="ref_col_grade">Grade/Level</th>
+                            <th class="px-6 py-3" data-i18n="ref_col_us">🇺🇸 USA (GPA)</th>
+                            <th class="px-6 py-3" data-i18n="ref_col_uk">🇬🇧 UK (Degree)</th>
+                            <th class="px-6 py-3" data-i18n="ref_col_de">🇩🇪 Germany</th>
+                            <th class="px-6 py-3" data-i18n="ref_col_desc">Meaning</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- Excellent -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 font-bold text-green-700">Excellent</td>
+                            <td class="px-6 py-4">A / A+ (4.0)</td>
+                            <td class="px-6 py-4">1st (First Class)</td>
+                            <td class="px-6 py-4">1.0 - 1.5 (Sehr Gut)</td>
+                            <td class="px-6 py-4 text-xs" data-i18n="desc_exc">Outstanding performance, mastery of subject.</td>
+                        </tr>
+                        <!-- Good -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 font-bold text-blue-700">Good</td>
+                            <td class="px-6 py-4">B (3.0)</td>
+                            <td class="px-6 py-4">2:1 (Upper Second)</td>
+                            <td class="px-6 py-4">1.6 - 2.5 (Gut)</td>
+                            <td class="px-6 py-4 text-xs" data-i18n="desc_good">Above average, strong understanding.</td>
+                        </tr>
+                        <!-- Average -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 font-bold text-yellow-700">Average/Pass</td>
+                            <td class="px-6 py-4">C (2.0)</td>
+                            <td class="px-6 py-4">2:2 (Lower Second)</td>
+                            <td class="px-6 py-4">2.6 - 3.5 (Befriedigend)</td>
+                            <td class="px-6 py-4 text-xs" data-i18n="desc_avg">Satisfactory, basic understanding.</td>
+                        </tr>
+                        <!-- Poor/Pass -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 font-bold text-orange-700">Poor Pass</td>
+                            <td class="px-6 py-4">D (1.0)</td>
+                            <td class="px-6 py-4">3rd (Third Class)</td>
+                            <td class="px-6 py-4">3.6 - 4.0 (Ausreichend)</td>
+                            <td class="px-6 py-4 text-xs" data-i18n="desc_poor">Minimum passing standard.</td>
+                        </tr>
+                        <!-- Fail -->
+                        <tr class="bg-red-50 hover:bg-red-100">
+                            <td class="px-6 py-4 font-bold text-red-700">Fail</td>
+                            <td class="px-6 py-4">F (0.0)</td>
+                            <td class="px-6 py-4">Fail (Unclassified)</td>
+                            <td class="px-6 py-4">5.0 - 6.0 (Mangelhaft)</td>
+                            <td class="px-6 py-4 text-xs" data-i18n="desc_fail">Performance not meeting requirements.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div class="bg-white p-4 rounded-lg shadow border">
+                     <h3 class="font-bold mb-2 flex items-center gap-2">🇯🇵 <span data-i18n="jp_title">Japan</span></h3>
+                     <p class="text-sm text-gray-600 mb-2"><strong>Univ:</strong> S (90-100), A (80-89), B (70-79), C (60-69), F (<60)</p>
+                     <p class="text-sm text-gray-600"><strong>School:</strong> 5 (Best) to 1 (Worst).</p>
+                 </div>
+                 <div class="bg-white p-4 rounded-lg shadow border">
+                     <h3 class="font-bold mb-2 flex items-center gap-2">🇦🇺 <span data-i18n="au_title">Australia</span></h3>
+                     <p class="text-sm text-gray-600">HD (85+), D (75-84), C (65-74), P (50-64), F (<50)</p>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // --- I18N DATA ---
+        const I18N = {
+            'en': {
+                app_title: 'Global Grade Companion',
+                nav_emotional: 'Freshman Mood',
+                nav_gpa: 'Academic GPA',
+                nav_lang: 'Language Exams',
+                nav_ref: 'Global Standards',
+                emo_title: 'The "Praise/Roast" Calculator',
+                emo_subtitle: 'Select your vibe and enter your score.',
+                emo_max_score: 'Max Score (e.g., 100, 150)',
+                emo_my_score: 'My Score',
+                btn_praise: 'Praise Me',
+                btn_roast: 'Roast Me',
+                gpa_system_label: 'Grading System',
+                add_course: 'Add Course',
+                btn_calc_gpa: 'Calculate Result',
+                gpa_result_label: 'Calculated Result',
+                total_credits: 'Total Credits',
+                lang_title: 'Language Score Converter',
+                lang_desc: 'Approximate comparisons between IELTS, TOEFL iBT, and CEFR.',
+                lang_select_input: 'I have a score in:',
+                btn_convert: 'Convert',
+                lang_disclaimer: 'Estimates only. Institutions vary.',
+                ref_title: 'Global Grading Standards',
+                ref_col_grade: 'Level',
+                ref_col_us: '🇺🇸 USA',
+                ref_col_uk: '🇬🇧 UK',
+                ref_col_de: '🇩🇪 Germany',
+                ref_col_desc: 'Meaning',
+                desc_exc: 'Outstanding performance, mastery of subject.',
+                desc_good: 'Above average, strong understanding.',
+                desc_avg: 'Satisfactory, basic understanding.',
+                desc_poor: 'Minimum passing standard.',
+                desc_fail: 'Performance not meeting requirements.',
+                jp_title: 'Japan',
+                au_title: 'Australia',
+                // Dynamic
+                praise_high: ["You're literally a genius! 🌟", "Harvard is calling! 📞", "Future Nobel Prize winner! 🏆", "Is your brain made of pure gold? ✨"],
+                praise_mid: ["Solid effort! You're getting there! 🚀", "Not bad at all! Keep climbing! 🧗", "You have great potential! 🌱"],
+                praise_low: ["Scores don't define you! You are loved! ❤️", "Einstein failed math too! (Maybe) 🧠", "You're trying, and that's what matters! 🌈"],
+                roast_high: ["Nerd alert! Do you have a life? 🤓", "Okay, show off. We get it. 😒", "Did you cheat? Be honest. 🤨"],
+                roast_mid: ["Mediocrity at its finest. 😐", "Completely forgettable score. 😶", "Just another brick in the wall. 🧱"],
+                roast_low: ["My grandma scores higher blindfolded. 👵", "Are you allergic to studying? 📉", "Maybe try a career in sleeping? 😴", "Burger flipping awaits. 🍔"]
+            },
+            'zh-CN': {
+                app_title: '全能成绩助手',
+                nav_emotional: '新生情绪计算器',
+                nav_gpa: '学霸GPA计算',
+                nav_lang: '留学语言换算',
+                nav_ref: '全球学制对照',
+                emo_title: '夸夸我 vs 扁扁我',
+                emo_subtitle: '选择你的心态，输入你的分数',
+                emo_max_score: '满分 (如 100, 150)',
+                emo_my_score: '我的得分',
+                btn_praise: '求夸奖',
+                btn_roast: '求骂醒',
+                gpa_system_label: '评分体系',
+                add_course: '添加课程',
+                btn_calc_gpa: '计算结果',
+                gpa_result_label: '计算结果 / 等级',
+                total_credits: '总学分',
+                lang_title: '语言考试换算器',
+                lang_desc: '雅思、托福 iBT 与 歌德/CEFR 的参考换算',
+                lang_select_input: '输入分数类型:',
+                btn_convert: '开始换算',
+                lang_disclaimer: '仅供参考，不同学校标准不同。',
+                ref_title: '全球成绩分级对照表',
+                ref_col_grade: '等级评价',
+                ref_col_us: '🇺🇸 北美 (GPA)',
+                ref_col_uk: '🇬🇧 英国 (学位)',
+                ref_col_de: '🇩🇪 德国',
+                ref_col_desc: '核心含义',
+                desc_exc: '优秀，完全掌握知识点。',
+                desc_good: '良好，高于平均水平。',
+                desc_avg: '中等，基本掌握。',
+                desc_poor: '及格，勉强通过。',
+                desc_fail: '不及格，未达标。',
+                jp_title: '日本',
+                au_title: '澳大利亚',
+                praise_high: ["太强了！你是行走的教科书吗？📚", "清华北大在向你招手！👋", "这就是传说中的学神吗？🙇‍♂️"],
+                praise_mid: ["很稳！继续保持这个势头！🚀", "已经超过很多人了，加油！💪", "潜力无限，未来可期！🌟"],
+                praise_low: ["分数只是数字，你的光芒无法被掩盖！✨", "爱迪生小时候也不及格，别灰心！💡", "努力的过程比结果更重要！🌈"],
+                roast_high: ["卷王在此！头发还剩多少？🦲", "除了学习，你还会什么？🤓", "没考满分？那还是不行啊。😒"],
+                roast_mid: ["这分数，也就图个乐呵。😐", "平平无奇，路人甲水平。😶", "不上不下，最难受的就是你。🤷‍♂️"],
+                roast_low: ["你的书是买来垫桌角的吗？📚", "赶紧去搬砖吧，工头在催了。🧱", "洗洗睡吧，梦里什么都有。😴", "这智商，告别自行车了。🚲"]
+            },
+            'zh-TW': {
+                app_title: '全能成績助手',
+                nav_emotional: '新生情緒計算器',
+                nav_gpa: '學霸GPA計算',
+                nav_lang: '留學語言換算',
+                nav_ref: '全球學制對照',
+                emo_title: '誇誇我 vs 扁扁我',
+                emo_subtitle: '選擇你的心態，輸入你的分數',
+                emo_max_score: '滿分 (如 100, 150)',
+                emo_my_score: '我的得分',
+                btn_praise: '求誇獎',
+                btn_roast: '求罵醒',
+                gpa_system_label: '評分體系',
+                add_course: '添加課程',
+                btn_calc_gpa: '計算結果',
+                gpa_result_label: '計算結果 / 等級',
+                total_credits: '總學分',
+                lang_title: '語言考試換算器',
+                lang_desc: '雅思、托福 iBT 與 歌德/CEFR 的參考換算',
+                lang_select_input: '輸入分數類型:',
+                btn_convert: '開始換算',
+                lang_disclaimer: '僅供參考，不同學校標準不同。',
+                ref_title: '全球成績分級對照表',
+                ref_col_grade: '等級評價',
+                ref_col_us: '🇺🇸 北美 (GPA)',
+                ref_col_uk: '🇬🇧 英國 (學位)',
+                ref_col_de: '🇩🇪 德國',
+                ref_col_desc: '核心含義',
+                desc_exc: '優秀，完全掌握知識點。',
+                desc_good: '良好，高於平均水平。',
+                desc_avg: '中等，基本掌握。',
+                desc_poor: '及格，勉強通過。',
+                desc_fail: '不及格，未達標。',
+                jp_title: '日本',
+                au_title: '澳大利亞',
+                praise_high: ["太強了！你是行走的教科書嗎？📚", "台大在向你招手！👋", "這就是傳說中的學神嗎？🙇‍♂️"],
+                praise_mid: ["很穩！繼續保持這個勢頭！🚀", "已經超過很多人了，加油！💪", "潛力無限，未來可期！🌟"],
+                praise_low: ["分數只是數字，你的光芒無法被掩蓋！✨", "愛迪生小時候也不及格，別灰心！💡", "努力的過程比結果更重要！🌈"],
+                roast_high: ["卷王在此！頭髮還剩多少？🦲", "除了學習，你還會什麼？🤓", "沒考滿分？那還是不行啊。😒"],
+                roast_mid: ["這分數，也就圖個樂呵。😐", "平平無奇，路人甲水平。😶", "不上不下，最難受的就是你。🤷‍♂️"],
+                roast_low: ["你的書是買來墊桌角的嗎？📚", "趕緊去搬磚吧，工頭在催了。🧱", "洗洗睡吧，夢裡什麼都有。😴", "這智商，告別腳踏車了。🚲"]
+            },
+            'ja': {
+                app_title: '成績マスターツール',
+                nav_emotional: '褒めて/罵って',
+                nav_gpa: 'GPA計算',
+                nav_lang: '語学スコア換算',
+                nav_ref: '世界の成績基準',
+                emo_title: '褒められたい vs 罵られたい',
+                emo_subtitle: '気分に合わせてモードを選択',
+                emo_max_score: '満点 (例: 100, 150)',
+                emo_my_score: 'あなたの点数',
+                btn_praise: '褒めて！',
+                btn_roast: '叱って！',
+                gpa_system_label: '評価システム',
+                add_course: '科目追加',
+                btn_calc_gpa: '計算する',
+                gpa_result_label: '計算結果',
+                total_credits: '総単位数',
+                lang_title: '語学スコア換算',
+                lang_desc: 'IELTS、TOEFL、CEFRの目安換算',
+                lang_select_input: '入力タイプ:',
+                btn_convert: '換算実行',
+                lang_disclaimer: 'あくまで目安です。',
+                ref_title: '世界の成績評価基準',
+                ref_col_grade: '評価',
+                ref_col_us: '🇺🇸 米国',
+                ref_col_uk: '🇬🇧 英国',
+                ref_col_de: '🇩🇪 ドイツ',
+                ref_col_desc: '意味',
+                desc_exc: '極めて優秀。',
+                desc_good: '良好、平均以上。',
+                desc_avg: '可、平均的。',
+                desc_poor: 'ギリギリ合格。',
+                desc_fail: '不合格。',
+                jp_title: '日本',
+                au_title: 'オーストラリア',
+                praise_high: ["天才ですか！？🎓", "東大レベルかも！？🏫", "素晴らしい！神がかっています！✨"],
+                praise_mid: ["いい感じ！その調子！👍", "努力の成果が出ています！🌱", "平均以上！自信を持って！💪"],
+                praise_low: ["点数が全てじゃないよ！💖", "次はきっと大丈夫！🌈", "君の良さは他にある！🍀"],
+                roast_high: ["勉強マシーンかよ...🤖", "友達いる？🤓", "満点じゃないの？ださい。😒"],
+                roast_mid: ["普通の極み。😐", "印象に残らない点数だね。😶", "もっと本気出せば？🥱"],
+                roast_low: ["教科書食べた方がマシかも。📚", "寝てたの？😴", "才能の無駄遣い（あればの話）。🗑️"]
+            },
+            'ru': {
+                app_title: 'Калькулятор Оценок',
+                nav_emotional: 'Настроение',
+                nav_gpa: 'Академ. GPA',
+                nav_lang: 'Языковые Тесты',
+                nav_ref: 'Стандарты',
+                emo_title: 'Похвалить vs Поругать',
+                emo_subtitle: 'Выберите режим и введите балл',
+                emo_max_score: 'Макс. балл (100, 150)',
+                emo_my_score: 'Ваш балл',
+                btn_praise: 'Похвали меня',
+                btn_roast: 'Отругай меня',
+                gpa_system_label: 'Система оценок',
+                add_course: 'Добавить курс',
+                btn_calc_gpa: 'Рассчитать',
+                gpa_result_label: 'Результат',
+                total_credits: 'Всего кредитов',
+                lang_title: 'Конвертер языковых тестов',
+                lang_desc: 'Сравнение IELTS, TOEFL и CEFR',
+                lang_select_input: 'Тип теста:',
+                btn_convert: 'Конвертировать',
+                lang_disclaimer: 'Только для справки.',
+                ref_title: 'Мировые стандарты оценок',
+                ref_col_grade: 'Уровень',
+                ref_col_us: '🇺🇸 США',
+                ref_col_uk: '🇬🇧 Великобритания',
+                ref_col_de: '🇩🇪 Германия',
+                ref_col_desc: 'Значение',
+                desc_exc: 'Отлично, превосходно.',
+                desc_good: 'Хорошо, выше среднего.',
+                desc_avg: 'Удовлетворительно.',
+                desc_poor: 'Еле-еле сдал.',
+                desc_fail: 'Неудовлетворительно.',
+                jp_title: 'Япония',
+                au_title: 'Австралия',
+                praise_high: ["Ты просто гений! 🧠", "Будущий Нобелевский лауреат! 🏆", "Потрясающе! 🌟"],
+                praise_mid: ["Неплохо, так держать! 👍", "Хорошая работа! 💪", "Потенциал есть! 🌱"],
+                praise_low: ["Оценки не определяют тебя! ❤️", "Не сдавайся! 🌈", "Главное - участие! (Шутка) 😉"],
+                roast_high: ["Ботан детектед. 🤓", "У тебя есть личная жизнь? 😒", "Мог бы и лучше. 😐"],
+                roast_mid: ["Серость. 😶", "Ни то ни сё. 🤷‍♂️", "Скучно. 🥱"],
+                roast_low: ["Ты вообще книгу открывал? 📚", "Иди работай в Макдональдс. 🍔", "Спи дальше. 😴"]
+            }
+        };
+
+        // --- APP LOGIC ---
+        const App = {
+            currentLang: 'en',
+            
+            init: () => {
+                // Auto-detect language
+                const userLang = navigator.language || navigator.userLanguage;
+                if (userLang.startsWith('zh')) App.currentLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+                else if (userLang.startsWith('ja')) App.currentLang = 'ja';
+                else if (userLang.startsWith('ru')) App.currentLang = 'ru';
+                
+                document.getElementById('lang-selector').value = App.currentLang;
+                App.applyLang();
+                
+                // Initialize modules
+                GPACalc.init();
+            },
+
+            switchTab: (tabId) => {
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                document.getElementById(`tab-${tabId}`).classList.add('active');
+                
+                document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+                event.currentTarget.classList.add('active');
+            },
+
+            changeLang: () => {
+                App.currentLang = document.getElementById('lang-selector').value;
+                App.applyLang();
+                // Refresh dynamic content if needed
+                if(document.getElementById('emo-text').innerText) {
+                    // clear old text to avoid confusion or re-trigger logic if complex
+                    document.getElementById('emo-text').innerText = ""; 
+                    document.getElementById('emo-result').classList.add('hidden');
+                }
+                GPACalc.updateSystem(); // Update dropdown options translation
+            },
+
+            applyLang: () => {
+                const texts = I18N[App.currentLang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(texts[key]) el.innerText = texts[key];
+                });
+            }
+        };
+
+        // --- EMOTIONAL CALCULATOR ---
+        const EmotionalCalc = {
+            calculate: (mode) => {
+                const max = parseFloat(document.getElementById('emo-max').value) || 100;
+                const score = parseFloat(document.getElementById('emo-score').value);
+                const resultCard = document.getElementById('emo-result');
+                const textEl = document.getElementById('emo-text');
+                const iconEl = document.getElementById('emo-icon');
+                const pctEl = document.getElementById('emo-percentage');
+
+                if (isNaN(score)) {
+                    alert("Please enter a valid score!");
+                    return;
+                }
+
+                const percentage = (score / max) * 100;
+                let messages = [];
+                let icon = "";
+
+                const langData = I18N[App.currentLang];
+
+                if (mode === 'praise') {
+                    if (percentage >= 90) { messages = langData.praise_high; icon = "🏆"; resultCard.className = "result-card bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center mt-6 text-green-800"; }
+                    else if (percentage >= 60) { messages = langData.praise_mid; icon = "👍"; resultCard.className = "result-card bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center mt-6 text-green-800"; }
+                    else { messages = langData.praise_low; icon = "❤️"; resultCard.className = "result-card bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center mt-6 text-green-800"; }
+                } else {
+                    // Roast
+                    if (percentage >= 90) { messages = langData.roast_high; icon = "🤓"; resultCard.className = "result-card bg-red-50 border-2 border-red-200 rounded-xl p-6 text-center mt-6 text-red-800"; }
+                    else if (percentage >= 60) { messages = langData.roast_mid; icon = "😐"; resultCard.className = "result-card bg-red-50 border-2 border-red-200 rounded-xl p-6 text-center mt-6 text-red-800"; }
+                    else { messages = langData.roast_low; icon = "💀"; resultCard.className = "result-card bg-red-50 border-2 border-red-200 rounded-xl p-6 text-center mt-6 text-red-800"; }
+                }
+
+                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+                
+                resultCard.classList.remove('hidden');
+                // Trigger reflow for animation
+                void resultCard.offsetWidth; 
+                
+                iconEl.innerText = icon;
+                pctEl.innerText = `${percentage.toFixed(1)}%`;
+                textEl.innerText = randomMsg;
+            }
+        };
+
+        // --- GPA CALCULATOR ---
+        const GPACalc = {
+            courseCount: 0,
+            
+            init: () => {
+                GPACalc.addCourse();
+                GPACalc.addCourse();
+                GPACalc.addCourse();
+            },
+
+            getGradeOptions: (system) => {
+                // Returns HTML string of options based on system
+                if (system === 'us') {
+                    return `
+                        <option value="4.0">A / A+ (90-100)</option>
+                        <option value="3.7">A- (85-89)</option>
+                        <option value="3.3">B+ (82-84)</option>
+                        <option value="3.0">B (80-82)</option>
+                        <option value="2.7">B- (77-79)</option>
+                        <option value="2.3">C+ (73-76)</option>
+                        <option value="2.0">C (70-72)</option>
+                        <option value="1.0">D (60-69)</option>
+                        <option value="0.0">F (<60)</option>
+                    `;
+                } else if (system === 'uk') {
+                    return `
+                        <option value="70">1st (70%+)</option>
+                        <option value="60">2:1 (60-69%)</option>
+                        <option value="50">2:2 (50-59%)</option>
+                        <option value="40">3rd (40-49%)</option>
+                        <option value="0">Fail (<40%)</option>
+                    `;
+                } else if (system === 'de') {
+                    return `
+                        <option value="1.0">1.0 (Sehr Gut)</option>
+                        <option value="1.3">1.3</option>
+                        <option value="1.7">1.7 (Gut)</option>
+                        <option value="2.0">2.0</option>
+                        <option value="2.3">2.3</option>
+                        <option value="2.7">2.7 (Befriedigend)</option>
+                        <option value="3.0">3.0</option>
+                        <option value="3.3">3.3</option>
+                        <option value="3.7">3.7 (Ausreichend)</option>
+                        <option value="4.0">4.0</option>
+                        <option value="5.0">5.0 (Mangelhaft)</option>
+                    `;
+                } else {
+                    return `<option value="0">Enter 0-100</option>`; // Placeholder for custom numeric input
+                }
+            },
+
+            updateSystem: () => {
+                const system = document.getElementById('gpa-system').value;
+                const selectors = document.querySelectorAll('.grade-select');
+                const isNumeric = system === 'cn_hundred';
+
+                selectors.forEach(sel => {
+                    if(isNumeric) {
+                         // Switch to input type number if it was select, simplified here by just hiding select and showing input
+                         // For simplicity in this demo, we will just reload options and users pick ranges
+                         // A proper implementation swaps DOM elements. Let's stick to Dropdown for US/UK/DE
+                    }
+                    sel.innerHTML = GPACalc.getGradeOptions(system);
+                });
+            },
+
+            addCourse: () => {
+                GPACalc.courseCount++;
+                const div = document.createElement('div');
+                div.className = "flex gap-2 items-center bg-gray-50 p-3 rounded-lg";
+                div.id = `course-${GPACalc.courseCount}`;
+                
+                const system = document.getElementById('gpa-system').value;
+                
+                div.innerHTML = `
+                    <input type="text" class="flex-1 p-2 border rounded focus:ring-blue-500 outline-none text-sm" placeholder="Course Name">
+                    <select class="grade-select w-32 p-2 border rounded focus:ring-blue-500 outline-none text-sm bg-white">
+                        ${GPACalc.getGradeOptions(system)}
+                    </select>
+                    <input type="number" class="credit-input w-20 p-2 border rounded focus:ring-blue-500 outline-none text-sm text-center" placeholder="Credits" value="3" min="0">
+                    <button onclick="document.getElementById('course-${GPACalc.courseCount}').remove()" class="text-gray-400 hover:text-red-500 px-2"><i class="fa-solid fa-times"></i></button>
+                `;
+                document.getElementById('course-list').appendChild(div);
+            },
+
+            calculate: () => {
+                const system = document.getElementById('gpa-system').value;
+                const rows = document.querySelectorAll('#course-list > div');
+                let totalPoints = 0;
+                let totalCredits = 0;
+                
+                rows.forEach(row => {
+                    const gradeVal = parseFloat(row.querySelector('select').value);
+                    const credits = parseFloat(row.querySelector('.credit-input').value);
+                    
+                    if (!isNaN(gradeVal) && !isNaN(credits)) {
+                        totalPoints += gradeVal * credits;
+                        totalCredits += credits;
+                    }
+                });
+
+                const resEl = document.getElementById('gpa-final-score');
+                const credEl = document.getElementById('gpa-total-credits');
+                credEl.innerText = totalCredits;
+
+                if (totalCredits === 0) {
+                    resEl.innerText = "--";
+                    return;
+                }
+
+                const avg = totalPoints / totalCredits;
+
+                if (system === 'us') {
+                    resEl.innerText = avg.toFixed(2);
+                } else if (system === 'uk') {
+                    // UK average logic
+                    let honor = "Fail";
+                    if (avg >= 70) honor = "1st Class";
+                    else if (avg >= 60) honor = "2:1";
+                    else if (avg >= 50) honor = "2:2";
+                    else if (avg >= 40) honor = "3rd";
+                    resEl.innerText = honor;
+                } else if (system === 'de') {
+                    resEl.innerText = avg.toFixed(1);
+                }
+            }
+        };
+
+        // --- LANGUAGE CALCULATOR ---
+        const LangCalc = {
+            updateInputPlaceholder: () => {
+                const type = document.getElementById('lang-input-type').value;
+                const input = document.getElementById('lang-input-val');
+                if (type === 'ielts') input.placeholder = "0-9";
+                else if (type === 'toefl') input.placeholder = "0-120";
+                else input.placeholder = "A1-C2";
+            },
+
+            convert: () => {
+                const type = document.getElementById('lang-input-type').value;
+                let val = document.getElementById('lang-input-val').value.toUpperCase().trim();
+                
+                // Normalization
+                let ielts = null;
+                
+                // Convert input to a base IELTS score for calculation
+                if (type === 'ielts') {
+                    ielts = parseFloat(val);
+                } else if (type === 'toefl') {
+                    const t = parseInt(val);
+                    if (t >= 118) ielts = 9;
+                    else if (t >= 110) ielts = 8.5;
+                    else if (t >= 102) ielts = 8;
+                    else if (t >= 94) ielts = 7.5;
+                    else if (t >= 79) ielts = 7; // 79-93 is broad, usually 94 is 7.5, 79 is bottom of 6.5/7 border. Standard: 94->7.5, 79->6.5/7. Let's approx.
+                    else if (t >= 60) ielts = 6;
+                    else if (t >= 46) ielts = 5.5;
+                    else if (t >= 35) ielts = 5;
+                    else ielts = 4;
+                } else if (type === 'cefr') {
+                    if (val === 'C2') ielts = 8.5;
+                    else if (val === 'C1') ielts = 7;
+                    else if (val === 'B2') ielts = 5.5; // 5.5-6.5
+                    else if (val === 'B1') ielts = 4.5;
+                    else ielts = 3; // A2/A1
+                }
+
+                // Render Results
+                if (ielts === null || isNaN(ielts)) {
+                    document.getElementById('res-ielts').innerText = "?";
+                    document.getElementById('res-toefl').innerText = "?";
+                    document.getElementById('res-cefr').innerText = "?";
+                    return;
+                }
+
+                // IELTS
+                document.getElementById('res-ielts').innerText = ielts;
+
+                // To Toefl
+                let toeflRange = "";
+                if (ielts >= 9) toeflRange = "118-120";
+                else if (ielts >= 8.5) toeflRange = "115-117";
+                else if (ielts >= 8) toeflRange = "110-114";
+                else if (ielts >= 7.5) toeflRange = "102-109";
+                else if (ielts >= 7) toeflRange = "94-101";
+                else if (ielts >= 6.5) toeflRange = "79-93";
+                else if (ielts >= 6) toeflRange = "60-78";
+                else if (ielts >= 5.5) toeflRange = "46-59";
+                else toeflRange = "< 46";
+                document.getElementById('res-toefl').innerText = toeflRange;
+
+                // To CEFR
+                let cefr = "";
+                if (ielts >= 8.5) cefr = "C2";
+                else if (ielts >= 7) cefr = "C1";
+                else if (ielts >= 5.5) cefr = "B2";
+                else if (ielts >= 4) cefr = "B1";
+                else cefr = "A2";
+                document.getElementById('res-cefr').innerText = cefr;
+            }
+        };
+
+        // Start
+        document.addEventListener('DOMContentLoaded', App.init);
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macro Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="macro_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="🥗">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Macro Calculator">
+    <meta name="description" content="Calculate your recommended macronutrient intake based on your goals.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="宏量营养素计算器">
+    <meta name="lang-description-zh-CN" content="根据您的目标计算推荐的宏量营养素摄入量。">
+    
+    <meta name="lang-title-zh-TW" content="巨量營養素計算器">
+    <meta name="lang-description-zh-TW" content="根據您的目標計算推薦的巨量營養素攝取量。">
+    
+    <meta name="lang-title-ja" content="マクロ栄養素計算機">
+    <meta name="lang-description-ja" content="目標の目標に基づいて推奨されるマクロ栄養素摂取量を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор макронутриентов">
+    <meta name="lang-description-ru" content="Вычислите рекомендуемое потребление макронутриентов на основе ваших целей.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-box { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/health/macro-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="macro_calculator" 
+         data-category="health" 
+         data-title="Macro Calculator" 
+         data-icon="🥗">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="macro-lang" onchange="MacroCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🥗 Macro Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="unit_system">Unit System</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="metric" checked class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="metric">Metric (cm, kg)</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="imperial" class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="imperial">Imperial (ft, lbs)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="height-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_cm">Height (cm)</label>
+                <input type="number" id="height-cm" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 170" min="100" max="250" value="170">
+            </div>
+            <div id="height-imperial" style="display: none;">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_ft">Height (ft)</label>
+                        <input type="number" id="height-ft" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 5" min="3" max="7" value="5">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_in">Height (in)</label>
+                        <input type="number" id="height-in" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 7" min="0" max="11" value="7">
+                    </div>
+                </div>
+            </div>
+            
+            <div id="weight-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_kg">Weight (kg)</label>
+                <input type="number" id="weight-kg" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 70" min="30" max="250" value="70">
+            </div>
+            <div id="weight-imperial" style="display: none;">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_lbs">Weight (lbs)</label>
+                <input type="number" id="weight-lbs" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 154" min="66" max="550" value="154">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="age">Age (years)</label>
+                <input type="number" id="age" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 30" min="18" max="120" value="30">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gender">Gender</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="male" checked class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="male">Male</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="female" class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="female">Female</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="activity_level">Activity Level</label>
+                <select id="activity-level" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none">
+                    <option value="sedentary" data-i18n="sedentary">Sedentary (little exercise)</option>
+                    <option value="lightly" data-i18n="lightly">Lightly Active (light exercise)</option>
+                    <option value="moderately" data-i18n="moderately" selected>Moderately Active (moderate exercise)</option>
+                    <option value="very" data-i18n="very">Very Active (hard exercise)</option>
+                    <option value="extra" data-i18n="extra">Extra Active (very hard exercise)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="goal">Goal</label>
+                <select id="goal" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none">
+                    <option value="lose" data-i18n="lose">Lose Weight</option>
+                    <option value="maintain" data-i18n="maintain" selected>Maintain Weight</option>
+                    <option value="gain" data-i18n="gain">Gain Weight</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="macro_split">Macro Split (%)</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-xs text-gray-500" data-i18n="protein">Protein</label>
+                        <input type="number" id="protein-percent" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" value="25" min="10" max="50">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500" data-i18n="carbs">Carbs</label>
+                        <input type="number" id="carbs-percent" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" value="50" min="10" max="70">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500" data-i18n="fat">Fat</label>
+                        <input type="number" id="fat-percent" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" value="25" min="10" max="50">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="MacroCalc.calc()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Macros</button>
+
+        <div class="bg-green-50 p-6 rounded-lg border border-green-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="daily_calories">Daily Calorie Requirement</div>
+            <div id="calories-result" class="text-2xl font-bold text-green-800">--</div>
+            
+            <div class="mt-6 grid grid-cols-3 gap-4">
+                <div class="result-box text-center">
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="protein">Protein</div>
+                    <div id="protein-result" class="text-xl font-bold text-green-800">--</div>
+                    <div id="protein-grams" class="text-sm text-gray-600">-- g</div>
+                </div>
+                <div class="result-box text-center">
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="carbs">Carbs</div>
+                    <div id="carbs-result" class="text-xl font-bold text-green-800">--</div>
+                    <div id="carbs-grams" class="text-sm text-gray-600">-- g</div>
+                </div>
+                <div class="result-box text-center">
+                    <div class="text-sm text-gray-500 mb-1" data-i18n="fat">Fat</div>
+                    <div id="fat-result" class="text-xl font-bold text-green-800">--</div>
+                    <div id="fat-grams" class="text-sm text-gray-600">-- g</div>
+                </div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is a general guide. Consult a healthcare provider for personalized advice.</div>
+        </div>
+    </div>
+
+    <script>
+        const MacroCalc = {
+            i18n: {
+                'en': {
+                    title: '🥗 Macro Calculator',
+                    unit_system: 'Unit System',
+                    metric: 'Metric (cm, kg)',
+                    imperial: 'Imperial (ft, lbs)',
+                    height_cm: 'Height (cm)',
+                    height_ft: 'Height (ft)',
+                    height_in: 'Height (in)',
+                    weight_kg: 'Weight (kg)',
+                    weight_lbs: 'Weight (lbs)',
+                    age: 'Age (years)',
+                    gender: 'Gender',
+                    male: 'Male',
+                    female: 'Female',
+                    activity_level: 'Activity Level',
+                    sedentary: 'Sedentary (little exercise)',
+                    lightly: 'Lightly Active (light exercise)',
+                    moderately: 'Moderately Active (moderate exercise)',
+                    very: 'Very Active (hard exercise)',
+                    extra: 'Extra Active (very hard exercise)',
+                    goal: 'Goal',
+                    lose: 'Lose Weight',
+                    maintain: 'Maintain Weight',
+                    gain: 'Gain Weight',
+                    macro_split: 'Macro Split (%)',
+                    protein: 'Protein',
+                    carbs: 'Carbs',
+                    fat: 'Fat',
+                    btn_calc: 'Calculate Macros',
+                    daily_calories: 'Daily Calorie Requirement',
+                    disclaimer: 'Disclaimer: This is a general guide. Consult a healthcare provider for personalized advice.',
+                    err_invalid: 'Please enter valid numbers',
+                    calories_unit: 'calories',
+                    percentage: '%'
+                },
+                'zh-CN': {
+                    title: '🥗 宏量营养素计算器',
+                    unit_system: '单位系统',
+                    metric: '公制（厘米，千克）',
+                    imperial: '英制（英尺，磅）',
+                    height_cm: '身高（厘米）',
+                    height_ft: '身高（英尺）',
+                    height_in: '身高（英寸）',
+                    weight_kg: '体重（千克）',
+                    weight_lbs: '体重（磅）',
+                    age: '年龄（岁）',
+                    gender: '性别',
+                    male: '男',
+                    female: '女',
+                    activity_level: '活动水平',
+                    sedentary: '久坐（很少运动）',
+                    lightly: '轻度活动（少量运动）',
+                    moderately: '中度活动（适度运动）',
+                    very: '高度活动（大量运动）',
+                    extra: '极高活动（剧烈运动）',
+                    goal: '目标',
+                    lose: '减重',
+                    maintain: '维持体重',
+                    gain: '增重',
+                    macro_split: '宏量营养素比例（%）',
+                    protein: '蛋白质',
+                    carbs: '碳水化合物',
+                    fat: '脂肪',
+                    btn_calc: '计算宏量营养素',
+                    daily_calories: '每日卡路里需求',
+                    disclaimer: '免责声明：这是一般指南。请咨询医疗服务提供者以获得个性化建议。',
+                    err_invalid: '请输入有效的数字',
+                    calories_unit: '卡路里',
+                    percentage: '%'
+                },
+                'zh-TW': {
+                    title: '🥗 巨量營養素計算器',
+                    unit_system: '單位系統',
+                    metric: '公制（公分，公斤）',
+                    imperial: '英制（英尺，磅）',
+                    height_cm: '身高（公分）',
+                    height_ft: '身高（英尺）',
+                    height_in: '身高（英寸）',
+                    weight_kg: '體重（公斤）',
+                    weight_lbs: '體重（磅）',
+                    age: '年齡（歲）',
+                    gender: '性別',
+                    male: '男',
+                    female: '女',
+                    activity_level: '活動水平',
+                    sedentary: '久坐（很少運動）',
+                    lightly: '輕度活動（少量運動）',
+                    moderately: '中度活動（適度運動）',
+                    very: '高度活動（大量運動）',
+                    extra: '極高活動（劇烈運動）',
+                    goal: '目標',
+                    lose: '減重',
+                    maintain: '維持體重',
+                    gain: '增重',
+                    macro_split: '巨量營養素比例（%）',
+                    protein: '蛋白質',
+                    carbs: '碳水化合物',
+                    fat: '脂肪',
+                    btn_calc: '計算巨量營養素',
+                    daily_calories: '每日卡路里需求',
+                    disclaimer: '免責聲明：這是一般指南。請諮詢醫療服務提供者以獲得個性化建議。',
+                    err_invalid: '請輸入有效的數字',
+                    calories_unit: '卡路里',
+                    percentage: '%'
+                },
+                'ja': {
+                    title: '🥗 マクロ栄養素計算機',
+                    unit_system: '単位系',
+                    metric: 'メートル法（cm、kg）',
+                    imperial: '帝国法（フィート、ポンド）',
+                    height_cm: '身長（cm）',
+                    height_ft: '身長（フィート）',
+                    height_in: '身長（インチ）',
+                    weight_kg: '体重（kg）',
+                    weight_lbs: '体重（ポンド）',
+                    age: '年齢（歳）',
+                    gender: '性別',
+                    male: '男性',
+                    female: '女性',
+                    activity_level: '活動レベル',
+                    sedentary: '久坐型（ほとんど運動なし）',
+                    lightly: '軽度活動（軽い運動）',
+                    moderately: '中等度活動（適度な運動）',
+                    very: '高度活動（激しい運動）',
+                    extra: '超高度活動（非常に激しい運動）',
+                    goal: '目標',
+                    lose: '減量',
+                    maintain: '体重維持',
+                    gain: '増量',
+                    macro_split: 'マクロ栄養素比率（%）',
+                    protein: 'タンパク質',
+                    carbs: '炭水化物',
+                    fat: '脂質',
+                    btn_calc: 'マクロを計算',
+                    daily_calories: '1日のカロリー必要量',
+                    disclaimer: '免責事項：これは一般的なガイドです。個別のアドバイスについては、医療提供者に相談してください。',
+                    err_invalid: '有効な数字を入力してください',
+                    calories_unit: 'カロリー',
+                    percentage: '%'
+                },
+                'ru': {
+                    title: '🥗 Калькулятор макронутриентов',
+                    unit_system: 'Система единиц',
+                    metric: 'Метрическая (см, кг)',
+                    imperial: 'Имперская (футы, фунты)',
+                    height_cm: 'Рост (см)',
+                    height_ft: 'Рост (футы)',
+                    height_in: 'Рост (дюймы)',
+                    weight_kg: 'Вес (кг)',
+                    weight_lbs: 'Вес (фунты)',
+                    age: 'Возраст (лет)',
+                    gender: 'Пол',
+                    male: 'Мужской',
+                    female: 'Женский',
+                    activity_level: 'Уровень активности',
+                    sedentary: 'Сидячий образ жизни (малое количество упражнений)',
+                    lightly: 'Легкоактивный (легкие упражнения)',
+                    moderately: 'Умеренноактивный (умеренные упражнения)',
+                    very: 'Очень активный (напряженные упражнения)',
+                    extra: 'Экстраактивный (очень напряженные упражнения)',
+                    goal: 'Цель',
+                    lose: 'Сброс веса',
+                    maintain: 'Сохранение веса',
+                    gain: 'Набор веса',
+                    macro_split: 'Соотношение макронутриентов (%)',
+                    protein: 'Белок',
+                    carbs: 'Углеводы',
+                    fat: 'Жиры',
+                    btn_calc: 'Вычислить макронутриенты',
+                    daily_calories: 'Дневная потребность в калориях',
+                    disclaimer: 'Отказ от ответственности: Это общие рекомендации. Обратитесь к медицинскому специалисту за индивидуальными советами.',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    calories_unit: 'калорий',
+                    percentage: '%'
+                }
+            },
+
+            init: () => {
+                // 监听单位切换
+                document.querySelectorAll('input[name="units"]').forEach(radio => {
+                    radio.addEventListener('change', MacroCalc.toggleUnits);
+                });
+                
+                // 监听宏量营养素百分比变化，确保总和为100%
+                const inputs = ['protein-percent', 'carbs-percent', 'fat-percent'];
+                inputs.forEach(id => {
+                    document.getElementById(id).addEventListener('change', (e) => {
+                        let total = 0;
+                        inputs.forEach(i => {
+                            if (i !== id) total += parseFloat(document.getElementById(i).value) || 0;
+                        });
+                        const maxVal = 100 - total;
+                        e.target.value = Math.min(Math.max(e.target.value, 10), maxVal);
+                    });
+                });
+            },
+
+            toggleUnits: () => {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                
+                // 显示/隐藏高度输入框
+                document.getElementById('height-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('height-imperial').style.display = isMetric ? 'none' : 'block';
+                
+                // 显示/隐藏重量输入框
+                document.getElementById('weight-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('weight-imperial').style.display = isMetric ? 'none' : 'block';
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('macro-lang').value;
+                const texts = MacroCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="macro_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 翻译下拉选项
+                const activityOptions = document.querySelectorAll('#activity-level option');
+                activityOptions.forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+                
+                const goalOptions = document.querySelectorAll('#goal option');
+                goalOptions.forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (texts[key]) option.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                MacroCalc.calc();
+            },
+
+            // 计算基础代谢率 (Mifflin-St Jeor公式)
+            calculateBMR: (weightKg, heightCm, age, gender) => {
+                if (gender === 'male') {
+                    return 10 * weightKg + 6.25 * heightCm - 5 * age + 5;
+                } else {
+                    return 10 * weightKg + 6.25 * heightCm - 5 * age - 161;
+                }
+            },
+
+            // 根据活动水平获取系数
+            getActivityFactor: (level) => {
+                const factors = {
+                    'sedentary': 1.2,
+                    'lightly': 1.375,
+                    'moderately': 1.55,
+                    'very': 1.725,
+                    'extra': 1.9
+                };
+                return factors[level] || 1.55;
+            },
+
+            // 根据目标调整卡路里
+            adjustCaloriesForGoal: (tdee, goal) => {
+                switch(goal) {
+                    case 'lose': return tdee * 0.85; // 减少15%用于减重
+                    case 'gain': return tdee * 1.15; // 增加15%用于增重
+                    default: return tdee; // 维持体重
+                }
+            },
+
+            calc: () => {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                const lang = document.getElementById('macro-lang').value;
+                const texts = MacroCalc.i18n[lang];
+
+                let weightKg, heightCm, age, gender, activityLevel, goal;
+                let proteinPercent, carbsPercent, fatPercent;
+
+                // 获取输入值
+                if (isMetric) {
+                    heightCm = parseFloat(document.getElementById('height-cm').value) || 0;
+                    weightKg = parseFloat(document.getElementById('weight-kg').value) || 0;
+                } else {
+                    const feet = parseFloat(document.getElementById('height-ft').value) || 0;
+                    const inches = parseFloat(document.getElementById('height-in').value) || 0;
+                    heightCm = (feet * 12 + inches) * 2.54; // 转换为厘米
+                    weightKg = parseFloat(document.getElementById('weight-lbs').value) * 0.453592 || 0; // 转换为千克
+                }
+                
+                age = parseFloat(document.getElementById('age').value) || 0;
+                gender = document.querySelector('input[name="gender"]:checked').value;
+                activityLevel = document.getElementById('activity-level').value;
+                goal = document.getElementById('goal').value;
+                
+                proteinPercent = parseFloat(document.getElementById('protein-percent').value) / 100 || 0;
+                carbsPercent = parseFloat(document.getElementById('carbs-percent').value) / 100 || 0;
+                fatPercent = parseFloat(document.getElementById('fat-percent').value) / 100 || 0;
+
+                // 获取结果元素
+                const caloriesEl = document.getElementById('calories-result');
+                const proteinEl = document.getElementById('protein-result');
+                const proteinGramsEl = document.getElementById('protein-grams');
+                const carbsEl = document.getElementById('carbs-result');
+                const carbsGramsEl = document.getElementById('carbs-grams');
+                const fatEl = document.getElementById('fat-result');
+                const fatGramsEl = document.getElementById('fat-grams');
+
+                // 验证输入
+                if (isNaN(weightKg) || isNaN(heightCm) || isNaN(age) || 
+                    weightKg <= 0 || heightCm <= 0 || age < 18 || age > 120) {
+                    caloriesEl.innerText = texts.err_invalid;
+                    caloriesEl.className = "text-xl font-bold text-red-600";
+                    proteinEl.innerText = '--';
+                    proteinGramsEl.innerText = '-- g';
+                    carbsEl.innerText = '--';
+                    carbsGramsEl.innerText = '-- g';
+                    fatEl.innerText = '--';
+                    fatGramsEl.innerText = '-- g';
+                    return;
+                }
+
+                // 计算宏量营养素
+                const bmr = MacroCalc.calculateBMR(weightKg, heightCm, age, gender);
+                const tdee = bmr * MacroCalc.getActivityFactor(activityLevel);
+                const calories = Math.round(MacroCalc.adjustCaloriesForGoal(tdee, goal));
+                
+                // 计算每种宏量营养素的卡路里和克数
+                const proteinCalories = Math.round(calories * proteinPercent);
+                const proteinGrams = Math.round(proteinCalories / 4);
+                
+                const carbsCalories = Math.round(calories * carbsPercent);
+                const carbsGrams = Math.round(carbsCalories / 4);
+                
+                const fatCalories = Math.round(calories * fatPercent);
+                const fatGrams = Math.round(fatCalories / 9);
+
+                // 显示结果
+                caloriesEl.className = "text-2xl font-bold text-green-800";
+                caloriesEl.innerText = `${calories} ${texts.calories_unit}`;
+                
+                proteinEl.innerText = `${Math.round(proteinPercent * 100)}${texts.percentage}`;
+                proteinGramsEl.innerText = `${proteinGrams} g`;
+                
+                carbsEl.innerText = `${Math.round(carbsPercent * 100)}${texts.percentage}`;
+                carbsGramsEl.innerText = `${carbsGrams} g`;
+                
+                fatEl.innerText = `${Math.round(fatPercent * 100)}${texts.percentage}`;
+                fatGramsEl.innerText = `${fatGrams} g`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', MacroCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('macro-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    MacroCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

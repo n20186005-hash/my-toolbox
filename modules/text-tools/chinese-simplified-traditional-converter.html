@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="🔄">
+    <title>简繁互转工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 150px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .conversion-tag { display: inline-block; background-color: #dbeafe; padding: 4px 8px; border-radius: 4px; color: #1e40af; font-weight: bold; font-size: 0.85rem; margin: 2px; border: 1px solid #bfdbfe; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/text-tools/chinese-simplified-traditional-converter.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="text-converter-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="ConverterTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔄 简繁互转工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_text">输入文本</h3>
+                <div class="form-group">
+                    <textarea id="input_text" placeholder="请在此粘贴需要转换的文本..." class="focus:ring-2 focus:ring-green-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="options">转换选项</h3>
+                
+                <div class="options-grid">
+                    <div class="form-group">
+                        <label data-i18n="conversion_direction">转换方向</label>
+                        <select id="conversion_direction" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="s2t" data-i18n="simplified_to_traditional">简体到繁体</option>
+                            <option value="t2s" data-i18n="traditional_to_simplified">繁体到简体</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="localization">本地化处理</label>
+                        <select id="localization" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="none" data-i18n="no_localization">不进行本地化</option>
+                            <option value="hk" data-i18n="hong_kong">香港地区用词</option>
+                            <option value="tw" data-i18n="taiwan">台湾地区用词</option>
+                            <option value="sg" data-i18n="singapore">新加坡地区用词</option>
+                        </select>
+                        <p class="language-note" data-i18n="localization_note">根据地区习惯调整词汇（如"软件"→"軟體"）</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="ConverterTool.convertText()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_convert">转换文本</button>
+                <button onclick="ConverterTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">转换结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="char_count">字符数：</span>
+                        <span class="stat-value" id="char_count">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="conversion_time">转换耗时：</span>
+                        <span class="stat-value" id="conversion_time">0ms</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="result_text">结果文本</label>
+                    <textarea id="result_text" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700" placeholder="转换后的文本将显示在这里..."></textarea>
+                </div>
+                <button onclick="ConverterTool.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- Conversion History -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="recent_conversions">最近转换</h3>
+                <div id="conversion_history" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[60px]">
+                    <p data-i18n="no_history" class="text-gray-400 italic text-sm">暂无转换记录</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">本工具提供简体中文与繁体中文之间的相互转换，并支持港台等地区的用词本地化处理。可将"软件"转换为"軟體"（台湾）或"軟件"（香港），也能将繁体文本准确转换为简体，同时保留原文的语义和格式。适用于需要在不同地区发布内容的创作者、跨境电商从业者和翻译人员。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ConverterTool = {
+            i18n: {
+                'en': {
+                    title: '🔄 Chinese Simplified-Traditional Converter',
+                    input_text: 'Input Text',
+                    options: 'Conversion Options',
+                    conversion_direction: 'Conversion Direction',
+                    simplified_to_traditional: 'Simplified to Traditional',
+                    traditional_to_simplified: 'Traditional to Simplified',
+                    localization: 'Localization',
+                    no_localization: 'No Localization',
+                    hong_kong: 'Hong Kong Terms',
+                    taiwan: 'Taiwan Terms',
+                    singapore: 'Singapore Terms',
+                    localization_note: 'Adjust terms according to regional usage',
+                    btn_convert: 'Convert Text',
+                    btn_clear: 'Clear All',
+                    results: 'Conversion Results',
+                    char_count: 'Character Count:',
+                    conversion_time: 'Conversion Time:',
+                    result_text: 'Result Text',
+                    btn_copy: 'Copy Result',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool converts between Simplified and Traditional Chinese, with support for regional localization. It can convert terms to match Hong Kong, Taiwan or Singapore usage, preserving semantic meaning and formatting. Ideal for content creators, cross-border e-commerce professionals and translators needing to publish content in different regions.',
+                    recent_conversions: 'Recent Conversions',
+                    no_history: 'No conversion history yet',
+                    please_enter_text: 'Please enter some text first',
+                    copied: 'Copied!'
+                },
+                'zh-CN': {
+                    title: '🔄 简繁互转工具',
+                    input_text: '输入文本',
+                    options: '转换选项',
+                    conversion_direction: '转换方向',
+                    simplified_to_traditional: '简体到繁体',
+                    traditional_to_simplified: '繁体到简体',
+                    localization: '本地化处理',
+                    no_localization: '不进行本地化',
+                    hong_kong: '香港地区用词',
+                    taiwan: '台湾地区用词',
+                    singapore: '新加坡地区用词',
+                    localization_note: '根据地区习惯调整词汇（如"软件"→"軟體"）',
+                    btn_convert: '转换文本',
+                    btn_clear: '清空所有',
+                    results: '转换结果',
+                    char_count: '字符数：',
+                    conversion_time: '转换耗时：',
+                    result_text: '结果文本',
+                    btn_copy: '复制结果',
+                    intro_title: '关于本工具',
+                    intro_text: '本工具提供简体中文与繁体中文之间的相互转换，并支持港台等地区的用词本地化处理。可将"软件"转换为"軟體"（台湾）或"軟件"（香港），也能将繁体文本准确转换为简体，同时保留原文的语义和格式。适用于需要在不同地区发布内容的创作者、跨境电商从业者和翻译人员。',
+                    recent_conversions: '最近转换',
+                    no_history: '暂无转换记录',
+                    please_enter_text: '请先输入一些文本',
+                    copied: '已复制！'
+                },
+                'zh-TW': {
+                    title: '🔄 簡繁互轉工具',
+                    input_text: '輸入文本',
+                    options: '轉換選項',
+                    conversion_direction: '轉換方向',
+                    simplified_to_traditional: '簡體到繁體',
+                    traditional_to_simplified: '繁體到簡體',
+                    localization: '本地化處理',
+                    no_localization: '不進行本地化',
+                    hong_kong: '香港地區用詞',
+                    taiwan: '臺灣地區用詞',
+                    singapore: '新加坡地區用詞',
+                    localization_note: '根據地區習慣調整詞彙（如"軟件"→"軟體"）',
+                    btn_convert: '轉換文本',
+                    btn_clear: '清空所有',
+                    results: '轉換結果',
+                    char_count: '字符數：',
+                    conversion_time: '轉換耗時：',
+                    result_text: '結果文本',
+                    btn_copy: '複製結果',
+                    intro_title: '關於本工具',
+                    intro_text: '本工具提供簡體中文與繁體中文之間的相互轉換，並支援港台等地區的用詞本地化處理。可將"软件"轉換為"軟體"（臺灣）或"軟件"（香港），也能將繁體文本準確轉換為簡體，同時保留原文的語義和格式。適用於需要在不同地區發布內容的創作者、跨境電商從業者和翻譯人員。',
+                    recent_conversions: '最近轉換',
+                    no_history: '暫無轉換記錄',
+                    please_enter_text: '請先輸入一些文本',
+                    copied: '已複製！'
+                },
+                'ja': {
+                    title: '🔄 簡体字・繁体字変換ツール',
+                    input_text: 'テキストを入力',
+                    options: '変換オプション',
+                    conversion_direction: '変換方向',
+                    simplified_to_traditional: '簡体字から繁体字',
+                    traditional_to_simplified: '繁体字から簡体字',
+                    localization: 'ローカライズ処理',
+                    no_localization: 'ローカライズしない',
+                    hong_kong: '香港用語',
+                    taiwan: '台湾用語',
+                    singapore: 'シンガポール用語',
+                    localization_note: '地域の習慣に合わせて用語を調整',
+                    btn_convert: 'テキストを変換',
+                    btn_clear: 'すべてクリア',
+                    results: '変換結果',
+                    char_count: '文字数：',
+                    conversion_time: '変換時間：',
+                    result_text: '結果テキスト',
+                    btn_copy: '結果をコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このツールは、簡体字中国語と繁体字中国語の相互変換を提供し、香港や台湾などの地域の用語のローカライズ処理をサポートします。「软件」を「軟體」（台湾）または「軟件」（香港）に変換したり、繁体字のテキストを正確に簡体字に変換したりすることができ、同時に原文の意味とフォーマットを保持します。',
+                    recent_conversions: '最近の変換',
+                    no_history: '変換履歴はまだありません',
+                    please_enter_text: 'まずテキストを入力してください',
+                    copied: 'コピーしました！'
+                },
+                'ru': {
+                    title: '🔄 Конвертер упрощенного и традиционного китайского',
+                    input_text: 'Введите текст',
+                    options: 'Параметры преобразования',
+                    conversion_direction: 'Направление преобразования',
+                    simplified_to_traditional: 'Упрощенный → Традиционный',
+                    traditional_to_simplified: 'Традиционный → Упрощенный',
+                    localization: 'Локализация',
+                    no_localization: 'Без локализации',
+                    hong_kong: 'Термины Гонконга',
+                    taiwan: 'Термины Тайваня',
+                    singapore: 'Термины Сингапура',
+                    localization_note: 'Корректировка терминов под региональные особенности',
+                    btn_convert: 'Преобразовать текст',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты преобразования',
+                    char_count: 'Количество символов:',
+                    conversion_time: 'Время преобразования:',
+                    result_text: 'Результирующий текст',
+                    btn_copy: 'Скопировать результат',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Этот инструмент выполняет преобразование между упрощенным и традиционным китайским языком с поддержкой локализации терминов для Гонконга, Тайваня и других регионов. Подходит для контент- креаторов, специалистов по кросс-бордовой торговле и переводчиков, которым нужно публиковать контент в разных регионах.',
+                    recent_conversions: 'Недавние преобразования',
+                    no_history: 'Истории преобразований пока нет',
+                    please_enter_text: 'Пожалуйста, сначала введите текст',
+                    copied: 'Скопировано!'
+                }
+            },
+
+            // 简繁转换映射表
+            conversionMaps: {
+                // 简体到繁体基础映射
+                s2t: {
+                    '爱': '愛', '碍': '礙', '安': '安', '肮': '骯', '袄': '襖',
+                    '坝': '壩', '罢': '罷', '摆': '擺', '败': '敗', '颁': '頒',
+                    '办': '辦', '绊': '絆', '帮': '幫', '绑': '綁', '镑': '鎊',
+                    '报': '報', '备': '備', '背': '背', '贝': '貝', '笔': '筆',
+                    '币': '幣', '毕': '畢', '毙': '斃', '别': '別', '宾': '賓',
+                    '坝': '壩', '板': '板', '办': '辦', '帮': '幫', '宝': '寶',
+                    '表': '表', '才': '才', '蚕': '蠶', '灿': '燦', '层': '層',
+                    '搀': '攙', '谗': '讒', '馋': '饞', '缠': '纏', '忏': '懺',
+                    '偿': '償', '厂': '廠', '彻': '徹', '尘': '塵', '衬': '襯',
+                    '称': '稱', '惩': '懲', '迟': '遲', '冲': '沖', '丑': '醜',
+                    '出': '出', '础': '礎', '处': '處', '触': '觸', '辞': '辭',
+                    '聪': '聰', '丛': '叢', '达': '達', '带': '帶', '贷': '貸',
+                    '当': '當', '挡': '擋', '党': '黨', '导': '導', '岛': '島',
+                    '灯': '燈', '邓': '鄧', '敌': '敵', '籴': '糴', '递': '遞',
+                    '点': '點', '电': '電', '淀': '澱', '垫': '墊', '电': '電',
+                    '冬': '冬', '斗': '鬥', '独': '獨', '吨': '噸', '夺': '奪',
+                    '堕': '墮', '儿': '兒', '尔': '爾', '发': '發', '罚': '罰',
+                    '阀': '閥', '珐': '琺', '矾': '礬', '范': '範', '飞': '飛',
+                    '坟': '墳', '奋': '奮', '粪': '糞', '凤': '鳳', '肤': '膚',
+                    '妇': '婦', '复': '復', '赋': '賦', '盖': '蓋', '干': '乾',
+                    '赶': '趕', '个': '個', '巩': '鞏', '沟': '溝', '构': '構',
+                    '购': '購', '谷': '穀', '顾': '顧', '刮': '刮', '关': '關',
+                    '观': '觀', '柜': '櫃', '汉': '漢', '号': '號', '阂': '閡',
+                    '贺': '賀', '红': '紅', '后': '後', '胡': '胡', '华': '華',
+                    '画': '畫', '划': '劃', '怀': '懷', '坏': '壞', '欢': '歡',
+                    '环': '環', '还': '還', '回': '回', '伙': '夥', '获': '獲',
+                    '击': '擊', '鸡': '雞', '积': '積', '极': '極', '际': '際',
+                    '继': '繼', '家': '家', '价': '價', '艰': '艱', '歼': '殲',
+                    '监': '監', '坚': '堅', '间': '間', '艰': '艱', '荐': '薦',
+                    '见': '見', '舰': '艦', '剑': '劍', '饯': '餞', '渐': '漸',
+                    '将': '將', '浆': '漿', '蒋': '蔣', '奖': '獎', '讲': '講',
+                    '胶': '膠', '阶': '階', '节': '節', '洁': '潔', '结': '結',
+                    '仅': '僅', '惊': '驚', '竞': '競', '旧': '舊', '剧': '劇',
+                    '据': '據', '惧': '懼', '卷': '卷', '绢': '絹', '觉': '覺',
+                    '开': '開', '克': '克', '垦': '墾', '恳': '懇', '夸': '誇',
+                    '块': '塊', '亏': '虧', '困': '困', '腊': '臘', '蜡': '蠟',
+                    '兰': '蘭', '拦': '攔', '栏': '欄', '烂': '爛', '累': '累',
+                    '垒': '壘', '类': '類', '里': '裏', '礼': '禮', '隶': '隸',
+                    '帘': '簾', '联': '聯', '怜': '憐', '炼': '煉', '练': '練',
+                    '粮': '糧', '疗': '療', '辽': '遼', '了': '了', '猎': '獵',
+                    '临': '臨', '邻': '鄰', '岭': '嶺', '刘': '劉', '龙': '龍',
+                    '娄': '婁', '搂': '摟', '卢': '盧', '炉': '爐', '陆': '陸',
+                    '驴': '驢', '乱': '亂', '抡': '掄', '伦': '倫', '轮': '輪',
+                    '论': '論', '罗': '羅', '络': '絡', '妈': '媽', '马': '馬',
+                    '吗': '嗎', '骂': '罵', '迈': '邁', '卖': '賣', '麦': '麥',
+                    '门': '門', '闷': '悶', '们': '們', '蒙': '蒙', '梦': '夢',
+                    '弥': '彌', '谜': '謎', '米': '米', '庙': '廟', '灭': '滅',
+                    '蔑': '蔑', '鸣': '鳴', '铭': '銘', '谬': '謬', '谋': '謀',
+                    '亩': '畝', '难': '難', '挠': '撓', '脑': '腦', '闹': '鬧',
+                    '馁': '餒', '内': '內', '拟': '擬', '腻': '膩', '撵': '攆',
+                    '宁': '寧', '纽': '紐', '脓': '膿', '农': '農', '疟': '瘧',
+                    '盘': '盤', '庞': '龐', '赔': '賠', '喷': '噴', '鹏': '鵬',
+                    '骗': '騙', '飘': '飄', '贫': '貧', '苹': '蘋', '凭': '憑',
+                    '评': '評', '扑': '撲', '仆': '僕', '朴': '樸', '谱': '譜',
+                    '栖': '棲', '齐': '齊', '启': '啟', '弃': '棄', '签': '簽',
+                    '千': '千', '牵': '牽', '纤': '纖', '窍': '竅', '窃': '竊',
+                    '寝': '寢', '庆': '慶', '琼': '瓊', '秋': '秋', '曲': '曲',
+                    '权': '權', '劝': '勸', '确': '確', '让': '讓', '扰': '擾',
+                    '热': '熱', '认': '認', '纫': '紉', '荣': '榮', '绒': '絨',
+                    '软': '軟', '锐': '銳', '闰': '閏', '润': '潤', '洒': '灑',
+                    '萨': '薩', '伞': '傘', '丧': '喪', '扫': '掃', '涩': '澀',
+                    '杀': '殺', '纱': '紗', '筛': '篩', '晒': '曬', '伤': '傷',
+                    '赏': '賞', '烧': '燒', '绍': '紹', '赊': '賒', '摄': '攝',
+                    '慑': '懾', '绅': '紳', '审': '審', '婶': '嬸', '肾': '腎',
+                    '渗': '滲', '声': '聲', '胜': '勝', '湿': '濕', '诗': '詩',
+                    '师': '師', '时': '時', '蚀': '蝕', '实': '實', '适': '適',
+                    '势': '勢', '兽': '獸', '书': '書', '术': '術', '树': '樹',
+                    '帅': '帥', '双': '雙', '谁': '誰', '税': '稅', '顺': '順',
+                    '说': '說', '硕': '碩', '烁': '爍', '丝': '絲', '饲': '飼',
+                    '耸': '聳', '怂': '慫', '颂': '頌', '苏': '蘇', '诉': '訴',
+                    '肃': '肅', '虽': '雖', '随': '隨', '孙': '孫', '损': '損',
+                    '笋': '筍', '缩': '縮', '锁': '鎖', '它': '它', '台': '臺',
+                    '态': '態', '坛': '壇', '叹': '嘆', '汤': '湯', '烫': '燙',
+                    '涛': '濤', '绦': '縧', '讨': '討', '腾': '騰', '誊': '謄',
+                    '体': '體', '粜': '糶', '铁': '鐵', '听': '聽', '厅': '廳',
+                    '头': '頭', '图': '圖', '涂': '塗', '团': '團', '椭': '橢',
+                    '洼': '窪', '袜': '襪', '网': '網', '卫': '衛', '稳': '穩',
+                    '务': '務', '雾': '霧', '牺': '犧', '习': '習', '系': '係',
+                    '戏': '戲', '虾': '蝦', '吓': '嚇', '峡': '峽', '侠': '俠',
+                    '狭': '狹', '厦': '廈', '鲜': '鮮', '纤': '纖', '咸': '鹹',
+                    '显': '顯', '险': '險', '县': '縣', '献': '獻', '乡': '鄉',
+                    '响': '響', '向': '向', '协': '協', '胁': '脅', '写': '寫',
+                    '泻': '瀉', '谢': '謝', '锌': '鋅', '兴': '興', '汹': '洶',
+                    '锈': '銹', '绣': '繡', '虚': '虛', '须': '須', '许': '許',
+                    '叙': '敘', '序': '序', '恤': '卹', '绪': '緒', '续': '續',
+                    '轩': '軒', '悬': '懸', '选': '選', '癣': '癬', '绚': '絢',
+                    '学': '學', '勋': '勳', '询': '詢', '寻': '尋', '训': '訓',
+                    '讯': '訊', '压': '壓', '鸦': '鴉', '鸭': '鴨', '哑': '啞',
+                    '亚': '亞', '讶': '訝', '轧': '軋', '阎': '閻', '严': '嚴',
+                    '岩': '岩', '盐': '鹽', '厌': '厭', '艳': '豔', '验': '驗',
+                    '鸯': '鴦', '杨': '楊', '扬': '揚', '疡': '瘍', '阳': '陽',
+                    '养': '養', '样': '樣', '钥': '鑰', '药': '藥', '爷': '爺',
+                    '叶': '葉', '页': '頁', '医': '醫', '仪': '儀', '亿': '億',
+                    '忆': '憶', '艺': '藝', '议': '議', '异': '異', '绎': '繹',
+                    '诣': '詣', '阴': '陰', '银': '銀', '饮': '飲', '隐': '隱',
+                    '应': '應', '营': '營', '蝇': '蠅', '赢': '贏', '颖': '穎',
+                    '佣': '傭', '拥': '擁', '痈': '癰', '踊': '踴', '优': '優',
+                    '忧': '憂', '邮': '郵', '铀': '鈾', '游': '遊', '犹': '猶',
+                    '渔': '漁', '娱': '娛', '与': '與', '屿': '嶼', '语': '語',
+                    '吁': '吁', '御': '禦', '愈': '愈', '狱': '獄', '誉': '譽',
+                    '预': '預', '驭': '馭', '鸳': '鴛', '渊': '淵', '园': '園',
+                    '员': '員', '圆': '圓', '缘': '緣', '远': '遠', '愿': '願',
+                    '约': '約', '跃': '躍', '钥': '鑰', '岳': '嶽', '云': '雲',
+                    '匀': '勻', '陨': '隕', '运': '運', '酝': '醞', '晕': '暈',
+                    '韵': '韻', '杂': '雜', '灾': '災', '载': '載', '攒': '攢',
+                    '暂': '暫', '赞': '贊', '赃': '贓', '脏': '髒', '葬': '葬',
+                    '遭': '遭', '糟': '糟', '凿': '鑿', '枣': '棗', '早': '早',
+                    '澡': '澡', '泽': '澤', '择': '擇', '责': '責', '则': '則',
+                    '泽': '澤', '贼': '賊', '赠': '贈', '扎': '扎', '轧': '軋',
+                    '闸': '閘', '诈': '詐', '斋': '齋', '债': '債', '毡': '氈',
+                    '战': '戰', '栈': '棧', '张': '張', '涨': '漲', '账': '賬',
+                    '胀': '脹', '赵': '趙', '折': '折', '这': '這', '浙': '浙',
+                    '珍': '珍', '针': '針', '贞': '貞', '侦': '偵', '诊': '診',
+                    '阵': '陣', '挣': '掙', '睁': '睜', '征': '徵', '狰': '猙',
+                    '争': '爭', '怔': '怔', '整': '整', '拯': '拯', '正': '正',
+                    '证': '證', '症': '症', '织': '織', '职': '職', '只': '只',
+                    '只': '隻', '址': '址', '制': '制', '质': '質', '钟': '鐘',
+                    '钟': '鍾', '肿': '腫', '种': '種', '众': '眾', '舟': '舟',
+                    '周': '周', '州': '州', '洲': '洲', '朱': '朱', '烛': '燭',
+                    '筑': '築', '铸': '鑄', '抓': '抓', '专': '專', '砖': '磚',
+                    '转': '轉', '赚': '賺', '桩': '樁', '庄': '莊', '装': '裝',
+                    '壮': '壯', '状': '狀', '准': '準', '浊': '濁', '总': '總',
+                    '纵': '縱', '邹': '鄒', '组': '組', '诅': '詛', '钻': '鑽',
+                    '左': '左', '与': '與', '余': '餘', '御': '禦', '吁': '籲'
+                },
+                // 繁体到简体基础映射
+                t2s: {}
+            },
+
+            // 地区用词差异映射
+            localizationMaps: {
+                // 香港地区用词
+                hk: {
+                    '软件': '軟件',
+                    '计算机': '電腦',
+                    '互联网': '互聯網',
+                    '手机': '手機',
+                    '电子邮件': '電郵',
+                    '空调': '冷氣',
+                    '打印机': '打印機',
+                    '地铁': '地鐵',
+                    '公交车': '巴士',
+                    '出租车': '的士',
+                    '超市': '超級市場',
+                    '便利店': '便利店',
+                    '身份证': '身份證',
+                    '密码': '密碼',
+                    '账号': '賬號',
+                    '登录': '登錄',
+                    '注册': '註冊',
+                    '网站': '網站',
+                    '程序': '程式',
+                    '鼠标': '滑鼠',
+                    '键盘': '鍵盤',
+                    '显示器': '顯示器',
+                    '硬盘': '硬盤',
+                    '内存': '記憶體',
+                    '软件': '軟件',
+                    '硬件': '硬件',
+                    '网络': '網絡',
+                    '下载': '下載',
+                    '上传': '上載',
+                    '安装': '安裝',
+                    '卸载': '解除安裝',
+                    '文件': '文件',
+                    '文件夹': '文件夾',
+                    '压缩': '壓縮',
+                    '解压': '解壓縮'
+                },
+                // 台湾地区用词
+                tw: {
+                    '软件': '軟體',
+                    '计算机': '電腦',
+                    '互联网': '網際網路',
+                    '手机': '手機',
+                    '电子邮件': '電子郵件',
+                    '空调': '空調',
+                    '打印机': '印表機',
+                    '地铁': '捷運',
+                    '公交车': '公車',
+                    '出租车': '計程車',
+                    '超市': '超級市場',
+                    '便利店': '便利商店',
+                    '身份证': '身份證',
+                    '密码': '密碼',
+                    '账号': '帳號',
+                    '登录': '登入',
+                    '注册': '註冊',
+                    '网站': '網站',
+                    '程序': '程式',
+                    '鼠标': '滑鼠',
+                    '键盘': '鍵盤',
+                    '显示器': '顯示器',
+                    '硬盘': '硬碟',
+                    '内存': '記憶體',
+                    '软件': '軟體',
+                    '硬件': '硬體',
+                    '网络': '網路',
+                    '下载': '下載',
+                    '上传': '上傳',
+                    '安装': '安裝',
+                    '卸载': '解除安裝',
+                    '文件': '檔案',
+                    '文件夹': '資料夾',
+                    '压缩': '壓縮',
+                    '解压': '解壓縮'
+                },
+                // 新加坡地区用词
+                sg: {
+                    '软件': '軟件',
+                    '计算机': '電腦',
+                    '互联网': '互聯網',
+                    '手机': '手機',
+                    '电子邮件': '電子郵件',
+                    '空调': '冷氣機',
+                    '打印机': '打印機',
+                    '地铁': '地鐵',
+                    '公交车': '巴士',
+                    '出租车': '德士',
+                    '超市': '超級市場',
+                    '便利店': '便利店',
+                    '身份证': '身份證',
+                    '密码': '密碼',
+                    '账号': '賬號',
+                    '登录': '登錄',
+                    '注册': '註冊',
+                    '网站': '網站',
+                    '程序': '程序',
+                    '鼠标': '滑鼠',
+                    '键盘': '鍵盤',
+                    '显示器': '顯示器',
+                    '硬盘': '硬盤',
+                    '内存': '記憶體',
+                    '软件': '軟件',
+                    '硬件': '硬件',
+                    '网络': '網路',
+                    '下载': '下載',
+                    '上传': '上傳',
+                    '安装': '安裝',
+                    '卸载': '卸載',
+                    '文件': '文件',
+                    '文件夹': '文件夾',
+                    '压缩': '壓縮',
+                    '解压': '解壓縮'
+                }
+            },
+
+            // 初始化：构建繁体到简体的映射表
+            initConversionMaps: function() {
+                // 从简体到繁体的映射反向构建繁体到简体的映射
+                for (const [simplified, traditional] of Object.entries(this.conversionMaps.s2t)) {
+                    this.conversionMaps.t2s[traditional] = simplified;
+                }
+            },
+
+            init: function() {
+                this.initConversionMaps();
+                
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false); // 初始化调用，不再次更新URL
+                } else {
+                    // 默认使用简体中文
+                    this.changeLang(false); 
+                }
+
+                // 尝试从本地存储加载转换历史
+                this.loadConversionHistory();
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                // 更新HTML元素
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                // 更新URL参数
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                // 特别更新页面标题
+                document.title = i18nData['title'];
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang]?.[key] || this.i18n['en'][key] || key;
+            },
+
+            convertText: function() {
+                const inputText = document.getElementById('input_text').value;
+                if (!inputText.trim()) {
+                    alert(this.getI18nText('please_enter_text'));
+                    return;
+                }
+
+                const direction = document.getElementById('conversion_direction').value;
+                const localization = document.getElementById('localization').value;
+
+                // 记录转换开始时间
+                const startTime = performance.now();
+
+                // 1. 执行简繁转换
+                let convertedText = '';
+                const conversionMap = this.conversionMaps[direction];
+                
+                for (let i = 0; i < inputText.length; i++) {
+                    const char = inputText[i];
+                    convertedText += conversionMap[char] || char;
+                }
+
+                // 2. 执行本地化处理
+                if (localization !== 'none' && this.localizationMaps[localization]) {
+                    const localMap = this.localizationMaps[localization];
+                    // 按长度排序，确保长词汇优先替换
+                    const sortedEntries = Object.entries(localMap).sort((a, b) => b[0].length - a[0].length);
+                    
+                    sortedEntries.forEach(([original, localized]) => {
+                        // 使用正则表达式全局替换
+                        const regex = new RegExp(original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                        convertedText = convertedText.replace(regex, localized);
+                    });
+                }
+
+                // 计算转换耗时
+                const endTime = performance.now();
+                const conversionTime = Math.round(endTime - startTime);
+
+                // 更新UI
+                document.getElementById('result_text').value = convertedText;
+                document.getElementById('char_count').textContent = convertedText.length;
+                document.getElementById('conversion_time').textContent = `${conversionTime}ms`;
+
+                // 保存到转换历史
+                this.saveToHistory(inputText, convertedText, direction);
+            },
+
+            saveToHistory: function(original, converted, direction) {
+                let history = JSON.parse(localStorage.getItem('conversionHistory') || '[]');
+                
+                // 添加新记录
+                history.unshift({
+                    id: Date.now(),
+                    original: original.substring(0, 30) + (original.length > 30 ? '...' : ''),
+                    converted: converted.substring(0, 30) + (converted.length > 30 ? '...' : ''),
+                    direction: direction,
+                    time: new Date().toLocaleString()
+                });
+                
+                // 限制历史记录数量
+                if (history.length > 10) {
+                    history = history.slice(0, 10);
+                }
+                
+                localStorage.setItem('conversionHistory', JSON.stringify(history));
+                this.loadConversionHistory();
+            },
+
+            loadConversionHistory: function() {
+                const historyContainer = document.getElementById('conversion_history');
+                const history = JSON.parse(localStorage.getItem('conversionHistory') || '[]');
+                
+                if (history.length === 0) {
+                    historyContainer.innerHTML = `<p data-i18n="no_history" class="text-gray-400 italic text-sm">${this.getI18nText('no_history')}</p>`;
+                    return;
+                }
+                
+                let html = '';
+                history.forEach(item => {
+                    const directionText = item.direction === 's2t' 
+                        ? this.getI18nText('simplified_to_traditional') 
+                        : this.getI18nText('traditional_to_simplified');
+                    
+                    html += `
+                        <div class="conversion-tag mb-2">
+                            <div class="text-xs opacity-70">${item.time} - ${directionText}</div>
+                            <div class="text-xs">${item.original} → ${item.converted}</div>
+                        </div>
+                    `;
+                });
+                
+                historyContainer.innerHTML = html;
+            },
+
+            clearAll: function() {
+                document.getElementById('input_text').value = '';
+                document.getElementById('result_text').value = '';
+                document.getElementById('char_count').textContent = '0';
+                document.getElementById('conversion_time').textContent = '0ms';
+            },
+
+            copyResult: function() {
+                const resultText = document.getElementById('result_text');
+                if (!resultText.value) return;
+                
+                resultText.select();
+                document.execCommand('copy');
+                
+                // 显示复制反馈
+                const btn = document.querySelector('button[onclick="ConverterTool.copyResult()"]');
+                const originalText = btn.textContent;
+                btn.textContent = this.getI18nText('copied');
+                btn.classList.add('bg-green-700');
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('bg-green-700');
+                }, 2000);
+            }
+        };
+
+        window.onload = function() { ConverterTool.init(); };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

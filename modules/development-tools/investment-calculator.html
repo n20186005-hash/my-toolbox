@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="category" content="development-tools">
+    <meta charset="UTF-8">
+    <title>投資財務計算器模塊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/investment-calculator.html" />
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 區域 1：HTML 積木 -->
+    <!-- ================================================================= -->
+    
+    <div class="tool-module active" 
+         data-id="finance_calc" 
+         data-category="finance" 
+         data-title="投資回報計算器" 
+         data-icon="💰">
+        
+        <!-- 語言選擇器 -->
+        <div class="absolute top-4 right-4">
+            <select id="fc-lang" onchange="FinanceCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💰 投資回報計算器</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="initial">初始金額</label>
+                    <input type="number" id="fc-initial" class="w-full p-2 border rounded focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="10000">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="monthly">每月定投</label>
+                    <input type="number" id="fc-monthly" class="w-full p-2 border rounded focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="1000">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="rate">年回報率 (%)</label>
+                    <input type="number" id="fc-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="5.0" step="0.1">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="years">投資年限</label>
+                    <input type="number" id="fc-years" class="w-full p-2 border rounded focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="10">
+                </div>
+            </div>
+            
+            <div class="flex items-center mt-2">
+                <input type="checkbox" id="fc-compound-end" class="w-4 h-4 text-yellow-600 rounded" onchange="FinanceCalc.calc()">
+                <label for="fc-compound-end" class="ml-2 text-sm text-gray-600" data-i18n="compound_end">期末存款 (默認期初)</label>
+            </div>
+        </div>
+
+        <button onclick="FinanceCalc.calc()" class="w-full bg-yellow-600 text-white py-2 rounded font-bold hover:bg-yellow-700 transition mb-6" data-i18n="btn_calc">計算回報</button>
+
+        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600" data-i18n="res_total">期末總金額</span>
+                <div class="text-right">
+                    <div id="fc-result-total" class="text-2xl font-bold text-yellow-700">--</div>
+                </div>
+            </div>
+            <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-gray-500" data-i18n="res_principal">投入本金</span>
+                <span id="fc-result-principal" class="font-semibold text-gray-700">--</span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+                <span class="text-gray-500" data-i18n="res_interest">投資收益</span>
+                <span id="fc-result-interest" class="font-semibold text-gray-700">--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 區域 2：JS 積木 -->
+    <!-- ================================================================= -->
+    <script>
+        const FinanceCalc = {
+            i18n: {
+                'zh-CN': {
+                    title: '💰 投资回报计算器',
+                    initial: '初始金额',
+                    monthly: '每月定投',
+                    rate: '年回报率 (%)',
+                    years: '投资年限',
+                    compound_end: '定投在月底存入 (默认月初)',
+                    btn_calc: '计算回报',
+                    res_total: '期末总金额',
+                    res_principal: '投入本金',
+                    res_interest: '投资收益'
+                },
+                'zh-TW': {
+                    title: '💰 投資回報計算器',
+                    initial: '初始金額',
+                    monthly: '每月定投',
+                    rate: '年回報率 (%)',
+                    years: '投資年限',
+                    compound_end: '定投在月底存入 (默認月初)',
+                    btn_calc: '計算回報',
+                    res_total: '期末總金額',
+                    res_principal: '投入本金',
+                    res_interest: '投資收益'
+                },
+                'en': {
+                    title: '💰 Investment Calculator',
+                    initial: 'Starting Amount',
+                    monthly: 'Monthly Contribution',
+                    rate: 'Annual Return (%)',
+                    years: 'Years to Grow',
+                    compound_end: 'Contribute at End of Month',
+                    btn_calc: 'Calculate',
+                    res_total: 'End Balance',
+                    res_principal: 'Total Principal',
+                    res_interest: 'Total Interest'
+                },
+                'ja': {
+                    title: '💰 投資シミュレーション',
+                    initial: '初期投資額',
+                    monthly: '毎月の積立額',
+                    rate: '想定利回り (%)',
+                    years: '積立期間 (年)',
+                    compound_end: '月末に積立 (通常は月初)',
+                    btn_calc: '計算する',
+                    res_total: '最終積立金額',
+                    res_principal: '元本総額',
+                    res_interest: '運用益'
+                },
+                'ru': {
+                    title: '💰 Инвестиционный калькулятор',
+                    initial: 'Начальная сумма',
+                    monthly: 'Ежемес. взнос',
+                    rate: 'Доходность (%)',
+                    years: 'Срок (лет)',
+                    compound_end: 'Взнос в конце месяца',
+                    btn_calc: 'Рассчитать',
+                    res_total: 'Итоговая сумма',
+                    res_principal: 'Сумма взносов',
+                    res_interest: 'Доход'
+                },
+                'es': {
+                    title: '💰 Calculadora de Inversión',
+                    initial: 'Monto Inicial',
+                    monthly: 'Aporte Mensual',
+                    rate: 'Retorno Anual (%)',
+                    years: 'Años',
+                    compound_end: 'Aporte al final del mes',
+                    btn_calc: 'Calcular',
+                    res_total: 'Saldo Final',
+                    res_principal: 'Capital Total',
+                    res_interest: 'Interés Total'
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('fc-lang').value;
+                const texts = FinanceCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="finance_calc"] [data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                FinanceCalc.calc(true);
+            },
+
+            calc: (isLangUpdate = false) => {
+                const initial = parseFloat(document.getElementById('fc-initial').value) || 0;
+                const monthly = parseFloat(document.getElementById('fc-monthly').value) || 0;
+                const rateYear = parseFloat(document.getElementById('fc-rate').value) || 0;
+                const years = parseFloat(document.getElementById('fc-years').value) || 0;
+                const isEnd = document.getElementById('fc-compound-end').checked;
+
+                const lang = document.getElementById('fc-lang').value;
+                const fmt = (num) => num.toLocaleString(lang === 'en' ? 'en-US' : 'zh-CN', { style: 'currency', currency: lang === 'en' ? 'USD' : (lang === 'ja' ? 'JPY' : 'CNY') });
+
+                if (!years && !isLangUpdate) return;
+
+                const r = rateYear / 100 / 12;
+                const n = years * 12;
+
+                // Future Value of Lump Sum
+                // FV = PV * (1 + r)^n
+                const fvLump = initial * Math.pow(1 + r, n);
+
+                // Future Value of Annuity (Series)
+                // FV = PMT * [((1 + r)^n - 1) / r]
+                // If Beginning of period (default), multiply by (1+r)
+                let fvSeries = 0;
+                if (r === 0) {
+                    fvSeries = monthly * n;
+                } else {
+                    fvSeries = monthly * ((Math.pow(1 + r, n) - 1) / r);
+                    if (!isEnd) {
+                        fvSeries *= (1 + r);
+                    }
+                }
+
+                const totalVal = fvLump + fvSeries;
+                const principal = initial + (monthly * n);
+                const interest = totalVal - principal;
+
+                document.getElementById('fc-result-total').innerText = fmt(totalVal);
+                document.getElementById('fc-result-principal').innerText = fmt(principal);
+                document.getElementById('fc-result-interest').innerText = fmt(interest);
+            }
+        };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

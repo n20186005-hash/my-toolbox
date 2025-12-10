@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="🔊">
+    <title>常见缩写词发音参考工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .abbreviation-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .abbreviation-table th, .abbreviation-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        .abbreviation-table th { background-color: #f0fdf4; font-weight: 600; color: #4b5563; }
+        .abbreviation-table tr:hover { background-color: #f8fafc; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+        .footer { margin-top: 30px; text-align: center; color: #6b7280; font-size: 0.9rem; }
+        .pronunciation { color: #3b82f6; font-style: italic; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/text-tools/common-abbreviations-pronunciation-reference.html" />
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔊 常见缩写词发音参考工具</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">搜索缩写词</h3>
+                <div class="form-group">
+                    <label data-i18n="search_keyword">关键词</label>
+                    <input type="text" id="search-input" onkeyup="Tool.search()" placeholder="输入缩写词或全称..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="results">缩写词列表</h3>
+                    <span class="text-sm text-gray-500" id="count-display"></span>
+                </div>
+                <div id="results-container">
+                    <table class="abbreviation-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="abbreviation">缩写词</th>
+                                <th data-i18n="full_form">全称</th>
+                                <th data-i18n="pronunciation">发音</th>
+                            </tr>
+                        </thead>
+                        <tbody id="abbreviation-list">
+                            <!-- 数据将通过JS动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于常见缩写词发音参考工具</h3>
+                <p data-i18n="intro_text">本工具提供常见英文缩写词的全称及标准发音参考，帮助用户正确理解和使用各类缩写词。适用于英语学习、学术研究、日常交流等场景，支持多语言切换，方便不同语言背景的用户使用。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>
+            <span data-i18n="footer_prefix">更多工具可访问：</span>
+            <a href="https://toolboxpro.top" target="_blank" class="text-green-600 hover:underline">toolboxpro.top</a>
+        </p>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '🔊 Common Abbreviations Pronunciation Reference',
+                    search: 'Search Abbreviations',
+                    'search_keyword': 'Keyword',
+                    'results': 'Abbreviations List',
+                    'abbreviation': 'Abbreviation',
+                    'full_form': 'Full Form',
+                    'pronunciation': 'Pronunciation',
+                    'copied': 'Copied!',
+                    'intro_title': 'About Common Abbreviations Pronunciation Tool',
+                    'intro_text': 'This tool provides full forms and standard pronunciation references for common English abbreviations, helping users correctly understand and use various abbreviations. Suitable for English learning, academic research, daily communication and other scenarios, supporting multi-language switching for users with different language backgrounds.',
+                    'footer_prefix': 'More tools at: ',
+                    'search_placeholder': 'Enter abbreviation or full form...',
+                    'results_count': 'results found'
+                },
+                'zh-CN': {
+                    title: '🔊 常见缩写词发音参考工具',
+                    search: '搜索缩写词',
+                    'search_keyword': '关键词',
+                    'results': '缩写词列表',
+                    'abbreviation': '缩写词',
+                    'full_form': '全称',
+                    'pronunciation': '发音',
+                    'copied': '已复制！',
+                    'intro_title': '关于常见缩写词发音参考工具',
+                    'intro_text': '本工具提供常见英文缩写词的全称及标准发音参考，帮助用户正确理解和使用各类缩写词。适用于英语学习、学术研究、日常交流等场景，支持多语言切换，方便不同语言背景的用户使用。',
+                    'footer_prefix': '更多工具可访问：',
+                    'search_placeholder': '输入缩写词或全称...',
+                    'results_count': '条结果'
+                },
+                'zh-TW': {
+                    title: '🔊 常見縮寫詞發音參考工具',
+                    search: '搜索縮寫詞',
+                    'search_keyword': '關鍵詞',
+                    'results': '縮寫詞列表',
+                    'abbreviation': '縮寫詞',
+                    'full_form': '全稱',
+                    'pronunciation': '發音',
+                    'copied': '已複製！',
+                    'intro_title': '關於常見縮寫詞發音參考工具',
+                    'intro_text': '本工具提供常見英文縮寫詞的全稱及標準發音參考，幫助用戶正確理解和使用各類縮寫詞。適用於英語學習、學術研究、日常交流等場景，支持多語言切換，方便不同語言背景的用戶使用。',
+                    'footer_prefix': '更多工具可訪問：',
+                    'search_placeholder': '輸入縮寫詞或全稱...',
+                    'results_count': '條結果'
+                },
+                'ja': {
+                    title: '🔊 一般的な略語の発音参考ツール',
+                    search: '略語を検索',
+                    'search_keyword': 'キーワード',
+                    'results': '略語一覧',
+                    'abbreviation': '略語',
+                    'full_form': '完全形',
+                    'pronunciation': '発音',
+                    'copied': 'コピーしました！',
+                    'intro_title': '一般的な略語の発音参考ツールについて',
+                    'intro_text': 'このツールは一般的な英語の略語の完全形と標準的な発音を提供し、ユーザーがさまざまな略語を正しく理解して使用するのを助けます。英語学習、学術研究、日常会話などの場面に適しており、多言語切り替えに対応しているため、異なる言語背景を持つユーザーにも便利です。',
+                    'footer_prefix': 'その他のツール：',
+                    'search_placeholder': '略語または完全形を入力...',
+                    'results_count': '件の結果'
+                },
+                'ru': {
+                    title: '🔊 Справка по произношению распространенных аббревиатур',
+                    search: 'Поиск аббревиатур',
+                    'search_keyword': 'Ключевое слово',
+                    'results': 'Список аббревиатур',
+                    'abbreviation': 'Аббревиатура',
+                    'full_form': 'Полная форма',
+                    'pronunciation': 'Произношение',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О инструменте для произношения распространенных аббревиатур',
+                    'intro_text': 'Этот инструмент предоставляет полные формы и стандартные справочные данные по произношению распространенных английских аббревиатур, помогая пользователям правильно понимать и использовать различные аббревиатуры. Подходит для изучения английского языка, научных исследований, повседневного общения и других сценариев, поддерживает многоязычность, что удобно для пользователей с разным языковым фоном.',
+                    'footer_prefix': 'Больше инструментов: ',
+                    'search_placeholder': 'Введите аббревиатуру или полную форму...',
+                    'results_count': 'результатов'
+                }
+            },
+
+            // 缩写词数据
+            abbreviationData: [
+                { abbr: "CEO", full: "Chief Executive Officer", fullZh: "首席执行官", fullTw: "首席執行官", fullJa: "最高経営責任者", fullRu: "Главный исполнительный директор", pron: /ˌsiː iː ˈəʊ/ },
+                { abbr: "USA", full: "United States of America", fullZh: "美利坚合众国", fullTw: "美利堅合眾國", fullJa: "アメリカ合衆国", fullRu: "Соединенные Штаты Америки", pron: /ˌjuː es ˈeɪ/ },
+                { abbr: "UK", full: "United Kingdom", fullZh: "联合王国", fullTw: "聯合王國", fullJa: "イギリス", fullRu: "Соединенное Королевство", pron: /ˌjuː ˈkeɪ/ },
+                { abbr: "UN", full: "United Nations", fullZh: "联合国", fullTw: "聯合國", fullJa: "国連", fullRu: "Организация Объединенных Наций", pron: /ˌjuː ˈen/ },
+                { abbr: "DIY", full: "Do It Yourself", fullZh: "自己动手做", fullTw: "自己動手做", fullJa: "手作り", fullRu: "Сделай сам", pron: /ˌdiː aɪ ˈwaɪ/ },
+                { abbr: "GPS", full: "Global Positioning System", fullZh: "全球定位系统", fullTw: "全球定位系統", fullJa: "全地球測位システム", fullRu: "Глобальная система позиционирования", pron: /ˌdʒiː piː ˈes/ },
+                { abbr: "WiFi", full: "Wireless Fidelity", fullZh: "无线保真", fullTw: "無線保真", fullJa: "ワイヤレスフィデリティ", fullRu: "Беспроводная фиделити", pron: /ˈwaɪfaɪ/ },
+                { abbr: "GDP", full: "Gross Domestic Product", fullZh: "国内生产总值", fullTw: "國內生產總值", fullJa: "国内総生産", fullRu: "Валовой внутренний продукт", pron: /ˌdʒiː diː ˈpiː/ },
+                { abbr: "FAQ", full: "Frequently Asked Questions", fullZh: "常见问题", fullTw: "常見問題", fullJa: "よくある質問", fullRu: "Часто задаваемые вопросы", pron: /ˌef eɪ ˈkjuː/ },
+                { abbr: "VIP", full: "Very Important Person", fullZh: "非常重要的人", fullTw: "非常重要的人", fullJa: "要人", fullRu: "Очень важное лицо", pron: /ˌviː aɪ ˈpiː/ },
+                { abbr: "ATM", full: "Automated Teller Machine", fullZh: "自动取款机", fullTw: "自動取款機", fullJa: "現金自動預け払い機", fullRu: "Автоматизированное банкоматное устройство", pron: /ˌeɪ tiː ˈem/ },
+                { abbr: "PDF", full: "Portable Document Format", fullZh: "便携式文档格式", fullTw: "便攜式文檔格式", fullJa: "ポータブルドキュメントフォーマット", fullRu: "Переносимый формат документов", pron: /ˌpiː diː ˈef/ },
+                { abbr: "HTML", full: "HyperText Markup Language", fullZh: "超文本标记语言", fullTw: "超文本標記語言", fullJa: "ハイパーテキストマークアップ言語", fullRu: "Язык гипертекстовой разметки", pron: /ˌeɪtʃ tiː em ˈel/ },
+                { abbr: "URL", full: "Uniform Resource Locator", fullZh: "统一资源定位符", fullTw: "統一資源定位符", fullJa: "統一資源ロケーター", fullRu: "Единый указатель ресурсов", pron: /ˌjuː aːr ˈel/ },
+                { abbr: "HIV", full: "Human Immunodeficiency Virus", fullZh: "人类免疫缺陷病毒", fullTw: "人類免疫缺陷病毒", fullJa: "ヒト免疫不全ウイルス", fullRu: "Вирус иммунодефицита человека", pron: /ˌeɪtʃ aɪ ˈviː/ },
+                { abbr: "AIDS", full: "Acquired Immune Deficiency Syndrome", fullZh: "获得性免疫缺陷综合征", fullTw: "獲得性免疫缺陷綜合征", fullJa: "後天性免疫不全症候群", fullRu: "СПИД (синдром приобретенного иммунодефицита)", pron: /eɪdz/ },
+                { abbr: "NASA", full: "National Aeronautics and Space Administration", fullZh: "美国国家航空航天局", fullTw: "美國國家航空航天局", fullJa: "アメリカ航空宇宙局", fullRu: "Национальное управление по аэронавтике и космическим исследованиям", pron: /ˈnæsə/ },
+                { abbr: "FBI", full: "Federal Bureau of Investigation", fullZh: "联邦调查局", fullTw: "聯邦調查局", fullJa: "連邦捜査局", fullRu: "Федеральное бюро расследований", pron: /ˌef biː ˈaɪ/ },
+                { abbr: "CIA", full: "Central Intelligence Agency", fullZh: "中央情报局", fullTw: "中央情報局", fullJa: "中央情報局", fullRu: "Центральное разведывательное управление", pron: /ˌsiː aɪ ˈeɪ/ },
+                { abbr: "MBA", full: "Master of Business Administration", fullZh: "工商管理硕士", fullTw: "工商管理碩士", fullJa: "経営学修士", fullRu: "Мастер бизнес-администрирования", pron: /ˌem biː ˈeɪ/ },
+                { abbr: "PhD", full: "Doctor of Philosophy", fullZh: "哲学博士", fullTw: "哲學博士", fullJa: "博士号", fullRu: "Доктор философии", pron: /ˌpiː eɪtʃ ˈdiː/ },
+                { abbr: "DIY", full: "Do It Yourself", fullZh: "自己动手做", fullTw: "自己動手做", fullJa: "自作", fullRu: "Сделай сам", pron: /ˌdiː aɪ ˈwaɪ/ },
+                { abbr: "ETC", full: "Etcetera", fullZh: "等等", fullTw: "等等", fullJa: "など", fullRu: "И так далее", pron: /ˌiː tiː ˈsiː/ },
+                { abbr: "VIP", full: "Very Important Person", fullZh: "贵宾", fullTw: "貴賓", fullJa: "VIP", fullRu: "Важное лицо", pron: /ˌviː aɪ ˈpiː/ },
+                { abbr: "WTO", full: "World Trade Organization", fullZh: "世界贸易组织", fullTw: "世界貿易組織", fullJa: "世界貿易機関", fullRu: "Мировая торговая организация", pron: /ˌdʌbljuː tiː ˈəʊ/ },
+                { abbr: "WHO", full: "World Health Organization", fullZh: "世界卫生组织", fullTw: "世界衛生組織", fullJa: "世界保健機関", fullRu: "Всемирная организация здравоохранения", pron: /ˌdʌbljuː eɪtʃ ˈəʊ/ },
+                { abbr: "IMF", full: "International Monetary Fund", fullZh: "国际货币基金组织", fullTw: "國際貨幣基金組織", fullJa: "国際通貨基金", fullRu: "Международный валютный фонд", pron: /ˌaɪ em ˈef/ },
+                { abbr: "NBA", full: "National Basketball Association", fullZh: "美国职业篮球联赛", fullTw: "美國職業籃球聯賽", fullJa: "全米バスケットボール協会", fullRu: "Национальная баскетбольная ассоциация", pron: /ˌen biː ˈeɪ/ },
+                { abbr: "FIFA", full: "Fédération Internationale de Football Association", fullZh: "国际足球联合会", fullTw: "國際足球聯合會", fullJa: "国際サッカー連盟", fullRu: "Международная федерация футбола", pron: /ˈfiːfə/ },
+                { abbr: "GDP", full: "Gross Domestic Product", fullZh: "国内生产总值", fullTw: "國內生產總值", fullJa: "国内総生産", fullRu: "Валовой внутренний продукт", pron: /ˌdʒiː diː ˈpiː/ },
+                { abbr: "CPI", full: "Consumer Price Index", fullZh: "居民消费价格指数", fullTw: "居民消費價格指數", fullJa: "消費者物価指数", fullRu: "Индекс потребительских цен", pron: /ˌsiː piː ˈaɪ/ }
+            ],
+
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang') || 'zh-CN';
+                
+                // 设置语言选择器
+                document.getElementById('lang-selector').value = lang;
+                
+                // 初始化翻译
+                this.changeLang();
+                
+                // 加载数据
+                this.renderList(this.abbreviationData);
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                
+                // 更新URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, null, '?' + urlParams.toString());
+                
+                // 应用翻译
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 更新搜索框占位符
+                document.getElementById('search-input').placeholder = this.i18n[lang]['search_placeholder'] || '输入缩写词或全称...';
+                
+                // 重新渲染列表以更新多语言内容
+                this.search();
+            },
+
+            search: function() {
+                const input = document.getElementById('search-input').value.toLowerCase();
+                const lang = document.getElementById('lang-selector').value;
+                
+                let filtered = this.abbreviationData.filter(item => {
+                    // 根据当前语言搜索不同字段
+                    if (lang === 'zh-CN') {
+                        return item.abbr.toLowerCase().includes(input) || 
+                               item.full.toLowerCase().includes(input) ||
+                               item.fullZh.toLowerCase().includes(input);
+                    } else if (lang === 'zh-TW') {
+                        return item.abbr.toLowerCase().includes(input) || 
+                               item.full.toLowerCase().includes(input) ||
+                               item.fullTw.toLowerCase().includes(input);
+                    } else if (lang === 'ja') {
+                        return item.abbr.toLowerCase().includes(input) || 
+                               item.full.toLowerCase().includes(input) ||
+                               item.fullJa.toLowerCase().includes(input);
+                    } else if (lang === 'ru') {
+                        return item.abbr.toLowerCase().includes(input) || 
+                               item.full.toLowerCase().includes(input) ||
+                               item.fullRu.toLowerCase().includes(input);
+                    } else { // en
+                        return item.abbr.toLowerCase().includes(input) || 
+                               item.full.toLowerCase().includes(input);
+                    }
+                });
+                
+                this.renderList(filtered);
+            },
+
+            renderList: function(data) {
+                const listContainer = document.getElementById('abbreviation-list');
+                const countDisplay = document.getElementById('count-display');
+                const lang = document.getElementById('lang-selector').value;
+                
+                listContainer.innerHTML = '';
+                
+                if (data.length === 0) {
+                    listContainer.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-gray-500" data-i18n="no_results">没有找到匹配的结果</td></tr>`;
+                    countDisplay.textContent = `0 ${this.i18n[lang]['results_count'] || '条结果'}`;
+                    return;
+                }
+                
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    
+                    // 选择适合当前语言的全称
+                    let fullText = item.full;
+                    if (lang === 'zh-CN') fullText = item.fullZh;
+                    else if (lang === 'zh-TW') fullText = item.fullTw;
+                    else if (lang === 'ja') fullText = item.fullJa;
+                    else if (lang === 'ru') fullText = item.fullRu;
+                    
+                    row.innerHTML = `
+                        <td>${item.abbr}</td>
+                        <td>${fullText}</td>
+                        <td class="pronunciation">${item.pron}</td>
+                    `;
+                    
+                    listContainer.appendChild(row);
+                });
+                
+                countDisplay.textContent = `${data.length} ${this.i18n[lang]['results_count'] || '条结果'}`;
+            }
+        };
+
+        // 页面加载完成后初始化工具
+        document.addEventListener('DOMContentLoaded', () => Tool.init());
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prime Numbers</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="prime_numbers">
+    <meta name="category" content="Math">
+    <meta name="icon" content="🔍">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Prime Numbers">
+    <meta name="description" content="Check if a number is prime or find primes up to a limit.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="质数工具">
+    <meta name="lang-description-zh-CN" content="检查一个数字是否为质数或查找指定范围内的质数。">
+    
+    <meta name="lang-title-zh-TW" content="質數工具">
+    <meta name="lang-description-zh-TW" content="檢查一個數字是否為質數或查找指定範圍內的質數。">
+    
+    <meta name="lang-title-ja" content="素数ツール">
+    <meta name="lang-description-ja" content="数値が素数かどうかを確認したり、指定された範囲内の素数を検索したりします。">
+    
+    <meta name="lang-title-ru" content="Простые числа">
+    <meta name="lang-description-ru" content="Проверьте, является ли число простым, или найдите простые числа до предела.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .primes-list { columns: 2; margin-top: 10px; }
+        .prime-item { display: inline-block; margin-right: 10px; margin-bottom: 5px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/prime-numbers.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="prime_numbers" 
+         data-category="math" 
+         data-title="Prime Numbers" 
+         data-icon="🔍">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="prime-lang" onchange="PrimeTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔍 Prime Numbers</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="number_label">Number</label>
+                <input type="number" id="prime-number" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 17" value="17" min="2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="limit_label">Find primes up to</label>
+                <input type="number" id="prime-limit" class="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. 100" value="100" min="2">
+            </div>
+        </div>
+
+        <div class="flex gap-2 mb-6">
+            <button onclick="PrimeTool.checkPrime()" class="flex-1 bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700 transition" data-i18n="btn_check">Check if Prime</button>
+            <button onclick="PrimeTool.findPrimes()" class="flex-1 bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700 transition" data-i18n="btn_find">Find Primes</button>
+        </div>
+
+        <div class="bg-purple-50 p-6 rounded-lg border border-purple-100">
+            <div id="prime-result" class="text-center text-2xl font-bold text-purple-800 mb-4">--</div>
+            
+            <div id="primes-container" class="hidden">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="primes_label">Primes up to <span id="primes-limit-display">100</span>:</div>
+                <div id="primes-list" class="primes-list text-gray-700"></div>
+                <div class="mt-2 text-sm text-gray-600">
+                    <span data-i18n="count_label">Total count:</span> <span id="primes-count">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PrimeTool = {
+            i18n: {
+                'en': {
+                    title: '🔍 Prime Numbers',
+                    number_label: 'Number',
+                    limit_label: 'Find primes up to',
+                    btn_check: 'Check if Prime',
+                    btn_find: 'Find Primes',
+                    is_prime: '%d is a prime number',
+                    not_prime: '%d is not a prime number',
+                    err_invalid: 'Please enter a valid number (≥ 2)',
+                    primes_label: 'Primes up to %d:',
+                    count_label: 'Total count:',
+                    loading: 'Calculating...'
+                },
+                'zh-CN': {
+                    title: '🔍 质数工具',
+                    number_label: '数字',
+                    limit_label: '查找小于等于的质数',
+                    btn_check: '检查是否为质数',
+                    btn_find: '查找质数',
+                    is_prime: '%d是质数',
+                    not_prime: '%d不是质数',
+                    err_invalid: '请输入有效的数字（≥ 2）',
+                    primes_label: '小于等于%d的质数：',
+                    count_label: '总数：',
+                    loading: '计算中...'
+                },
+                'zh-TW': {
+                    title: '🔍 質數工具',
+                    number_label: '數字',
+                    limit_label: '查找小於等於的質數',
+                    btn_check: '檢查是否為質數',
+                    btn_find: '查找質數',
+                    is_prime: '%d是質數',
+                    not_prime: '%d不是質數',
+                    err_invalid: '請輸入有效的數字（≥ 2）',
+                    primes_label: '小於等於%d的質數：',
+                    count_label: '總數：',
+                    loading: '計算中...'
+                },
+                'ja': {
+                    title: '🔍 素数ツール',
+                    number_label: '数値',
+                    limit_label: '以下の素数を検索',
+                    btn_check: '素数かどうかを確認',
+                    btn_find: '素数を検索',
+                    is_prime: '%dは素数です',
+                    not_prime: '%dは素数ではありません',
+                    err_invalid: '有効な数値を入力してください（≥ 2）',
+                    primes_label: '%d以下の素数：',
+                    count_label: '総数：',
+                    loading: '計算中...'
+                },
+                'ru': {
+                    title: '🔍 Простые числа',
+                    number_label: 'Число',
+                    limit_label: 'Найти простые числа до',
+                    btn_check: 'Проверить на простоту',
+                    btn_find: 'Найти простые числа',
+                    is_prime: '%d является простым числом',
+                    not_prime: '%d не является простым числом',
+                    err_invalid: 'Введите действительное число (≥ 2)',
+                    primes_label: 'Простые числа до %d:',
+                    count_label: 'Общее количество:',
+                    loading: 'Вычисление...'
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('prime-lang').value;
+                const texts = PrimeTool.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="prime_numbers"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            isPrime: (n) => {
+                if (n <= 1) return false;
+                if (n <= 3) return true;
+                if (n % 2 === 0 || n % 3 === 0) return false;
+                
+                let i = 5;
+                while (i * i <= n) {
+                    if (n % i === 0 || n % (i + 2) === 0) return false;
+                    i += 6;
+                }
+                return true;
+            },
+
+            checkPrime: () => {
+                const num = parseInt(document.getElementById('prime-number').value);
+                const lang = document.getElementById('prime-lang').value;
+                const texts = PrimeTool.i18n[lang];
+                const resultEl = document.getElementById('prime-result');
+                
+                // 隐藏质数列表
+                document.getElementById('primes-container').classList.add('hidden');
+
+                if (isNaN(num) || num < 2) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-center text-xl font-bold text-red-600 mb-4";
+                    return;
+                }
+
+                const isPrime = PrimeTool.isPrime(num);
+                resultEl.className = "text-center text-2xl font-bold text-purple-800 mb-4";
+                resultEl.innerText = isPrime ? texts.is_prime.replace('%d', num) : texts.not_prime.replace('%d', num);
+            },
+
+            findPrimes: () => {
+                const limit = parseInt(document.getElementById('prime-limit').value);
+                const lang = document.getElementById('prime-lang').value;
+                const texts = PrimeTool.i18n[lang];
+                const resultEl = document.getElementById('prime-result');
+                const primesContainer = document.getElementById('primes-container');
+                const primesList = document.getElementById('primes-list');
+                const primesLimitDisplay = document.getElementById('primes-limit-display');
+                const primesCount = document.getElementById('primes-count');
+
+                // 显示加载状态
+                resultEl.innerText = texts.loading;
+                resultEl.className = "text-center text-xl font-bold text-purple-800 mb-4";
+                primesContainer.classList.add('hidden');
+
+                if (isNaN(limit) || limit < 2) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-center text-xl font-bold text-red-600 mb-4";
+                    return;
+                }
+
+                // 使用setTimeout模拟计算延迟，避免UI阻塞
+                setTimeout(() => {
+                    const primes = [];
+                    for (let i = 2; i <= limit; i++) {
+                        if (PrimeTool.isPrime(i)) {
+                            primes.push(i);
+                        }
+                    }
+
+                    // 更新显示
+                    resultEl.innerText = '';
+                    primesLimitDisplay.innerText = limit;
+                    primesCount.innerText = primes.length;
+                    
+                    // 生成质数列表
+                    primesList.innerHTML = '';
+                    primes.forEach(prime => {
+                        const span = document.createElement('span');
+                        span.className = 'prime-item';
+                        span.innerText = prime;
+                        primesList.appendChild(span);
+                    });
+
+                    primesContainer.classList.remove('hidden');
+                }, 100);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', PrimeTool.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('prime-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    PrimeTool.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

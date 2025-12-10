@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pregnancy & Conception Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="pregnancy_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="👶">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Pregnancy & Conception Calculator">
+    <meta name="description" content="Estimate your due date, conception date, and other important milestones during pregnancy.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="怀孕受孕计算器">
+    <meta name="lang-description-zh-CN" content="估算您的预产期、受孕日期以及怀孕期间的其他重要里程碑。">
+    
+    <meta name="lang-title-zh-TW" content="懷孕受孕計算器">
+    <meta name="lang-description-zh-TW" content="估算您的預產期、受孕日期以及懷孕期間的其他重要里程碑。">
+    
+    <meta name="lang-title-ja" content="妊娠と受胎計算ツール">
+    <meta name="lang-description-ja" content="分娩予定日、受胎日、および妊娠中の他の重要な節目を推定します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор беременности и зачатия">
+    <meta name="lang-description-ru" content="Оцените срок родов, дату зачатия и другие важные этапы беременности.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .result-section { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; }
+        .input-section { margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .radio-group { display: flex; gap: 15px; margin: 10px 0; flex-wrap: wrap; }
+        .radio-option { display: flex; align-items: center; gap: 5px; }
+        input[type="date"], select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .milestone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin-top: 15px; }
+        .milestone-item { background: white; padding: 10px; border-radius: 4px; }
+        .milestone-date { font-weight: 500; }
+        .progress-container { margin: 20px 0; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
+        .progress-bar { height: 100%; background: #4ade80; width: 0%; transition: width 0.5s ease; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/health/pregnancy-conception-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="pregnancy_calculator" 
+         data-category="health" 
+         data-title="Pregnancy & Conception Calculator" 
+         data-icon="👶">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="pregnancy-lang" onchange="PregnancyCalculator.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">👶 Pregnancy & Conception Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 计算方式选择 -->
+            <div class="input-section">
+                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="calculate_method">Calculate Using:</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="method-lmp" name="calc-method" value="lmp" checked onclick="PregnancyCalculator.toggleInputs()">
+                        <label for="method-lmp" data-i18n="last_period">Last Menstrual Period</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="method-due" name="calc-method" value="due" onclick="PregnancyCalculator.toggleInputs()">
+                        <label for="method-due" data-i18n="due_date">Due Date</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="method-conception" name="calc-method" value="conception" onclick="PregnancyCalculator.toggleInputs()">
+                        <label for="method-conception" data-i18n="conception_date">Conception Date</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 输入区域 -->
+            <div id="lmp-input" class="input-section">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="first_day_lmp">First Day of Last Menstrual Period</label>
+                <input type="date" id="lmp-date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div id="due-input" class="input-section hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="estimated_due_date">Estimated Due Date</label>
+                <input type="date" id="due-date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div id="conception-input" class="input-section hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="conception_date">Conception Date</label>
+                <input type="date" id="conception-date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 月经周期长度 -->
+            <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="cycle_length">Average Menstrual Cycle Length (days)</label>
+                <select id="cycle-length" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="28">28 days</option>
+                    <option value="21">21 days</option>
+                    <option value="22">22 days</option>
+                    <option value="23">23 days</option>
+                    <option value="24">24 days</option>
+                    <option value="25">25 days</option>
+                    <option value="26">26 days</option>
+                    <option value="27">27 days</option>
+                    <option value="29">29 days</option>
+                    <option value="30">30 days</option>
+                    <option value="31">31 days</option>
+                    <option value="32">32 days</option>
+                    <option value="33">33 days</option>
+                    <option value="34">34 days</option>
+                    <option value="35">35 days</option>
+                </select>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="PregnancyCalculator.clearValue()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="PregnancyCalculator.calculate()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="pregnancy-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="pregnancy-results" class="hidden">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="results">Results</div>
+            <div class="result-section">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded">
+                        <div class="text-sm text-gray-500" data-i18n="estimated_due_date">Estimated Due Date</div>
+                        <div class="text-lg font-medium" id="due-date-result">-</div>
+                    </div>
+                    <div class="bg-white p-4 rounded">
+                        <div class="text-sm text-gray-500" data-i18n="conception_date">Conception Date</div>
+                        <div class="text-lg font-medium" id="conception-date-result">-</div>
+                    </div>
+                    <div class="bg-white p-4 rounded">
+                        <div class="text-sm text-gray-500" data-i18n="current_week">Current Week of Pregnancy</div>
+                        <div class="text-lg font-medium" id="current-week-result">-</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span data-i18n="pregnancy_progress">Pregnancy Progress</span>
+                        <span id="progress-percentage">0%</span>
+                    </div>
+                    <div class="progress-container">
+                        <div id="pregnancy-progress" class="progress-bar"></div>
+                    </div>
+                    <div class="text-right text-sm text-gray-500 mt-1">
+                        <span data-i18n="days_remaining">Days Remaining:</span> <span id="days-remaining">280</span>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <div class="text-sm text-gray-500 mb-2" data-i18n="key_milestones">Key Milestones</div>
+                    <div class="milestone-grid" id="milestones">
+                        <!-- 里程碑将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" id="notes-list">
+                <li data-i18n="note1">This calculator provides estimates only and should not replace professional medical advice</li>
+                <li data-i18n="note2">A typical pregnancy lasts about 40 weeks (280 days) from the first day of your last menstrual period</li>
+                <li data-i18n="note3">Conception usually occurs around 2 weeks after the first day of your last menstrual period</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const PregnancyCalculator = {
+            // 计算方式: lmp, due, conception
+            currentMethod: 'lmp',
+            
+            i18n: {
+                'en': {
+                    title: '👶 Pregnancy & Conception Calculator',
+                    calculate_method: 'Calculate Using:',
+                    last_period: 'Last Menstrual Period',
+                    due_date: 'Due Date',
+                    conception_date: 'Conception Date',
+                    first_day_lmp: 'First Day of Last Menstrual Period',
+                    estimated_due_date: 'Estimated Due Date',
+                    cycle_length: 'Average Menstrual Cycle Length (days)',
+                    clear: 'Clear',
+                    calculate: 'Calculate',
+                    results: 'Results',
+                    current_week: 'Current Week of Pregnancy',
+                    pregnancy_progress: 'Pregnancy Progress',
+                    days_remaining: 'Days Remaining:',
+                    key_milestones: 'Key Milestones',
+                    notes: 'Notes:',
+                    note1: 'This calculator provides estimates only and should not replace professional medical advice',
+                    note2: 'A typical pregnancy lasts about 40 weeks (280 days) from the first day of your last menstrual period',
+                    note3: 'Conception usually occurs around 2 weeks after the first day of your last menstrual period',
+                    err_invalid_date: 'Please select a valid date',
+                    milestone_4w: '4 Weeks: Pregnancy Test Possible',
+                    milestone_8w: '8 Weeks: Major Organs Forming',
+                    milestone_12w: '12 Weeks: First Trimester Ends',
+                    milestone_20w: '20 Weeks: Second Trimester Ends',
+                    milestone_24w: '24 Weeks: Viability Age',
+                    milestone_37w: '37 Weeks: Full Term',
+                    milestone_40w: '40 Weeks: Due Date'
+                },
+                'zh-CN': {
+                    title: '👶 怀孕受孕计算器',
+                    calculate_method: '计算方式：',
+                    last_period: '末次月经',
+                    due_date: '预产期',
+                    conception_date: '受孕日期',
+                    first_day_lmp: '末次月经第一天',
+                    estimated_due_date: '预计预产期',
+                    cycle_length: '平均月经周期长度（天）',
+                    clear: '清除',
+                    calculate: '计算',
+                    results: '结果',
+                    current_week: '当前怀孕周数',
+                    pregnancy_progress: '怀孕进度',
+                    days_remaining: '剩余天数：',
+                    key_milestones: '重要里程碑',
+                    notes: '说明：',
+                    note1: '本计算器仅提供估算，不能替代专业医疗建议',
+                    note2: '典型的怀孕期从末次月经第一天开始约为40周（280天）',
+                    note3: '受孕通常发生在末次月经第一天后约2周',
+                    err_invalid_date: '请选择有效的日期',
+                    milestone_4w: '4周：可进行怀孕测试',
+                    milestone_8w: '8周：主要器官形成中',
+                    milestone_12w: '12周：孕早期结束',
+                    milestone_20w: '20周：孕中期结束',
+                    milestone_24w: '24周：可存活年龄',
+                    milestone_37w: '37周：足月',
+                    milestone_40w: '40周：预产期'
+                },
+                'zh-TW': {
+                    title: '👶 懷孕受孕計算器',
+                    calculate_method: '計算方式：',
+                    last_period: '末次月經',
+                    due_date: '預產期',
+                    conception_date: '受孕日期',
+                    first_day_lmp: '末次月經第一天',
+                    estimated_due_date: '預計預產期',
+                    cycle_length: '平均月經週期長度（天）',
+                    clear: '清除',
+                    calculate: '計算',
+                    results: '結果',
+                    current_week: '當前懷孕周數',
+                    pregnancy_progress: '懷孕進度',
+                    days_remaining: '剩餘天數：',
+                    key_milestones: '重要里程碑',
+                    notes: '說明：',
+                    note1: '本計算器僅提供估算，不能替代專業醫療建議',
+                    note2: '典型的懷孕期從末次月經第一天開始約為40週（280天）',
+                    note3: '受孕通常發生在末次月經第一天後約2週',
+                    err_invalid_date: '請選擇有效的日期',
+                    milestone_4w: '4週：可進行懷孕測試',
+                    milestone_8w: '8週：主要器官形成中',
+                    milestone_12w: '12週：孕早期結束',
+                    milestone_20w: '20週：孕中期結束',
+                    milestone_24w: '24週：可存活年齡',
+                    milestone_37w: '37週：足月',
+                    milestone_40w: '40週：預產期'
+                },
+                'ja': {
+                    title: '👶 妊娠と受胎計算ツール',
+                    calculate_method: '計算方法：',
+                    last_period: '最終月経',
+                    due_date: '分娩予定日',
+                    conception_date: '受胎日',
+                    first_day_lmp: '最終月経の初日',
+                    estimated_due_date: '推定分娩予定日',
+                    cycle_length: '平均月経周期（日）',
+                    clear: 'クリア',
+                    calculate: '計算',
+                    results: '結果',
+                    current_week: '現在の妊娠週数',
+                    pregnancy_progress: '妊娠の進行状況',
+                    days_remaining: '残り日数：',
+                    key_milestones: '主な節目',
+                    notes: '注釈：',
+                    note1: 'この計算機は推定値を提供するものであり、専門的な医療アドバイスに取って代わるものではありません',
+                    note2: '通常の妊娠期間は、最終月経の初日から約40週間（280日）です',
+                    note3: '受胎は通常、最終月経の初日から約2週間後に起こります',
+                    err_invalid_date: '有効な日付を選択してください',
+                    milestone_4w: '4週：妊娠検査が可能',
+                    milestone_8w: '8週：主要臓器の形成中',
+                    milestone_12w: '12週：前期妊娠終了',
+                    milestone_20w: '20週：中期妊娠終了',
+                    milestone_24w: '24週：生存可能年齢',
+                    milestone_37w: '37週：満期',
+                    milestone_40w: '40週：分娩予定日'
+                },
+                'ru': {
+                    title: '👶 Калькулятор беременности и зачатия',
+                    calculate_method: 'Вычислить по:',
+                    last_period: 'Последней менструации',
+                    due_date: 'Предполагаемой дате родов',
+                    conception_date: 'Дате зачатия',
+                    first_day_lmp: 'Первый день последней менструации',
+                    estimated_due_date: 'Предполагаемая дата родов',
+                    cycle_length: 'Средняя длительность менструального цикла (дней)',
+                    clear: 'Очистить',
+                    calculate: 'Вычислить',
+                    results: 'Результаты',
+                    current_week: 'Текущая неделя беременности',
+                    pregnancy_progress: 'Прогресс беременности',
+                    days_remaining: 'Оставшиеся дни:',
+                    key_milestones: 'Ключевые этапы',
+                    notes: 'Примечания:',
+                    note1: 'Этот калькулятор предоставляет только оценки и не должен заменять профессиональные медицинские консультации',
+                    note2: 'Типичная беременность длится около 40 недель (280 дней) с первого дня последней менструации',
+                    note3: 'Зачатие обычно происходит примерно через 2 недели после первого дня последней менструации',
+                    err_invalid_date: 'Пожалуйста, выберите действительную дату',
+                    milestone_4w: '4 недели: Возможен тест на беременность',
+                    milestone_8w: '8 недель: Формирование основных органов',
+                    milestone_12w: '12 недель: Конец первого триместра',
+                    milestone_20w: '20 недель: Конец второго триместра',
+                    milestone_24w: '24 недели: Возраст жизнеспособности',
+                    milestone_37w: '37 недель: Достигнута полнота срока',
+                    milestone_40w: '40 недель: Предполагаемая дата родов'
+                }
+            },
+            
+            // 初始化
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                // 设置默认日期为今天
+                const today = new Date();
+                const defaultDate = new Date(today.setMonth(today.getMonth() - 1)).toISOString().split('T')[0];
+                document.getElementById('lmp-date').value = defaultDate;
+                document.getElementById('due-date').value = new Date(today.setMonth(today.getMonth() + 9)).toISOString().split('T')[0];
+                document.getElementById('conception-date').value = new Date(today.setMonth(today.getMonth() - 8)).toISOString().split('T')[0];
+            },
+            
+            // 切换输入区域
+            toggleInputs: function() {
+                const method = document.querySelector('input[name="calc-method"]:checked').value;
+                this.currentMethod = method;
+                
+                // 隐藏所有输入区域
+                document.getElementById('lmp-input').classList.add('hidden');
+                document.getElementById('due-input').classList.add('hidden');
+                document.getElementById('conception-input').classList.add('hidden');
+                
+                // 显示当前方法对应的输入区域
+                document.getElementById(`${method}-input`).classList.remove('hidden');
+            },
+            
+            // 日期计算辅助函数 - 添加天数
+            addDays: function(date, days) {
+                const result = new Date(date);
+                result.setDate(result.getDate() + days);
+                return result;
+            },
+            
+            // 计算两个日期之间的天数差
+            daysBetween: function(date1, date2) {
+                const oneDay = 24 * 60 * 60 * 1000; // 毫秒
+                const firstDate = new Date(date1);
+                const secondDate = new Date(date2);
+                return Math.round(Math.abs((firstDate - secondDate) / oneDay));
+            },
+            
+            // 格式化日期显示
+            formatDate: function(date) {
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                return new Date(date).toLocaleDateString(this.getCurrentLang(), options);
+            },
+            
+            // 计算怀孕相关日期
+            calculate: function() {
+                let lmpDate, dueDate, conceptionDate;
+                const cycleLength = parseInt(document.getElementById('cycle-length').value) || 28;
+                const ovulationOffset = Math.floor(cycleLength / 2); // 排卵日大约在周期中间
+                const today = new Date();
+                
+                const errorEl = document.getElementById('pregnancy-error');
+                const resultsEl = document.getElementById('pregnancy-results');
+                
+                // 根据选择的方法获取基础日期
+                if (this.currentMethod === 'lmp') {
+                    lmpDate = document.getElementById('lmp-date').value;
+                    if (!lmpDate) {
+                        errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_date;
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+                    
+                    // 从末次月经计算预产期（加280天）和受孕日期（加排卵偏移天）
+                    dueDate = this.addDays(lmpDate, 280);
+                    conceptionDate = this.addDays(lmpDate, ovulationOffset);
+                } else if (this.currentMethod === 'due') {
+                    dueDate = document.getElementById('due-date').value;
+                    if (!dueDate) {
+                        errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_date;
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+                    
+                    // 从预产期倒推末次月经（减280天）和受孕日期（减280-排卵偏移天）
+                    lmpDate = this.addDays(dueDate, -280);
+                    conceptionDate = this.addDays(dueDate, -(280 - ovulationOffset));
+                } else { // conception
+                    conceptionDate = document.getElementById('conception-date').value;
+                    if (!conceptionDate) {
+                        errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_date;
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+                    
+                    // 从受孕日期计算末次月经（减排卵偏移天）和预产期（加280-排卵偏移天）
+                    lmpDate = this.addDays(conceptionDate, -ovulationOffset);
+                    dueDate = this.addDays(conceptionDate, 280 - ovulationOffset);
+                }
+                
+                // 清除错误
+                errorEl.classList.add('hidden');
+                
+                // 计算当前孕周（从末次月经开始计算）
+                const daysPregnant = this.daysBetween(lmpDate, today);
+                const currentWeek = Math.min(Math.max(0, Math.floor(daysPregnant / 7)), 40);
+                
+                // 计算剩余天数
+                const daysRemaining = Math.max(0, this.daysBetween(today, dueDate));
+                
+                // 计算怀孕进度
+                const progress = Math.min(100, Math.round((daysPregnant / 280) * 100));
+                
+                // 显示主要结果
+                document.getElementById('due-date-result').textContent = this.formatDate(dueDate);
+                document.getElementById('conception-date-result').textContent = this.formatDate(conceptionDate);
+                document.getElementById('current-week-result').textContent = `${currentWeek} ${currentWeek === 1 ? 'week' : 'weeks'}`;
+                document.getElementById('progress-percentage').textContent = `${progress}%`;
+                document.getElementById('pregnancy-progress').style.width = `${progress}%`;
+                document.getElementById('days-remaining').textContent = daysRemaining;
+                
+                // 生成里程碑
+                const milestones = [
+                    { week: 4, date: this.addDays(lmpDate, 4 * 7), key: 'milestone_4w' },
+                    { week: 8, date: this.addDays(lmpDate, 8 * 7), key: 'milestone_8w' },
+                    { week: 12, date: this.addDays(lmpDate, 12 * 7), key: 'milestone_12w' },
+                    { week: 20, date: this.addDays(lmpDate, 20 * 7), key: 'milestone_20w' },
+                    { week: 24, date: this.addDays(lmpDate, 24 * 7), key: 'milestone_24w' },
+                    { week: 37, date: this.addDays(lmpDate, 37 * 7), key: 'milestone_37w' },
+                    { week: 40, date: dueDate, key: 'milestone_40w' }
+                ];
+                
+                // 显示里程碑
+                const milestonesEl = document.getElementById('milestones');
+                milestonesEl.innerHTML = '';
+                
+                milestones.forEach(milestone => {
+                    const milestoneEl = document.createElement('div');
+                    milestoneEl.className = 'milestone-item';
+                    
+                    const dateStr = this.formatDate(milestone.date);
+                    const isPast = new Date(milestone.date) < today;
+                    
+                    milestoneEl.innerHTML = `
+                        <div class="milestone-date ${isPast ? 'text-gray-600' : ''}">${dateStr}</div>
+                        <div class="text-sm ${isPast ? 'text-gray-500' : ''}" data-i18n="${milestone.key}">${this.i18n[this.getCurrentLang()][milestone.key]}</div>
+                    `;
+                    
+                    milestonesEl.appendChild(milestoneEl);
+                });
+                
+                // 显示结果区域
+                resultsEl.classList.remove('hidden');
+            },
+            
+            // 清除输入
+            clearValue: function() {
+                document.getElementById('lmp-date').value = '';
+                document.getElementById('due-date').value = '';
+                document.getElementById('conception-date').value = '';
+                document.getElementById('pregnancy-results').classList.add('hidden');
+                document.getElementById('pregnancy-error').classList.add('hidden');
+            },
+            
+            // 切换语言
+            changeLang: function() {
+                const lang = this.getCurrentLang();
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 如果有结果，重新计算以更新日期格式和文本
+                if (!document.getElementById('pregnancy-results').classList.contains('hidden')) {
+                    this.calculate();
+                }
+            },
+            
+            // 获取当前语言
+            getCurrentLang: function() {
+                return document.getElementById('pregnancy-lang').value;
+            }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            PregnancyCalculator.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

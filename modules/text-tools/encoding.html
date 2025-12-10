@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="🔤">
+    <title>文本编码解码工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 150px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/text-tools/encoding.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="encoding-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="EncodingTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔤 文本编码解码工具</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_text">输入文本</h3>
+                <div class="form-group">
+                    <textarea id="input_text" placeholder="请在此输入需要编码/解码的文本..." class="focus:ring-2 focus:ring-green-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="options">处理选项</h3>
+                
+                <div class="options-grid">
+                    <div class="form-group">
+                        <label data-i18n="operation_type">操作类型</label>
+                        <select id="operation_type" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="encode" data-i18n="encode">编码</option>
+                            <option value="decode" data-i18n="decode">解码</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="encoding_type">编码类型</label>
+                        <select id="encoding_type" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="base64" data-i18n="base64">Base64</option>
+                            <option value="url" data-i18n="url">URL 编码</option>
+                            <option value="html" data-i18n="html">HTML 实体</option>
+                            <option value="json" data-i18n="json">JSON 编码</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="EncodingTool.processText()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_process">处理文本</button>
+                <button onclick="EncodingTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">处理结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="char_count">字符数：</span>
+                        <span class="stat-value" id="char_count">0</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="process_time">处理耗时：</span>
+                        <span class="stat-value" id="process_time">0ms</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="result_text">结果文本</label>
+                    <textarea id="result_text" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700" placeholder="处理后的文本将显示在这里..."></textarea>
+                </div>
+                <button onclick="EncodingTool.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- History -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="recent_operations">最近操作</h3>
+                <div id="operation_history" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[60px]">
+                    <p data-i18n="no_history" class="text-gray-400 italic text-sm">暂无操作记录</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">本工具提供多种文本编码与解码功能，支持Base64、URL编码、HTML实体和JSON编码等常见格式。可用于处理网络传输中的特殊字符、解决乱码问题或进行数据加密，适用于开发者、内容创作者和需要处理特殊文本格式的用户。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EncodingTool = {
+            i18n: {
+                'en': {
+                    title: '🔤 Text Encoding/Decoding Tool',
+                    input_text: 'Input Text',
+                    options: 'Processing Options',
+                    operation_type: 'Operation Type',
+                    encode: 'Encode',
+                    decode: 'Decode',
+                    encoding_type: 'Encoding Type',
+                    base64: 'Base64',
+                    url: 'URL Encoding',
+                    html: 'HTML Entities',
+                    json: 'JSON Encoding',
+                    btn_process: 'Process Text',
+                    btn_clear: 'Clear All',
+                    results: 'Processing Results',
+                    char_count: 'Character Count:',
+                    process_time: 'Processing Time:',
+                    result_text: 'Result Text',
+                    btn_copy: 'Copy Result',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool provides various text encoding and decoding functions, supporting common formats such as Base64, URL encoding, HTML entities, and JSON encoding. It can be used to handle special characters in network transmission, solve garbled code problems, or perform data encryption, suitable for developers, content creators, and users needing to process special text formats.',
+                    recent_operations: 'Recent Operations',
+                    no_history: 'No operation history yet',
+                    please_enter_text: 'Please enter some text first',
+                    copied: 'Copied!'
+                },
+                'zh-CN': {
+                    title: '🔤 文本编码解码工具',
+                    input_text: '输入文本',
+                    options: '处理选项',
+                    operation_type: '操作类型',
+                    encode: '编码',
+                    decode: '解码',
+                    encoding_type: '编码类型',
+                    base64: 'Base64',
+                    url: 'URL 编码',
+                    html: 'HTML 实体',
+                    json: 'JSON 编码',
+                    btn_process: '处理文本',
+                    btn_clear: '清空所有',
+                    results: '处理结果',
+                    char_count: '字符数：',
+                    process_time: '处理耗时：',
+                    result_text: '结果文本',
+                    btn_copy: '复制结果',
+                    intro_title: '关于本工具',
+                    intro_text: '本工具提供多种文本编码与解码功能，支持Base64、URL编码、HTML实体和JSON编码等常见格式。可用于处理网络传输中的特殊字符、解决乱码问题或进行数据加密，适用于开发者、内容创作者和需要处理特殊文本格式的用户。',
+                    recent_operations: '最近操作',
+                    no_history: '暂无操作记录',
+                    please_enter_text: '请先输入一些文本',
+                    copied: '已复制！'
+                },
+                'zh-TW': {
+                    title: '🔤 文本編碼解碼工具',
+                    input_text: '輸入文本',
+                    options: '處理選項',
+                    operation_type: '操作類型',
+                    encode: '編碼',
+                    decode: '解碼',
+                    encoding_type: '編碼類型',
+                    base64: 'Base64',
+                    url: 'URL 編碼',
+                    html: 'HTML 實體',
+                    json: 'JSON 編碼',
+                    btn_process: '處理文本',
+                    btn_clear: '清空所有',
+                    results: '處理結果',
+                    char_count: '字符數：',
+                    process_time: '處理耗時：',
+                    result_text: '結果文本',
+                    btn_copy: '複製結果',
+                    intro_title: '關於本工具',
+                    intro_text: '本工具提供多種文本編碼與解碼功能，支援Base64、URL編碼、HTML實體和JSON編碼等常見格式。可用於處理網路傳輸中的特殊字元、解決亂碼問題或進行資料加密，適用於開發者、內容創作者和需要處理特殊文本格式的用戶。',
+                    recent_operations: '最近操作',
+                    no_history: '暫無操作記錄',
+                    please_enter_text: '請先輸入一些文本',
+                    copied: '已複製！'
+                },
+                'ja': {
+                    title: '🔤 テキストエンコーディング/デコーディングツール',
+                    input_text: 'テキストを入力',
+                    options: '処理オプション',
+                    operation_type: '操作タイプ',
+                    encode: 'エンコード',
+                    decode: 'デコード',
+                    encoding_type: 'エンコーディングタイプ',
+                    base64: 'Base64',
+                    url: 'URLエンコーディング',
+                    html: 'HTMLエンティティ',
+                    json: 'JSONエンコーディング',
+                    btn_process: 'テキストを処理',
+                    btn_clear: 'すべてクリア',
+                    results: '処理結果',
+                    char_count: '文字数：',
+                    process_time: '処理時間：',
+                    result_text: '結果テキスト',
+                    btn_copy: '結果をコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このツールは、さまざまなテキストエンコーディングとデコーディング機能を提供し、Base64、URLエンコーディング、HTMLエンティティ、JSONエンコーディングなどの一般的な形式をサポートします。ネットワーク伝送における特殊文字の処理、文字化けの解決、データ暗号化に使用でき、開発者、コンテンツクリエイター、特殊なテキスト形式を処理する必要があるユーザーに適しています。',
+                    recent_operations: '最近の操作',
+                    no_history: '操作履歴はまだありません',
+                    please_enter_text: 'まずテキストを入力してください',
+                    copied: 'コピーしました！'
+                },
+                'ru': {
+                    title: '🔤 Инструмент кодировки/декодировки текста',
+                    input_text: 'Введите текст',
+                    options: 'Параметры обработки',
+                    operation_type: 'Тип операции',
+                    encode: 'Кодировать',
+                    decode: 'Декодировать',
+                    encoding_type: 'Тип кодировки',
+                    base64: 'Base64',
+                    url: 'URL-кодировка',
+                    html: 'HTML-сущности',
+                    json: 'JSON-кодировка',
+                    btn_process: 'Обработать текст',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты обработки',
+                    char_count: 'Количество символов:',
+                    process_time: 'Время обработки:',
+                    result_text: 'Результирующий текст',
+                    btn_copy: 'Скопировать результат',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Этот инструмент предоставляет различные функции кодировки и декодировки текста, поддерживая такие популярные форматы, как Base64, URL-кодировка, HTML-сущности и JSON-кодировка. Может использоваться для обработки специальных символов при сетевой передаче, решения проблем с искажениями текста или для шифрования данных, подходит для разработчиков, контент- креаторов и пользователей, которым нужно обрабатывать специальные текстовые форматы.',
+                    recent_operations: 'Недавние операции',
+                    no_history: 'Истории операций пока нет',
+                    please_enter_text: 'Пожалуйста, сначала введите текст',
+                    copied: 'Скопировано!'
+                }
+            },
+
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                this.changeLang();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                // 更新URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, '', `${window.location.pathname}?${urlParams}`);
+                
+                // 更新页面文本
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                        if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
+                            el.setAttribute('placeholder', this.i18n[lang][key]);
+                        }
+                    }
+                });
+                document.title = this.i18n[lang].title;
+            },
+
+            processText: function() {
+                const input = document.getElementById('input_text').value.trim();
+                const operation = document.getElementById('operation_type').value;
+                const encoding = document.getElementById('encoding_type').value;
+                const lang = document.getElementById('lang-selector').value;
+                
+                if (!input) {
+                    alert(this.i18n[lang].please_enter_text);
+                    return;
+                }
+
+                const startTime = performance.now();
+                let result = '';
+
+                try {
+                    if (operation === 'encode') {
+                        switch (encoding) {
+                            case 'base64':
+                                result = btoa(unescape(encodeURIComponent(input)));
+                                break;
+                            case 'url':
+                                result = encodeURIComponent(input);
+                                break;
+                            case 'html':
+                                result = this.htmlEncode(input);
+                                break;
+                            case 'json':
+                                result = JSON.stringify(input);
+                                break;
+                        }
+                    } else {
+                        switch (encoding) {
+                            case 'base64':
+                                result = decodeURIComponent(escape(atob(input)));
+                                break;
+                            case 'url':
+                                result = decodeURIComponent(input);
+                                break;
+                            case 'html':
+                                result = this.htmlDecode(input);
+                                break;
+                            case 'json':
+                                result = JSON.parse(input);
+                                break;
+                        }
+                    }
+                } catch (e) {
+                    result = this.i18n[lang].error_occurred + ': ' + e.message;
+                }
+
+                const endTime = performance.now();
+                const timeTaken = Math.round(endTime - startTime);
+
+                document.getElementById('result_text').value = result;
+                document.getElementById('char_count').textContent = result.length;
+                document.getElementById('process_time').textContent = timeTaken + 'ms';
+
+                this.addToHistory(input, result, operation, encoding);
+            },
+
+            htmlEncode: function(str) {
+                return str.replace(/[&<>"']/g, char => {
+                    const entities = {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    };
+                    return entities[char];
+                });
+            },
+
+            htmlDecode: function(str) {
+                const el = document.createElement('div');
+                el.innerHTML = str;
+                return el.textContent;
+            },
+
+            copyResult: function() {
+                const resultText = document.getElementById('result_text');
+                resultText.select();
+                document.execCommand('copy');
+                
+                const lang = document.getElementById('lang-selector').value;
+                const originalText = resultText.value;
+                resultText.value = this.i18n[lang].copied;
+                
+                setTimeout(() => {
+                    resultText.value = originalText;
+                }, 2000);
+            },
+
+            clearAll: function() {
+                document.getElementById('input_text').value = '';
+                document.getElementById('result_text').value = '';
+                document.getElementById('char_count').textContent = '0';
+                document.getElementById('process_time').textContent = '0ms';
+            },
+
+            addToHistory: function(input, result, operation, encoding) {
+                const historyContainer = document.getElementById('operation_history');
+                const lang = document.getElementById('lang-selector').value;
+                
+                // 移除"暂无记录"提示
+                if (historyContainer.querySelector('[data-i18n="no_history"]')) {
+                    historyContainer.innerHTML = '';
+                }
+
+                const shortInput = input.length > 30 ? input.substring(0, 30) + '...' : input;
+                const operationText = operation === 'encode' ? this.i18n[lang].encode : this.i18n[lang].decode;
+                const encodingText = this.i18n[lang][encoding] || encoding;
+
+                const historyItem = document.createElement('div');
+                historyItem.className = 'mb-2 p-2 bg-white rounded border border-gray-100 hover:bg-gray-50';
+                historyItem.innerHTML = `
+                    <div class="text-sm"><strong>${operationText} (${encodingText}):</strong> ${shortInput}</div>
+                `;
+
+                historyContainer.prepend(historyItem);
+
+                // 限制历史记录数量
+                if (historyContainer.children.length > 5) {
+                    historyContainer.removeChild(historyContainer.lastChild);
+                }
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            EncodingTool.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

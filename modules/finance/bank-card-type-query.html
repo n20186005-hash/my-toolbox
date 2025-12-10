@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💳">
+    <title>銀行卡類型查詢</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s; }
+        input:focus { border-color: #22c55e; outline: none; ring: 2px solid #bbf7d0; }
+        textarea { min-height: 100px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; transition: all 0.3s ease; }
+        .result-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; display: flex; justify-content: space-between; align-items: center; }
+        .result-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .result-label { color: #1e3a8a; font-size: 0.9rem; font-weight: 500; }
+        .result-value { color: #065f46; font-weight: 600; text-align: right; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; border: 1px solid #e2e8f0; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        button:hover { background: #16a34a; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button.secondary { background: #e5e7eb; color: #374151; }
+        button.secondary:hover { background: #d1d5db; }
+        button.action { background: #3b82f6; }
+        button.action:hover { background: #2563eb; }
+        
+        .test-numbers { font-size: 0.8rem; color: #6b7280; margin-top: 8px; background: #f3f4f6; padding: 8px; border-radius: 4px; }
+        .test-tag { cursor: pointer; color: #2563eb; text-decoration: underline; margin-right: 8px; }
+        .test-tag:hover { color: #1d4ed8; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/finance/bank-card-type-query.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="bankcard-query-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="BankCardTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none cursor-pointer hover:border-green-400">
+                <option value="en">English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2 flex items-center gap-2">
+            <span class="text-2xl">💳</span> 
+            <span data-i18n="title">银行卡类型查询</span>
+        </h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_card_number">输入银行卡号</h3>
+                <div class="form-group">
+                    <input type="text" id="card_number" placeholder="6222 02..." class="focus:ring-2 focus:ring-green-500 outline-none font-mono text-lg tracking-wide" maxlength="23" oninput="BankCardTool.formatInput(this)">
+                    <p class="text-xs text-gray-500 mt-2" data-i18n="input_hint">支持查询国内主流银行的储蓄卡、信用卡类型及所属银行信息</p>
+                    
+                    <!-- Quick Test Helper -->
+                    <div class="test-numbers">
+                        <span data-i18n="try_test">试试:</span>
+                        <span class="test-tag" onclick="BankCardTool.fillInput('6222020000000000')">ICBC</span>
+                        <span class="test-tag" onclick="BankCardTool.fillInput('6225880000000000')">CMB(Credit)</span>
+                        <span class="test-tag" onclick="BankCardTool.fillInput('4000000000000000')">Visa</span>
+                        <span class="test-tag" onclick="BankCardTool.fillInput('5100000000000000')">Mastercard</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="BankCardTool.queryCardInfo()" class="flex-1 py-3 shadow-md" data-i18n="btn_query">查询信息</button>
+                <button onclick="BankCardTool.clearInput()" class="flex-1 secondary py-3 shadow-sm" data-i18n="btn_clear">清空输入</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">查询结果</h3>
+                
+                <div id="result_container" class="result-card min-h-[120px] flex items-center justify-center">
+                    <p data-i18n="no_result" class="text-gray-400 italic">请输入银行卡号并点击查询按钮</p>
+                </div>
+
+                <button id="btn_copy" onclick="BankCardTool.copyResult()" class="w-full mt-4 action text-white py-3 rounded font-medium shadow-md hidden" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">本工具仅通過卡号前6位BIN码进行本地识别，不会上传完整卡号。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BankCardTool = {
+            i18n: {
+                'en': {
+                    title: 'Bank Card Type Query',
+                    input_card_number: 'Enter Bank Card Number',
+                    input_hint: 'Supports BIN recognition for major banks and card schemes',
+                    try_test: 'Try:',
+                    btn_query: 'Query',
+                    btn_clear: 'Clear',
+                    results: 'Results',
+                    no_result: 'Please enter a card number to query',
+                    btn_copy: 'Copy Result',
+                    intro_title: 'About',
+                    intro_text: 'Identifies bank and card type using the first 6 digits (BIN). No data is uploaded.',
+                    card_number: 'Card Number',
+                    bank_name: 'Bank',
+                    card_type: 'Type',
+                    card_category: 'Category',
+                    card_level: 'Level',
+                    invalid_card: 'Invalid card number format (Min 13 digits)',
+                    not_supported: 'Unknown BIN / Bank not in database',
+                    copied: 'Copied to clipboard!',
+                    unknown_bank: 'Unknown Bank',
+                    debit: 'Debit',
+                    credit: 'Credit',
+                    unknown_type: 'Unknown Type'
+                },
+                'zh-CN': {
+                    title: '银行卡类型查询',
+                    input_card_number: '输入银行卡号',
+                    input_hint: '支持查询国内主流银行及国际卡组织的类型识别',
+                    try_test: '测试:',
+                    btn_query: '查询信息',
+                    btn_clear: '清空输入',
+                    results: '查询结果',
+                    no_result: '请输入银行卡号并点击查询按钮',
+                    btn_copy: '复制结果',
+                    intro_title: '关于本工具',
+                    intro_text: '本工具仅通过卡号前6位BIN码进行本地识别，不会上传完整卡号。',
+                    card_number: '卡号',
+                    bank_name: '所属银行',
+                    card_type: '卡片类型',
+                    card_category: '卡种',
+                    card_level: '卡片等级',
+                    invalid_card: '无效的卡号格式（至少13位）',
+                    not_supported: '未收录该卡段信息',
+                    copied: '已复制！',
+                    unknown_bank: '未知银行',
+                    debit: '储蓄卡',
+                    credit: '信用卡',
+                    unknown_type: '未知类型'
+                },
+                'zh-TW': {
+                    title: '銀行卡類型查詢',
+                    input_card_number: '輸入銀行卡號',
+                    input_hint: '支持查詢國內主流銀行及國際卡組織的類型識別',
+                    try_test: '測試:',
+                    btn_query: '查詢信息',
+                    btn_clear: '清空輸入',
+                    results: '查詢結果',
+                    no_result: '請輸入銀行卡號並點擊查詢按鈕',
+                    btn_copy: '複製結果',
+                    intro_title: '關於本工具',
+                    intro_text: '本工具僅通過卡號前6位BIN碼進行本地識別，不會上傳完整卡號。',
+                    card_number: '卡號',
+                    bank_name: '所屬銀行',
+                    card_type: '卡片類型',
+                    card_category: '卡種',
+                    card_level: '卡片等級',
+                    invalid_card: '無效的卡號格式（至少13位）',
+                    not_supported: '未收錄該卡段信息',
+                    copied: '已複製！',
+                    unknown_bank: '未知銀行',
+                    debit: '儲蓄卡',
+                    credit: '信用卡',
+                    unknown_type: '未知類型'
+                },
+                'ja': {
+                    title: '銀行カード照会',
+                    input_card_number: 'カード番号を入力',
+                    input_hint: '主要銀行および国際カードブランドのBIN識別に適応',
+                    try_test: 'テスト:',
+                    btn_query: '照会',
+                    btn_clear: 'クリア',
+                    results: '結果',
+                    no_result: '照会するカード番号を入力してください',
+                    btn_copy: '結果をコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: 'カード番号の最初の6桁(BIN)を使用して識別します。データは送信されません。',
+                    card_number: 'カード番号',
+                    bank_name: '銀行名',
+                    card_type: '種類',
+                    card_category: 'カテゴリ',
+                    card_level: 'ランク',
+                    invalid_card: '無効な形式です（13桁以上）',
+                    not_supported: '未登録のBINコードです',
+                    copied: 'コピーしました！',
+                    unknown_bank: '不明な銀行',
+                    debit: 'デビット',
+                    credit: 'クレジット',
+                    unknown_type: '不明な種類'
+                },
+                'ru': {
+                    title: 'Проверка карты',
+                    input_card_number: 'Введите номер карты',
+                    input_hint: 'Поддержка определения BIN для основных банков и платежных систем',
+                    try_test: 'Тест:',
+                    btn_query: 'Поиск',
+                    btn_clear: 'Очистить',
+                    results: 'Результаты',
+                    no_result: 'Введите номер карты для поиска',
+                    btn_copy: 'Копировать',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Определяет банк по первым 6 цифрам (BIN). Данные не передаются.',
+                    card_number: 'Номер',
+                    bank_name: 'Банк',
+                    card_type: 'Тип',
+                    card_category: 'Категория',
+                    card_level: 'Уровень',
+                    invalid_card: 'Неверный формат (минимум 13 цифр)',
+                    not_supported: 'BIN не найден в базе',
+                    copied: 'Скопировано!',
+                    unknown_bank: 'Неизвестный банк',
+                    debit: 'Дебетовая',
+                    credit: 'Кредитная',
+                    unknown_type: 'Неизвестный тип'
+                }
+            },
+
+            // 初始化
+            init: function() {
+                // 1. 读取 URL 参数 (Fix for Requirement 2)
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                
+                // 检查参数是否有效
+                if (langParam && this.i18n[langParam]) {
+                    document.getElementById('lang-selector').value = langParam;
+                } else {
+                    // 默认中文
+                    document.getElementById('lang-selector').value = 'zh-CN';
+                }
+
+                this.changeLang(false); // false = don't push state on init to avoid replacing history excessively
+            },
+
+            // 格式化输入框
+            formatInput: function(input) {
+                let value = input.value.replace(/\D/g, '');
+                let formattedValue = '';
+                for (let i = 0; i < value.length; i++) {
+                    if (i > 0 && i % 4 === 0) formattedValue += ' ';
+                    formattedValue += value[i];
+                }
+                input.value = formattedValue;
+            },
+
+            // 填充测试数据
+            fillInput: function(val) {
+                const input = document.getElementById('card_number');
+                input.value = val;
+                this.formatInput(input);
+                this.queryCardInfo();
+            },
+
+            // 切换语言
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                // 更新 HTML lang 属性
+                document.documentElement.lang = lang;
+
+                // 2. 更新 URL 参数 (Fix for Requirement 2)
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    // 使用 replaceState 而不是 pushState，避免产生过多的历史记录
+                    window.history.replaceState({}, '', url);
+                }
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+
+            // 查询银行卡信息
+            queryCardInfo: function() {
+                const cardNumberInput = document.getElementById('card_number');
+                const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+                const resultContainer = document.getElementById('result_container');
+                const copyBtn = document.getElementById('btn_copy');
+                const lang = document.getElementById('lang-selector').value;
+
+                // 基础验证 (Changed logic to be more flexible, 13-19 digits)
+                if (!cardNumber || cardNumber.length < 13 || !/^\d+$/.test(cardNumber)) {
+                    resultContainer.innerHTML = `<p class="text-red-500 font-bold">${this.i18n[lang]['invalid_card']}</p>`;
+                    resultContainer.classList.remove('items-start');
+                    resultContainer.classList.add('items-center', 'justify-center');
+                    copyBtn.classList.add('hidden');
+                    return;
+                }
+
+                const result = this.identifyCard(cardNumber, lang);
+                
+                if (result) {
+                    let resultHtml = `
+                        <div class="w-full">
+                            <div class="result-item"><span class="result-label">${this.i18n[lang]['card_number']}</span>
+                            <span class="result-value font-mono tracking-wider">${this.formatCardNumberDisplay(cardNumber)}</span></div>
+                            <div class="result-item"><span class="result-label">${this.i18n[lang]['bank_name']}</span>
+                            <span class="result-value">${result.bank}</span></div>
+                            <div class="result-item"><span class="result-label">${this.i18n[lang]['card_type']}</span>
+                            <span class="result-value">${result.type}</span></div>
+                            <div class="result-item"><span class="result-label">${this.i18n[lang]['card_category']}</span>
+                            <span class="result-value">${result.category || '-'}</span></div>
+                    `;
+                    
+                    if (result.level) {
+                        resultHtml += `<div class="result-item"><span class="result-label">${this.i18n[lang]['card_level']}</span>
+                        <span class="result-value">${result.level}</span></div>`;
+                    }
+                    
+                    resultHtml += `</div>`;
+                    
+                    resultContainer.innerHTML = resultHtml;
+                    resultContainer.classList.remove('items-center', 'justify-center');
+                    resultContainer.classList.add('items-start');
+                    copyBtn.classList.remove('hidden');
+                } else {
+                    resultContainer.innerHTML = `<p class="text-yellow-600">${this.i18n[lang]['not_supported']}</p>`;
+                    resultContainer.classList.add('items-center', 'justify-center');
+                    copyBtn.classList.add('hidden');
+                }
+            },
+
+            // 格式化显示
+            formatCardNumberDisplay: function(number) {
+                return number.replace(/(\d{4})/g, '$1 ').trim();
+            },
+
+            // 清空
+            clearInput: function() {
+                document.getElementById('card_number').value = '';
+                const lang = document.getElementById('lang-selector').value;
+                document.getElementById('result_container').innerHTML = `<p data-i18n="no_result" class="text-gray-400 italic">${this.i18n[lang]['no_result']}</p>`;
+                document.getElementById('result_container').classList.add('items-center', 'justify-center');
+                document.getElementById('btn_copy').classList.add('hidden');
+            },
+
+            // 3. 增强的复制功能 (Fix for Requirement 1 - Usability)
+            copyResult: function() {
+                const resultContainer = document.getElementById('result_container');
+                const lang = document.getElementById('lang-selector').value;
+                
+                // 构建纯文本
+                const textToCopy = Array.from(resultContainer.querySelectorAll('.result-item'))
+                    .map(item => {
+                        const label = item.querySelector('.result-label').textContent;
+                        const value = item.querySelector('.result-value').textContent;
+                        return `${label} ${value}`;
+                    })
+                    .join('\n');
+                
+                // 尝试使用 Clipboard API
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        this.showToast(this.i18n[lang]['copied']);
+                    }).catch(err => {
+                        // 如果失败，回退到 execCommand
+                        this.fallbackCopyText(textToCopy, lang);
+                    });
+                } else {
+                    // 回退方案
+                    this.fallbackCopyText(textToCopy, lang);
+                }
+            },
+
+            fallbackCopyText: function(text, lang) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";  // Avoid scrolling to bottom
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    this.showToast(this.i18n[lang]['copied']);
+                } catch (err) {
+                    alert('Copy failed manually');
+                }
+                document.body.removeChild(textArea);
+            },
+
+            showToast: function(msg) {
+                const btn = document.getElementById('btn_copy');
+                const originalText = btn.textContent;
+                btn.textContent = msg;
+                btn.classList.add('bg-green-600', 'text-white');
+                btn.classList.remove('action');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('bg-green-600', 'text-white');
+                    btn.classList.add('action');
+                }, 2000);
+            },
+
+            // 4. 增强的识别逻辑 (Fix for Requirement 1 - Usability)
+            identifyCard: function(cardNumber, lang) {
+                const bin = cardNumber.substr(0, 6);
+                const binNum = parseInt(bin, 10);
+                const firstDigit = cardNumber.substr(0, 1);
+
+                // 定义详细数据库 (Simulated)
+                const detailedDB = {
+                    622202: { zh: { bank: '中国工商银行', type: '储蓄卡', category: '牡丹卡', level: '普卡' }, code: 'ICBC' },
+                    622848: { zh: { bank: '中国农业银行', type: '储蓄卡', category: '金穗卡' }, code: 'ABC' },
+                    622700: { zh: { bank: '中国建设银行', type: '储蓄卡', category: '龙卡' }, code: 'CCB' },
+                    621483: { zh: { bank: '招商银行', type: '储蓄卡', category: '一卡通' }, code: 'CMB' },
+                    622662: { zh: { bank: '中国光大银行', type: '信用卡', category: '阳光卡', level: '金卡' }, code: 'CEB' },
+                    622588: { zh: { bank: '招商银行', type: '信用卡', category: '运通卡', level: '白金卡' }, code: 'CMB_CREDIT' }
+                };
+
+                let cardInfo = detailedDB[binNum];
+                
+                // Helper to translate detailedDB to current lang
+                const translateDB = (info) => {
+                    if (lang === 'zh-CN' || lang === 'zh-TW') {
+                        // 简繁体转换逻辑可在此细化，这里简单复用
+                         return {
+                            bank: info.zh.bank,
+                            type: info.zh.type,
+                            category: info.zh.category,
+                            level: info.zh.level
+                        };
+                    } else {
+                        // English/Other fallback for specific DB
+                         const enMap = {
+                            '中国工商银行': 'ICBC', '中国农业银行': 'Agricultural Bank of China',
+                            '中国建设银行': 'China Construction Bank', '招商银行': 'China Merchants Bank',
+                            '中国光大银行': 'China Everbright Bank',
+                            '储蓄卡': 'Debit Card', '信用卡': 'Credit Card',
+                            '牡丹卡': 'Peony Card', '一卡通': 'All-in-One Card',
+                            '普卡': 'Classic', '金卡': 'Gold', '白金卡': 'Platinum'
+                        };
+                        return {
+                            bank: enMap[info.zh.bank] || info.zh.bank,
+                            type: enMap[info.zh.type] || 'Card',
+                            category: enMap[info.zh.category] || '-',
+                            level: enMap[info.zh.level] || '-'
+                        };
+                    }
+                };
+
+                // 如果在详细库中
+                if (cardInfo) {
+                    return translateDB(cardInfo);
+                }
+
+                // 如果不在详细库，但符合卡组织特征 (Generic Fallback)
+                // 这是一个非常重要的修复，让工具在面对随机卡号时不会总是报错
+                let scheme = '';
+                let type = this.i18n[lang]['unknown_type'];
+                
+                if (firstDigit === '4') {
+                    scheme = 'Visa';
+                    type = this.i18n[lang]['credit']; // Most Visas are credit, simple guess
+                } else if (firstDigit === '5') {
+                    scheme = 'Mastercard';
+                    type = this.i18n[lang]['credit'];
+                } else if (bin.startsWith('62')) {
+                    scheme = 'China UnionPay';
+                    type = this.i18n[lang]['debit']; // Most UP are debit in China context
+                } else if (firstDigit === '3') {
+                    scheme = 'American Express';
+                    type = this.i18n[lang]['credit'];
+                }
+
+                if (scheme) {
+                    return {
+                        bank: scheme + ' (' + this.i18n[lang]['unknown_bank'] + ')',
+                        type: type,
+                        category: 'Standard',
+                        level: '-'
+                    };
+                }
+
+                return null;
+            }
+        };
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            BankCardTool.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

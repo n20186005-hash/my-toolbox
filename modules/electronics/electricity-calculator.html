@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="electricity_calc">
+    <meta name="category" content="electronics">
+    <meta name="icon" content="🔌">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Electricity Calculator">
+    <meta name="description" content="Calculate electricity consumption and cost.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="电力计算器">
+    <meta name="lang-description-zh-CN" content="计算电力消耗和费用。">
+    
+    <meta name="lang-title-zh-TW" content="電力計算器">
+    <meta name="lang-description-zh-TW" content="計算電力消耗和費用。">
+    
+    <meta name="lang-title-ja" content="電気料金計算ツール">
+    <meta name="lang-description-ja" content="電気使用量と費用を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор электроэнергии">
+    <meta name="lang-description-ru" content="Вычислите расход электроэнергии и стоимость.">
+    
+    <meta name="lang-title-es" content="Calculadora de Electricidad">
+    <meta name="lang-description-es" content="Calcule el consumo y el costo de electricidad.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/electronics/electricity-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="electricity_calc" 
+         data-category="electrical" 
+         data-title="Electricity Calculator" 
+         data-icon="🔌">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="el-lang" onchange="ElectricCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔌 Electricity Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <!-- Power (W) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="power_label">Power (W)</label>
+                <input type="number" id="el-power" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 1500" min="0" step="any">
+            </div>
+            
+            <!-- Usage Time (hours/day) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="hours_label">Daily Usage (hours)</label>
+                <input type="number" id="el-hours" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 3" min="0" step="0.1">
+            </div>
+            
+            <!-- Days per Month -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="days_label">Days per Month</label>
+                <input type="number" id="el-days" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 30" min="1" max="31">
+            </div>
+            
+            <!-- Cost per kWh -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="cost_label">Cost per kWh</label>
+                <div class="flex">
+                    <span class="inline-flex items-center px-3 rounded-l border border-r-0 border-gray-300 bg-gray-50 text-gray-500" data-i18n="currency">$</span>
+                    <input type="number" id="el-cost" class="w-full p-2 border rounded-r focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 0.15" min="0" step="0.01">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="ElectricCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+        <button onclick="ElectricCalc.clear()" class="w-full bg-gray-200 text-gray-800 py-2 rounded font-bold hover:bg-gray-300 transition mb-6" data-i18n="btn_clear">Clear All</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Results</div>
+            <div id="el-result" class="text-lg text-blue-800">--</div>
+        </div>
+    </div>
+
+    <script>
+        const ElectricCalc = {
+            i18n: {
+                'en': {
+                    title: '🔌 Electricity Calculator',
+                    power_label: 'Power (W)',
+                    hours_label: 'Daily Usage (hours)',
+                    days_label: 'Days per Month',
+                    cost_label: 'Cost per kWh',
+                    currency: '$',
+                    btn_calc: 'Calculate',
+                    btn_clear: 'Clear All',
+                    res_label: 'Results',
+                    err_invalid: 'Please fill all fields with valid values',
+                    res_daily_kwh: 'Daily Consumption: {value} kWh',
+                    res_monthly_kwh: 'Monthly Consumption: {value} kWh',
+                    res_daily_cost: 'Daily Cost: {currency}{value}',
+                    res_monthly_cost: 'Monthly Cost: {currency}{value}'
+                },
+                'zh-CN': {
+                    title: '🔌 电力计算器',
+                    power_label: '功率 (瓦/W)',
+                    hours_label: '每日使用时间 (小时)',
+                    days_label: '每月使用天数',
+                    cost_label: '每千瓦时成本',
+                    currency: '¥',
+                    btn_calc: '计算',
+                    btn_clear: '清空所有',
+                    res_label: '计算结果',
+                    err_invalid: '请填写所有字段并确保值有效',
+                    res_daily_kwh: '每日消耗量: {value} 千瓦时',
+                    res_monthly_kwh: '每月消耗量: {value} 千瓦时',
+                    res_daily_cost: '每日费用: {currency}{value}',
+                    res_monthly_cost: '每月费用: {currency}{value}'
+                },
+                'zh-TW': {
+                    title: '🔌 電力計算器',
+                    power_label: '功率 (瓦/W)',
+                    hours_label: '每日使用時間 (小時)',
+                    days_label: '每月使用天數',
+                    cost_label: '每千瓦時成本',
+                    currency: 'NT$',
+                    btn_calc: '計算',
+                    btn_clear: '清空所有',
+                    res_label: '計算結果',
+                    err_invalid: '請填寫所有欄位並確保值有效',
+                    res_daily_kwh: '每日消耗量: {value} 千瓦時',
+                    res_monthly_kwh: '每月消耗量: {value} 千瓦時',
+                    res_daily_cost: '每日費用: {currency}{value}',
+                    res_monthly_cost: '每月費用: {currency}{value}'
+                },
+                'ja': {
+                    title: '🔌 電気料金計算ツール',
+                    power_label: '消費電力 (ワット/W)',
+                    hours_label: '1日の使用時間 (時間)',
+                    days_label: '1か月の使用日数',
+                    cost_label: '1kWhあたりの料金',
+                    currency: '¥',
+                    btn_calc: '計算する',
+                    btn_clear: 'すべて消去',
+                    res_label: '計算結果',
+                    err_invalid: 'すべてのフィールドに有効な値を入力してください',
+                    res_daily_kwh: '1日の消費量: {value} kWh',
+                    res_monthly_kwh: '1か月の消費量: {value} kWh',
+                    res_daily_cost: '1日の費用: {currency}{value}',
+                    res_monthly_cost: '1か月の費用: {currency}{value}'
+                },
+                'ru': {
+                    title: '🔌 Калькулятор электроэнергии',
+                    power_label: 'Мощность (Вт)',
+                    hours_label: 'Ежедневное использование (часов)',
+                    days_label: 'Дней в месяце',
+                    cost_label: 'Стоимость за кВт·ч',
+                    currency: '₽',
+                    btn_calc: 'Рассчитать',
+                    btn_clear: 'Очистить все',
+                    res_label: 'Результаты',
+                    err_invalid: 'Пожалуйста, заполните все поля действительными значениями',
+                    res_daily_kwh: 'Ежедневный расход: {value} кВт·ч',
+                    res_monthly_kwh: 'Ежемесячный расход: {value} кВт·ч',
+                    res_daily_cost: 'Ежедневная стоимость: {currency}{value}',
+                    res_monthly_cost: 'Ежемесячная стоимость: {currency}{value}'
+                },
+                'es': {
+                    title: '🔌 Calculadora de Electricidad',
+                    power_label: 'Potencia (W)',
+                    hours_label: 'Uso diario (horas)',
+                    days_label: 'Días por mes',
+                    cost_label: 'Costo por kWh',
+                    currency: '€',
+                    btn_calc: 'Calcular',
+                    btn_clear: 'Limpiar Todo',
+                    res_label: 'Resultados',
+                    err_invalid: 'Por favor, complete todos los campos con valores válidos',
+                    res_daily_kwh: 'Consumo diario: {value} kWh',
+                    res_monthly_kwh: 'Consumo mensual: {value} kWh',
+                    res_daily_cost: 'Costo diario: {currency}{value}',
+                    res_monthly_cost: 'Costo mensual: {currency}{value}'
+                }
+            },
+
+            init: () => {
+                // 初始化默认值
+                document.getElementById('el-power').value = 1500;
+                document.getElementById('el-hours').value = 3;
+                document.getElementById('el-days').value = 30;
+                document.getElementById('el-cost').value = 0.15;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('el-lang').value;
+                const texts = ElectricCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="electricity_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                const currentResult = document.getElementById('el-result').innerText;
+                if (currentResult !== '--') {
+                    ElectricCalc.calc();
+                }
+            },
+
+            calc: () => {
+                const power = parseFloat(document.getElementById('el-power').value);
+                const hours = parseFloat(document.getElementById('el-hours').value);
+                const days = parseFloat(document.getElementById('el-days').value);
+                const costPerKwh = parseFloat(document.getElementById('el-cost').value);
+                const lang = document.getElementById('el-lang').value;
+                const texts = ElectricCalc.i18n[lang];
+
+                const resultEl = document.getElementById('el-result');
+
+                // 验证输入
+                if (isNaN(power) || isNaN(hours) || isNaN(days) || isNaN(costPerKwh) || 
+                    power <= 0 || hours <= 0 || days <= 0 || costPerKwh <= 0) {
+                    resultEl.innerHTML = `<span class="text-red-600">${texts.err_invalid}</span>`;
+                    return;
+                }
+
+                // 计算电力消耗和费用
+                const dailyKwh = (power * hours) / 1000; // 转换为kWh
+                const monthlyKwh = dailyKwh * days;
+                const dailyCost = dailyKwh * costPerKwh;
+                const monthlyCost = monthlyKwh * costPerKwh;
+
+                // 格式化结果
+                const results = [
+                    texts.res_daily_kwh.replace('{value}', dailyKwh.toFixed(2)),
+                    texts.res_monthly_kwh.replace('{value}', monthlyKwh.toFixed(2)),
+                    texts.res_daily_cost.replace('{value}', dailyCost.toFixed(2)).replace('{currency}', texts.currency),
+                    texts.res_monthly_cost.replace('{value}', monthlyCost.toFixed(2)).replace('{currency}', texts.currency)
+                ];
+
+                resultEl.innerHTML = results.join('<br>');
+            },
+
+            clear: () => {
+                document.getElementById('el-power').value = '';
+                document.getElementById('el-hours').value = '';
+                document.getElementById('el-days').value = '';
+                document.getElementById('el-cost').value = '';
+                document.getElementById('el-result').innerText = '--';
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', ElectricCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('el-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    ElectricCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

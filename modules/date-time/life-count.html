@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Date & Time">
+    <meta name="icon" content="📅">
+    <title>Life Count Calendar - 人生小格</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .tool-module { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 1100px; margin: 0 auto; position: relative; }
+        
+        /* 核心修復：網格佈局改為 13 列 (1列年份 + 12列月份) */
+        .life-grid { 
+            display: grid; 
+            /* 年份寬度固定，月份自適應 */
+            grid-template-columns: 40px repeat(12, 1fr); 
+            gap: 3px; 
+            margin-top: 20px; 
+        }
+
+        .year-label { 
+            text-align: right; 
+            padding-right: 8px; 
+            font-size: 0.75rem; 
+            color: #94a3b8; 
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        /* 手機適配：年份每5年顯示一次，或者縮小字體 */
+        @media (max-width: 640px) {
+            .life-grid { gap: 1px; }
+            .year-label { font-size: 0.6rem; padding-right: 4px; }
+        }
+
+        .month-cell { 
+            aspect-ratio: 1; 
+            border-radius: 2px; 
+            background: #f1f5f9; 
+            transition: all 0.2s; 
+            position: relative;
+        }
+        
+        .month-cell:hover {
+            transform: scale(1.3);
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 顏色主題 */
+        .month-past { background: #cbd5e1; } /* 過去：灰色 */
+        .month-past-active { background: #3b82f6; } /* 過去（活躍期）：藍色 - 可選擴展 */
+        
+        /* 當前月份 */
+        .month-current { 
+            background: #ef4444; 
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        /* 未來 */
+        .month-future { background: #e2e8f0; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .summary-card {
+            background: linear-gradient(to right, #ecfdf5, #f0fdf4);
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; border: 1px dashed #cbd5e1; }
+        
+        button.btn-primary { 
+            background: #22c55e; color: white; border: none; padding: 10px 24px; 
+            border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
+        }
+        button.btn-primary:hover { background: #16a34a; transform: translateY(-1px); }
+        button.btn-primary:active { transform: translateY(0); }
+
+        input, select { 
+            transition: border-color 0.2s; 
+            background-color: #fff;
+        }
+        input:focus, select:focus { border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1); }
+        
+        /* Tooltip */
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 8px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            font-size: 12px;
+            border-radius: 4px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 20;
+            margin-bottom: 5px;
+        }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/date-time/life-count.html" />
+</head>
+<body>
+    <div class="tool-module" id="life-count-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-6 right-6 z-10">
+            <select id="lang-selector" onchange="LifeCount.changeLang()" class="text-xs border border-gray-300 rounded-md py-1 px-2 bg-gray-50 text-gray-600 focus:outline-none cursor-pointer">
+                <option value="zh-TW" selected>繁體中文</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+            <span class="text-3xl">📅</span> 
+            <span data-i18n="title">人生小格日曆</span>
+        </h2>
+
+        <div class="space-y-8">
+            <!-- Input Section -->
+            <div class="bg-white rounded-xl">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="birth_date">出生日期</label>
+                        <input type="date" id="birth_date" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none" onchange="LifeCount.calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="life_expectancy">預期壽命 (歲)</label>
+                        <input type="number" id="life_expectancy" value="80" min="1" max="120" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none" oninput="LifeCount.calculate()">
+                    </div>
+                    <div>
+                        <button onclick="LifeCount.calculate()" class="btn-primary w-full md:w-auto" data-i18n="generate_calendar">更新圖表</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary-card grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="p-2">
+                    <div class="text-xs text-green-600 font-medium uppercase tracking-wider mb-1" data-i18n="summary_age">當前年齡</div>
+                    <div class="text-2xl font-bold text-gray-800" id="summary_age">--</div>
+                </div>
+                <div class="p-2 border-l border-green-200">
+                    <div class="text-xs text-green-600 font-medium uppercase tracking-wider mb-1" data-i18n="summary_months_lived">已生活月數</div>
+                    <div class="text-2xl font-bold text-gray-600" id="summary_months_lived">--</div>
+                </div>
+                <div class="p-2 border-l border-green-200">
+                    <div class="text-xs text-green-600 font-medium uppercase tracking-wider mb-1" data-i18n="summary_months_remaining">剩餘月數</div>
+                    <div class="text-2xl font-bold text-blue-600" id="summary_months_remaining">--</div>
+                </div>
+                <div class="p-2 border-l border-green-200">
+                    <div class="text-xs text-green-600 font-medium uppercase tracking-wider mb-1" data-i18n="summary_percentage">人生進度</div>
+                    <div class="text-2xl font-bold text-purple-600" id="summary_percentage">--</div>
+                </div>
+            </div>
+
+            <!-- Life Grid Visualization -->
+            <div>
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2" data-i18n="life_calendar">
+                        你的人生日曆 
+                        <span class="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full ml-2">1 格 = 1 個月</span>
+                    </h3>
+                    <div class="flex gap-4 text-xs">
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 bg-slate-300 rounded-sm"></div> <span data-i18n="legend_past">過去</span></div>
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 bg-red-500 rounded-sm animate-pulse"></div> <span data-i18n="legend_present">現在</span></div>
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 bg-slate-100 border border-slate-200 rounded-sm"></div> <span data-i18n="legend_future">未來</span></div>
+                    </div>
+                </div>
+                
+                <div id="life_grid" class="life-grid">
+                    <!-- Grid generated by JS -->
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="font-bold mb-2 text-gray-700" data-i18n="intro_title">關於本工具</h3>
+                <p class="leading-relaxed" data-i18n="intro_text">
+                    如果我們活到 80 歲，人生大約只有 960 個月。
+                    <br>這張表格將你的一生視覺化。每一個格子代表一個月。
+                    <br>灰色的格子是你已經度過的時光，彩色的格子代表當下，白色的格子則是充滿可能性的未來。
+                    <br>看著這些格子，或許能讓我們更清晰地感受到時間的流逝，從而更珍惜眼前的每一天。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const LifeCount = {
+            i18n: {
+                'zh-TW': {
+                    title: '人生小格日曆',
+                    birth_date: '出生日期',
+                    life_expectancy: '預期壽命 (歲)',
+                    generate_calendar: '更新圖表',
+                    life_calendar: '你的人生日曆',
+                    legend_past: '已逝',
+                    legend_present: '當下',
+                    legend_future: '未來',
+                    summary_age: '當前年齡',
+                    summary_months_lived: '已生活月數',
+                    summary_months_remaining: '剩餘月數',
+                    summary_percentage: '人生進度',
+                    intro_title: '關於本工具',
+                    intro_text: '如果我們活到 80 歲，人生大約只有 960 個月。這張表格將你的一生視覺化。每一個格子代表一個月。灰色的格子是你已經度過的時光，紅色的格子代表當下，白色的格子則是充滿可能性的未來。看著這些格子，或許能讓我們更清晰地感受到時間的流逝，從而更珍惜眼前的每一天。'
+                },
+                'zh-CN': {
+                    title: '人生小格日历',
+                    birth_date: '出生日期',
+                    life_expectancy: '预期寿命 (岁)',
+                    generate_calendar: '更新图表',
+                    life_calendar: '你的人生日历',
+                    legend_past: '已逝',
+                    legend_present: '当下',
+                    legend_future: '未来',
+                    summary_age: '当前年龄',
+                    summary_months_lived: '已生活月数',
+                    summary_months_remaining: '剩余月数',
+                    summary_percentage: '人生进度',
+                    intro_title: '关于本工具',
+                    intro_text: '如果我们活到 80 岁，人生大约只有 960 个月。这张表格将你的一生可视化。每一个格子代表一个月。灰色的格子是你已经度过的时光，红色的格子代表当下，白色的格子则是充满可能性的未来。看着这些格子，或许能让我们更清晰地感受到时间的流逝，从而更珍惜眼前的每一天。'
+                },
+                'en': {
+                    title: 'Life Count Calendar',
+                    birth_date: 'Date of Birth',
+                    life_expectancy: 'Life Expectancy',
+                    generate_calendar: 'Update Chart',
+                    life_calendar: 'Your Life Calendar',
+                    legend_past: 'Past',
+                    legend_present: 'Now',
+                    legend_future: 'Future',
+                    summary_age: 'Current Age',
+                    summary_months_lived: 'Months Lived',
+                    summary_months_remaining: 'Months Left',
+                    summary_percentage: 'Life Progress',
+                    intro_title: 'About',
+                    intro_text: 'If we live to 80, we have about 960 months. This grid visualizes your life in months. Gray squares are time passed, the red square is now, and empty squares are your future. Seeing your life laid out can help appreciate the time we have.'
+                },
+                'ja': {
+                    title: '人生カウントカレンダー',
+                    birth_date: '生年月日',
+                    life_expectancy: '平均余命 (歳)',
+                    generate_calendar: '更新',
+                    life_calendar: 'あなたの人生カレンダー',
+                    legend_past: '過去',
+                    legend_present: '現在',
+                    legend_future: '未来',
+                    summary_age: '現在の年齢',
+                    summary_months_lived: '生きた月数',
+                    summary_months_remaining: '残りの月数',
+                    summary_percentage: '人生の進捗',
+                    intro_title: 'このツールについて',
+                    intro_text: '80歳まで生きると仮定すると、人生は約960ヶ月です。このグリッドはあなたの人生を月単位で可視化します。灰色のマスは過ぎ去った時間、赤は現在、白は未来を表します。時間を視覚的に捉えることで、一日一日をより大切に過ごすきっかけになれば幸いです。'
+                },
+                'ru': {
+                    title: 'Календарь жизни',
+                    birth_date: 'Дата рождения',
+                    life_expectancy: 'Продолжительность жизни (лет)',
+                    generate_calendar: 'Обновить график',
+                    life_calendar: 'Ваш календарь жизни',
+                    legend_past: 'Прошлое',
+                    legend_present: 'Сейчас',
+                    legend_future: 'Будущее',
+                    summary_age: 'Текущий возраст',
+                    summary_months_lived: 'Прожито месяцев',
+                    summary_months_remaining: 'Осталось месяцев',
+                    summary_percentage: 'Прогресс жизни',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Если жить до 80 лет, это всего около 960 месяцев. Эта таблица визуализирует вашу жизнь. Каждый квадрат — это один месяц. Серые — прошлое, красный — настоящее, белые — будущее. Взгляд на жизнь целиком помогает ценить каждый день.'
+                }
+            },
+
+            init: function() {
+                // Initialize language
+                // Fix: Use localStorage instead of URL params to avoid SecurityError in iframe
+                let lang = 'zh-TW';
+                try {
+                    const savedLang = localStorage.getItem('life-count-lang');
+                    const params = new URLSearchParams(window.location.search);
+                    lang = savedLang || params.get('lang') || 'zh-TW';
+                } catch (e) {
+                    console.warn('Cannot access localStorage or URL params', e);
+                }
+
+                const langSelector = document.getElementById('lang-selector');
+                if (this.i18n[lang]) {
+                    langSelector.value = lang;
+                }
+                
+                // Set default birth date (25 years ago)
+                const birthInput = document.getElementById('birth_date');
+                if (!birthInput.value) {
+                    const defaultBirth = new Date();
+                    defaultBirth.setFullYear(defaultBirth.getFullYear() - 25);
+                    birthInput.value = defaultBirth.toISOString().split('T')[0];
+                }
+
+                this.changeLang(false); // Update text without reload
+                this.calculate(); // Auto calculate on load
+            },
+
+            changeLang: function(saveToStorage = true) {
+                const lang = document.getElementById('lang-selector').value;
+                
+                if (saveToStorage) {
+                    try {
+                        localStorage.setItem('life-count-lang', lang);
+                    } catch (e) {
+                        console.warn('LocalStorage not available');
+                    }
+                    // Fix: Removed history.pushState causing SecurityError
+                }
+                
+                const texts = this.i18n[lang] || this.i18n['en'];
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        // Preserve HTML tags if needed, simple text replacement here
+                        if (el.children.length === 0) {
+                             el.innerText = texts[key];
+                        } else {
+                             // Handle complex elements manually or use innerHTML if text contains tags
+                             if (key === 'intro_text') el.innerHTML = texts[key];
+                             else el.childNodes[0].nodeValue = texts[key]; 
+                        }
+                    }
+                });
+            },
+
+            calculate: function() {
+                const birthDateStr = document.getElementById('birth_date').value;
+                if (!birthDateStr) return;
+
+                const birthDate = new Date(birthDateStr);
+                const lifeExpectancy = parseInt(document.getElementById('life_expectancy').value) || 80;
+                const today = new Date();
+                
+                // --- Logic Calculations ---
+                
+                // Exact Age Calculation
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                // Total months lived (approximate but sufficient for visual)
+                const monthsInYear = 12;
+                const totalMonthsLived = ((today.getFullYear() - birthDate.getFullYear()) * 12) + (today.getMonth() - birthDate.getMonth());
+                
+                const totalExpectedMonths = lifeExpectancy * 12;
+                const monthsRemaining = Math.max(0, totalExpectedMonths - totalMonthsLived);
+                const percentageComplete = Math.min(100, Math.max(0, (totalMonthsLived / totalExpectedMonths) * 100)).toFixed(1);
+
+                // --- Update Summary UI ---
+                document.getElementById('summary_age').innerText = `${age}`;
+                document.getElementById('summary_months_lived').innerText = totalMonthsLived.toLocaleString();
+                document.getElementById('summary_months_remaining').innerText = monthsRemaining.toLocaleString();
+                document.getElementById('summary_percentage').innerText = `${percentageComplete}%`;
+
+                // --- Generate Grid ---
+                this.generateLifeGrid(birthDate, today, lifeExpectancy, totalMonthsLived);
+            },
+
+            generateLifeGrid: function(birthDate, today, lifeExpectancy, monthsLived) {
+                const gridContainer = document.getElementById('life_grid');
+                gridContainer.innerHTML = '';
+                
+                const startYear = birthDate.getFullYear();
+                const endYear = startYear + lifeExpectancy;
+                const birthMonthIndex = birthDate.getMonth(); // 0-11
+                
+                // Fragment for better performance
+                const fragment = document.createDocumentFragment();
+
+                for (let year = startYear; year < endYear; year++) {
+                    // 1. Add Year Label (Column 1)
+                    const yearLabel = document.createElement('div');
+                    yearLabel.className = 'year-label';
+                    // Show age instead of year number usually more impactful, or Year number
+                    const ageAtYear = year - startYear;
+                    yearLabel.innerText = ageAtYear % 5 === 0 ? ageAtYear : (year === startYear || year === endYear -1 ? ageAtYear : ''); 
+                    // Or show actual year: yearLabel.innerText = year;
+                    // Let's show Age, but every 5 years to reduce clutter
+                    yearLabel.setAttribute('data-year', year);
+                    if (ageAtYear === 0) yearLabel.innerText = "出生";
+                    else if (ageAtYear % 10 === 0) yearLabel.innerText = ageAtYear + "歲";
+                    else yearLabel.innerText = "";
+                    
+                    // Hover to see exact year
+                    yearLabel.title = `Year: ${year}, Age: ${ageAtYear}`;
+                    fragment.appendChild(yearLabel);
+                    
+                    // 2. Add 12 Months (Columns 2-13)
+                    for (let month = 0; month < 12; month++) {
+                        const monthCell = document.createElement('div');
+                        
+                        // Calculate absolute month index from birth
+                        // (Year difference * 12) + (month index - birth month index)
+                        // Note: Grid is calendar aligned (Jan-Dec), so logic needs to map correctly
+                        
+                        // Is this month before birth?
+                        if (year === startYear && month < birthMonthIndex) {
+                            monthCell.className = 'month-cell opacity-0 pointer-events-none'; // Invisible placeholder
+                        } else {
+                            monthCell.className = 'month-cell month-future'; // Default future
+                            
+                            // Compare with today
+                            const cellDate = new Date(year, month, 1);
+                            // Avoid time issues by comparing YYYY-MM
+                            const currentYM = today.getFullYear() * 12 + today.getMonth();
+                            const cellYM = year * 12 + month;
+                            
+                            if (cellYM < currentYM) {
+                                monthCell.className = 'month-cell month-past';
+                                monthCell.setAttribute('data-tooltip', `${year}年${month+1}月 (已過)`);
+                            } else if (cellYM === currentYM) {
+                                monthCell.className = 'month-cell month-current';
+                                monthCell.setAttribute('data-tooltip', `${year}年${month+1}月 (現在)`);
+                            } else {
+                                monthCell.setAttribute('data-tooltip', `${year}年${month+1}月 (未來)`);
+                            }
+                        }
+                        fragment.appendChild(monthCell);
+                    }
+                }
+                
+                gridContainer.appendChild(fragment);
+            }
+        };
+
+        window.onload = function() { LifeCount.init(); };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="payment_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💰">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Payment Calculator">
+    <meta name="description" content="Calculate your monthly payment for loans or mortgages based on principal, interest rate and term.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="付款计算器">
+    <meta name="lang-description-zh-CN" content="根据本金、利率和期限计算贷款或抵押贷款的月付款额。">
+    
+    <meta name="lang-title-zh-TW" content="付款計算器">
+    <meta name="lang-description-zh-TW" content="根據本金、利率和期限計算貸款或抵押貸款的月付款額。">
+    
+    <meta name="lang-title-ja" content="支払い計算ツール">
+    <meta name="lang-description-ja" content="元本、金利、期間に基づいてローンや住宅ローンの月々の支払額を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор платежей">
+    <meta name="lang-description-ru" content="Рассчитайте ежемесячный платеж по кредиту или ипотеке на основе основного долга, процентной ставки и срока.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .result-section { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; text-sm font-medium text-gray-700 mb-1; }
+        select, input[type="number"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .result-item { background: white; padding: 10px; border-radius: 4px; }
+        .result-label { font-size: 0.85rem; color: gray; }
+        .result-value { font-size: 1.1rem; font-weight: 600; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/finance/payment-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="payment_calculator" 
+         data-category="financial" 
+         data-title="Payment Calculator" 
+         data-icon="💰">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="payment-lang" onchange="PaymentCalculator.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💰 Payment Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 贷款金额 -->
+            <div class="form-group">
+                <label data-i18n="loan_amount">Loan Amount</label>
+                <input type="number" id="loan-amount" step="any" min="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00">
+            </div>
+            
+            <!-- 年利率 -->
+            <div class="form-group">
+                <label data-i18n="interest_rate">Annual Interest Rate (%)</label>
+                <input type="number" id="interest-rate" step="0.01" min="0" max="100" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00">
+            </div>
+            
+            <!-- 贷款期限 -->
+            <div class="form-group">
+                <div class="flex gap-3">
+                    <div class="flex-1">
+                        <label data-i18n="loan_term">Loan Term</label>
+                        <input type="number" id="loan-term" min="1" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0">
+                    </div>
+                    <div class="flex-1">
+                        <label data-i18n="term_unit">Term Unit</label>
+                        <select id="term-unit" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="years" selected data-i18n="years">Years</option>
+                            <option value="months" data-i18n="months">Months</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 精度选择 -->
+            <div class="form-group">
+                <label data-i18n="precision">Precision (decimal places)</label>
+                <input type="number" id="payment-precision" min="0" max="6" value="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="PaymentCalculator.clearForm()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="PaymentCalculator.calculate()" class="flex-1 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="payment-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="payment-results" class="hidden">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="calculation_results">Calculation Results</div>
+            <div class="result-section">
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="monthly_payment">Monthly Payment</div>
+                        <div class="result-value" id="monthly-payment">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="total_payment">Total Payment</div>
+                        <div class="result-value" id="total-payment">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="total_interest">Total Interest</div>
+                        <div class="result-value" id="total-interest">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label" data-i18n="number_of_payments">Number of Payments</div>
+                        <div class="result-value" id="number-of-payments">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" id="notes-list">
+                <li data-i18n="note1">This calculator uses the standard loan payment formula: M = P * (r(1+r)^n) / ((1+r)^n - 1)</li>
+                <li data-i18n="note2">Where: M = monthly payment, P = principal loan amount, r = monthly interest rate (annual rate/12), n = number of payments</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const PaymentCalculator = {
+            // 多语言文本
+            i18n: {
+                'en': {
+                    title: '💰 Payment Calculator',
+                    loan_amount: 'Loan Amount',
+                    interest_rate: 'Annual Interest Rate (%)',
+                    loan_term: 'Loan Term',
+                    term_unit: 'Term Unit',
+                    years: 'Years',
+                    months: 'Months',
+                    precision: 'Precision (decimal places)',
+                    clear: 'Clear',
+                    calculate: 'Calculate',
+                    calculation_results: 'Calculation Results',
+                    monthly_payment: 'Monthly Payment',
+                    total_payment: 'Total Payment',
+                    total_interest: 'Total Interest',
+                    number_of_payments: 'Number of Payments',
+                    notes: 'Notes:',
+                    note1: 'This calculator uses the standard loan payment formula: M = P * (r(1+r)^n) / ((1+r)^n - 1)',
+                    note2: 'Where: M = monthly payment, P = principal loan amount, r = monthly interest rate (annual rate/12), n = number of payments',
+                    err_invalid_input: 'Please enter valid positive numbers for all fields'
+                },
+                'zh-CN': {
+                    title: '💰 付款计算器',
+                    loan_amount: '贷款金额',
+                    interest_rate: '年利率 (%)',
+                    loan_term: '贷款期限',
+                    term_unit: '期限单位',
+                    years: '年',
+                    months: '月',
+                    precision: '精度（小数位数）',
+                    clear: '清除',
+                    calculate: '计算',
+                    calculation_results: '计算结果',
+                    monthly_payment: '月付款额',
+                    total_payment: '总付款额',
+                    total_interest: '总利息',
+                    number_of_payments: '付款次数',
+                    notes: '说明：',
+                    note1: '本计算器使用标准贷款付款公式：月付款 = 本金 × [月利率×(1+月利率)^还款月数] / [(1+月利率)^还款月数 - 1]',
+                    note2: '其中：月利率 = 年利率/12，还款月数 = 贷款期限（年）×12 或直接输入月数',
+                    err_invalid_input: '请为所有字段输入有效的正数'
+                },
+                'zh-TW': {
+                    title: '💰 付款計算器',
+                    loan_amount: '貸款金額',
+                    interest_rate: '年利率 (%)',
+                    loan_term: '貸款期限',
+                    term_unit: '期限單位',
+                    years: '年',
+                    months: '月',
+                    precision: '精度（小數位數）',
+                    clear: '清除',
+                    calculate: '計算',
+                    calculation_results: '計算結果',
+                    monthly_payment: '月付款額',
+                    total_payment: '總付款額',
+                    total_interest: '總利息',
+                    number_of_payments: '付款次數',
+                    notes: '說明：',
+                    note1: '本計算器使用標準貸款付款公式：月付款 = 本金 × [月利率×(1+月利率)^還款月數] / [(1+月利率)^還款月數 - 1]',
+                    note2: '其中：月利率 = 年利率/12，還款月數 = 貸款期限（年）×12 或直接輸入月數',
+                    err_invalid_input: '請為所有欄位輸入有效的正數'
+                },
+                'ja': {
+                    title: '💰 支払い計算ツール',
+                    loan_amount: 'ローン金額',
+                    interest_rate: '年利 (%)',
+                    loan_term: 'ローン期間',
+                    term_unit: '期間単位',
+                    years: '年',
+                    months: '月',
+                    precision: '精度（小数桁数）',
+                    clear: 'クリア',
+                    calculate: '計算',
+                    calculation_results: '計算結果',
+                    monthly_payment: '月々の支払額',
+                    total_payment: '総支払額',
+                    total_interest: '総利息',
+                    number_of_payments: '支払回数',
+                    notes: '注釈：',
+                    note1: 'この計算機は標準的なローン支払い公式を使用しています：月々の支払額 = 元本 × [月利率×(1+月利率)^支払回数] / [(1+月利率)^支払回数 - 1]',
+                    note2: 'ここで：月利率 = 年利/12、支払回数 = ローン期間（年）×12 または直接月数を入力',
+                    err_invalid_input: 'すべてのフィールドに有効な正数を入力してください'
+                },
+                'ru': {
+                    title: '💰 Калькулятор платежей',
+                    loan_amount: 'Сумма кредита',
+                    interest_rate: 'Годовая процентная ставка (%)',
+                    loan_term: 'Срок кредита',
+                    term_unit: 'Единица срока',
+                    years: 'Лет',
+                    months: 'Месяцев',
+                    precision: 'Точность (знаков после запятой)',
+                    clear: 'Очистить',
+                    calculate: 'Рассчитать',
+                    calculation_results: 'Результаты расчета',
+                    monthly_payment: 'Ежемесячный платеж',
+                    total_payment: 'Общий платеж',
+                    total_interest: 'Общий процент',
+                    number_of_payments: 'Количество платежей',
+                    notes: 'Примечания:',
+                    note1: 'Этот калькулятор использует стандартную формулу расчета кредитных платежей: Ежемесячный платеж = Сумма × [месячная ставка×(1+месячная ставка)^количество платежей] / [(1+месячная ставка)^количество платежей - 1]',
+                    note2: 'Где: месячная ставка = годовая ставка/12, количество платежей = срок кредита (лет)×12 или напрямую вводится количество месяцев',
+                    err_invalid_input: 'Пожалуйста, введите действительные положительные числа для всех полей'
+                }
+            },
+            
+            // 初始化
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                this.updateLanguageElements();
+            },
+            
+            // 计算付款
+            calculate: function() {
+                const loanAmount = parseFloat(document.getElementById('loan-amount').value);
+                const interestRate = parseFloat(document.getElementById('interest-rate').value);
+                const loanTerm = parseInt(document.getElementById('loan-term').value);
+                const termUnit = document.getElementById('term-unit').value;
+                const precision = parseInt(document.getElementById('payment-precision').value) || 2;
+                
+                const errorEl = document.getElementById('payment-error');
+                const resultsEl = document.getElementById('payment-results');
+                
+                // 验证输入
+                if (isNaN(loanAmount) || loanAmount <= 0 || 
+                    isNaN(interestRate) || interestRate < 0 || 
+                    isNaN(loanTerm) || loanTerm <= 0) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_input;
+                    errorEl.classList.remove('hidden');
+                    resultsEl.classList.add('hidden');
+                    return;
+                }
+                
+                // 清除错误
+                errorEl.classList.add('hidden');
+                
+                // 计算月数
+                const months = termUnit === 'years' ? loanTerm * 12 : loanTerm;
+                // 月利率 (百分比转换为小数)
+                const monthlyRate = (interestRate / 100) / 12;
+                
+                // 计算月付款额 (使用贷款公式)
+                let monthlyPayment;
+                if (monthlyRate === 0) {
+                    monthlyPayment = loanAmount / months;
+                } else {
+                    const factor = Math.pow(1 + monthlyRate, months);
+                    monthlyPayment = loanAmount * (monthlyRate * factor) / (factor - 1);
+                }
+                
+                // 计算总付款和总利息
+                const totalPayment = monthlyPayment * months;
+                const totalInterest = totalPayment - loanAmount;
+                
+                // 显示结果
+                document.getElementById('monthly-payment').textContent = this.formatCurrency(monthlyPayment, precision);
+                document.getElementById('total-payment').textContent = this.formatCurrency(totalPayment, precision);
+                document.getElementById('total-interest').textContent = this.formatCurrency(totalInterest, precision);
+                document.getElementById('number-of-payments').textContent = months;
+                
+                // 显示结果区域
+                resultsEl.classList.remove('hidden');
+            },
+            
+            // 格式化货币显示
+            formatCurrency: function(value, precision) {
+                return value.toFixed(precision);
+            },
+            
+            // 清除表单
+            clearForm: function() {
+                document.getElementById('loan-amount').value = '';
+                document.getElementById('interest-rate').value = '';
+                document.getElementById('loan-term').value = '';
+                document.getElementById('payment-results').classList.add('hidden');
+                document.getElementById('payment-error').classList.add('hidden');
+            },
+            
+            // 切换语言
+            changeLang: function() {
+                this.updateLanguageElements();
+                
+                // 如果有结果，重新计算以更新显示
+                if (!document.getElementById('payment-results').classList.contains('hidden')) {
+                    this.calculate();
+                }
+            },
+            
+            // 更新语言元素
+            updateLanguageElements: function() {
+                const lang = this.getCurrentLang();
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+            
+            // 获取当前语言
+            getCurrentLang: function() {
+                return document.getElementById('payment-lang').value;
+            }
+        };
+        
+        // 初始化计算器
+        document.addEventListener('DOMContentLoaded', function() {
+            PaymentCalculator.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ring Size Converter</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="ring_size_converter">
+    <meta name="category" content="Math">
+    <meta name="icon" content="💍">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Ring Size Converter">
+    <meta name="description" content="Convert ring sizes between different international standards including US, UK, EU, Japan, China and more.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="戒指尺寸转换器">
+    <meta name="lang-description-zh-CN" content="在不同的国际标准之间转换戒指尺寸，包括美国、英国、欧盟、日本、中国等标准。">
+    
+    <meta name="lang-title-zh-TW" content="戒指尺寸轉換器">
+    <meta name="lang-description-zh-TW" content="在不同的國際標準之間轉換戒指尺寸，包括美國、英國、歐盟、日本、中國等標準。">
+    
+    <meta name="lang-title-ja" content="指輪サイズ換算ツール">
+    <meta name="lang-description-ja" content="US、UK、EU、日本、中国などの国際基準間で指輪のサイズを換算します。">
+    
+    <meta name="lang-title-ru" content="Конвертер размеров колец">
+    <meta name="lang-description-ru" content="Конвертируйте размеры колец между различными международными стандартами, включая США, Великобританию, Евросоюз, Японию, Китай и другие.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .conversion-result { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; }
+        .size-chart { margin-top: 20px; overflow-x: auto; }
+        .size-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .size-table th, .size-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .size-table th { background-color: #f2f2f2; }
+        .unit-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .unit-selector { flex: 1; }
+        .input-field { flex: 2; }
+        select, input[type="number"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/ring-size-converter.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="ring_size_converter" 
+         data-category="converters" 
+         data-title="Ring Size Converter" 
+         data-icon="💍">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="ring-lang" onchange="RingSizeConverter.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💍 Ring Size Converter</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 转换输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="enter_size">Enter Ring Size</label>
+                <div class="unit-group">
+                    <div class="input-field">
+                        <input type="number" id="ring-size" step="any" min="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0">
+                    </div>
+                    <div class="unit-selector">
+                        <select id="from-standard" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="us">US Size</option>
+                            <option value="uk">UK Size</option>
+                            <option value="eu">EU Size</option>
+                            <option value="jp">Japan Size</option>
+                            <option value="cn">China Size</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="RingSizeConverter.clearValue()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="RingSizeConverter.convert()" class="flex-3 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="convert">Convert to All Standards</button>
+            </div>
+            
+            <!-- 周长输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="enter_circumference">Or Enter Circumference (mm)</label>
+                <div class="unit-group">
+                    <div class="input-field">
+                        <input type="number" id="circumference" step="0.1" min="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="mm">
+                    </div>
+                    <div class="unit-selector">
+                        <button onclick="RingSizeConverter.fromCircumference()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition" data-i18n="calculate_from_circumference">Calculate Sizes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="ring-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="ring-results" class="hidden">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="conversion_results">Conversion Results</div>
+            <div class="conversion-result">
+                <div class="size-chart">
+                    <table class="size-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="us_size">US Size</th>
+                                <th data-i18n="uk_size">UK Size</th>
+                                <th data-i18n="eu_size">EU Size</th>
+                                <th data-i18n="jp_size">Japan Size</th>
+                                <th data-i18n="cn_size">China Size</th>
+                                <th data-i18n="circumference">Circumference (mm)</th>
+                                <th data-i18n="diameter">Diameter (mm)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body">
+                            <!-- 结果将在这里显示 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1">
+                <li data-i18n="note1">Ring sizes vary by country and region</li>
+                <li data-i18n="note2">Measure your finger circumference in millimeters for the most accurate size</li>
+                <li data-i18n="note3">US sizes use numbers (5-13 for adults), UK sizes use letters (A-Z), EU sizes use numbers (40-70)</li>
+                <li data-i18n="note4">Measure your finger at the end of the day when it's slightly larger</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const RingSizeConverter = {
+            // 戒指尺寸数据 (以周长mm为基准)
+            sizeData: [
+                { circumference: 44.0, diameter: 14.0, us: 1.0, uk: 'A', eu: 41, jp: 1, cn: 4 },
+                { circumference: 45.5, diameter: 14.5, us: 2.0, uk: 'B', eu: 42, jp: 2, cn: 5 },
+                { circumference: 46.8, diameter: 14.9, us: 3.0, uk: 'C', eu: 43, jp: 3, cn: 6 },
+                { circumference: 48.0, diameter: 15.3, us: 4.0, uk: 'D', eu: 44, jp: 4, cn: 7 },
+                { circumference: 49.3, diameter: 15.7, us: 5.0, uk: 'E', eu: 45, jp: 5, cn: 8 },
+                { circumference: 50.5, diameter: 16.1, us: 6.0, uk: 'F', eu: 46, jp: 6, cn: 9 },
+                { circumference: 51.8, diameter: 16.5, us: 7.0, uk: 'G', eu: 47, jp: 7, cn: 10 },
+                { circumference: 53.0, diameter: 16.9, us: 8.0, uk: 'H', eu: 48, jp: 8, cn: 11 },
+                { circumference: 54.3, diameter: 17.3, us: 9.0, uk: 'I', eu: 49, jp: 9, cn: 12 },
+                { circumference: 55.5, diameter: 17.7, us: 10.0, uk: 'J', eu: 50, jp: 10, cn: 13 },
+                { circumference: 56.8, diameter: 18.1, us: 11.0, uk: 'K', eu: 51, jp: 11, cn: 14 },
+                { circumference: 58.0, diameter: 18.5, us: 12.0, uk: 'L', eu: 52, jp: 12, cn: 15 },
+                { circumference: 59.3, diameter: 18.9, us: 13.0, uk: 'M', eu: 53, jp: 13, cn: 16 }
+            ],
+            
+            // UK尺寸字母表
+            ukLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
+            
+            i18n: {
+                'en': {
+                    title: '💍 Ring Size Converter',
+                    enter_size: 'Enter Ring Size',
+                    clear: 'Clear',
+                    convert: 'Convert to All Standards',
+                    enter_circumference: 'Or Enter Circumference (mm)',
+                    calculate_from_circumference: 'Calculate Sizes',
+                    conversion_results: 'Conversion Results',
+                    us_size: 'US Size',
+                    uk_size: 'UK Size',
+                    eu_size: 'EU Size',
+                    jp_size: 'Japan Size',
+                    cn_size: 'China Size',
+                    circumference: 'Circumference (mm)',
+                    diameter: 'Diameter (mm)',
+                    notes: 'Notes:',
+                    note1: 'Ring sizes vary by country and region',
+                    note2: 'Measure your finger circumference in millimeters for the most accurate size',
+                    note3: 'US sizes use numbers (5-13 for adults), UK sizes use letters (A-Z), EU sizes use numbers (40-70)',
+                    note4: 'Measure your finger at the end of the day when it\'s slightly larger',
+                    err_invalid_size: 'Please enter a valid size',
+                    err_no_results: 'No matching sizes found'
+                },
+                'zh-CN': {
+                    title: '💍 戒指尺寸转换器',
+                    enter_size: '输入戒指尺寸',
+                    clear: '清除',
+                    convert: '转换为所有标准',
+                    enter_circumference: '或输入周长 (毫米)',
+                    calculate_from_circumference: '计算尺寸',
+                    conversion_results: '转换结果',
+                    us_size: '美国尺寸',
+                    uk_size: '英国尺寸',
+                    eu_size: '欧盟尺寸',
+                    jp_size: '日本尺寸',
+                    cn_size: '中国尺寸',
+                    circumference: '周长 (毫米)',
+                    diameter: '直径 (毫米)',
+                    notes: '说明：',
+                    note1: '戒指尺寸因国家和地区而异',
+                    note2: '以毫米为单位测量手指周长可获得最准确的尺寸',
+                    note3: '美国尺寸使用数字（成人5-13），英国尺寸使用字母（A-Z），欧盟尺寸使用数字（40-70）',
+                    note4: '在一天结束时测量手指，此时手指会稍大一些',
+                    err_invalid_size: '请输入有效的尺寸',
+                    err_no_results: '未找到匹配的尺寸'
+                },
+                'zh-TW': {
+                    title: '💍 戒指尺寸轉換器',
+                    enter_size: '輸入戒指尺寸',
+                    clear: '清除',
+                    convert: '轉換為所有標準',
+                    enter_circumference: '或輸入周長 (毫米)',
+                    calculate_from_circumference: '計算尺寸',
+                    conversion_results: '轉換結果',
+                    us_size: '美國尺寸',
+                    uk_size: '英國尺寸',
+                    eu_size: '歐盟尺寸',
+                    jp_size: '日本尺寸',
+                    cn_size: '中國尺寸',
+                    circumference: '周長 (毫米)',
+                    diameter: '直徑 (毫米)',
+                    notes: '說明：',
+                    note1: '戒指尺寸因國家和地區而異',
+                    note2: '以毫米為單位測量手指周長可獲得最準確的尺寸',
+                    note3: '美國尺寸使用數字（成人5-13），英國尺寸使用字母（A-Z），歐盟尺寸使用數字（40-70）',
+                    note4: '在一天結束時測量手指，此時手指會稍大一些',
+                    err_invalid_size: '請輸入有效的尺寸',
+                    err_no_results: '未找到匹配的尺寸'
+                },
+                'ja': {
+                    title: '💍 指輪サイズ換算ツール',
+                    enter_size: '指輪のサイズを入力',
+                    clear: 'クリア',
+                    convert: 'すべての基準に換算',
+                    enter_circumference: 'または周囲長を入力 (mm)',
+                    calculate_from_circumference: 'サイズを計算',
+                    conversion_results: '換算結果',
+                    us_size: 'USサイズ',
+                    uk_size: 'UKサイズ',
+                    eu_size: 'EUサイズ',
+                    jp_size: '日本サイズ',
+                    cn_size: '中国サイズ',
+                    circumference: '周囲長 (mm)',
+                    diameter: '直径 (mm)',
+                    notes: '注釈：',
+                    note1: '指輪のサイズは国や地域によって異なります',
+                    note2: '最も正確なサイズを知るには、指の周囲長をミリメートルで測定してください',
+                    note3: 'USサイズは数字（成人は5-13）、UKサイズはアルファベット（A-Z）、EUサイズは数字（40-70）を使用しています',
+                    note4: '指は一日の終わりに少し大きくなるので、その時間に測定してください',
+                    err_invalid_size: '有効なサイズを入力してください',
+                    err_no_results: '一致するサイズが見つかりませんでした'
+                },
+                'ru': {
+                    title: '💍 Конвертер размеров колец',
+                    enter_size: 'Введите размер кольца',
+                    clear: 'Очистить',
+                    convert: 'Конвертировать во все стандарты',
+                    enter_circumference: 'Или введите окружность (мм)',
+                    calculate_from_circumference: 'Вычислить размеры',
+                    conversion_results: 'Результаты преобразования',
+                    us_size: 'Размер США',
+                    uk_size: 'Размер Великобритании',
+                    eu_size: 'Размер ЕС',
+                    jp_size: 'Размер Японии',
+                    cn_size: 'Размер Китая',
+                    circumference: 'Окружность (мм)',
+                    diameter: 'Диаметр (мм)',
+                    notes: 'Примечания:',
+                    note1: 'Размеры колец различаются в разных странах и регионах',
+                    note2: 'Для получения наиболее точного размера измерьте окружность пальца в миллиметрах',
+                    note3: 'Размеры США используют числа (5-13 для взрослых), размеры Великобритании - буквы (A-Z), размеры ЕС - числа (40-70)',
+                    note4: 'Измеряйте палец в конце дня, когда он немного больше',
+                    err_invalid_size: 'Пожалуйста, введите действительный размер',
+                    err_no_results: 'Совпадающих размеров не найдено'
+                }
+            },
+            
+            // 转换戒指尺寸
+            convert: function() {
+                const size = parseFloat(document.getElementById('ring-size').value);
+                const fromStandard = document.getElementById('from-standard').value;
+                
+                const errorEl = document.getElementById('ring-error');
+                const resultsEl = document.getElementById('ring-results');
+                const tableBody = document.getElementById('results-table-body');
+                
+                // 验证输入
+                if (isNaN(size) || size <= 0) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_size;
+                    errorEl.classList.remove('hidden');
+                    resultsEl.classList.add('hidden');
+                    return;
+                }
+                
+                // 清除错误和之前的结果
+                errorEl.classList.add('hidden');
+                tableBody.innerHTML = '';
+                
+                // 查找匹配的尺寸
+                let matchingSizes = [];
+                
+                if (fromStandard === 'us') {
+                    matchingSizes = this.sizeData.filter(item => Math.abs(item.us - size) < 0.5);
+                } else if (fromStandard === 'uk') {
+                    // 查找字母索引
+                    const index = this.ukLetters.indexOf(size.toString().toUpperCase());
+                    if (index !== -1) {
+                        matchingSizes = this.sizeData.filter(item => this.ukLetters.indexOf(item.uk) === index);
+                    }
+                } else if (fromStandard === 'eu') {
+                    matchingSizes = this.sizeData.filter(item => Math.abs(item.eu - size) <= 1);
+                } else if (fromStandard === 'jp') {
+                    matchingSizes = this.sizeData.filter(item => Math.abs(item.jp - size) < 0.5);
+                } else if (fromStandard === 'cn') {
+                    matchingSizes = this.sizeData.filter(item => Math.abs(item.cn - size) < 0.5);
+                }
+                
+                // 显示结果
+                if (matchingSizes.length > 0) {
+                    matchingSizes.forEach(sizeItem => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${sizeItem.us}</td>
+                            <td>${sizeItem.uk}</td>
+                            <td>${sizeItem.eu}</td>
+                            <td>${sizeItem.jp}</td>
+                            <td>${sizeItem.cn}</td>
+                            <td>${sizeItem.circumference.toFixed(1)}</td>
+                            <td>${sizeItem.diameter.toFixed(1)}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    resultsEl.classList.remove('hidden');
+                } else {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_no_results;
+                    errorEl.classList.remove('hidden');
+                }
+            },
+            
+            // 根据周长计算尺寸
+            fromCircumference: function() {
+                const circumference = parseFloat(document.getElementById('circumference').value);
+                
+                const errorEl = document.getElementById('ring-error');
+                const resultsEl = document.getElementById('ring-results');
+                const tableBody = document.getElementById('results-table-body');
+                
+                // 验证输入
+                if (isNaN(circumference) || circumference <= 0) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_size;
+                    errorEl.classList.remove('hidden');
+                    resultsEl.classList.add('hidden');
+                    return;
+                }
+                
+                // 清除错误和之前的结果
+                errorEl.classList.add('hidden');
+                tableBody.innerHTML = '';
+                
+                // 找到最接近的尺寸
+                let closestSize = null;
+                let minDiff = Infinity;
+                
+                this.sizeData.forEach(item => {
+                    const diff = Math.abs(item.circumference - circumference);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestSize = item;
+                    }
+                });
+                
+                // 显示结果
+                if (closestSize) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${closestSize.us}</td>
+                        <td>${closestSize.uk}</td>
+                        <td>${closestSize.eu}</td>
+                        <td>${closestSize.jp}</td>
+                        <td>${closestSize.cn}</td>
+                        <td>${closestSize.circumference.toFixed(1)}</td>
+                        <td>${closestSize.diameter.toFixed(1)}</td>
+                    `;
+                    tableBody.appendChild(row);
+                    resultsEl.classList.remove('hidden');
+                } else {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_no_results;
+                    errorEl.classList.remove('hidden');
+                }
+            },
+            
+            // 清除输入
+            clearValue: function() {
+                document.getElementById('ring-size').value = '';
+                document.getElementById('circumference').value = '';
+                document.getElementById('ring-results').classList.add('hidden');
+                document.getElementById('ring-error').classList.add('hidden');
+            },
+            
+            // 切换语言
+            changeLang: function() {
+                const lang = this.getCurrentLang();
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+            
+            // 获取当前语言
+            getCurrentLang: function() {
+                return document.getElementById('ring-lang').value;
+            }
+        };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

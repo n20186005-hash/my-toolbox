@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Case Converter</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="letter_case_tool">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="Aa">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Letter Case Converter">
+    <meta name="description" content="Convert text between uppercase, lowercase, title case, sentence case and more.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="字母大小写转换工具">
+    <meta name="lang-description-zh-CN" content="在大写、小写、标题大小写、句子大小写等之间转换文本。">
+    
+    <meta name="lang-title-zh-TW" content="字母大小寫轉換工具">
+    <meta name="lang-description-zh-TW" content="在大寫、小寫、標題大小寫、句子大小寫等之間轉換文本。">
+    
+    <meta name="lang-title-ja" content="文字ケース変換ツール">
+    <meta name="lang-description-ja" content="テキストを大文字、小文字、タイトルケース、文ケースなどに変換します。">
+    
+    <meta name="lang-title-ru" content="Конвертер регистра букв">
+    <meta name="lang-description-ru" content="Конвертируйте текст в верхний, нижний регистр, регистр заголовка, регистр предложения и другие форматы.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .case-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
+        .case-btn { padding: 8px 15px; border-radius: 6px; background: #e2e8f0; border: none; cursor: pointer; font-size: 0.9rem; }
+        .case-btn:hover { background: #cbd5e1; }
+        .case-btn.active { background: #3b82f6; color: white; }
+        .char-count { font-size: 0.85rem; color: #64748b; margin-top: 5px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/text-tools/letter-conversion-tool.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="letter_case_tool" 
+         data-category="text" 
+         data-title="Letter Case Converter" 
+         data-icon="Aa">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="case-lang" onchange="CaseConv.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">Aa Letter Case Converter</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 输入文本 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="enter_text">Enter Text to Convert</label>
+                <textarea id="input-text" rows="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Type or paste your text here..."></textarea>
+                <div class="char-count" data-i18n="char_count">Character count: 0</div>
+            </div>
+            
+            <!-- 转换选项 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="conversion_options">Conversion Options</label>
+                <div class="case-buttons">
+                    <button class="case-btn active" data-conversion="uppercase" data-i18n="uppercase">UPPERCASE</button>
+                    <button class="case-btn" data-conversion="lowercase" data-i18n="lowercase">lowercase</button>
+                    <button class="case-btn" data-conversion="titlecase" data-i18n="titlecase">Title Case</button>
+                    <button class="case-btn" data-conversion="sentencecase" data-i18n="sentencecase">Sentence case</button>
+                    <button class="case-btn" data-conversion="invert" data-i18n="invert">InVeRt CaSe</button>
+                    <button class="case-btn" data-conversion="alternating" data-i18n="alternating">AlTeRnAtInG CaSe</button>
+                </div>
+            </div>
+            
+            <!-- 转换结果 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="result">Conversion Result</label>
+                <textarea id="output-text" rows="5" class="w-full p-2 border rounded bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" readonly></textarea>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="CaseConv.copyResult()" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition" data-i18n="copy_result">Copy Result</button>
+                <button onclick="CaseConv.clearText()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear_all">Clear All</button>
+                <button onclick="CaseConv.convertText()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="convert">Convert Text</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="case-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" data-i18n="notes_list">
+                <li>UPPERCASE: Converts all letters to uppercase</li>
+                <li>lowercase: Converts all letters to lowercase</li>
+                <li>Title Case: Capitalizes the first letter of each word</li>
+                <li>Sentence case: Capitalizes only the first letter of the first word</li>
+                <li>Invert Case: Swaps existing uppercase to lowercase and vice versa</li>
+                <li>Alternating Case: Alternates between uppercase and lowercase letters</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const CaseConv = {
+            i18n: {
+                'en': {
+                    title: 'Aa Letter Case Converter',
+                    enter_text: 'Enter Text to Convert',
+                    char_count: 'Character count: 0',
+                    conversion_options: 'Conversion Options',
+                    uppercase: 'UPPERCASE',
+                    lowercase: 'lowercase',
+                    titlecase: 'Title Case',
+                    sentencecase: 'Sentence case',
+                    invert: 'InVeRt CaSe',
+                    alternating: 'AlTeRnAtInG CaSe',
+                    result: 'Conversion Result',
+                    copy_result: 'Copy Result',
+                    clear_all: 'Clear All',
+                    convert: 'Convert Text',
+                    copied: 'Copied to clipboard!',
+                    notes: 'Notes:',
+                    notes_list: `
+                        <li>UPPERCASE: Converts all letters to uppercase</li>
+                        <li>lowercase: Converts all letters to lowercase</li>
+                        <li>Title Case: Capitalizes the first letter of each word</li>
+                        <li>Sentence case: Capitalizes only the first letter of the first word</li>
+                        <li>Invert Case: Swaps existing uppercase to lowercase and vice versa</li>
+                        <li>Alternating Case: Alternates between uppercase and lowercase letters</li>
+                    `,
+                    err_no_text: 'Please enter some text to convert',
+                },
+                'zh-CN': {
+                    title: 'Aa 字母大小写转换工具',
+                    enter_text: '输入要转换的文本',
+                    char_count: '字符数：0',
+                    conversion_options: '转换选项',
+                    uppercase: '全部大写',
+                    lowercase: '全部小写',
+                    titlecase: '标题大小写',
+                    sentencecase: '句子大小写',
+                    invert: '反转大小写',
+                    alternating: '交替大小写',
+                    result: '转换结果',
+                    copy_result: '复制结果',
+                    clear_all: '清空全部',
+                    convert: '转换文本',
+                    copied: '已复制到剪贴板！',
+                    notes: '说明：',
+                    notes_list: `
+                        <li>全部大写：将所有字母转换为大写</li>
+                        <li>全部小写：将所有字母转换为小写</li>
+                        <li>标题大小写：每个单词的首字母大写</li>
+                        <li>句子大小写：仅第一个单词的首字母大写</li>
+                        <li>反转大小写：将现有的大写字母转换为小写，反之亦然</li>
+                        <li>交替大小写：在大写和小写字母之间交替转换</li>
+                    `,
+                    err_no_text: '请输入要转换的文本',
+                },
+                'zh-TW': {
+                    title: 'Aa 字母大小寫轉換工具',
+                    enter_text: '輸入要轉換的文本',
+                    char_count: '字符數：0',
+                    conversion_options: '轉換選項',
+                    uppercase: '全部大寫',
+                    lowercase: '全部小寫',
+                    titlecase: '標題大小寫',
+                    sentencecase: '句子大小寫',
+                    invert: '反轉大小寫',
+                    alternating: '交替大小寫',
+                    result: '轉換結果',
+                    copy_result: '複製結果',
+                    clear_all: '清空全部',
+                    convert: '轉換文本',
+                    copied: '已複製到剪貼簿！',
+                    notes: '說明：',
+                    notes_list: `
+                        <li>全部大寫：將所有字母轉換為大寫</li>
+                        <li>全部小寫：將所有字母轉換為小寫</li>
+                        <li>標題大小寫：每個單詞的首字母大寫</li>
+                        <li>句子大小寫：僅第一個單詞的首字母大寫</li>
+                        <li>反轉大小寫：將現有的大寫字母轉換為小寫，反之亦然</li>
+                        <li>交替大小寫：在大寫和小寫字母之間交替轉換</li>
+                    `,
+                    err_no_text: '請輸入要轉換的文本',
+                },
+                'ja': {
+                    title: 'Aa 文字ケース変換ツール',
+                    enter_text: '変換するテキストを入力',
+                    char_count: '文字数：0',
+                    conversion_options: '変換オプション',
+                    uppercase: '全て大文字',
+                    lowercase: '全て小文字',
+                    titlecase: 'タイトルケース',
+                    sentencecase: '文ケース',
+                    invert: 'ケースを反転',
+                    alternating: '交互ケース',
+                    result: '変換結果',
+                    copy_result: '結果をコピー',
+                    clear_all: '全て消去',
+                    convert: 'テキストを変換',
+                    copied: 'クリップボードにコピーされました！',
+                    notes: '注意事項：',
+                    notes_list: `
+                        <li>全て大文字：すべての文字を大文字に変換</li>
+                        <li>全て小文字：すべての文字を小文字に変換</li>
+                        <li>タイトルケース：各単語の最初の文字を大文字に</li>
+                        <li>文ケース：最初の単語の最初の文字だけを大文字に</li>
+                        <li>ケースを反転：既存の大文字を小文字に、小文字を大文字に交換</li>
+                        <li>交互ケース：大文字と小文字を交互に変換</li>
+                    `,
+                    err_no_text: '変換するテキストを入力してください',
+                },
+                'ru': {
+                    title: 'Aa Конвертер регистра букв',
+                    enter_text: 'Введите текст для преобразования',
+                    char_count: 'Количество символов: 0',
+                    conversion_options: 'Опции преобразования',
+                    uppercase: 'ВСЕ БУКВЫ ПРОПИСНЫЕ',
+                    lowercase: 'все буквы строчные',
+                    titlecase: 'Заглавные Первые Буквы',
+                    sentencecase: 'Первая буква предложения заглавная',
+                    invert: 'Инвертировать Регистр',
+                    alternating: 'ПЕРЕЧЁРЕДЫВАЮЩИЙСЯ РЕГИСТР',
+                    result: 'Результат преобразования',
+                    copy_result: 'Скопировать результат',
+                    clear_all: 'Очистить всё',
+                    convert: 'Преобразовать текст',
+                    copied: 'Скопировано в буфер обмена!',
+                    notes: 'Примечания:',
+                    notes_list: `
+                        <li>ВСЕ БУКВЫ ПРОПИСНЫЕ: Преобразует все буквы в прописные</li>
+                        <li>все буквы строчные: Преобразует все буквы в строчные</li>
+                        <li>Заглавные Первые Буквы: Каждая первая буква слова прописная</li>
+                        <li>Первая буква предложения заглавная: Только первая буква первого слова прописная</li>
+                        <li>Инвертировать Регистр: Меняет прописные на строчные и наоборот</li>
+                        <li>ПЕРЕЧЁРЕДЫВАЮЩИЙСЯ РЕГИСТР: чередует прописные и строчные буквы</li>
+                    `,
+                    err_no_text: 'Пожалуйста, введите текст для преобразования',
+                }
+            },
+
+            changeLang() {
+                const lang = document.getElementById('case-lang').value;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.innerHTML = this.i18n[lang][key];
+                    }
+                });
+                this.updateCharCount();
+            },
+
+            updateCharCount() {
+                const count = document.getElementById('input-text').value.length;
+                const lang = document.getElementById('case-lang').value;
+                document.querySelector('[data-i18n="char_count"]').textContent = 
+                    this.i18n[lang].char_count.replace('0', count);
+            },
+
+            setActiveConversion(convType) {
+                document.querySelectorAll('.case-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-conversion="${convType}"]`).classList.add('active');
+            },
+
+            convertText() {
+                const input = document.getElementById('input-text').value;
+                const lang = document.getElementById('case-lang').value;
+                
+                if (!input.trim()) {
+                    document.getElementById('case-error').textContent = this.i18n[lang].err_no_text;
+                    document.getElementById('case-error').classList.remove('hidden');
+                    return;
+                }
+                
+                document.getElementById('case-error').classList.add('hidden');
+                const conversionType = document.querySelector('.case-btn.active').getAttribute('data-conversion');
+                let result = '';
+                
+                switch(conversionType) {
+                    case 'uppercase':
+                        result = input.toUpperCase();
+                        break;
+                    case 'lowercase':
+                        result = input.toLowerCase();
+                        break;
+                    case 'titlecase':
+                        result = input.replace(/\b\w/g, c => c.toUpperCase());
+                        break;
+                    case 'sentencecase':
+                        result = input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
+                        break;
+                    case 'invert':
+                        result = input.split('').map(c => 
+                            c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()
+                        ).join('');
+                        break;
+                    case 'alternating':
+                        result = input.split('').map((c, i) => 
+                            i % 2 === 0 ? c.toUpperCase() : c.toLowerCase()
+                        ).join('');
+                        break;
+                }
+                
+                document.getElementById('output-text').value = result;
+            },
+
+            copyResult() {
+                const output = document.getElementById('output-text');
+                output.select();
+                document.execCommand('copy');
+                
+                const lang = document.getElementById('case-lang').value;
+                const originalText = document.querySelector('[data-i18n="copy_result"]').textContent;
+                document.querySelector('[data-i18n="copy_result"]').textContent = this.i18n[lang].copied;
+                
+                setTimeout(() => {
+                    document.querySelector('[data-i18n="copy_result"]').textContent = originalText;
+                }, 2000);
+            },
+
+            clearText() {
+                document.getElementById('input-text').value = '';
+                document.getElementById('output-text').value = '';
+                document.getElementById('case-error').classList.add('hidden');
+                this.updateCharCount();
+            }
+        };
+
+        // 初始化事件监听
+        document.getElementById('input-text').addEventListener('input', () => {
+            CaseConv.updateCharCount();
+        });
+
+        document.querySelectorAll('.case-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                CaseConv.setActiveConversion(this.getAttribute('data-conversion'));
+            });
+        });
+
+        // 初始化字符计数
+        CaseConv.updateCharCount();
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

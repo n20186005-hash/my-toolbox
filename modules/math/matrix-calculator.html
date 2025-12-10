@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="matrix_calc">
+    <meta name="category" content="Math">
+    <meta name="icon" content="🧮">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Matrix Calculator">
+    <meta name="description" content="Perform matrix operations like addition, subtraction, multiplication, and inversion.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="矩阵计算器">
+    <meta name="lang-description-zh-CN" content="执行矩阵运算，如加法、减法、乘法和求逆。">
+    
+    <meta name="lang-title-zh-TW" content="矩陣計算器">
+    <meta name="lang-description-zh-TW" content="執行矩陣運算，如加法、減法、乘法和求逆。">
+    
+    <meta name="lang-title-ja" content="行列計算ツール">
+    <meta name="lang-description-ja" content="行列の加算、減算、乗算、逆行列などの演算を実行します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор матриц">
+    <meta name="lang-description-ru" content="Выполняйте операции с матрицами: сложение, вычитание, умножение и обращение.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .matrix-input { display: grid; gap: 5px; margin: 10px 0; }
+        .matrix-row { display: flex; gap: 5px; }
+        .matrix-cell { width: 60px; height: 40px; text-align: center; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/matrix-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="matrix_calc" 
+         data-category="math" 
+         data-title="Matrix Calculator" 
+         data-icon="🧮">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="matrix-lang" onchange="MatrixCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🧮 Matrix Calculator</h2>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="matrix_a">Matrix A</label>
+            <div class="flex items-center gap-2 mb-2">
+                <select id="rows-a" onchange="MatrixCalc.updateMatrix('a')" class="text-sm border rounded p-1">
+                    <option value="2">2x2</option>
+                    <option value="3" selected>3x3</option>
+                    <option value="4">4x4</option>
+                </select>
+            </div>
+            <div id="matrix-a" class="matrix-input grid-cols-3">
+                <!-- 矩阵A输入框将通过JS生成 -->
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="matrix_b">Matrix B</label>
+            <div class="flex items-center gap-2 mb-2">
+                <select id="rows-b" onchange="MatrixCalc.updateMatrix('b')" class="text-sm border rounded p-1">
+                    <option value="2">2x2</option>
+                    <option value="3" selected>3x3</option>
+                    <option value="4">4x4</option>
+                </select>
+            </div>
+            <div id="matrix-b" class="matrix-input grid-cols-3">
+                <!-- 矩阵B输入框将通过JS生成 -->
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="operation">Operation</label>
+            <select id="operation" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="add" data-i18n="add">Addition</option>
+                <option value="subtract" data-i18n="subtract">Subtraction</option>
+                <option value="multiply" data-i18n="multiply">Multiplication</option>
+                <option value="invert-a" data-i18n="invert_a">Invert Matrix A</option>
+                <option value="invert-b" data-i18n="invert_b">Invert Matrix B</option>
+            </select>
+        </div>
+
+        <button onclick="MatrixCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="result">Result</div>
+            <div id="matrix-result" class="text-lg text-blue-800 min-h-[120px]">--</div>
+            <div id="matrix-error" class="text-sm text-red-600 mt-2 hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const MatrixCalc = {
+            i18n: {
+                'en': {
+                    title: '🧮 Matrix Calculator',
+                    matrix_a: 'Matrix A',
+                    matrix_b: 'Matrix B',
+                    operation: 'Operation',
+                    add: 'Addition (A + B)',
+                    subtract: 'Subtraction (A - B)',
+                    multiply: 'Multiplication (A × B)',
+                    invert_a: 'Invert Matrix A',
+                    invert_b: 'Invert Matrix B',
+                    btn_calc: 'Calculate',
+                    result: 'Result',
+                    err_invalid: 'Invalid matrix values',
+                    err_dimensions: 'Incompatible dimensions',
+                    err_singular: 'Matrix is singular (non-invertible)'
+                },
+                'zh-CN': {
+                    title: '🧮 矩阵计算器',
+                    matrix_a: '矩阵 A',
+                    matrix_b: '矩阵 B',
+                    operation: '运算',
+                    add: '加法 (A + B)',
+                    subtract: '减法 (A - B)',
+                    multiply: '乘法 (A × B)',
+                    invert_a: '矩阵 A 求逆',
+                    invert_b: '矩阵 B 求逆',
+                    btn_calc: '计算',
+                    result: '结果',
+                    err_invalid: '无效的矩阵值',
+                    err_dimensions: '维度不兼容',
+                    err_singular: '矩阵为奇异矩阵（不可逆）'
+                },
+                'zh-TW': {
+                    title: '🧮 矩陣計算器',
+                    matrix_a: '矩陣 A',
+                    matrix_b: '矩陣 B',
+                    operation: '運算',
+                    add: '加法 (A + B)',
+                    subtract: '減法 (A - B)',
+                    multiply: '乘法 (A × B)',
+                    invert_a: '矩陣 A 求逆',
+                    invert_b: '矩陣 B 求逆',
+                    btn_calc: '計算',
+                    result: '結果',
+                    err_invalid: '無效的矩陣值',
+                    err_dimensions: '維度不相容',
+                    err_singular: '矩陣為奇異矩陣（不可逆）'
+                },
+                'ja': {
+                    title: '🧮 行列計算ツール',
+                    matrix_a: '行列 A',
+                    matrix_b: '行列 B',
+                    operation: '演算',
+                    add: '加算 (A + B)',
+                    subtract: '減算 (A - B)',
+                    multiply: '乗算 (A × B)',
+                    invert_a: '行列 A の逆行列',
+                    invert_b: '行列 B の逆行列',
+                    btn_calc: '計算する',
+                    result: '結果',
+                    err_invalid: '無効な行列値',
+                    err_dimensions: '次元が互換性がありません',
+                    err_singular: '行列は特異行列です（逆行列が存在しません）'
+                },
+                'ru': {
+                    title: '🧮 Калькулятор матриц',
+                    matrix_a: 'Матрица A',
+                    matrix_b: 'Матрица B',
+                    operation: 'Операция',
+                    add: 'Сложение (A + B)',
+                    subtract: 'Вычитание (A - B)',
+                    multiply: 'Умножение (A × B)',
+                    invert_a: 'Обратная матрица A',
+                    invert_b: 'Обратная матрица B',
+                    btn_calc: 'Рассчитать',
+                    result: 'Результат',
+                    err_invalid: 'Неверные значения матрицы',
+                    err_dimensions: 'Несовместимые размеры',
+                    err_singular: 'Матрица сингулярна (необратима)'
+                }
+            },
+
+            init: () => {
+                // 初始化矩阵输入框
+                MatrixCalc.updateMatrix('a');
+                MatrixCalc.updateMatrix('b');
+                // 设置默认值
+                MatrixCalc.setDefaultValues();
+            },
+
+            setDefaultValues: () => {
+                // 为3x3矩阵设置默认值
+                const cellsA = document.querySelectorAll('#matrix-a input');
+                const cellsB = document.querySelectorAll('#matrix-b input');
+                
+                [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach((val, i) => {
+                    if (cellsA[i]) cellsA[i].value = val;
+                });
+                
+                [9, 8, 7, 6, 5, 4, 3, 2, 1].forEach((val, i) => {
+                    if (cellsB[i]) cellsB[i].value = val;
+                });
+            },
+
+            updateMatrix: (matrixId) => {
+                const rows = parseInt(document.getElementById(`rows-${matrixId}`).value);
+                const container = document.getElementById(`matrix-${matrixId}`);
+                container.innerHTML = '';
+                container.className = `matrix-input grid-cols-${rows}`;
+                
+                for (let i = 0; i < rows; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'matrix-row';
+                    
+                    for (let j = 0; j < rows; j++) {
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.className = 'matrix-cell border rounded focus:ring-2 focus:ring-blue-500 outline-none';
+                        input.placeholder = `${i+1},${j+1}`;
+                        row.appendChild(input);
+                    }
+                    container.appendChild(row);
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('matrix-lang').value;
+                const texts = MatrixCalc.i18n[lang];
+                
+                // 更新普通文本
+                document.querySelectorAll('[data-id="matrix_calc"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                
+                // 更新下拉选项
+                const operation = document.getElementById('operation');
+                Object.keys(texts).forEach(key => {
+                    const option = operation.querySelector(`option[value="${key}"]`);
+                    if (option) option.innerText = texts[key];
+                });
+            },
+
+            getMatrix: (matrixId) => {
+                const container = document.getElementById(`matrix-${matrixId}`);
+                const rows = container.querySelectorAll('.matrix-row');
+                const matrix = [];
+                
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('input');
+                    const rowData = [];
+                    cells.forEach(cell => {
+                        const value = parseFloat(cell.value);
+                        if (isNaN(value)) return null;
+                        rowData.push(value);
+                    });
+                    matrix.push(rowData);
+                });
+                
+                return matrix;
+            },
+
+            renderMatrix: (matrix) => {
+                if (!matrix || matrix.length === 0) return '';
+                
+                let html = '<div class="matrix-input inline-block">';
+                matrix.forEach(row => {
+                    html += '<div class="matrix-row">';
+                    row.forEach(cell => {
+                        html += `<div class="matrix-cell border rounded bg-white flex items-center justify-center">${cell.toFixed(4).replace(/\.?0+$/, '')}</div>`;
+                    });
+                    html += '</div>';
+                });
+                html += '</div>';
+                return html;
+            },
+
+            showError: (message) => {
+                const resultEl = document.getElementById('matrix-result');
+                const errorEl = document.getElementById('matrix-error');
+                
+                resultEl.innerHTML = '';
+                errorEl.innerText = message;
+                errorEl.classList.remove('hidden');
+            },
+
+            calc: () => {
+                const lang = document.getElementById('matrix-lang').value;
+                const texts = MatrixCalc.i18n[lang];
+                const operation = document.getElementById('operation').value;
+                const resultEl = document.getElementById('matrix-result');
+                const errorEl = document.getElementById('matrix-error');
+                
+                // 重置结果区域
+                errorEl.classList.add('hidden');
+                resultEl.innerHTML = '';
+                
+                // 获取矩阵数据
+                const matrixA = MatrixCalc.getMatrix('a');
+                const matrixB = MatrixCalc.getMatrix('b');
+                
+                // 验证矩阵
+                if (!matrixA || !matrixB) {
+                    return MatrixCalc.showError(texts.err_invalid);
+                }
+                
+                let result;
+                try {
+                    switch (operation) {
+                        case 'add':
+                            result = MatrixCalc.add(matrixA, matrixB);
+                            break;
+                        case 'subtract':
+                            result = MatrixCalc.subtract(matrixA, matrixB);
+                            break;
+                        case 'multiply':
+                            result = MatrixCalc.multiply(matrixA, matrixB);
+                            break;
+                        case 'invert-a':
+                            result = MatrixCalc.invert(matrixA);
+                            break;
+                        case 'invert-b':
+                            result = MatrixCalc.invert(matrixB);
+                            break;
+                    }
+                } catch (e) {
+                    return MatrixCalc.showError(e.message || texts.err_invalid);
+                }
+                
+                resultEl.innerHTML = MatrixCalc.renderMatrix(result);
+            },
+
+            // 矩阵加法
+            add: (a, b) => {
+                const lang = document.getElementById('matrix-lang').value;
+                const texts = MatrixCalc.i18n[lang];
+                
+                if (a.length !== b.length || a[0].length !== b[0].length) {
+                    throw new Error(texts.err_dimensions);
+                }
+                
+                return a.map((row, i) => 
+                    row.map((val, j) => val + b[i][j])
+                );
+            },
+
+            // 矩阵减法
+            subtract: (a, b) => {
+                const lang = document.getElementById('matrix-lang').value;
+                const texts = MatrixCalc.i18n[lang];
+                
+                if (a.length !== b.length || a[0].length !== b[0].length) {
+                    throw new Error(texts.err_dimensions);
+                }
+                
+                return a.map((row, i) => 
+                    row.map((val, j) => val - b[i][j])
+                );
+            },
+
+            // 矩阵乘法
+            multiply: (a, b) => {
+                const lang = document.getElementById('matrix-lang').value;
+                const texts = MatrixCalc.i18n[lang];
+                
+                if (a[0].length !== b.length) {
+                    throw new Error(texts.err_dimensions);
+                }
+                
+                const result = [];
+                for (let i = 0; i < a.length; i++) {
+                    result[i] = [];
+                    for (let j = 0; j < b[0].length; j++) {
+                        let sum = 0;
+                        for (let k = 0; k < a[0].length; k++) {
+                            sum += a[i][k] * b[k][j];
+                        }
+                        result[i][j] = sum;
+                    }
+                }
+                return result;
+            },
+
+            // 矩阵求逆 (简化版，仅支持2x2和3x3)
+            invert: (matrix) => {
+                const lang = document.getElementById('matrix-lang').value;
+                const texts = MatrixCalc.i18n[lang];
+                const n = matrix.length;
+                
+                if (n !== 2 && n !== 3) {
+                    throw new Error(texts.err_dimensions);
+                }
+                
+                // 计算行列式
+                const det = n === 2 
+                    ? matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]
+                    : MatrixCalc.determinant3x3(matrix);
+                
+                if (Math.abs(det) < 1e-9) {
+                    throw new Error(texts.err_singular);
+                }
+                
+                // 计算伴随矩阵
+                const adjugate = n === 2 
+                    ? [
+                        [matrix[1][1], -matrix[0][1]],
+                        [-matrix[1][0], matrix[0][0]]
+                    ]
+                    : MatrixCalc.adjugate3x3(matrix);
+                
+                // 伴随矩阵除以行列式
+                return adjugate.map(row => row.map(val => val / det));
+            },
+
+            // 3x3矩阵行列式
+            determinant3x3: (m) => {
+                return m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+                     - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+                     + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+            },
+
+            // 3x3矩阵伴随矩阵
+            adjugate3x3: (m) => {
+                return [
+                    [
+                        m[1][1] * m[2][2] - m[1][2] * m[2][1],
+                        m[0][2] * m[2][1] - m[0][1] * m[2][2],
+                        m[0][1] * m[1][2] - m[0][2] * m[1][1]
+                    ],
+                    [
+                        m[1][2] * m[2][0] - m[1][0] * m[2][2],
+                        m[0][0] * m[2][2] - m[0][2] * m[2][0],
+                        m[0][2] * m[1][0] - m[0][0] * m[1][2]
+                    ],
+                    [
+                        m[1][0] * m[2][1] - m[1][1] * m[2][0],
+                        m[0][1] * m[2][0] - m[0][0] * m[2][1],
+                        m[0][0] * m[1][1] - m[0][1] * m[1][0]
+                    ]
+                ];
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', MatrixCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('matrix-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    MatrixCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

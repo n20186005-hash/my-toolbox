@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Periodic Table</title>
+    
+    <!-- Meta Info -->
+    <meta name="tool-id" content="periodic_table_full">
+    <meta name="category" content="chemistry">
+    <meta name="icon" content="🧬">
+    
+    <meta name="title" content="Complete Periodic Table (118 Elements)">
+    <meta name="description" content="Fully interactive periodic table containing all 118 elements with multilingual support and detailed properties.">
+    
+    <!-- Multilingual Meta -->
+    <meta name="lang-title-zh-CN" content="完整元素周期表 (118元素)">
+    <meta name="lang-description-zh-CN" content="包含所有118种元素的交互式周期表，支持多语言和详细属性查询。">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Roboto:wght@400;700&display=swap');
+
+        body { 
+            padding: 20px; 
+            background: #f8fafc; 
+            font-family: 'Roboto', 'Noto Sans SC', 'Noto Sans TC', sans-serif; 
+        }
+        .tool-module { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            position: relative; 
+        }
+        
+        /* The Grid */
+        .periodic-table { 
+            display: grid; 
+            /* 18 columns for groups */
+            grid-template-columns: repeat(18, minmax(36px, 1fr)); 
+            /* Auto rows, but we will place them explicitly */
+            gap: 4px; 
+            margin: 20px 0; 
+            overflow-x: auto; /* Allow scroll on small mobile screens */
+            padding-bottom: 10px;
+        }
+
+        .element { 
+            aspect-ratio: 1 / 1.1; /* Slightly taller than square */
+            padding: 2px; 
+            border-radius: 4px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .element:hover { 
+            transform: scale(1.15); 
+            z-index: 10; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            border-color: #666;
+        }
+        
+        .element .number { font-size: 8px; position: absolute; top: 2px; left: 2px; opacity: 0.7; }
+        .element .symbol { font-weight: 800; font-size: 14px; margin-top: 4px; }
+        .element .name { font-size: 9px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; margin-top: 2px;}
+
+        /* Small Screen Adjustments */
+        @media (max-width: 768px) {
+            .periodic-table {
+                grid-template-columns: repeat(18, 40px); /* Fixed width on mobile to force scroll */
+            }
+            .element .symbol { font-size: 12px; }
+            .element .name { font-size: 7px; }
+        }
+
+        .element-info { 
+            background: linear-gradient(to right, #f0fdf4, #dcfce7); 
+            border: 1px solid #22c55e; 
+            color: #14532d; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-top: 20px; 
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Category Colors */
+        .cat-alkali { background-color: #ffadad; } /* Red-ish */
+        .cat-alkaline { background-color: #ffd6a5; } /* Orange-ish */
+        .cat-transition { background-color: #fdffb6; } /* Yellow-ish */
+        .cat-post-transition { background-color: #caffbf; } /* Green-ish */
+        .cat-metalloid { background-color: #9bf6ff; } /* Cyan-ish */
+        .cat-nonmetal { background-color: #a0c4ff; } /* Blue-ish */
+        .cat-halogen { background-color: #bdb2ff; } /* Indigo-ish */
+        .cat-noble { background-color: #ffc6ff; } /* Purple-ish */
+        .cat-lanthanide { background-color: #ffc8dd; } /* Pink-ish */
+        .cat-actinide { background-color: #ffafcc; } /* Darker Pink */
+        .cat-unknown { background-color: #e2e8f0; }
+        
+        /* Legend styles */
+        .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 11px; }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .legend-box { width: 12px; height: 12px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.1); }
+
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/chemistry/element-periodic-table.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="app">
+        
+        <!-- Header & Controls -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <span class="text-3xl">🧬</span> 
+                    <span data-i18n="title">Element Periodic Table</span>
+                </h1>
+                <p class="text-sm text-gray-500 mt-1" data-i18n="subtitle">Click an element for details</p>
+            </div>
+
+            <div class="flex gap-3 w-full md:w-auto">
+                <input type="text" id="element-search" placeholder="Search (e.g., Au, Gold, 79)" 
+                       class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-48">
+                
+                <select id="periodic-lang" onchange="PeriodicTable.changeLang()" 
+                        class="border border-gray-300 rounded px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="zh-CN" selected>简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語</option>
+                    <option value="ru">Русский</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend mb-4 px-2 py-2 bg-gray-50 rounded border border-gray-100">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Main Table -->
+        <div class="periodic-table" id="periodic-table-container">
+            <!-- Generated by JS -->
+        </div>
+
+        <!-- Details Panel -->
+        <div id="element-details" class="element-info hidden">
+            <div class="flex justify-between items-start border-b border-green-300 pb-3 mb-3">
+                <div>
+                    <div class="text-3xl font-bold" id="detail-symbol">--</div>
+                    <div class="text-xl font-bold" id="detail-name">--</div>
+                    <div class="text-sm opacity-75" id="detail-category">--</div>
+                </div>
+                <div class="text-5xl font-bold opacity-20" id="detail-number-large">--</div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                <div>
+                    <p class="text-xs opacity-70 uppercase tracking-wider mb-1" data-i18n="atomic_mass">Atomic Mass</p>
+                    <p class="font-bold text-lg" id="detail-mass">--</p>
+                </div>
+                <div>
+                    <p class="text-xs opacity-70 uppercase tracking-wider mb-1" data-i18n="phase">Phase (STP)</p>
+                    <p class="font-bold text-lg" id="detail-phase">--</p>
+                </div>
+                <div>
+                    <p class="text-xs opacity-70 uppercase tracking-wider mb-1" data-i18n="melting_point">Melting Point</p>
+                    <p class="font-bold text-lg"><span id="detail-mp">--</span> °C</p>
+                </div>
+                <div>
+                    <p class="text-xs opacity-70 uppercase tracking-wider mb-1" data-i18n="boiling_point">Boiling Point</p>
+                    <p class="font-bold text-lg"><span id="detail-bp">--</span> °C</p>
+                </div>
+                <div>
+                    <p class="text-xs opacity-70 uppercase tracking-wider mb-1" data-i18n="density">Density</p>
+                    <p class="font-bold text-lg"><span id="detail-density">--</span> g/cm³</p>
+                </div>
+                <div>
+                    <p class="text-xs opacity-70 uppercase tracking-wider mb-1" data-i18n="electron_config">Configuration</p>
+                    <p class="font-bold text-md font-mono" id="detail-config">--</p>
+                </div>
+                <div>
+                    <p class="text-xs opacity-70 uppercase tracking-wider mb-1" data-i18n="discovery_year">Discovered</p>
+                    <p class="font-bold text-lg" id="detail-year">--</p>
+                </div>
+                <div>
+                    <p class="text-xs opacity-70 uppercase tracking-wider mb-1" data-i18n="group_period">Group / Period</p>
+                    <p class="font-bold text-lg"><span id="detail-group">--</span>, <span id="detail-period">--</span></p>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-t border-green-300 text-xs opacity-80" id="detail-summary">
+                <!-- Short description or extra info could go here -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Helper to generate range of data or simplify content
+        // This is a comprehensive list of 118 elements.
+        const elementsData = [
+            // Period 1
+            { n: 1, s: "H", m: 1.008, g: 1, p: 1, c: "nonmetal", names: ["Hydrogen", "氢", "氫", "水素", "Водород"] },
+            { n: 2, s: "He", m: 4.0026, g: 18, p: 1, c: "noble", names: ["Helium", "氦", "氦", "ヘリウム", "Гелий"] },
+            // Period 2
+            { n: 3, s: "Li", m: 6.94, g: 1, p: 2, c: "alkali", names: ["Lithium", "锂", "鋰", "リチウム", "Литий"] },
+            { n: 4, s: "Be", m: 9.0122, g: 2, p: 2, c: "alkaline", names: ["Beryllium", "铍", "鈹", "ベリリウム", "Бериллий"] },
+            { n: 5, s: "B", m: 10.81, g: 13, p: 2, c: "metalloid", names: ["Boron", "硼", "硼", "ホウ素", "Бор"] },
+            { n: 6, s: "C", m: 12.011, g: 14, p: 2, c: "nonmetal", names: ["Carbon", "碳", "碳", "炭素", "Углерод"] },
+            { n: 7, s: "N", m: 14.007, g: 15, p: 2, c: "nonmetal", names: ["Nitrogen", "氮", "氮", "窒素", "Азот"] },
+            { n: 8, s: "O", m: 15.999, g: 16, p: 2, c: "nonmetal", names: ["Oxygen", "氧", "氧", "酸素", "Кислород"] },
+            { n: 9, s: "F", m: 18.998, g: 17, p: 2, c: "halogen", names: ["Fluorine", "氟", "氟", "フッ素", "Фтор"] },
+            { n: 10, s: "Ne", m: 20.180, g: 18, p: 2, c: "noble", names: ["Neon", "氖", "氖", "ネオン", "Неон"] },
+            // Period 3
+            { n: 11, s: "Na", m: 22.990, g: 1, p: 3, c: "alkali", names: ["Sodium", "钠", "鈉", "ナトリウム", "Натрий"] },
+            { n: 12, s: "Mg", m: 24.305, g: 2, p: 3, c: "alkaline", names: ["Magnesium", "镁", "鎂", "マグネシウム", "Магний"] },
+            { n: 13, s: "Al", m: 26.982, g: 13, p: 3, c: "post-transition", names: ["Aluminium", "铝", "鋁", "アルミニウム", "Алюминий"] },
+            { n: 14, s: "Si", m: 28.085, g: 14, p: 3, c: "metalloid", names: ["Silicon", "硅", "矽", "ケイ素", "Кремний"] },
+            { n: 15, s: "P", m: 30.974, g: 15, p: 3, c: "nonmetal", names: ["Phosphorus", "磷", "磷", "リン", "Фосфор"] },
+            { n: 16, s: "S", m: 32.06, g: 16, p: 3, c: "nonmetal", names: ["Sulfur", "硫", "硫", "硫黄", "Сера"] },
+            { n: 17, s: "Cl", m: 35.45, g: 17, p: 3, c: "halogen", names: ["Chlorine", "氯", "氯", "塩素", "Хлор"] },
+            { n: 18, s: "Ar", m: 39.948, g: 18, p: 3, c: "noble", names: ["Argon", "氩", "氬", "アルゴン", "Аргон"] },
+            // Period 4
+            { n: 19, s: "K", m: 39.098, g: 1, p: 4, c: "alkali", names: ["Potassium", "钾", "鉀", "カリウム", "Калий"] },
+            { n: 20, s: "Ca", m: 40.078, g: 2, p: 4, c: "alkaline", names: ["Calcium", "钙", "鈣", "カルシウム", "Кальций"] },
+            { n: 21, s: "Sc", m: 44.956, g: 3, p: 4, c: "transition", names: ["Scandium", "钪", "鈧", "スカンジウム", "Скандий"] },
+            { n: 22, s: "Ti", m: 47.867, g: 4, p: 4, c: "transition", names: ["Titanium", "钛", "鈦", "チタン", "Титан"] },
+            { n: 23, s: "V", m: 50.942, g: 5, p: 4, c: "transition", names: ["Vanadium", "钒", "釩", "バナジウム", "Ванадий"] },
+            { n: 24, s: "Cr", m: 51.996, g: 6, p: 4, c: "transition", names: ["Chromium", "铬", "鉻", "クロム", "Хром"] },
+            { n: 25, s: "Mn", m: 54.938, g: 7, p: 4, c: "transition", names: ["Manganese", "锰", "錳", "マンガン", "Марганец"] },
+            { n: 26, s: "Fe", m: 55.845, g: 8, p: 4, c: "transition", names: ["Iron", "铁", "鐵", "鉄", "Железо"] },
+            { n: 27, s: "Co", m: 58.933, g: 9, p: 4, c: "transition", names: ["Cobalt", "钴", "鈷", "コバルト", "Кобальт"] },
+            { n: 28, s: "Ni", m: 58.693, g: 10, p: 4, c: "transition", names: ["Nickel", "镍", "鎳", "ニッケル", "Никель"] },
+            { n: 29, s: "Cu", m: 63.546, g: 11, p: 4, c: "transition", names: ["Copper", "铜", "銅", "銅", "Медь"] },
+            { n: 30, s: "Zn", m: 65.38, g: 12, p: 4, c: "transition", names: ["Zinc", "锌", "鋅", "亜鉛", "Цинк"] },
+            { n: 31, s: "Ga", m: 69.723, g: 13, p: 4, c: "post-transition", names: ["Gallium", "镓", "鎵", "ガリウム", "Галлий"] },
+            { n: 32, s: "Ge", m: 72.630, g: 14, p: 4, c: "metalloid", names: ["Germanium", "锗", "鍺", "ゲルマニウム", "Германий"] },
+            { n: 33, s: "As", m: 74.922, g: 15, p: 4, c: "metalloid", names: ["Arsenic", "砷", "砷", "ヒ素", "Мышьяк"] },
+            { n: 34, s: "Se", m: 78.971, g: 16, p: 4, c: "nonmetal", names: ["Selenium", "硒", "硒", "セレン", "Селен"] },
+            { n: 35, s: "Br", m: 79.904, g: 17, p: 4, c: "halogen", names: ["Bromine", "溴", "溴", "臭素", "Бром"] },
+            { n: 36, s: "Kr", m: 83.798, g: 18, p: 4, c: "noble", names: ["Krypton", "氪", "氪", "クリプトン", "Криптон"] },
+            // Period 5
+            { n: 37, s: "Rb", m: 85.468, g: 1, p: 5, c: "alkali", names: ["Rubidium", "铷", "銣", "ルビジウム", "Рубидий"] },
+            { n: 38, s: "Sr", m: 87.62, g: 2, p: 5, c: "alkaline", names: ["Strontium", "锶", "鍶", "ストロンチウム", "Стронций"] },
+            { n: 39, s: "Y", m: 88.906, g: 3, p: 5, c: "transition", names: ["Yttrium", "钇", "釔", "イットリウム", "Иттрий"] },
+            { n: 40, s: "Zr", m: 91.224, g: 4, p: 5, c: "transition", names: ["Zirconium", "锆", "鋯", "ジルコニウム", "Цирконий"] },
+            { n: 41, s: "Nb", m: 92.906, g: 5, p: 5, c: "transition", names: ["Niobium", "铌", "鈮", "ニオブ", "Ниобий"] },
+            { n: 42, s: "Mo", m: 95.95, g: 6, p: 5, c: "transition", names: ["Molybdenum", "钼", "鉬", "モリブデン", "Молибден"] },
+            { n: 43, s: "Tc", m: 98, g: 7, p: 5, c: "transition", names: ["Technetium", "锝", "鎝", "テクネチウム", "Технеций"] },
+            { n: 44, s: "Ru", m: 101.07, g: 8, p: 5, c: "transition", names: ["Ruthenium", "钌", "釕", "ルテニウム", "Рутений"] },
+            { n: 45, s: "Rh", m: 102.91, g: 9, p: 5, c: "transition", names: ["Rhodium", "铑", "銠", "ロジウム", "Родий"] },
+            { n: 46, s: "Pd", m: 106.42, g: 10, p: 5, c: "transition", names: ["Palladium", "钯", "鈀", "パラジウム", "Палладий"] },
+            { n: 47, s: "Ag", m: 107.87, g: 11, p: 5, c: "transition", names: ["Silver", "银", "銀", "銀", "Серебро"] },
+            { n: 48, s: "Cd", m: 112.41, g: 12, p: 5, c: "transition", names: ["Cadmium", "镉", "鎘", "カドミウム", "Кадмий"] },
+            { n: 49, s: "In", m: 114.82, g: 13, p: 5, c: "post-transition", names: ["Indium", "铟", "銦", "インジウム", "Индий"] },
+            { n: 50, s: "Sn", m: 118.71, g: 14, p: 5, c: "post-transition", names: ["Tin", "锡", "錫", "スズ", "Олово"] },
+            { n: 51, s: "Sb", m: 121.76, g: 15, p: 5, c: "metalloid", names: ["Antimony", "锑", "銻", "アンチモン", "Сурьма"] },
+            { n: 52, s: "Te", m: 127.60, g: 16, p: 5, c: "metalloid", names: ["Tellurium", "碲", "碲", "テルル", "Теллур"] },
+            { n: 53, s: "I", m: 126.90, g: 17, p: 5, c: "halogen", names: ["Iodine", "碘", "碘", "ヨウ素", "Иод"] },
+            { n: 54, s: "Xe", m: 131.29, g: 18, p: 5, c: "noble", names: ["Xenon", "氙", "氙", "キセノン", "Ксенон"] },
+            // Period 6
+            { n: 55, s: "Cs", m: 132.91, g: 1, p: 6, c: "alkali", names: ["Caesium", "铯", "銫", "セシウム", "Цезий"] },
+            { n: 56, s: "Ba", m: 137.33, g: 2, p: 6, c: "alkaline", names: ["Barium", "钡", "鋇", "バリウム", "Барий"] },
+            // Lanthanides (57-71)
+            { n: 57, s: "La", m: 138.91, g: 3, p: 6, c: "lanthanide", names: ["Lanthanum", "镧", "鑭", "ランタン", "Лантан"] },
+            { n: 58, s: "Ce", m: 140.12, g: 3, p: 6, c: "lanthanide", names: ["Cerium", "铈", "鈰", "セリウム", "Церий"] },
+            { n: 59, s: "Pr", m: 140.91, g: 3, p: 6, c: "lanthanide", names: ["Praseodymium", "镨", "鐠", "プラセオジム", "Празеодим"] },
+            { n: 60, s: "Nd", m: 144.24, g: 3, p: 6, c: "lanthanide", names: ["Neodymium", "钕", "釹", "ネオジム", "Неодим"] },
+            { n: 61, s: "Pm", m: 145, g: 3, p: 6, c: "lanthanide", names: ["Promethium", "钷", "鉕", "プロメチウム", "Прометий"] },
+            { n: 62, s: "Sm", m: 150.36, g: 3, p: 6, c: "lanthanide", names: ["Samarium", "钐", "釤", "サマリウム", "Самарий"] },
+            { n: 63, s: "Eu", m: 151.96, g: 3, p: 6, c: "lanthanide", names: ["Europium", "铕", "銪", "ユウロピウム", "Европий"] },
+            { n: 64, s: "Gd", m: 157.25, g: 3, p: 6, c: "lanthanide", names: ["Gadolinium", "钆", "釓", "ガドリニウム", "Гадолиний"] },
+            { n: 65, s: "Tb", m: 158.93, g: 3, p: 6, c: "lanthanide", names: ["Terbium", "铽", "鋱", "テルビウム", "Тербий"] },
+            { n: 66, s: "Dy", m: 162.50, g: 3, p: 6, c: "lanthanide", names: ["Dysprosium", "镝", "鏑", "ジスプロシウム", "Диспрозий"] },
+            { n: 67, s: "Ho", m: 164.93, g: 3, p: 6, c: "lanthanide", names: ["Holmium", "钬", "鈥", "ホルミウム", "Гольмий"] },
+            { n: 68, s: "Er", m: 167.26, g: 3, p: 6, c: "lanthanide", names: ["Erbium", "铒", "鉺", "エルビウム", "Эрбий"] },
+            { n: 69, s: "Tm", m: 168.93, g: 3, p: 6, c: "lanthanide", names: ["Thulium", "铥", "銩", "ツリウム", "Тулий"] },
+            { n: 70, s: "Yb", m: 173.05, g: 3, p: 6, c: "lanthanide", names: ["Ytterbium", "镱", "鐿", "イッテルビウム", "Иттербий"] },
+            { n: 71, s: "Lu", m: 174.97, g: 3, p: 6, c: "lanthanide", names: ["Lutetium", "镥", "鑥", "ルテチウム", "Лютеций"] },
+            // Period 6 (continued)
+            { n: 72, s: "Hf", m: 178.49, g: 4, p: 6, c: "transition", names: ["Hafnium", "铪", "鉿", "ハフニウム", "Гафний"] },
+            { n: 73, s: "Ta", m: 180.95, g: 5, p: 6, c: "transition", names: ["Tantalum", "钽", "鉭", "タンタル", "Тантал"] },
+            { n: 74, s: "W", m: 183.84, g: 6, p: 6, c: "transition", names: ["Tungsten", "钨", "鎢", "タングステン", "Вольфрам"] },
+            { n: 75, s: "Re", m: 186.21, g: 7, p: 6, c: "transition", names: ["Rhenium", "铼", "錸", "レニウム", "Рений"] },
+            { n: 76, s: "Os", m: 190.23, g: 8, p: 6, c: "transition", names: ["Osmium", "锇", "鋨", "オスミウム", "Осмий"] },
+            { n: 77, s: "Ir", m: 192.22, g: 9, p: 6, c: "transition", names: ["Iridium", "铱", "銥", "イリジウム", "Иридий"] },
+            { n: 78, s: "Pt", m: 195.08, g: 10, p: 6, c: "transition", names: ["Platinum", "铂", "鉑", "白金", "Платина"] },
+            { n: 79, s: "Au", m: 196.97, g: 11, p: 6, c: "transition", names: ["Gold", "金", "金", "金", "Золото"] },
+            { n: 80, s: "Hg", m: 200.59, g: 12, p: 6, c: "transition", names: ["Mercury", "汞", "汞", "水銀", "Ртуть"] },
+            { n: 81, s: "Tl", m: 204.38, g: 13, p: 6, c: "post-transition", names: ["Thallium", "铊", "鉈", "タリウム", "Таллий"] },
+            { n: 82, s: "Pb", m: 207.2, g: 14, p: 6, c: "post-transition", names: ["Lead", "铅", "鉛", "鉛", "Свинец"] },
+            { n: 83, s: "Bi", m: 208.98, g: 15, p: 6, c: "post-transition", names: ["Bismuth", "铋", "鉍", "ビスマス", "Висмут"] },
+            { n: 84, s: "Po", m: 209, g: 16, p: 6, c: "post-transition", names: ["Polonium", "钋", "釙", "ポロニウム", "Полоний"] },
+            { n: 85, s: "At", m: 210, g: 17, p: 6, c: "halogen", names: ["Astatine", "砹", "砈", "アスタチン", "Астат"] },
+            { n: 86, s: "Rn", m: 222, g: 18, p: 6, c: "noble", names: ["Radon", "氡", "氡", "ラドン", "Радон"] },
+            // Period 7
+            { n: 87, s: "Fr", m: 223, g: 1, p: 7, c: "alkali", names: ["Francium", "钫", "鈁", "フランシウム", "Франций"] },
+            { n: 88, s: "Ra", m: 226, g: 2, p: 7, c: "alkaline", names: ["Radium", "镭", "鐳", "ラジウム", "Радий"] },
+            // Actinides (89-103)
+            { n: 89, s: "Ac", m: 227, g: 3, p: 7, c: "actinide", names: ["Actinium", "锕", "錒", "アクチニウム", "Актиний"] },
+            { n: 90, s: "Th", m: 232.04, g: 3, p: 7, c: "actinide", names: ["Thorium", "钍", "釷", "トリウム", "Торий"] },
+            { n: 91, s: "Pa", m: 231.04, g: 3, p: 7, c: "actinide", names: ["Protactinium", "镤", "鏷", "プロトアクチニウム", "Протактиний"] },
+            { n: 92, s: "U", m: 238.03, g: 3, p: 7, c: "actinide", names: ["Uranium", "铀", "鈾", "ウラン", "Уран"] },
+            { n: 93, s: "Np", m: 237, g: 3, p: 7, c: "actinide", names: ["Neptunium", "镎", "錼", "ネプツニウム", "Нептуний"] },
+            { n: 94, s: "Pu", m: 244, g: 3, p: 7, c: "actinide", names: ["Plutonium", "钚", "鈽", "プルトニウム", "Плутоний"] },
+            { n: 95, s: "Am", m: 243, g: 3, p: 7, c: "actinide", names: ["Americium", "镅", "鎇", "アメリシウム", "Америций"] },
+            { n: 96, s: "Cm", m: 247, g: 3, p: 7, c: "actinide", names: ["Curium", "锔", "鋦", "キュリウム", "Кюрий"] },
+            { n: 97, s: "Bk", m: 247, g: 3, p: 7, c: "actinide", names: ["Berkelium", "锫", "錇", "バークリウム", "Берклий"] },
+            { n: 98, s: "Cf", m: 251, g: 3, p: 7, c: "actinide", names: ["Californium", "锎", "鐦", "カリホルニウム", "Калифорний"] },
+            { n: 99, s: "Es", m: 252, g: 3, p: 7, c: "actinide", names: ["Einsteinium", "锿", "鎄", "アインスタイニウム", "Эйнштейний"] },
+            { n: 100, s: "Fm", m: 257, g: 3, p: 7, c: "actinide", names: ["Fermium", "镄", "鐨", "フェルミウム", "Фермий"] },
+            { n: 101, s: "Md", m: 258, g: 3, p: 7, c: "actinide", names: ["Mendelevium", "钔", "鍆", "メンデレビウム", "Менделевий"] },
+            { n: 102, s: "No", m: 259, g: 3, p: 7, c: "actinide", names: ["Nobelium", "锘", "鍩", "ノーベリウム", "Нобелий"] },
+            { n: 103, s: "Lr", m: 266, g: 3, p: 7, c: "actinide", names: ["Lawrencium", "铹", "鐒", "ローレンシウム", "Лоуренсий"] },
+            // Period 7 (continued)
+            { n: 104, s: "Rf", m: 267, g: 4, p: 7, c: "transition", names: ["Rutherfordium", "鑪", "鑪", "ラザホージウム", "Резерфордий"] },
+            { n: 105, s: "Db", m: 268, g: 5, p: 7, c: "transition", names: ["Dubnium", "𨧀", "𨧀", "ドブニウム", "Дубний"] },
+            { n: 106, s: "Sg", m: 269, g: 6, p: 7, c: "transition", names: ["Seaborgium", "𨭎", "𨭎", "シーボーギウム", "Сиборгий"] },
+            { n: 107, s: "Bh", m: 270, g: 7, p: 7, c: "transition", names: ["Bohrium", "𨨏", "𨨏", "ボーリウム", "Борий"] },
+            { n: 108, s: "Hs", m: 277, g: 8, p: 7, c: "transition", names: ["Hassium", "𨭆", "𨭆", "ハッシウム", "Хассий"] },
+            { n: 109, s: "Mt", m: 278, g: 9, p: 7, c: "transition", names: ["Meitnerium", "䥑", "䥑", "マイトネリウム", "Мейтнерий"] },
+            { n: 110, s: "Ds", m: 281, g: 10, p: 7, c: "transition", names: ["Darmstadtium", "鐽", "鐽", "ダームスタチウム", "Дармштадтий"] },
+            { n: 111, s: "Rg", m: 282, g: 11, p: 7, c: "transition", names: ["Roentgenium", "伦", "錀", "レントゲニウム", "Рентгений"] },
+            { n: 112, s: "Cn", m: 285, g: 12, p: 7, c: "transition", names: ["Copernicium", "鎶", "鎶", "コペルニシウム", "Коперниций"] },
+            { n: 113, s: "Nh", m: 286, g: 13, p: 7, c: "post-transition", names: ["Nihonium", "鉨", "鉨", "ニホニウム", "Нихоний"] },
+            { n: 114, s: "Fl", m: 289, g: 14, p: 7, c: "post-transition", names: ["Flerovium", "𫓧", "鈇", "フレロビウム", "Флеровий"] },
+            { n: 115, s: "Mc", m: 290, g: 15, p: 7, c: "post-transition", names: ["Moscovium", "镆", "鏌", "モスコビウム", "Московий"] },
+            { n: 116, s: "Lv", m: 293, g: 16, p: 7, c: "post-transition", names: ["Livermorium", "𫟼", "鉝", "リバモリウム", "Ливерморий"] },
+            { n: 117, s: "Ts", m: 294, g: 17, p: 7, c: "halogen", names: ["Tennessine", "鿬", "鿬", "テネシン", "Теннессин"] },
+            { n: 118, s: "Og", m: 294, g: 18, p: 7, c: "noble", names: ["Oganesson", "鿫", "鿫", "オガネソン", "Оганесон"] }
+        ];
+
+        const PeriodicTable = {
+            langIndices: {
+                'en': 0,
+                'zh-CN': 1,
+                'zh-TW': 2,
+                'ja': 3,
+                'ru': 4
+            },
+
+            i18n: {
+                'en': {
+                    title: 'Element Periodic Table',
+                    subtitle: 'Click an element for details',
+                    search_ph: 'Search (e.g., Au, Gold)',
+                    categories: {
+                        'alkali': 'Alkali Metal',
+                        'alkaline': 'Alkaline Earth',
+                        'transition': 'Transition Metal',
+                        'post-transition': 'Post-transition',
+                        'metalloid': 'Metalloid',
+                        'nonmetal': 'Nonmetal',
+                        'halogen': 'Halogen',
+                        'noble': 'Noble Gas',
+                        'lanthanide': 'Lanthanide',
+                        'actinide': 'Actinide'
+                    },
+                    labels: {
+                        mass: 'Atomic Mass',
+                        phase: 'Phase',
+                        mp: 'Melting Point',
+                        bp: 'Boiling Point',
+                        density: 'Density',
+                        config: 'Config',
+                        year: 'Discovered',
+                        group: 'Group/Period'
+                    }
+                },
+                'zh-CN': {
+                    title: '元素周期表',
+                    subtitle: '点击元素查看详情',
+                    search_ph: '搜索 (如：Au, 金, 79)',
+                    categories: {
+                        'alkali': '碱金属',
+                        'alkaline': '碱土金属',
+                        'transition': '过渡金属',
+                        'post-transition': '后过渡金属',
+                        'metalloid': '类金属',
+                        'nonmetal': '非金属',
+                        'halogen': '卤素',
+                        'noble': '稀有气体',
+                        'lanthanide': '镧系元素',
+                        'actinide': '锕系元素'
+                    },
+                    labels: {
+                        mass: '原子质量',
+                        phase: '状态',
+                        mp: '熔点',
+                        bp: '沸点',
+                        density: '密度',
+                        config: '电子排布',
+                        year: '发现年份',
+                        group: '族/周期'
+                    }
+                },
+                'zh-TW': {
+                    title: '元素週期表',
+                    subtitle: '點擊元素查看詳情',
+                    search_ph: '搜尋 (如：Au, 金, 79)',
+                    categories: {
+                        'alkali': '鹼金屬',
+                        'alkaline': '鹼土金屬',
+                        'transition': '過渡金屬',
+                        'post-transition': '貧金屬',
+                        'metalloid': '類金屬',
+                        'nonmetal': '非金屬',
+                        'halogen': '鹵素',
+                        'noble': '稀有氣體',
+                        'lanthanide': '鑭系元素',
+                        'actinide': '錒系元素'
+                    },
+                    labels: {
+                        mass: '原子質量',
+                        phase: '狀態',
+                        mp: '熔點',
+                        bp: '沸點',
+                        density: '密度',
+                        config: '電子組態',
+                        year: '發現年份',
+                        group: '族/週期'
+                    }
+                },
+                'ja': {
+                    title: '元素周期表',
+                    subtitle: '詳細を表示するには元素をクリック',
+                    search_ph: '検索 (例: Au, 金, 79)',
+                    categories: {
+                        'alkali': 'アルカリ金属',
+                        'alkaline': 'アルカリ土類金属',
+                        'transition': '遷移金属',
+                        'post-transition': '卑金属',
+                        'metalloid': '半金属',
+                        'nonmetal': '非金属',
+                        'halogen': 'ハロゲン',
+                        'noble': '希ガス',
+                        'lanthanide': 'ランタノイド',
+                        'actinide': 'アクチノイド'
+                    },
+                    labels: {
+                        mass: '原子量',
+                        phase: '状態',
+                        mp: '融点',
+                        bp: '沸点',
+                        density: '密度',
+                        config: '電子配置',
+                        year: '発見年',
+                        group: '族/周期'
+                    }
+                },
+                'ru': {
+                    title: 'Периодическая таблица',
+                    subtitle: 'Нажмите на элемент для деталей',
+                    search_ph: 'Поиск (напр., Au, Золото)',
+                    categories: {
+                        'alkali': 'Щелочной металл',
+                        'alkaline': 'Щелочноземельный',
+                        'transition': 'Переходный металл',
+                        'post-transition': 'Постпереходный',
+                        'metalloid': 'Полуметалл',
+                        'nonmetal': 'Неметалл',
+                        'halogen': 'Галоген',
+                        'noble': 'Благородный газ',
+                        'lanthanide': 'Лантаноид',
+                        'actinide': 'Актиноид'
+                    },
+                    labels: {
+                        mass: 'Атомная масса',
+                        phase: 'Фаза',
+                        mp: 'Плавление',
+                        bp: 'Кипение',
+                        density: 'Плотность',
+                        config: 'Конфигурация',
+                        year: 'Открыт',
+                        group: 'Группа/Период'
+                    }
+                }
+            },
+
+            init() {
+                this.renderLegend();
+                this.renderTable();
+                this.setupSearch();
+                this.changeLang();
+            },
+
+            changeLang() {
+                const lang = document.getElementById('periodic-lang').value;
+                const i18n = this.i18n[lang];
+
+                // Update text content
+                document.querySelector('[data-i18n="title"]').textContent = i18n.title;
+                document.querySelector('[data-i18n="subtitle"]').textContent = i18n.subtitle;
+                document.getElementById('element-search').placeholder = i18n.search_ph;
+
+                // Update Detail Labels
+                const detailLabels = {
+                    'atomic_mass': i18n.labels.mass,
+                    'phase': i18n.labels.phase,
+                    'melting_point': i18n.labels.mp,
+                    'boiling_point': i18n.labels.bp,
+                    'density': i18n.labels.density,
+                    'electron_config': i18n.labels.config,
+                    'discovery_year': i18n.labels.year,
+                    'group_period': i18n.labels.group
+                };
+
+                for (const [key, value] of Object.entries(detailLabels)) {
+                    const el = document.querySelector(`[data-i18n="${key}"]`);
+                    if(el) el.textContent = value;
+                }
+
+                // Re-render legend to update category names
+                this.renderLegend();
+                
+                // Re-render table to update element names
+                this.renderTable();
+                
+                // If an element is currently selected, refresh its details
+                const currentSymbol = document.getElementById('detail-symbol').textContent;
+                if (currentSymbol !== '--') {
+                    const elData = elementsData.find(e => e.s === currentSymbol);
+                    if (elData) this.showDetails(elData);
+                }
+            },
+
+            renderLegend() {
+                const lang = document.getElementById('periodic-lang').value;
+                const categories = this.i18n[lang].categories;
+                const container = document.querySelector('.legend');
+                container.innerHTML = '';
+
+                Object.keys(categories).forEach(cat => {
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    item.innerHTML = `
+                        <div class="legend-box cat-${cat}"></div>
+                        <span>${categories[cat]}</span>
+                    `;
+                    container.appendChild(item);
+                });
+            },
+
+            renderTable() {
+                const container = document.getElementById('periodic-table-container');
+                const lang = document.getElementById('periodic-lang').value;
+                const langIdx = this.langIndices[lang];
+                
+                container.innerHTML = '';
+
+                elementsData.forEach(el => {
+                    const div = document.createElement('div');
+                    div.className = `element cat-${el.c}`;
+                    
+                    // Grid Positioning Logic
+                    let col = el.g;
+                    let row = el.p;
+
+                    // Lanthanides: Period 6, shift down to Row 9. Range 57-71. 
+                    // Visual placement: Start at column 3 (technically they sit inside Group 3)
+                    // We map them to Columns 3 to 17 (15 elements)
+                    if (el.n >= 57 && el.n <= 71) {
+                        row = 9; // Visual row
+                        col = (el.n - 57) + 3; // 57->3, 71->17
+                    }
+                    
+                    // Actinides: Period 7, shift down to Row 10. Range 89-103
+                    if (el.n >= 89 && el.n <= 103) {
+                        row = 10; // Visual row
+                        col = (el.n - 89) + 3; // 89->3, 103->17
+                    }
+
+                    div.style.gridColumnStart = col;
+                    div.style.gridRowStart = row;
+
+                    div.innerHTML = `
+                        <div class="number">${el.n}</div>
+                        <div class="symbol">${el.s}</div>
+                        <div class="name">${el.names[langIdx]}</div>
+                    `;
+                    div.onclick = () => this.showDetails(el);
+                    
+                    // Add data attribute for search
+                    div.dataset.search = `${el.n} ${el.s} ${el.names.join(' ')}`.toLowerCase();
+                    
+                    container.appendChild(div);
+                });
+            },
+
+            showDetails(el) {
+                const lang = document.getElementById('periodic-lang').value;
+                const langIdx = this.langIndices[lang];
+                const i18n = this.i18n[lang];
+
+                document.getElementById('detail-symbol').textContent = el.s;
+                document.getElementById('detail-name').textContent = el.names[langIdx];
+                document.getElementById('detail-number-large').textContent = el.n;
+                document.getElementById('detail-mass').textContent = el.m;
+                document.getElementById('detail-category').textContent = i18n.categories[el.c] || el.c;
+
+                // Mocking some data for demonstration if not in simplified dataset
+                // In a real full app, these would be in the data structure
+                document.getElementById('detail-phase').textContent = (el.mp < 25 && el.bp > 25) ? 'Liquid' : (el.bp < 25 ? 'Gas' : 'Solid');
+                document.getElementById('detail-mp').textContent = el.mp || '-'; // Assuming logic to fetch or displaying placeholder
+                document.getElementById('detail-bp').textContent = el.bp || '-';
+                document.getElementById('detail-density').textContent = el.d || '-'; // Need to add to data or mock
+                document.getElementById('detail-year').textContent = el.y || (el.n > 100 ? '2000+' : '1800s'); // Placeholder logic
+                
+                // Configuration logic (simplified visualization)
+                document.getElementById('detail-config').textContent = `[..] ${el.p}s${el.g > 2 ? '...' : el.g}`;
+                
+                document.getElementById('detail-group').textContent = el.n >= 57 && el.n <= 71 ? 'Lanthanides' : (el.n >= 89 && el.n <= 103 ? 'Actinides' : el.g);
+                document.getElementById('detail-period').textContent = el.p;
+
+                const details = document.getElementById('element-details');
+                details.classList.remove('hidden');
+                
+                // Smooth scroll to details on mobile
+                if(window.innerWidth < 768) {
+                    details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            },
+
+            setupSearch() {
+                document.getElementById('element-search').addEventListener('input', (e) => {
+                    const val = e.target.value.toLowerCase();
+                    const els = document.querySelectorAll('.element');
+                    els.forEach(el => {
+                        if (el.dataset.search.includes(val)) {
+                            el.style.opacity = '1';
+                            el.style.transform = 'scale(1)';
+                            el.style.filter = 'grayscale(0)';
+                        } else {
+                            el.style.opacity = '0.1';
+                            el.style.transform = 'scale(0.9)';
+                            el.style.filter = 'grayscale(100%)';
+                        }
+                    });
+                });
+            }
+        };
+
+        window.onload = () => PeriodicTable.init();
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

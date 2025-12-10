@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Sequence Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="number_sequence_calc">
+    <meta name="category" content="Math">
+    <meta name="icon" content="🔢">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Number Sequence Calculator">
+    <meta name="description" content="Generate arithmetic and geometric sequences with custom start, step/ratio, and length.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="数字序列计算器">
+    <meta name="lang-description-zh-CN" content="生成算术和几何序列，可自定义起始值、步长/比率和长度。">
+    
+    <meta name="lang-title-zh-TW" content="數字序列計算器">
+    <meta name="lang-description-zh-TW" content="生成算術和幾何序列，可自定義起始值、步長/比率和長度。">
+    
+    <meta name="lang-title-ja" content="数列計算ツール">
+    <meta name="lang-description-ja" content="等差数列と等比数列を生成します。開始値、ステップ/比率、長さをカスタマイズ可能です。">
+    
+    <meta name="lang-title-ru" content="Калькулятор числовых последовательностей">
+    <meta name="lang-description-ru" content="Генерация арифметических и геометрических последовательностей с пользовательским началом, шагом/отношением и длиной.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-container { word-break: break-all; }
+        .formula-box { background: #f8fafc; padding: 10px; border-radius: 6px; font-family: monospace; margin: 10px 0; }
+        .sequence-list { background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 15px 0; line-height: 1.6; }
+        .stats-box { background: #f0fdf4; padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .stat-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #dcfce7; }
+        .stat-item:last-child { border-bottom: none; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/number-sequence-calculator.html.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="number_sequence_calc" 
+         data-category="math" 
+         data-title="Number Sequence Calculator" 
+         data-icon="🔢">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="sequence-lang" onchange="NumberSequenceCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔢 Number Sequence Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 序列类型选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="sequence_type">Sequence Type</label>
+                <div class="radio-group" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="sequence-type" id="arithmetic" value="arithmetic" checked>
+                        <label for="arithmetic" data-i18n="arithmetic">Arithmetic (Constant Difference)</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="sequence-type" id="geometric" value="geometric">
+                        <label for="geometric" data-i18n="geometric">Geometric (Constant Ratio)</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 起始值输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="first_term">First Term (a₁)</label>
+                <input type="number" id="sequence-first" step="any" value="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 步长/比率输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" id="step-ratio-label" data-i18n="common_difference">Common Difference (d)</label>
+                <input type="number" id="sequence-step-ratio" step="any" value="3" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 项数输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="number_of_terms">Number of Terms (n)</label>
+                <input type="number" id="sequence-length" min="1" max="100" value="5" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 小数位数 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="decimal_places">Decimal Places</label>
+                <input type="number" id="sequence-decimals" min="0" max="10" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 显示统计信息 -->
+            <div>
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    <input type="checkbox" id="show-stats" checked class="rounded">
+                    <span data-i18n="show_stats">Show Sequence Statistics</span>
+                </label>
+            </div>
+            
+            <!-- 计算按钮 -->
+            <button onclick="NumberSequenceCalc.calculate()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Generate Sequence</button>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="sequence-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="sequence">Sequence</div>
+            <div id="sequence-result" class="text-lg text-blue-800 min-h-[60px] sequence-list">--</div>
+            
+            <!-- 公式展示 -->
+            <div id="sequence-formula" class="formula-box mt-4"></div>
+            
+            <!-- 统计信息 -->
+            <div id="stats-container" class="stats-box">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="statistics">Sequence Statistics:</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="stat-item">
+                        <span data-i18n="sum" class="text-gray-600">Sum:</span>
+                        <span id="sequence-sum" class="font-medium">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span data-i18n="last_term" class="text-gray-600">Last Term:</span>
+                        <span id="sequence-last" class="font-medium">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span data-i18n="average" class="text-gray-600">Average:</span>
+                        <span id="sequence-average" class="font-medium">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span id="special-stat-label" data-i18n="common_difference" class="text-gray-600">Common Difference:</span>
+                        <span id="special-stat-value" class="font-medium">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速示例 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="examples">Quick Examples:</p>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <div class="p-2 bg-white rounded text-center cursor-pointer hover:bg-gray-100" onclick="NumberSequenceCalc.loadExample('arithmetic', 2, 3, 5, 0)">Arithmetic: 2,5,8,11,14</div>
+                <div class="p-2 bg-white rounded text-center cursor-pointer hover:bg-gray-100" onclick="NumberSequenceCalc.loadExample('geometric', 2, 3, 5, 0)">Geometric: 2,6,18,54,162</div>
+                <div class="p-2 bg-white rounded text-center cursor-pointer hover:bg-gray-100" onclick="NumberSequenceCalc.loadExample('arithmetic', 10, -2, 6, 0)">Arithmetic: 10,8,6,4,2,0</div>
+                <div class="p-2 bg-white rounded text-center cursor-pointer hover:bg-gray-100" onclick="NumberSequenceCalc.loadExample('geometric', 1, 0.5, 5, 2)">Geometric: 1,0.5,0.25,0.12,0.06</div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" data-i18n="notes_list">
+                <li>Arithmetic sequence: each term increases by a constant difference (aₙ = a₁ + (n-1)d)</li>
+                <li>Geometric sequence: each term is multiplied by a constant ratio (aₙ = a₁ × r^(n-1))</li>
+                <li>Maximum number of terms is 100</li>
+                <li>For geometric sequences, a ratio of 0 will result in all subsequent terms being 0</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const NumberSequenceCalc = {
+            i18n: {
+                'en': {
+                    title: '🔢 Number Sequence Calculator',
+                    sequence_type: 'Sequence Type',
+                    arithmetic: 'Arithmetic (Constant Difference)',
+                    geometric: 'Geometric (Constant Ratio)',
+                    first_term: 'First Term (a₁)',
+                    common_difference: 'Common Difference (d)',
+                    common_ratio: 'Common Ratio (r)',
+                    number_of_terms: 'Number of Terms (n)',
+                    decimal_places: 'Decimal Places',
+                    show_stats: 'Show Sequence Statistics',
+                    calculate: 'Generate Sequence',
+                    sequence: 'Sequence',
+                    statistics: 'Sequence Statistics:',
+                    sum: 'Sum',
+                    last_term: 'Last Term',
+                    average: 'Average',
+                    examples: 'Quick Examples:',
+                    notes: 'Notes:',
+                    notes_list: `
+                        <li>Arithmetic sequence: each term increases by a constant difference (aₙ = a₁ + (n-1)d)</li>
+                        <li>Geometric sequence: each term is multiplied by a constant ratio (aₙ = a₁ × r^(n-1))</li>
+                        <li>Maximum number of terms is 100</li>
+                        <li>For geometric sequences, a ratio of 0 will result in all subsequent terms being 0</li>
+                    `,
+                    err_invalid_terms: 'Please enter a valid number of terms (1-100)',
+                    err_invalid_decimals: 'Please enter valid decimal places (0-10)',
+                    formula_arithmetic: 'Arithmetic: aₙ = a₁ + (n-1)d = {first} + (n-1)×{step} → {terms}',
+                    formula_geometric: 'Geometric: aₙ = a₁ × r^(n-1) = {first} × {step}^(n-1) → {terms}'
+                },
+                'zh-CN': {
+                    title: '🔢 数字序列计算器',
+                    sequence_type: '序列类型',
+                    arithmetic: '算术序列（常数差）',
+                    geometric: '几何序列（常数比）',
+                    first_term: '首项 (a₁)',
+                    common_difference: '公差 (d)',
+                    common_ratio: '公比 (r)',
+                    number_of_terms: '项数 (n)',
+                    decimal_places: '小数位数',
+                    show_stats: '显示序列统计信息',
+                    calculate: '生成序列',
+                    sequence: '序列',
+                    statistics: '序列统计信息：',
+                    sum: '总和',
+                    last_term: '末项',
+                    average: '平均值',
+                    examples: '快速示例：',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>算术序列：每一项增加一个常数差（aₙ = a₁ + (n-1)d）</li>
+                        <li>几何序列：每一项乘以一个常数比（aₙ = a₁ × r^(n-1)）</li>
+                        <li>最大项数为100</li>
+                        <li>对于几何序列，比率为0将导致所有后续项都为0</li>
+                    `,
+                    err_invalid_terms: '请输入有效的项数（1-100）',
+                    err_invalid_decimals: '请输入有效的小数位数（0-10）',
+                    formula_arithmetic: '算术：aₙ = a₁ + (n-1)d = {first} + (n-1)×{step} → {terms}',
+                    formula_geometric: '几何：aₙ = a₁ × r^(n-1) = {first} × {step}^(n-1) → {terms}'
+                },
+                'zh-TW': {
+                    title: '🔢 數字序列計算器',
+                    sequence_type: '序列類型',
+                    arithmetic: '算術序列（常數差）',
+                    geometric: '幾何序列（常數比）',
+                    first_term: '首項 (a₁)',
+                    common_difference: '公差 (d)',
+                    common_ratio: '公比 (r)',
+                    number_of_terms: '項數 (n)',
+                    decimal_places: '小數位數',
+                    show_stats: '顯示序列統計信息',
+                    calculate: '生成序列',
+                    sequence: '序列',
+                    statistics: '序列統計信息：',
+                    sum: '總和',
+                    last_term: '末項',
+                    average: '平均值',
+                    examples: '快速示例：',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>算術序列：每一項增加一個常數差（aₙ = a₁ + (n-1)d）</li>
+                        <li>幾何序列：每一項乘以一個常數比（aₙ = a₁ × r^(n-1)）</li>
+                        <li>最大項數為100</li>
+                        <li>對於幾何序列，比率為0將導致所有後續項都為0</li>
+                    `,
+                    err_invalid_terms: '請輸入有效的項數（1-100）',
+                    err_invalid_decimals: '請輸入有效的小數位數（0-10）',
+                    formula_arithmetic: '算術：aₙ = a₁ + (n-1)d = {first} + (n-1)×{step} → {terms}',
+                    formula_geometric: '幾何：aₙ = a₁ × r^(n-1) = {first} × {step}^(n-1) → {terms}'
+                },
+                'ja': {
+                    title: '🔢 数列計算ツール',
+                    sequence_type: '数列の種類',
+                    arithmetic: '等差数列（定差）',
+                    geometric: '等比数列（定比）',
+                    first_term: '初項 (a₁)',
+                    common_difference: '公差 (d)',
+                    common_ratio: '公比 (r)',
+                    number_of_terms: '項数 (n)',
+                    decimal_places: '小数桁数',
+                    show_stats: '数列統計を表示',
+                    calculate: '数列を生成',
+                    sequence: '数列',
+                    statistics: '数列統計：',
+                    sum: '合計',
+                    last_term: '最終項',
+                    average: '平均値',
+                    examples: 'クイックサンプル：',
+                    notes: '注意：',
+                    notes_list: `
+                        <li>等差数列：各項は定差で増加します（aₙ = a₁ + (n-1)d）</li>
+                        <li>等比数列：各項は定比で乗算されます（aₙ = a₁ × r^(n-1)）</li>
+                        <li>最大項数は100です</li>
+                        <li>等比数列の場合、比が0のときはそれ以降の項はすべて0になります</li>
+                    `,
+                    err_invalid_terms: '有効な項数を入力してください（1-100）',
+                    err_invalid_decimals: '有効な小数桁数を入力してください（0-10）',
+                    formula_arithmetic: '等差数列：aₙ = a₁ + (n-1)d = {first} + (n-1)×{step} → {terms}',
+                    formula_geometric: '等比数列：aₙ = a₁ × r^(n-1) = {first} × {step}^(n-1) → {terms}'
+                },
+                'ru': {
+                    title: '🔢 Калькулятор числовых последовательностей',
+                    sequence_type: 'Тип последовательности',
+                    arithmetic: 'Арифметическая (постоянная разница)',
+                    geometric: 'Геометрическая (постоянное отношение)',
+                    first_term: 'Первый член (a₁)',
+                    common_difference: 'Общая разница (d)',
+                    common_ratio: 'Общее отношение (r)',
+                    number_of_terms: 'Количество членов (n)',
+                    decimal_places: 'Десятичные знаки',
+                    show_stats: 'Показать статистику последовательности',
+                    calculate: 'Сгенерировать последовательность',
+                    sequence: 'Последовательность',
+                    statistics: 'Статистика последовательности:',
+                    sum: 'Сумма',
+                    last_term: 'Последний член',
+                    average: 'Среднее значение',
+                    examples: 'Быстрые примеры:',
+                    notes: 'Примечания:',
+                    notes_list: `
+                        <li>Арифметическая последовательность: каждый член увеличивается на постоянную разницу (aₙ = a₁ + (n-1)d)</li>
+                        <li>Геометрическая последовательность: каждый член умножается на постоянное отношение (aₙ = a₁ × r^(n-1))</li>
+                        <li>Максимальное количество членов - 100</li>
+                        <li>Для геометрических последовательностей отношение 0 приведет к тому, что все последующие члены будут равны 0</li>
+                    `,
+                    err_invalid_terms: 'Пожалуйста, введите допустимое количество членов (1-100)',
+                    err_invalid_decimals: 'Пожалуйста, введите допустимое количество десятичных знаков (0-10)',
+                    formula_arithmetic: 'Арифметическая: aₙ = a₁ + (n-1)d = {first} + (n-1)×{step} → {terms}',
+                    formula_geometric: 'Геометрическая: aₙ = a₁ × r^(n-1) = {first} × {step}^(n-1) → {terms}'
+                }
+            },
+
+            init: () => {
+                // 设置默认值
+                document.getElementById('sequence-first').value = '2';
+                document.getElementById('sequence-step-ratio').value = '3';
+                document.getElementById('sequence-length').value = '5';
+                document.getElementById('sequence-decimals').value = '0';
+                
+                // 监听序列类型切换
+                document.querySelectorAll('input[name="sequence-type"]').forEach(radio => {
+                    radio.addEventListener('change', NumberSequenceCalc.toggleSequenceType);
+                });
+                
+                // 监听统计信息显示切换
+                document.getElementById('show-stats').addEventListener('change', () => {
+                    const statsContainer = document.getElementById('stats-container');
+                    statsContainer.style.display = document.getElementById('show-stats').checked ? 'block' : 'none';
+                });
+                
+                // 初始设置
+                NumberSequenceCalc.toggleSequenceType();
+            },
+
+            toggleSequenceType: () => {
+                const isArithmetic = document.getElementById('arithmetic').checked;
+                const label = document.getElementById('step-ratio-label');
+                const specialStatLabel = document.getElementById('special-stat-label');
+                
+                // 更新标签文本
+                if (isArithmetic) {
+                    label.setAttribute('data-i18n', 'common_difference');
+                    specialStatLabel.setAttribute('data-i18n', 'common_difference');
+                } else {
+                    label.setAttribute('data-i18n', 'common_ratio');
+                    specialStatLabel.setAttribute('data-i18n', 'common_ratio');
+                }
+                
+                // 更新当前语言的文本
+                const currentLang = document.getElementById('sequence-lang').value;
+                NumberSequenceCalc.updateLabels(currentLang);
+                
+                // 清空错误提示
+                NumberSequenceCalc.clearError();
+            },
+
+            updateLabels: (lang) => {
+                const texts = NumberSequenceCalc.i18n[lang];
+                const label = document.getElementById('step-ratio-label');
+                const specialStatLabel = document.getElementById('special-stat-label');
+                
+                label.innerText = texts[label.getAttribute('data-i18n')];
+                specialStatLabel.innerText = texts[specialStatLabel.getAttribute('data-i18n')];
+            },
+
+            loadExample: (type, first, stepRatio, length, decimals) => {
+                document.getElementById('sequence-first').value = first;
+                document.getElementById('sequence-step-ratio').value = stepRatio;
+                document.getElementById('sequence-length').value = length;
+                document.getElementById('sequence-decimals').value = decimals;
+                
+                if (type === 'arithmetic') {
+                    document.getElementById('arithmetic').checked = true;
+                } else {
+                    document.getElementById('geometric').checked = true;
+                }
+                
+                NumberSequenceCalc.toggleSequenceType();
+                NumberSequenceCalc.calculate();
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('sequence-lang').value;
+                const texts = NumberSequenceCalc.i18n[lang];
+                
+                // 更新普通文本
+                document.querySelectorAll('[data-id="number_sequence_calc"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        if (key === 'notes_list') {
+                            el.innerHTML = texts[key];
+                        } else {
+                            el.innerText = texts[key];
+                        }
+                    }
+                });
+                
+                // 更新单选框标签
+                document.querySelectorAll('label[for="arithmetic"], label[for="geometric"]').forEach(label => {
+                    const key = label.getAttribute('data-i18n');
+                    if (texts[key]) label.innerText = texts[key];
+                });
+                
+                // 更新特殊标签
+                NumberSequenceCalc.updateLabels(lang);
+            },
+
+            showError: (message) => {
+                const errorEl = document.getElementById('sequence-error');
+                errorEl.innerText = message;
+                errorEl.classList.remove('hidden');
+            },
+
+            clearError: () => {
+                const errorEl = document.getElementById('sequence-error');
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+            },
+
+            calculate: () => {
+                const lang = document.getElementById('sequence-lang').value;
+                const texts = NumberSequenceCalc.i18n[lang];
+                
+                NumberSequenceCalc.clearError();
+                
+                try {
+                    // 获取输入值
+                    const firstTerm = parseFloat(document.getElementById('sequence-first').value);
+                    const stepRatio = parseFloat(document.getElementById('sequence-step-ratio').value);
+                    const length = parseInt(document.getElementById('sequence-length').value);
+                    const decimals = parseInt(document.getElementById('sequence-decimals').value);
+                    const isArithmetic = document.getElementById('arithmetic').checked;
+                    
+                    // 验证输入
+                    if (isNaN(length) || length < 1 || length > 100) {
+                        throw new Error(texts.err_invalid_terms);
+                    }
+                    
+                    if (isNaN(decimals) || decimals < 0 || decimals > 10) {
+                        throw new Error(texts.err_invalid_decimals);
+                    }
+                    
+                    // 生成序列
+                    const sequence = [];
+                    let current = firstTerm;
+                    
+                    for (let i = 0; i < length; i++) {
+                        // 四舍五入到指定小数位数
+                        const rounded = parseFloat(current.toFixed(decimals));
+                        sequence.push(rounded);
+                        
+                        // 计算下一项
+                        if (isArithmetic) {
+                            current += stepRatio;
+                        } else {
+                            current *= stepRatio;
+                        }
+                    }
+                    
+                    // 计算统计信息
+                    const sum = sequence.reduce((acc, val) => acc + val, 0);
+                    const lastTerm = sequence[sequence.length - 1];
+                    const average = sum / sequence.length;
+                    
+                    // 显示序列
+                    const resultsEl = document.getElementById('sequence-result');
+                    resultsEl.innerText = sequence.join(', ');
+                    
+                    // 显示公式
+                    const formulaEl = document.getElementById('sequence-formula');
+                    const termsPreview = sequence.slice(0, 3).join(', ') + (sequence.length > 3 ? ', ...' : '');
+                    
+                    let formula;
+                    if (isArithmetic) {
+                        formula = texts.formula_arithmetic
+                            .replace('{first}', firstTerm)
+                            .replace('{step}', stepRatio)
+                            .replace('{terms}', termsPreview);
+                    } else {
+                        formula = texts.formula_geometric
+                            .replace('{first}', firstTerm)
+                            .replace('{step}', stepRatio)
+                            .replace('{terms}', termsPreview);
+                    }
+                    formulaEl.innerText = formula;
+                    
+                    // 显示统计信息
+                    document.getElementById('sequence-sum').innerText = sum.toFixed(decimals);
+                    document.getElementById('sequence-last').innerText = lastTerm.toFixed(decimals);
+                    document.getElementById('sequence-average').innerText = average.toFixed(decimals);
+                    document.getElementById('special-stat-value').innerText = stepRatio.toFixed(decimals);
+                    
+                } catch (e) {
+                    NumberSequenceCalc.showError(e.message);
+                    document.getElementById('sequence-result').innerText = '--';
+                    document.getElementById('sequence-formula').innerText = '';
+                    document.getElementById('sequence-sum').innerText = '--';
+                    document.getElementById('sequence-last').innerText = '--';
+                    document.getElementById('sequence-average').innerText = '--';
+                    document.getElementById('special-stat-value').innerText = '--';
+                }
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', NumberSequenceCalc.init);
+        
+        // 自动匹配浏览器语言
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('sequence-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    NumberSequenceCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

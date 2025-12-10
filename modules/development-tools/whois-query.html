@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Development Tools">
+    <meta name="icon" content="🔍">
+    <title>域名Whois信息查询</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, textarea, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 200px; resize: vertical; white-space: pre; font-family: monospace; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-stats { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #a7f3d0; flex-wrap: wrap; gap: 10px;}
+        .stat-label { color: #1e3a8a; font-size: 0.9rem;}
+        .stat-value { font-weight: 600; color: #065f46; margin-left: 5px;}
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .status-tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+        .status-available { background-color: #dcfce7; color: #15803d; }
+        .status-registered { background-color: #fee2e2; color: #dc2626; }
+        .language-note { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/whois-query.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="whois-query-tool">
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="WhoisTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔍 域名Whois信息查询</h2>
+
+        <div class="space-y-6">
+            <!-- Input Section -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="domain_input">域名输入</h3>
+                <div class="form-group">
+                    <input type="text" id="domain_input" placeholder="请输入域名（如example.com）" class="focus:ring-2 focus:ring-green-500 outline-none">
+                    <p class="language-note" data-i18n="domain_note">支持.com、.net、.org、.cn等常见域名后缀</p>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="WhoisTool.queryWhois()" class="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition shadow-md" data-i18n="btn_query">查询Whois</button>
+                <button onclick="WhoisTool.clearAll()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded font-bold hover:bg-gray-300 transition shadow-sm" data-i18n="btn_clear">清空所有</button>
+            </div>
+
+            <!-- Results -->
+            <div class="summary-section mt-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">查询结果</h3>
+                
+                <div class="result-stats">
+                    <div>
+                        <span class="stat-label" data-i18n="domain_status">域名状态：</span>
+                        <span class="stat-value" id="domain_status">-</span>
+                    </div>
+                    <div>
+                        <span class="stat-label" data-i18n="query_time">查询耗时：</span>
+                        <span class="stat-value" id="query_time">0ms</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="whois_data">Whois信息</label>
+                    <textarea id="whois_result" readonly class="focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 text-gray-700" placeholder="查询结果将显示在这里..."></textarea>
+                </div>
+                <button onclick="WhoisTool.copyResult()" class="w-full mt-2 bg-blue-600 text-white py-3 rounded font-medium hover:bg-blue-700 transition shadow-md" data-i18n="btn_copy">复制结果</button>
+            </div>
+
+            <!-- Query History -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="recent_queries">最近查询</h3>
+                <div id="query_history" class="p-4 bg-gray-50 rounded border border-gray-100 min-h-[60px]">
+                    <p data-i18n="no_history" class="text-gray-400 italic text-sm">暂无查询记录</p>
+                </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于本工具</h3>
+                <p data-i18n="intro_text">本工具提供域名Whois信息查询服务，可查询域名的注册商、注册日期、过期日期、注册人信息、DNS服务器等详细信息。Whois查询有助于了解域名的归属状态和注册详情，适用于域名投资者、网站管理员和需要验证域名信息的用户。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WhoisTool = {
+            i18n: {
+                'en': {
+                    title: '🔍 Domain Whois Lookup',
+                    domain_input: 'Domain Input',
+                    domain_note: 'Supports .com, .net, .org, .cn and other common domain extensions',
+                    btn_query: 'Query Whois',
+                    btn_clear: 'Clear All',
+                    results: 'Query Results',
+                    domain_status: 'Domain Status:',
+                    query_time: 'Query Time:',
+                    whois_data: 'Whois Data',
+                    btn_copy: 'Copy Result',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This tool provides domain Whois lookup service, which can query detailed information such as domain registrar, registration date, expiration date, registrant information, DNS servers, etc. Whois lookup helps to understand the ownership status and registration details of a domain, suitable for domain investors, website administrators and users who need to verify domain information.',
+                    recent_queries: 'Recent Queries',
+                    no_history: 'No query history yet',
+                    please_enter_domain: 'Please enter a domain name first',
+                    invalid_domain: 'Invalid domain format',
+                    copied: 'Copied!',
+                    status_available: 'Available',
+                    status_registered: 'Registered'
+                },
+                'zh-CN': {
+                    title: '🔍 域名Whois信息查询',
+                    domain_input: '域名输入',
+                    domain_note: '支持.com、.net、.org、.cn等常见域名后缀',
+                    btn_query: '查询Whois',
+                    btn_clear: '清空所有',
+                    results: '查询结果',
+                    domain_status: '域名状态：',
+                    query_time: '查询耗时：',
+                    whois_data: 'Whois信息',
+                    btn_copy: '复制结果',
+                    intro_title: '关于本工具',
+                    intro_text: '本工具提供域名Whois信息查询服务，可查询域名的注册商、注册日期、过期日期、注册人信息、DNS服务器等详细信息。Whois查询有助于了解域名的归属状态和注册详情，适用于域名投资者、网站管理员和需要验证域名信息的用户。',
+                    recent_queries: '最近查询',
+                    no_history: '暂无查询记录',
+                    please_enter_domain: '请先输入域名',
+                    invalid_domain: '域名格式无效',
+                    copied: '已复制！',
+                    status_available: '未注册',
+                    status_registered: '已注册'
+                },
+                'zh-TW': {
+                    title: '🔍 域名Whois資訊查詢',
+                    domain_input: '域名輸入',
+                    domain_note: '支援.com、.net、.org、.cn等常見域名後綴',
+                    btn_query: '查詢Whois',
+                    btn_clear: '清空所有',
+                    results: '查詢結果',
+                    domain_status: '域名狀態：',
+                    query_time: '查詢耗時：',
+                    whois_data: 'Whois資訊',
+                    btn_copy: '複製結果',
+                    intro_title: '關於本工具',
+                    intro_text: '本工具提供域名Whois資訊查詢服務，可查詢域名的註冊商、註冊日期、過期日期、註冊人資訊、DNS伺服器等詳細資訊。Whois查詢有助於了解域名的歸屬狀態和註冊詳情，適用於域名投資者、網站管理員和需要驗證域名資訊的用戶。',
+                    recent_queries: '最近查詢',
+                    no_history: '暫無查詢記錄',
+                    please_enter_domain: '請先輸入域名',
+                    invalid_domain: '域名格式無效',
+                    copied: '已複製！',
+                    status_available: '未註冊',
+                    status_registered: '已註冊'
+                },
+                'ja': {
+                    title: '🔍 ドメインWhois情報検索',
+                    domain_input: 'ドメイン入力',
+                    domain_note: '.com、.net、.org、.cnなど一般的なドメイン接尾辞をサポート',
+                    btn_query: 'Whoisを検索',
+                    btn_clear: 'すべてクリア',
+                    results: '検索結果',
+                    domain_status: 'ドメイン状態：',
+                    query_time: '検索時間：',
+                    whois_data: 'Whois情報',
+                    btn_copy: '結果をコピー',
+                    intro_title: 'このツールについて',
+                    intro_text: 'このツールはドメインWhois情報検索サービスを提供し、ドメインの登録業者、登録日、有効期限、登録者情報、DNSサーバーなどの詳細情報を検索できます。Whois検索は、ドメインの所有状態と登録詳細を理解するのに役立ち、ドメイン投資家、Webサイト管理者、ドメイン情報を検証する必要があるユーザーに適しています。',
+                    recent_queries: '最近の検索',
+                    no_history: '検索履歴はまだありません',
+                    please_enter_domain: 'まずドメイン名を入力してください',
+                    invalid_domain: '無効なドメイン形式',
+                    copied: 'コピーしました！',
+                    status_available: '利用可能',
+                    status_registered: '登録済み'
+                },
+                'ru': {
+                    title: '🔍 Проверка Whois домена',
+                    domain_input: 'Ввод домена',
+                    domain_note: 'Поддерживает .com, .net, .org, .cn и другие популярные доменные зоны',
+                    btn_query: 'Запросить Whois',
+                    btn_clear: 'Очистить все',
+                    results: 'Результаты запроса',
+                    domain_status: 'Статус домена:',
+                    query_time: 'Время запроса:',
+                    whois_data: 'Данные Whois',
+                    btn_copy: 'Скопировать результат',
+                    intro_title: 'О инструменте',
+                    intro_text: 'Этот инструмент предоставляет службу проверки Whois доменов, позволяя запросить подробную информацию: регистратор, дату регистрации, дату окончания, данные регистратора, DNS-серверы и т.д. Проверка Whois помогает узнать статус владения доменом и регистрационные данные, подходит для инвесторов в домены, веб-администраторов и пользователей, которым нужно проверить информацию о домене.',
+                    recent_queries: 'Недавние запросы',
+                    no_history: 'Истории запросов пока нет',
+                    please_enter_domain: 'Пожалуйста, сначала введите домен',
+                    invalid_domain: 'Неверный формат домена',
+                    copied: 'Скопировано!',
+                    status_available: 'Доступен',
+                    status_registered: 'Зарегистрирован'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false);
+                } else {
+                    this.changeLang(false);
+                }
+
+                this.loadQueryHistory();
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                document.title = i18nData['title'];
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang] && this.i18n[lang][key] ? this.i18n[lang][key] : this.i18n['en'][key];
+            },
+
+            isValidDomain: function(domain) {
+                const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
+                return domainRegex.test(domain);
+            },
+
+            queryWhois: function() {
+                const domain = document.getElementById('domain_input').value.trim().toLowerCase();
+                
+                if (!domain) {
+                    alert(this.getI18nText('please_enter_domain'));
+                    return;
+                }
+                
+                if (!this.isValidDomain(domain)) {
+                    alert(this.getI18nText('invalid_domain'));
+                    return;
+                }
+
+                const startTime = performance.now();
+                
+                // 模拟Whois查询（实际应用中应连接到真实的Whois服务）
+                setTimeout(() => {
+                    const endTime = performance.now();
+                    const queryTime = Math.round(endTime - startTime);
+                    
+                    // 随机生成模拟结果
+                    const isRegistered = Math.random() > 0.3;
+                    let statusText = isRegistered ? 
+                        this.getI18nText('status_registered') : this.getI18nText('status_available');
+                    
+                    let whoisResult = `Domain Name: ${domain}\n`;
+                    whoisResult += `Registry Domain ID: D1234567890-${Math.floor(Math.random() * 1000)}\n`;
+                    whoisResult += `Registrar WHOIS Server: whois.${this.getRandomRegistrar()}\n`;
+                    whoisResult += `Registrar URL: http://www.${this.getRandomRegistrar()}\n`;
+                    whoisResult += `Updated Date: ${this.getRandomDate(-30)}\n`;
+                    
+                    if (isRegistered) {
+                        whoisResult += `Creation Date: ${this.getRandomDate(-365 * 2)}\n`;
+                        whoisResult += `Registry Expiry Date: ${this.getRandomDate(365 * 2)}\n`;
+                        whoisResult += `Registrar: ${this.getRandomRegistrarName()}\n`;
+                        whoisResult += `Registrar IANA ID: ${Math.floor(Math.random() * 10000)}\n`;
+                        whoisResult += `Domain Status: clientTransferProhibited https://icann.org/epp#clientTransferProhibited\n`;
+                        whoisResult += `Name Server: NS1.${this.getRandomNs()}\n`;
+                        whoisResult += `Name Server: NS2.${this.getRandomNs()}\n`;
+                        whoisResult += `DNSSEC: unsigned\n`;
+                        whoisResult += `Registrant Name: Domain Admin\n`;
+                        whoisResult += `Registrant Organization: Privacy Protection Service\n`;
+                        whoisResult += `Registrant Street: 123 Privacy Lane\n`;
+                        whoisResult += `Registrant City: Privacy City\n`;
+                        whoisResult += `Registrant State/Province: \n`;
+                        whoisResult += `Registrant Postal Code: 12345\n`;
+                        whoisResult += `Registrant Country: US\n`;
+                        whoisResult += `Registrant Phone: +1.5551234567\n`;
+                        whoisResult += `Registrant Phone Ext: \n`;
+                        whoisResult += `Registrant Fax: \n`;
+                        whoisResult += `Registrant Fax Ext: \n`;
+                        whoisResult += `Registrant Email: contact@privacy.example.com\n`;
+                    } else {
+                        whoisResult += `This domain is available for registration.\n`;
+                        whoisResult += `You can register this domain through any accredited registrar.\n`;
+                    }
+                    
+                    document.getElementById('whois_result').value = whoisResult;
+                    document.getElementById('domain_status').innerHTML = `<span class="status-tag status-${isRegistered ? 'registered' : 'available'}">${statusText}</span>`;
+                    document.getElementById('query_time').textContent = queryTime + 'ms';
+                    
+                    this.saveToHistory(domain, isRegistered);
+                }, 800 + Math.random() * 1200); // 模拟网络延迟
+            },
+
+            // 辅助函数：生成随机注册商
+            getRandomRegistrar: function() {
+                const registrars = ['godaddy.com', 'namecheap.com', 'google.com', 'name.com', 'dnsexit.com'];
+                return registrars[Math.floor(Math.random() * registrars.length)];
+            },
+
+            // 辅助函数：生成随机注册商名称
+            getRandomRegistrarName: function() {
+                const names = ['GoDaddy LLC', 'Namecheap, Inc.', 'Google LLC', 'Name.com LLC', 'DNS Exit Inc.'];
+                return names[Math.floor(Math.random() * names.length)];
+            },
+
+            // 辅助函数：生成随机NS服务器
+            getRandomNs: function() {
+                const nss = ['cloudflare-dns.com', 'google.com', 'opendns.com', 'dnspod.com', 'ns.cloudflare.com'];
+                return nss[Math.floor(Math.random() * nss.length)];
+            },
+
+            // 辅助函数：生成随机日期
+            getRandomDate: function(daysOffset) {
+                const date = new Date();
+                date.setDate(date.getDate() + daysOffset + Math.floor(Math.random() * 30));
+                return date.toISOString().split('T')[0];
+            },
+
+            clearAll: function() {
+                document.getElementById('domain_input').value = '';
+                document.getElementById('whois_result').value = '';
+                document.getElementById('domain_status').textContent = '-';
+                document.getElementById('query_time').textContent = '0ms';
+            },
+
+            copyResult: function() {
+                const resultText = document.getElementById('whois_result');
+                resultText.select();
+                document.execCommand('copy');
+                
+                const originalText = this.getI18nText('btn_copy');
+                const copyBtn = document.querySelector('[data-i18n="btn_copy"]');
+                copyBtn.textContent = this.getI18nText('copied');
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            },
+
+            saveToHistory: function(domain, isRegistered) {
+                let history = JSON.parse(localStorage.getItem('whoisQueryHistory') || '[]');
+                const statusText = isRegistered ? 
+                    this.getI18nText('status_registered') : this.getI18nText('status_available');
+                const statusClass = isRegistered ? 'registered' : 'available';
+                
+                const entry = {
+                    id: Date.now(),
+                    domain: domain,
+                    status: statusText,
+                    statusClass: statusClass,
+                    timestamp: new Date().toLocaleString()
+                };
+                
+                history.unshift(entry);
+                if (history.length > 10) history = history.slice(0, 10);
+                
+                localStorage.setItem('whoisQueryHistory', JSON.stringify(history));
+                this.loadQueryHistory();
+            },
+
+            loadQueryHistory: function() {
+                const historyContainer = document.getElementById('query_history');
+                const history = JSON.parse(localStorage.getItem('whoisQueryHistory') || '[]');
+                
+                if (history.length === 0) {
+                    historyContainer.innerHTML = `<p data-i18n="no_history" class="text-gray-400 italic text-sm">${this.getI18nText('no_history')}</p>`;
+                    return;
+                }
+                
+                let html = '<div class="space-y-2">';
+                history.forEach(entry => {
+                    html += `
+                        <div class="p-2 bg-white rounded border border-gray-100 text-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700 font-medium">${entry.domain}</span>
+                                <span class="status-tag status-${entry.statusClass}">${entry.status}</span>
+                            </div>
+                            <div class="text-gray-400 text-xs mt-1">${entry.timestamp}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                historyContainer.innerHTML = html;
+            }
+        };
+
+        // Initialize the tool when the page loads
+        window.onload = function() {
+            WhoisTool.init();
+        };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

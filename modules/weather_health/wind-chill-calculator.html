@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Chill Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="wind_chill_calc">
+    <meta name="category" content="weather_health">
+    <meta name="icon" content="🌬️">
+    
+    <!-- 默认英文内容 (供宿主环境读取) -->
+    <meta name="title" content="Wind Chill Calculator">
+    <meta name="description" content="Calculate the wind chill factor based on air temperature and wind speed.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="风寒指数计算器">
+    <meta name="lang-description-zh-CN" content="根据气温和风速计算体感风寒指数。">
+    
+    <meta name="lang-title-zh-TW" content="風寒指數計算器">
+    <meta name="lang-description-zh-TW" content="根據氣溫和風速計算體感風寒指數。">
+    
+    <meta name="lang-title-ja" content="体感温度（風冷え）計算機">
+    <meta name="lang-description-ja" content="気温と風速に基づいて体感温度（ウィンドチル）を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор ветро-холодового индекса">
+    <meta name="lang-description-ru" content="Рассчитайте коэффициент охлаждения ветром на основе температуры воздуха и скорости ветра.">
+    
+    <meta name="lang-title-es" content="Calculadora de Sensación Térmica">
+    <meta name="lang-description-es" content="Calcula el factor de sensación térmica basado en la temperatura del aire y la velocidad del viento.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 模拟主程序环境样式 */
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/weather_health/wind-chill-calculator.html" />
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 1：HTML 积木 (复制到 tools-wrapper) -->
+    <!-- ================================================================= -->
+    
+    <div class="tool-module active" 
+         data-id="wind_chill_calc" 
+         data-category="weather_health" 
+         data-title="Wind Chill Calculator" 
+         data-icon="🌬️">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="wc-lang" onchange="WindChillCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🌬️ Wind Chill Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-6">
+            <!-- Temperature -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="temp_label">Air Temperature</label>
+                <div class="flex">
+                    <input type="number" id="wc-temp" class="flex-1 p-2 border rounded-l focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 32">
+                    <select id="wc-temp-unit" onchange="WindChillCalc.updatePlaceholder()" class="bg-gray-100 border border-l-0 rounded-r p-2 text-gray-600 focus:outline-none">
+                        <option value="F">°F</option>
+                        <option value="C">°C</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Wind Speed -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="wind_label">Wind Speed</label>
+                <div class="flex">
+                    <input type="number" id="wc-wind" class="flex-1 p-2 border rounded-l focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 10" min="0">
+                    <select id="wc-wind-unit" class="bg-gray-100 border border-l-0 rounded-r p-2 text-gray-600 focus:outline-none text-sm" style="min-width: 80px;">
+                        <option value="mph">mph</option>
+                        <option value="kmh">km/h</option>
+                        <option value="ms">m/s</option>
+                        <option value="knots">knots</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="WindChillCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6 shadow-md" data-i18n="btn_calc">Calculate</button>
+
+        <!-- Result Section -->
+        <div id="wc-result-box" class="hidden bg-gray-50 p-6 rounded-lg border border-gray-200 text-center transition-colors duration-300">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Wind Chill Temperature</div>
+            <div id="wc-value" class="text-4xl font-bold text-gray-800 mb-2">--</div>
+            <div id="wc-warning" class="hidden mt-2 p-2 rounded bg-blue-100 text-blue-800 text-sm font-medium"></div>
+            <div id="wc-note" class="text-xs text-gray-500 mt-3 italic px-4"></div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 1 结束 -->
+    <!-- ================================================================= -->
+
+
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 2：JS 积木 (复制到 script 标签中) -->
+    <!-- ================================================================= -->
+    <script>
+        const WindChillCalc = {
+            i18n: {
+                'en': {
+                    title: '🌬️ Wind Chill Calculator',
+                    temp_label: 'Air Temperature',
+                    wind_label: 'Wind Speed',
+                    btn_calc: 'Calculate',
+                    res_label: 'Wind Chill (Feels Like)',
+                    risk_label: 'Frostbite Risk:',
+                    risks: {
+                        low: 'Low risk of frostbite.',
+                        caution: 'Frostbite possible in 30 minutes.',
+                        danger: 'Frostbite possible in 10 minutes.',
+                        extreme: 'Frostbite possible in 5 minutes.',
+                        critical: 'Frostbite possible in 2 minutes!'
+                    },
+                    err_range: 'Wind Chill is only defined for temperatures at or below 50°F (10°C) and wind speeds above 3 mph (4.8 km/h).',
+                    note: 'Formula based on National Weather Service (NWS) standards.'
+                },
+                'zh-CN': {
+                    title: '🌬️ 风寒指数计算器',
+                    temp_label: '空气温度',
+                    wind_label: '风速',
+                    btn_calc: '计算',
+                    res_label: '风寒指数 (体感温度)',
+                    risk_label: '冻伤风险：',
+                    risks: {
+                        low: '冻伤风险低。',
+                        caution: '暴露 30 分钟可能冻伤。',
+                        danger: '暴露 10 分钟可能冻伤。',
+                        extreme: '暴露 5 分钟可能冻伤。',
+                        critical: '暴露 2 分钟可能冻伤！'
+                    },
+                    err_range: '风寒指数仅适用于气温低于或等于 10°C (50°F) 且风速高于 4.8 km/h (3 mph) 的情况。',
+                    note: '公式基于美国国家气象局 (NWS) 标准。'
+                },
+                'zh-TW': {
+                    title: '🌬️ 風寒指數計算器',
+                    temp_label: '空氣溫度',
+                    wind_label: '風速',
+                    btn_calc: '計算',
+                    res_label: '風寒指數 (體感溫度)',
+                    risk_label: '凍傷風險：',
+                    risks: {
+                        low: '凍傷風險低。',
+                        caution: '暴露 30 分鐘可能凍傷。',
+                        danger: '暴露 10 分鐘可能凍傷。',
+                        extreme: '暴露 5 分鐘可能凍傷。',
+                        critical: '暴露 2 分鐘可能凍傷！'
+                    },
+                    err_range: '風寒指數僅適用於氣溫低於或等於 10°C (50°F) 且風速高於 4.8 km/h (3 mph) 的情況。',
+                    note: '公式基於美國國家氣象局 (NWS) 標準。'
+                },
+                'ja': {
+                    title: '🌬️ 体感温度（風冷え）',
+                    temp_label: '気温',
+                    wind_label: '風速',
+                    btn_calc: '計算する',
+                    res_label: '体感温度',
+                    risk_label: '凍傷リスク：',
+                    risks: {
+                        low: '凍傷のリスクは低いです。',
+                        caution: '30分で凍傷になる可能性があります。',
+                        danger: '10分で凍傷になる可能性があります。',
+                        extreme: '5分で凍傷になる可能性があります。',
+                        critical: '2分で凍傷になる可能性があります！'
+                    },
+                    err_range: '風冷え指数は、気温が10°C（50°F）以下、風速が4.8 km/h（3 mph）以上の場合にのみ定義されます。',
+                    note: '計算式は米国国立気象局 (NWS) 基準に基づきます。'
+                },
+                'ru': {
+                    title: '🌬️ Калькулятор ветро-холодового индекса',
+                    temp_label: 'Температура воздуха',
+                    wind_label: 'Скорость ветра',
+                    btn_calc: 'Рассчитать',
+                    res_label: 'Ощущается как',
+                    risk_label: 'Риск обморожения:',
+                    risks: {
+                        low: 'Низкий риск обморожения.',
+                        caution: 'Обморожение возможно через 30 минут.',
+                        danger: 'Обморожение возможно через 10 минут.',
+                        extreme: 'Обморожение возможно через 5 минут.',
+                        critical: 'Обморожение возможно через 2 минуты!'
+                    },
+                    err_range: 'Индекс рассчитывается только для температур ≤ 10°C (50°F) и скорости ветра > 4.8 км/ч (3 мили/ч).',
+                    note: 'Формула основана на стандартах Национальной метеорологической службы (NWS).'
+                },
+                'es': {
+                    title: '🌬️ Calculadora de Sensación Térmica',
+                    temp_label: 'Temperatura del Aire',
+                    wind_label: 'Velocidad del Viento',
+                    btn_calc: 'Calcular',
+                    res_label: 'Sensación Térmica',
+                    risk_label: 'Riesgo de Congelación:',
+                    risks: {
+                        low: 'Bajo riesgo de congelación.',
+                        caution: 'Congelación posible en 30 minutos.',
+                        danger: 'Congelación posible en 10 minutos.',
+                        extreme: 'Congelación posible en 5 minutos.',
+                        critical: 'Congelación posible en 2 minutos!'
+                    },
+                    err_range: 'La sensación térmica solo se define para temperaturas ≤ 10°C (50°F) y vientos > 4.8 km/h (3 mph).',
+                    note: 'Fórmula basada en estándares del Servicio Meteorológico Nacional (NWS).'
+                }
+            },
+
+            updatePlaceholder: () => {
+                const unit = document.getElementById('wc-temp-unit').value;
+                const input = document.getElementById('wc-temp');
+                if (unit === 'F') {
+                    input.placeholder = "e.g. 30";
+                    // Try to convert current value if it exists
+                    if(input.value) input.value = Math.round((parseFloat(input.value) * 9/5) + 32);
+                } else {
+                    input.placeholder = "e.g. -1";
+                    // Try to convert current value if it exists
+                    if(input.value) input.value = Math.round((parseFloat(input.value) - 32) * 5/9);
+                }
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('wc-lang').value;
+                const texts = WindChillCalc.i18n[lang];
+                
+                document.querySelectorAll('[data-id="wind_chill_calc"] [data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+                
+                // Re-calculate to update result text if visible
+                const resultBox = document.getElementById('wc-result-box');
+                if (!resultBox.classList.contains('hidden')) {
+                    WindChillCalc.calc();
+                }
+            },
+
+            calc: () => {
+                let temp = parseFloat(document.getElementById('wc-temp').value);
+                let wind = parseFloat(document.getElementById('wc-wind').value);
+                
+                const tempUnit = document.getElementById('wc-temp-unit').value;
+                const windUnit = document.getElementById('wc-wind-unit').value;
+                const lang = document.getElementById('wc-lang').value;
+                const texts = WindChillCalc.i18n[lang];
+
+                if (isNaN(temp) || isNaN(wind)) return;
+
+                // 1. 标准化输入到 Metric (Celsius, km/h) 进行逻辑判断，或者 Imperial (F, mph) 进行公式计算
+                // NWS 公式主要基于 F 和 mph。我们统一转换到 F 和 mph 进行计算。
+                
+                let tempF = temp;
+                if (tempUnit === 'C') {
+                    tempF = (temp * 9/5) + 32;
+                }
+
+                let windMph = wind;
+                if (windUnit === 'kmh') windMph = wind / 1.60934;
+                else if (windUnit === 'ms') windMph = wind * 2.23694;
+                else if (windUnit === 'knots') windMph = wind * 1.15078;
+
+                const resultBox = document.getElementById('wc-result-box');
+                const valueEl = document.getElementById('wc-value');
+                const warningEl = document.getElementById('wc-warning');
+                const noteEl = document.getElementById('wc-note');
+
+                resultBox.classList.remove('hidden');
+
+                // 2. 验证有效范围
+                // Wind Chill 只在 Temp <= 50 F (10 C) 和 Wind > 3 mph (4.8 km/h) 时有效
+                if (tempF > 50 || windMph <= 3) {
+                    valueEl.innerText = "N/A";
+                    valueEl.className = "text-4xl font-bold text-gray-400 mb-2";
+                    warningEl.className = "mt-2 p-3 rounded bg-yellow-100 text-yellow-800 text-sm";
+                    warningEl.innerText = texts.err_range;
+                    warningEl.classList.remove('hidden');
+                    noteEl.innerText = "";
+                    return;
+                }
+
+                // 3. 计算公式 (NWS Formula)
+                // WC = 35.74 + 0.6215*T - 35.75*(V^0.16) + 0.4275*T*(V^0.16)
+                const vPow = Math.pow(windMph, 0.16);
+                let wcF = 35.74 + (0.6215 * tempF) - (35.75 * vPow) + (0.4275 * tempF * vPow);
+
+                // 4. 转换回用户选择的温度单位
+                let finalWC = wcF;
+                if (tempUnit === 'C') {
+                    finalWC = (wcF - 32) * 5/9;
+                }
+
+                // 显示数值
+                valueEl.className = "text-4xl font-bold text-blue-600 mb-2";
+                valueEl.innerText = `${Math.round(finalWC * 10) / 10}°${tempUnit}`;
+                noteEl.innerText = texts.note;
+
+                // 5. 冻伤风险评估 (基于 wind chill temperature)
+                // 风险通常基于 WC 温度 (Fahrenheit)
+                let riskText = "";
+                let riskColorClass = "bg-blue-100 text-blue-800"; // default low
+
+                if (wcF < -48) { // -48F (approx -44C) -> 2 mins
+                    riskText = texts.risks.critical;
+                    riskColorClass = "bg-purple-100 text-purple-900 border border-purple-200";
+                } else if (wcF < -32) { // -32F (approx -35C) -> 10 mins (simplified, roughly 5-10 mins range)
+                     // NWS chart varies, but generally <-48F is extreme. 
+                     // Let's use simplified thresholds often cited:
+                     // -18F to -32F (-28C to -35C): 30 mins (actually starts around -18F with wind)
+                     // Let's refine based on NWS Wind Chill Chart ranges:
+                     // -18F to -32F: 30 mins
+                     // -33F to -54F: 10 mins
+                     // < -55F: 5 mins
+                    
+                    // Let's use standard simplified logic:
+                    riskText = texts.risks.extreme; // < -32F
+                    riskColorClass = "bg-red-100 text-red-800 border border-red-200";
+                } else if (wcF < -18) { // -18F approx -28C
+                    riskText = texts.risks.danger; // < -18F (~10-30mins usually) - let's say 10-30 range
+                    // Correcting logic based on NWS chart visual:
+                    // Zone 1 (-18 to -33 approx): 30 mins
+                    // Zone 2 (-33 to -55 approx): 10 mins
+                    // Zone 3 (< -55): 5 mins
+                    riskText = texts.risks.caution; // 30 mins
+                    riskColorClass = "bg-orange-100 text-orange-800 border border-orange-200";
+                } else {
+                    riskText = texts.risks.low;
+                }
+
+                // Refined Logic for visual display
+                if (wcF <= -55) {
+                     riskText = texts.risks.extreme; // 5 mins
+                     riskColorClass = "bg-purple-100 text-purple-900 border border-purple-200";
+                } else if (wcF <= -35) {
+                     riskText = texts.risks.danger; // 10 mins
+                     riskColorClass = "bg-red-100 text-red-800 border border-red-200";
+                } else if (wcF <= -18) {
+                     riskText = texts.risks.caution; // 30 mins
+                     riskColorClass = "bg-orange-100 text-orange-800 border border-orange-200";
+                } else {
+                     riskText = texts.risks.low;
+                     riskColorClass = "bg-green-100 text-green-800 border border-green-200";
+                }
+
+                warningEl.innerText = `${texts.risk_label} ${riskText}`;
+                warningEl.className = `mt-2 p-2 rounded text-sm font-medium ${riskColorClass}`;
+                warningEl.classList.remove('hidden');
+            }
+        };
+
+        // Initialize default placeholder
+        document.addEventListener('DOMContentLoaded', () => {
+            WindChillCalc.updatePlaceholder();
+        });
+    </script>
+    <!-- ================================================================= -->
+    <!-- 🔴 区域 2 结束 -->
+    <!-- ================================================================= -->
+
+    <!-- 宿主环境语言自适应脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) targetLang = 'ja';
+            else if (userLang.startsWith('ru')) targetLang = 'ru';
+            else if (userLang.startsWith('es')) targetLang = 'es';
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('wc-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    WindChillCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

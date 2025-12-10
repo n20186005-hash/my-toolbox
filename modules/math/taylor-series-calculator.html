@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taylor Series Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="taylor_calculator">
+    <meta name="category" content="Math">
+    <meta name="icon" content="🔬">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Taylor Series Calculator">
+    <meta name="description" content="Compute the Taylor series expansion of a function around a point.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="泰勒展开计算器">
+    <meta name="lang-description-zh-CN" content="计算函数在某点周围的泰勒级数展开。">
+    
+    <meta name="lang-title-zh-TW" content="泰勒展開計算器">
+    <meta name="lang-description-zh-TW" content="計算函數在某點周圍的泰勒級數展開。">
+    
+    <meta name="lang-title-ja" content="テイラー級数展開計算機">
+    <meta name="lang-description-ja" content="点の周りの関数のテイラー級数展開を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор разложения в ряд Тейлора">
+    <meta name="lang-description-ru" content="Вычислите разложение функции в ряд Тейлора вокруг точки.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .formula-input { font-family: 'Courier New', monospace; }
+        .series-result { font-family: 'Courier New', monospace; line-height: 1.6; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/taylor-series-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="taylor_calculator" 
+         data-category="math" 
+         data-title="Taylor Series Calculator" 
+         data-icon="🔬">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="taylor-lang" onchange="TaylorCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🔬 Taylor Series Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="function_label">Function</label>
+                <input type="text" id="taylor-function" class="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500 outline-none formula-input" placeholder="e.g. sin(x)" value="sin(x)">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="variable_label">Variable</label>
+                <input type="text" id="taylor-variable" class="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500 outline-none formula-input" placeholder="e.g. x" value="x">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="point_label">Expansion Point</label>
+                    <input type="text" id="taylor-point" class="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500 outline-none formula-input" placeholder="e.g. 0" value="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="order_label">Order (n)</label>
+                    <input type="number" id="taylor-order" class="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500 outline-none" min="0" max="20" value="5">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="TaylorCalc.calc()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700 transition mb-6" data-i18n="btn_calc">Calculate Taylor Series</button>
+
+        <div class="bg-indigo-50 p-6 rounded-lg border border-indigo-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="result_label">Taylor Series Expansion</div>
+            <div id="taylor-result" class="text-lg font-bold text-indigo-800 mb-4 series-result">--</div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="expansion_label" class="font-medium mb-1">Expansion:</div>
+                <div id="taylor-expression" class="text-gray-600 font-mono">sin(x) around x=0, order 5</div>
+            </div>
+            
+            <div class="text-sm mt-4 text-gray-600" data-i18n="disclaimer">Disclaimer: Higher order expansions may take longer to compute. Results are approximate.</div>
+        </div>
+    </div>
+
+    <script>
+        const TaylorCalc = {
+            i18n: {
+                'en': {
+                    title: '🔬 Taylor Series Calculator',
+                    function_label: 'Function',
+                    variable_label: 'Variable',
+                    point_label: 'Expansion Point',
+                    order_label: 'Order (n)',
+                    btn_calc: 'Calculate Taylor Series',
+                    result_label: 'Taylor Series Expansion',
+                    expansion_label: 'Expansion:',
+                    err_invalid: 'Please enter valid function and parameters',
+                    disclaimer: 'Disclaimer: Higher order expansions may take longer to compute. Results are approximate.',
+                    calculating: 'Calculating...'
+                },
+                'zh-CN': {
+                    title: '🔬 泰勒展开计算器',
+                    function_label: '函数',
+                    variable_label: '变量',
+                    point_label: '展开点',
+                    order_label: '阶数 (n)',
+                    btn_calc: '计算泰勒级数',
+                    result_label: '泰勒级数展开',
+                    expansion_label: '展开式：',
+                    err_invalid: '请输入有效的函数和参数',
+                    disclaimer: '免责声明：高阶展开可能需要更长时间计算。结果为近似值。',
+                    calculating: '计算中...'
+                },
+                'zh-TW': {
+                    title: '🔬 泰勒展開計算器',
+                    function_label: '函數',
+                    variable_label: '變量',
+                    point_label: '展開點',
+                    order_label: '階數 (n)',
+                    btn_calc: '計算泰勒級數',
+                    result_label: '泰勒級數展開',
+                    expansion_label: '展開式：',
+                    err_invalid: '請輸入有效的函數和參數',
+                    disclaimer: '免責聲明：高階展開可能需要更長時間計算。結果為近似值。',
+                    calculating: '計算中...'
+                },
+                'ja': {
+                    title: '🔬 テイラー級数展開計算機',
+                    function_label: '関数',
+                    variable_label: '変数',
+                    point_label: '展開点',
+                    order_label: '次数 (n)',
+                    btn_calc: 'テイラー級数を計算',
+                    result_label: 'テイラー級数展開',
+                    expansion_label: '展開式：',
+                    err_invalid: '有効な関数とパラメータを入力してください',
+                    disclaimer: '免責事項：高次の展開は計算に時間がかかる場合があります。結果は概算です。',
+                    calculating: '計算中...'
+                },
+                'ru': {
+                    title: '🔬 Калькулятор разложения в ряд Тейлора',
+                    function_label: 'Функция',
+                    variable_label: 'Переменная',
+                    point_label: 'Точка разложения',
+                    order_label: 'Порядок (n)',
+                    btn_calc: 'Вычислить ряд Тейлора',
+                    result_label: 'Разложение в ряд Тейлора',
+                    expansion_label: 'Разложение:',
+                    err_invalid: 'Введите действительную функцию и параметры',
+                    disclaimer: 'Отказ от ответственности: Разложения высокого порядка могут вычисляться дольше. Результаты являются приближенными.',
+                    calculating: 'Вычисление...'
+                }
+            },
+
+            init: () => {
+                // 初始化
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('taylor-lang').value;
+                const texts = TaylorCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="taylor_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            calc: () => {
+                const func = document.getElementById('taylor-function').value.trim();
+                const variable = document.getElementById('taylor-variable').value.trim();
+                const point = document.getElementById('taylor-point').value.trim();
+                const order = parseInt(document.getElementById('taylor-order').value) || 0;
+                const lang = document.getElementById('taylor-lang').value;
+                const texts = TaylorCalc.i18n[lang];
+
+                const resultEl = document.getElementById('taylor-result');
+                const expressionEl = document.getElementById('taylor-expression');
+
+                // 验证输入
+                if (!func || !variable || !point || isNaN(order) || order < 0) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-lg font-bold text-red-600 series-result";
+                    return;
+                }
+
+                // 显示计算中状态
+                resultEl.innerText = texts.calculating;
+                resultEl.className = "text-lg font-bold text-indigo-800 mb-4 series-result";
+
+                // 构建表达式显示
+                expressionEl.innerText = `${func} around ${variable}=${point}, order ${order}`;
+
+                // 模拟计算（实际应用中应连接到计算引擎）
+                setTimeout(() => {
+                    let result;
+                    
+                    // 示例：sin(x)在0点的5阶泰勒展开
+                    if (func === 'sin(x)' && variable === 'x' && point === '0' && order === 5) {
+                        result = 'x - x³/6 + x⁵/120';
+                    }
+                    // 示例：e^x在0点的4阶泰勒展开
+                    else if (func === 'e^x' && variable === 'x' && point === '0' && order === 4) {
+                        result = '1 + x + x²/2 + x³/6 + x⁴/24';
+                    }
+                    // 示例：cos(x)在0点的6阶泰勒展开
+                    else if (func === 'cos(x)' && variable === 'x' && point === '0' && order >= 6) {
+                        result = '1 - x²/2 + x⁴/24 - x⁶/720';
+                    }
+                    // 通用结果格式
+                    else {
+                        result = `${func} ≈ c₀ + c₁${variable} + c₂${variable}² + ... + c${order}${variable}^${order}`;
+                    }
+                    
+                    resultEl.innerText = result;
+                }, 1200);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', TaylorCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('taylor-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    TaylorCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

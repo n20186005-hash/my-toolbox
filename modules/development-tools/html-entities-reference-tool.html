@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Development Tools">
+    <meta name="icon" content="🔤">
+    <title>HTML转义字符参考工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background-color: #f8fafc; font-weight: 600; color: #1e293b; }
+        tr:hover { background-color: #f0fdf4; }
+        .char-display { font-family: monospace; padding: 4px 8px; background: #f3f4f6; border-radius: 4px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/html-entities-reference-tool.html" />
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔤 HTML转义字符参考工具</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">搜索转义字符</h3>
+                <div class="form-group">
+                    <label data-i18n="search_keyword">关键词</label>
+                    <input type="text" id="search-input" onkeyup="Tool.search()" placeholder="输入字符、名称或转义码..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="results">转义字符列表</h3>
+                    <span class="text-sm text-gray-500" id="count-display"></span>
+                </div>
+                <div id="results-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-i18n="character">字符</th>
+                                <th data-i18n="entity_name">实体名称</th>
+                                <th data-i18n="entity_number">实体编号</th>
+                                <th data-i18n="description">描述</th>
+                            </tr>
+                        </thead>
+                        <tbody id="entity-table-body">
+                            <!-- 转义字符将通过JS动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于HTML转义字符</h3>
+                <p data-i18n="intro_text">HTML转义字符用于在HTML文档中表示预留字符和不可见字符。例如，小于号(&lt;)和大于号(&gt;)在HTML中具有特殊含义，必须使用转义字符才能正确显示。本工具整理了常用的HTML转义字符，方便开发者查询和使用。点击实体名称或编号可复制到剪贴板。</p>
+                <p class="mt-4" data-i18n="more_tools">更多工具可访问：<a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '🔤 HTML Entities Reference Tool',
+                    search: 'Search Entities',
+                    'search_keyword': 'Keyword',
+                    'results': 'Entities List',
+                    'character': 'Character',
+                    'entity_name': 'Entity Name',
+                    'entity_number': 'Entity Number',
+                    'description': 'Description',
+                    'copied': 'Copied!',
+                    'intro_title': 'About HTML Entities',
+                    'intro_text': 'HTML entities are used to represent reserved characters and invisible characters in HTML documents. For example, the less-than sign (&lt;) and greater-than sign (&gt;) have special meanings in HTML and must use escape characters to display correctly. This tool organizes commonly used HTML entities for developers to query and use. Click on the entity name or number to copy to clipboard.',
+                    'more_tools': 'More tools: <a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                },
+                'zh-CN': {
+                    title: '🔤 HTML转义字符参考工具',
+                    search: '搜索转义字符',
+                    'search_keyword': '关键词',
+                    'results': '转义字符列表',
+                    'character': '字符',
+                    'entity_name': '实体名称',
+                    'entity_number': '实体编号',
+                    'description': '描述',
+                    'copied': '已复制！',
+                    'intro_title': '关于HTML转义字符',
+                    'intro_text': 'HTML转义字符用于在HTML文档中表示预留字符和不可见字符。例如，小于号(&lt;)和大于号(&gt;)在HTML中具有特殊含义，必须使用转义字符才能正确显示。本工具整理了常用的HTML转义字符，方便开发者查询和使用。点击实体名称或编号可复制到剪贴板。',
+                    'more_tools': '更多工具可访问：<a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                },
+                'zh-TW': {
+                    title: '🔤 HTML轉義字符參考工具',
+                    search: '搜索轉義字符',
+                    'search_keyword': '關鍵詞',
+                    'results': '轉義字符列表',
+                    'character': '字符',
+                    'entity_name': '實體名稱',
+                    'entity_number': '實體編號',
+                    'description': '描述',
+                    'copied': '已複製！',
+                    'intro_title': '關於HTML轉義字符',
+                    'intro_text': 'HTML轉義字符用於在HTML文件中表示預留字符和不可見字符。例如，小於號(&lt;)和大於號(&gt;)在HTML中具有特殊含義，必須使用轉義字符才能正確顯示。本工具整理了常用的HTML轉義字符，方便開發者查詢和使用。點擊實體名稱或編號可複製到剪貼簿。',
+                    'more_tools': '更多工具可訪問：<a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                },
+                'ja': {
+                    title: '🔤 HTMLエンティティ参照ツール',
+                    search: 'エンティティ検索',
+                    'search_keyword': 'キーワード',
+                    'results': 'エンティティ一覧',
+                    'character': '文字',
+                    'entity_name': 'エンティティ名',
+                    'entity_number': 'エンティティ番号',
+                    'description': '説明',
+                    'copied': 'コピーしました！',
+                    'intro_title': 'HTMLエンティティについて',
+                    'intro_text': 'HTMLエンティティは、HTML文書内で予約文字や不可視文字を表すために使用されます。たとえば、小なり記号(&lt;)と大なり記号(&gt;)はHTMLで特別な意味を持っているため、正しく表示するにはエスケープ文字を使用する必要があります。このツールは、開発者が照会して使用するために、一般的に使用されるHTMLエンティティを整理しています。エンティティ名または番号をクリックするとクリップボードにコピーされます。',
+                    'more_tools': 'その他のツール：<a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                },
+                'ru': {
+                    title: '🔤 Средство справочника по HTML-сущностям',
+                    search: 'Поиск сущностей',
+                    'search_keyword': 'Ключевое слово',
+                    'results': 'Список сущностей',
+                    'character': 'Символ',
+                    'entity_name': 'Имя сущности',
+                    'entity_number': 'Номер сущности',
+                    'description': 'Описание',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О HTML-сущностях',
+                    'intro_text': 'HTML-сущности используются для представления зарезервированных и невидимых символов в HTML-документах. Например, знаки меньше (&lt;) и больше (&gt;) имеют специальное значение в HTML и должны использоваться с экранированием для правильного отображения. Этот инструмент собрал часто используемые HTML-сущности для удобного查询 и использования разработчиками. Нажмите на имя или номер сущности, чтобы скопировать в буфер обмена.',
+                    'more_tools': 'Больше инструментов: <a href="https://toolboxpro.top" target="_blank" class="text-green-600 underline">toolboxpro.top</a>'
+                }
+            },
+
+            // HTML转义字符数据
+            entityData: [
+                { char: "&", name: "&amp;", number: "&#38;", desc: "与号", en: "Ampersand", zhTW: "與號", ja: "アンパサンド", ru: " Амперсанд" },
+                { char: "<", name: "&lt;", number: "&#60;", desc: "小于号", en: "Less-than sign", zhTW: "小於號", ja: "小なり記号", ru: "Знак меньше" },
+                { char: ">", name: "&gt;", number: "&#62;", desc: "大于号", en: "Greater-than sign", zhTW: "大於號", ja: "大なり記号", ru: "Знак больше" },
+                { char: "\"", name: "&quot;", number: "&#34;", desc: "双引号", en: "Double quote", zhTW: "雙引號", ja: "ダブルクォート", ru: "Двойная кавычка" },
+                { char: "'", name: "&apos;", number: "&#39;", desc: "单引号", en: "Apostrophe", zhTW: "單引號", ja: "アポストロフィ", ru: "Апостроф" },
+                { char: " ", name: "&nbsp;", number: "&#160;", desc: "非换行空格", en: "Non-breaking space", zhTW: "非換行空格", ja: "改行なしスペース", ru: "Неразрывный пробел" },
+                { char: "©", name: "&copy;", number: "&#169;", desc: "版权符号", en: "Copyright symbol", zhTW: "版權符號", ja: "著作権記号", ru: "Знак копирайта" },
+                { char: "®", name: "&reg;", number: "&#174;", desc: "注册商标", en: "Registered trademark", zhTW: "註冊商標", ja: "登録商標", ru: "Зарегистрированный товарный знак" },
+                { char: "™", name: "&trade;", number: "&#8482;", desc: "商标符号", en: "Trademark symbol", zhTW: "商標符號", ja: "商標記号", ru: "Знак товарного знака" },
+                { char: "¢", name: "&cent;", number: "&#162;", desc: "美分符号", en: "Cent sign", zhTW: "美分符號", ja: "セント記号", ru: "Знак цента" },
+                { char: "£", name: "&pound;", number: "&#163;", desc: "英镑符号", en: "Pound sign", zhTW: "英鎊符號", ja: "ポンド記号", ru: "Знак фунта стерлингов" },
+                { char: "¥", name: "&yen;", number: "&#165;", desc: "日元符号", en: "Yen sign", zhTW: "日元符號", ja: "円記号", ru: "Знак йены" },
+                { char: "€", name: "&euro;", number: "&#8364;", desc: "欧元符号", en: "Euro sign", zhTW: "歐元符號", ja: "ユーロ記号", ru: "Знак евро" },
+                { char: "§", name: "&sect;", number: "&#167;", desc: "章节符号", en: "Section sign", zhTW: "章節符號", ja: "節記号", ru: "Знак параграфа" },
+                { char: "¶", name: "&para;", number: "&#182;", desc: "段落符号", en: "Paragraph sign", zhTW: "段落符號", ja: "段落記号", ru: "Знак абзаца" },
+                { char: "†", name: "&dagger;", number: "&#8224;", desc: "匕首符号", en: "Dagger", zhTW: "匕首符號", ja: "短剣記号", ru: "Клинок" },
+                { char: "‡", name: "&Dagger;", number: "&#8225;", desc: "双匕首符号", en: "Double dagger", zhTW: "雙匕首符號", ja: "二重短剣記号", ru: "Двойной клинок" },
+                { char: "•", name: "&bull;", number: "&#8226;", desc: "项目符号", en: "Bullet", zhTW: "項目符號", ja: "リストマーカー", ru: "Маркер списка" },
+                { char: "…", name: "&hellip;", number: "&#8230;", desc: "省略号", en: "Ellipsis", zhTW: "省略號", ja: "省略記号", ru: "Эллипс" },
+                { char: "±", name: "&plusmn;", number: "&#177;", desc: "正负号", en: "Plus-minus sign", zhTW: "正負號", ja: "プラスマイナス記号", ru: "Знак плюс-минус" },
+                { char: "×", name: "&times;", number: "&#215;", desc: "乘号", en: "Multiplication sign", zhTW: "乘號", ja: "乗算記号", ru: "Знак умножения" },
+                { char: "÷", name: "&divide;", number: "&#247;", desc: "除号", en: "Division sign", zhTW: "除號", ja: "除算記号", ru: "Знак деления" },
+                { char: "←", name: "&larr;", number: "&#8592;", desc: "左箭头", en: "Left arrow", zhTW: "左箭頭", ja: "左矢印", ru: "Левая стрелка" },
+                { char: "→", name: "&rarr;", number: "&#8594;", desc: "右箭头", en: "Right arrow", zhTW: "右箭頭", ja: "右矢印", ru: "Правая стрелка" },
+                { char: "↑", name: "&uarr;", number: "&#8593;", desc: "上箭头", en: "Up arrow", zhTW: "上箭頭", ja: "上矢印", ru: "Верхняя стрелка" },
+                { char: "↓", name: "&darr;", number: "&#8595;", desc: "下箭头", en: "Down arrow", zhTW: "下箭頭", ja: "下矢印", ru: "Нижняя стрелка" },
+                { char: "↔", name: "&harr;", number: "&#8596;", desc: "左右箭头", en: "Left-right arrow", zhTW: "左右箭頭", ja: "左右矢印", ru: "Лево-правая стрелка" },
+                { char: "↕", name: "&varr;", number: "&#8597;", desc: "上下箭头", en: "Up-down arrow", zhTW: "上下箭頭", ja: "上下矢印", ru: "Верх-низ стрелка" },
+                { char: "©", name: "&copy;", number: "&#169;", desc: "版权所有", en: "Copyright", zhTW: "版權所有", ja: "著作権", ru: "Авторское право" },
+                { char: "α", name: "&alpha;", number: "&#945;", desc: "希腊字母阿尔法", en: "Greek letter alpha", zhTW: "希臘字母阿爾法", ja: "ギリシャ文字アルファ", ru: "Греческая буква альфа" },
+                { char: "β", name: "&beta;", number: "&#946;", desc: "希腊字母贝塔", en: "Greek letter beta", zhTW: "希臘字母貝塔", ja: "ギリシャ文字ベータ", ru: "Греческая буква бета" },
+                { char: "γ", name: "&gamma;", number: "&#947;", desc: "希腊字母伽马", en: "Greek letter gamma", zhTW: "希臘字母伽馬", ja: "ギリシャ文字ガンマ", ru: "Греческая буква гамма" }
+            ],
+
+            init: function() {
+                // 从URL获取语言参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang') || 'zh-CN';
+                if (this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                this.changeLang();
+                this.renderEntities();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                // 更新URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState(null, null, '?' + urlParams.toString());
+                
+                // 更新页面文本
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.innerHTML = this.i18n[lang][key];
+                    }
+                });
+                
+                // 重新渲染转义字符列表以更新描述
+                this.renderEntities();
+            },
+
+            renderEntities: function() {
+                const lang = document.getElementById('lang-selector').value;
+                const tableBody = document.getElementById('entity-table-body');
+                tableBody.innerHTML = '';
+                
+                this.entityData.forEach(item => {
+                    let descText = item.desc;
+                    // 根据当前语言获取对应的描述
+                    switch(lang) {
+                        case 'en':
+                            descText = item.en || item.desc;
+                            break;
+                        case 'zh-TW':
+                            descText = item.zhTW || item.desc;
+                            break;
+                        case 'ja':
+                            descText = item.ja || item.desc;
+                            break;
+                        case 'ru':
+                            descText = item.ru || item.desc;
+                            break;
+                    }
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><span class="char-display">${item.char}</span></td>
+                        <td><span class="shortcut-key" onclick="Tool.copyToClipboard('${item.name}')">${item.name}</span></td>
+                        <td><span class="shortcut-key" onclick="Tool.copyToClipboard('${item.number}')">${item.number}</span></td>
+                        <td>${descText}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                this.updateCount();
+            },
+
+            search: function() {
+                const searchTerm = document.getElementById('search-input').value.toLowerCase();
+                const lang = document.getElementById('lang-selector').value;
+                const rows = document.querySelectorAll('#entity-table-body tr');
+                let count = 0;
+                
+                rows.forEach((row, index) => {
+                    const item = this.entityData[index];
+                    let descText = item.desc.toLowerCase();
+                    
+                    // 根据当前语言获取对应的描述进行搜索
+                    switch(lang) {
+                        case 'en':
+                            descText = (item.en || item.desc).toLowerCase();
+                            break;
+                        case 'zh-TW':
+                            descText = (item.zhTW || item.desc).toLowerCase();
+                            break;
+                        case 'ja':
+                            descText = (item.ja || item.desc).toLowerCase();
+                            break;
+                        case 'ru':
+                            descText = (item.ru || item.desc).toLowerCase();
+                            break;
+                    }
+                    
+                    // 搜索匹配：字符、名称、编号或描述
+                    const matches = 
+                        item.char.toLowerCase().includes(searchTerm) ||
+                        item.name.toLowerCase().includes(searchTerm) ||
+                        item.number.toLowerCase().includes(searchTerm) ||
+                        descText.includes(searchTerm);
+                    
+                    if (matches) {
+                        row.style.display = '';
+                        count++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                this.updateCount(count);
+            },
+
+            updateCount: function(customCount) {
+                const total = customCount !== undefined ? customCount : this.entityData.length;
+                document.getElementById('count-display').textContent = `${total} ${this.i18n[document.getElementById('lang-selector').value]['results'].replace('列表', '').replace('List', '').replace('一覧', '').replace('список', '').trim()}`;
+            },
+
+            copyToClipboard: function(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const notification = document.getElementById('copy-notification');
+                    notification.style.opacity = '1';
+                    setTimeout(() => {
+                        notification.style.opacity = '0';
+                    }, 2000);
+                });
+            }
+        };
+
+        // 页面加载时初始化工具
+        window.onload = function() {
+            Tool.init();
+        };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

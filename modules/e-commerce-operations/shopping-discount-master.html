@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Discount Master</title>
+    
+    <meta name="tool-id" content="shopping_discount_master">
+    <meta name="category" content="E-commerce Operations">
+    <meta name="icon" content="🛍️">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background: #f8fafc; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        .nav-btn.active { border-bottom: 2px solid #ea580c; color: #ea580c; font-weight: 600; background-color: #fff7ed; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Input Styles */
+        .input-group label { font-size: 0.85rem; font-weight: 600; color: #4b5563; margin-bottom: 0.25rem; display: block; }
+        .input-group input, .input-group select { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; transition: all 0.2s; outline: none; }
+        .input-group input:focus, .input-group select:focus { border-color: #ea580c; ring: 2px solid #fed7aa; }
+        
+        .overflow-x-auto::-webkit-scrollbar { height: 6px; }
+        .overflow-x-auto::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/e-commerce-operations/shopping-discount-master.html" />
+</head>
+<body class="p-2 md:p-6 bg-slate-50">
+
+    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl min-h-[700px] border border-slate-100">
+        
+        <div class="bg-white border-b border-slate-100 p-4 flex justify-between items-center sticky top-0 z-10 rounded-t-2xl">
+            <div class="flex items-center gap-3">
+                <div class="bg-orange-100 p-2 rounded-lg text-orange-600">
+                    <i class="fa-solid fa-cart-shopping text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 tracking-tight" data-i18n="app_title">Shopping Discount Master</h1>
+                    <p class="text-xs text-slate-400 hidden md:block" data-i18n="app_subtitle">Ultimate Price Calculator</p>
+                </div>
+            </div>
+            <select id="lang-selector" onchange="App.changeLang()" class="text-sm border border-slate-200 rounded-lg p-2 bg-slate-50 text-slate-700 hover:border-orange-300 focus:border-orange-500 outline-none transition cursor-pointer">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <div class="flex border-b border-slate-200 overflow-x-auto bg-white">
+            <button class="nav-btn active flex-1 py-4 px-6 text-center text-slate-500 hover:text-orange-500 transition whitespace-nowrap flex items-center justify-center gap-2" onclick="App.switchTab('calculator')">
+                <i class="fa-solid fa-calculator"></i><span data-i18n="tab_calc">Smart Calculator</span>
+            </button>
+            <button class="nav-btn flex-1 py-4 px-6 text-center text-slate-500 hover:text-orange-500 transition whitespace-nowrap flex items-center justify-center gap-2" onclick="App.switchTab('comparison')">
+                <i class="fa-solid fa-table-list"></i><span data-i18n="tab_compare">Platform Rules</span>
+            </button>
+        </div>
+
+        <div id="tab-calculator" class="tab-content active p-4 md:p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-tag text-orange-500"></i> <span data-i18n="sec_basic">Basic Info</span>
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="input-group">
+                                <label data-i18n="lbl_price">Item Price (per unit)</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-3 text-slate-400">¥</span>
+                                    <input type="number" id="base-price" class="pl-7" placeholder="100.00">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label data-i18n="lbl_qty">Quantity</label>
+                                <input type="number" id="qty" value="1" min="1" onchange="Calc.updateInputs()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-percent text-blue-500"></i> <span data-i18n="sec_discounts">Discounts & Rules</span>
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div class="input-group">
+                                <label data-i18n="lbl_multibuy">Multi-item Discount</label>
+                                <select id="multi-buy-discount">
+                                    <option value="1" data-i18n="opt_none">None</option>
+                                    <option value="0.95" data-i18n="opt_2_95">2 Items 5% Off (9.5折)</option>
+                                    <option value="0.9" data-i18n="opt_2_9">2 Items 10% Off (9折)</option>
+                                    <option value="0.85" data-i18n="opt_2_85">2 Items 15% Off (8.5折)</option>
+                                    <option value="0.8" data-i18n="opt_2_8">2 Items 20% Off (8折)</option>
+                                    <option value="0.8" data-i18n="opt_3_8">3 Items 20% Off (8折)</option>
+                                    <option value="0.75" data-i18n="opt_3_75">3 Items 25% Off (7.5折)</option>
+                                    <option value="0.7" data-i18n="opt_3_7">3 Items 30% Off (7折)</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label data-i18n="lbl_cross_store">Cross-store Full Reduction</label>
+                                <select id="full-reduction">
+                                    <option value="0" data-i18n="opt_none">None</option>
+                                    <option value="200-30">Every 200 - 30</option>
+                                    <option value="300-50">Every 300 - 50</option>
+                                    <option value="200-20">Every 200 - 20</option>
+                                    <option value="custom" data-i18n="opt_custom">Custom...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="custom-reduction-box" class="grid grid-cols-2 gap-4 mb-4 hidden bg-white p-3 rounded border border-dashed border-slate-300">
+                            <div class="input-group">
+                                <label data-i18n="lbl_every">Every (Threshold)</label>
+                                <input type="number" id="custom-threshold" placeholder="e.g. 300">
+                            </div>
+                            <div class="input-group">
+                                <label data-i18n="lbl_minus">Minus</label>
+                                <input type="number" id="custom-minus" placeholder="e.g. 40">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="input-group">
+                                <label data-i18n="lbl_shop_coupon">Shop Coupon (¥)</label>
+                                <input type="number" id="shop-coupon" placeholder="0">
+                            </div>
+                            <div class="input-group">
+                                <label data-i18n="lbl_platform_coupon">Platform Coupon/Red Packet (¥)</label>
+                                <input type="number" id="platform-coupon" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-coins text-yellow-500"></i> <span data-i18n="sec_advanced">Deposit, Points & Subsidies</span>
+                        </h3>
+
+                        <div class="mb-4 pb-4 border-b border-slate-200">
+                            <div class="flex items-center gap-2 mb-2">
+                                <input type="checkbox" id="enable-deposit" class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500" onchange="Calc.toggleSection('deposit-inputs')">
+                                <label for="enable-deposit" class="text-sm font-semibold text-slate-700 select-none cursor-pointer" data-i18n="lbl_enable_deposit">Enable Deposit Expansion (Pre-sale)</label>
+                            </div>
+                            <div id="deposit-inputs" class="hidden grid grid-cols-2 gap-4 mt-3 bg-white p-3 rounded border">
+                                <div class="input-group">
+                                    <label data-i18n="lbl_deposit_paid">Deposit Paid (¥)</label>
+                                    <input type="number" id="deposit-paid" placeholder="50">
+                                </div>
+                                <div class="input-group">
+                                    <label data-i18n="lbl_deposit_inflated">Inflated Value (¥)</label>
+                                    <input type="number" id="deposit-inflated" placeholder="100">
+                                    <p class="text-xs text-slate-400 mt-1" data-i18n="hint_deposit">Value deducted from total price</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 pb-4 border-b border-slate-200">
+                            <div class="flex items-center gap-2 mb-2">
+                                <input type="checkbox" id="enable-points" class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500" onchange="Calc.toggleSection('points-inputs')">
+                                <label for="enable-points" class="text-sm font-semibold text-slate-700 select-none cursor-pointer" data-i18n="lbl_enable_points">Use Points/Integral</label>
+                            </div>
+                            <div id="points-inputs" class="hidden grid grid-cols-2 gap-4 mt-3 bg-white p-3 rounded border">
+                                <div class="input-group">
+                                    <label data-i18n="lbl_points_type">Deduction Type</label>
+                                    <select id="points-type">
+                                        <option value="direct" data-i18n="opt_points_direct">Direct Money (¥)</option>
+                                        <option value="rate" data-i18n="opt_points_rate">Points Count + Rate</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label data-i18n="lbl_deduction_val">Deduction / Points</label>
+                                    <input type="number" id="points-val" placeholder="Amount">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label data-i18n="lbl_subsidy">Subsidy (National/Platform) (¥)</label>
+                            <input type="number" id="subsidy" placeholder="0" class="border-green-200 focus:border-green-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1">
+                    <div class="sticky top-24 space-y-4">
+                        <button onclick="Calc.calculate()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-200 transition transform hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-2">
+                            <span data-i18n="btn_calc">Calculate Final Price</span> <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+
+                        <div id="result-card" class="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden hidden transition-all duration-500">
+                            <div class="bg-slate-800 p-6 text-white text-center relative overflow-hidden">
+                                <div class="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl"></div>
+                                <p class="text-slate-400 text-sm uppercase tracking-wider font-semibold" data-i18n="res_total_pay">Total Payment</p>
+                                <h2 class="text-5xl font-bold my-2">¥<span id="res-total">0.00</span></h2>
+                                <p class="text-green-400 text-sm font-mono"><span data-i18n="res_saved">Saved</span>: ¥<span id="res-saved">0.00</span></p>
+                            </div>
+                            
+                            <div class="p-5 space-y-3 text-sm">
+                                <div class="flex justify-between items-center text-slate-600 pb-2 border-b border-slate-100">
+                                    <span data-i18n="res_per_item">Price Per Item</span>
+                                    <span class="font-bold text-lg text-slate-800">¥<span id="res-unit">0.00</span></span>
+                                </div>
+                                <div class="flex justify-between items-center text-slate-500">
+                                    <span data-i18n="res_orig">Original Total</span>
+                                    <span class="line-through">¥<span id="res-original">0.00</span></span>
+                                </div>
+                                <div class="flex justify-between items-center text-slate-500">
+                                    <span data-i18n="res_discount_rate">Discount Rate</span>
+                                    <span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-bold" id="res-rate">0%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-slate-50 p-4 border-t border-slate-100 text-xs text-slate-500 space-y-1" id="res-breakdown">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-comparison" class="tab-content p-4 md:p-8">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-scale-balanced text-orange-500"></i> <span data-i18n="title_rules">Platform Rules Comparison</span>
+            </h2>
+            
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+                <table class="w-full text-sm text-left text-slate-600 min-w-[800px]">
+                    <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                        <tr>
+                            <th class="px-6 py-4 sticky left-0 bg-slate-100 z-10" data-i18n="col_platform">Platform</th>
+                            <th class="px-6 py-4" data-i18n="col_rules">Core Rules</th>
+                            <th class="px-6 py-4" data-i18n="col_1item">1 Item (¥100)</th>
+                            <th class="px-6 py-4" data-i18n="col_2items">2 Items (¥100 ea)</th>
+                            <th class="px-6 py-4" data-i18n="col_3items">3 Items (¥100 ea)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 bg-white" id="rules-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* --- I18N DICTIONARY --- */
+        const I18N = {
+            'en': {
+                app_title: 'Shopping Discount Master',
+                app_subtitle: 'Ultimate Price Calculator',
+                tab_calc: 'Smart Calculator',
+                tab_compare: 'Platform Rules',
+                tab_tips: 'Saving Tips',
+                sec_basic: 'Basic Info',
+                lbl_price: 'Item Price (per unit)',
+                lbl_qty: 'Quantity',
+                sec_discounts: 'Discounts & Rules',
+                lbl_multibuy: 'Multi-item Discount',
+                opt_none: 'None',
+                opt_2_95: '2 Items 5% Off',
+                opt_2_9: '2 Items 10% Off',
+                opt_2_85: '2 Items 15% Off',
+                opt_2_8: '2 Items 20% Off',
+                opt_3_8: '3 Items 20% Off',
+                opt_3_75: '3 Items 25% Off',
+                opt_3_7: '3 Items 30% Off',
+                lbl_cross_store: 'Cross-store Full Reduction',
+                opt_custom: 'Custom...',
+                lbl_every: 'Every (Threshold)',
+                lbl_minus: 'Minus',
+                lbl_shop_coupon: 'Shop Coupon',
+                lbl_platform_coupon: 'Platform Coupon/Red Packet',
+                sec_advanced: 'Deposit, Points & Subsidies',
+                lbl_enable_deposit: 'Enable Deposit Expansion (Pre-sale)',
+                lbl_deposit_paid: 'Deposit Paid',
+                lbl_deposit_inflated: 'Inflated Value (Deducted from Price)',
+                hint_deposit: 'E.g., Pay 50, counts as 100 off base price',
+                lbl_enable_points: 'Use Points/Integral',
+                lbl_points_type: 'Deduction Type',
+                opt_points_direct: 'Direct Money',
+                opt_points_rate: 'Points / 100 (100pts = ¥1)',
+                lbl_deduction_val: 'Amount',
+                lbl_subsidy: 'Subsidy (National/Platform)',
+                btn_calc: 'Calculate Final Price',
+                res_total_pay: 'Total Payment',
+                res_saved: 'Saved',
+                res_per_item: 'Price Per Item',
+                res_orig: 'Original Total',
+                res_discount_rate: 'Discount Rate',
+                title_rules: 'Platform Rules Comparison',
+                col_platform: 'Platform',
+                col_rules: 'Core Rules',
+                col_1item: '1 Item (¥100)',
+                col_2items: '2 Items',
+                col_3items: '3 Items',
+                tips_title: 'Hidden Savings Guide',
+                tips_subtitle: 'Don\'t miss out on these extra benefits'
+            },
+            'zh-CN': {
+                app_title: '电商折扣计算器',
+                app_subtitle: '双11/双12/618 必备神器',
+                tab_calc: '智能计算器',
+                tab_compare: '平台比价表',
+                tab_tips: '省钱攻略',
+                sec_basic: '基础信息',
+                lbl_price: '商品单价 (¥)',
+                lbl_qty: '购买数量',
+                sec_discounts: '折扣与满减',
+                lbl_multibuy: '多件多折',
+                opt_none: '无折扣',
+                opt_2_95: '两件95折',
+                opt_2_9: '两件9折',
+                opt_2_85: '两件85折',
+                opt_2_8: '两件8折',
+                opt_3_8: '三件8折',
+                opt_3_75: '三件75折',
+                opt_3_7: '三件7折',
+                lbl_cross_store: '跨店满减',
+                opt_custom: '自定义...',
+                lbl_every: '每满 (门槛)',
+                lbl_minus: '减 (金额)',
+                lbl_shop_coupon: '店铺优惠券 (¥)',
+                lbl_platform_coupon: '平台券/品类券/红包 (¥)',
+                sec_advanced: '定金、积分与补贴',
+                lbl_enable_deposit: '启用定金膨胀 (预售)',
+                lbl_deposit_paid: '实际支付定金',
+                lbl_deposit_inflated: '定金抵扣金额 (膨胀后)',
+                hint_deposit: '例如：付50元定金，尾款立减100元',
+                lbl_enable_points: '使用积分/金豆抵扣',
+                lbl_points_type: '抵扣方式',
+                opt_points_direct: '直接抵扣金额 (¥)',
+                opt_points_rate: '积分数量 (默认100分=1元)',
+                lbl_deduction_val: '数值',
+                lbl_subsidy: '平台/国家补贴 (¥)',
+                btn_calc: '计算到手价',
+                res_total_pay: '实付总额',
+                res_saved: '共省下',
+                res_per_item: '单件到手价',
+                res_orig: '原价总额',
+                res_discount_rate: '综合折扣率',
+                title_rules: '各平台双十二核心规则',
+                col_platform: '平台',
+                col_rules: '核心规则',
+                col_1item: '单件(100元)到手',
+                col_2items: '两件到手',
+                col_3items: '三件到手',
+                tips_title: '特色省钱攻略',
+                tips_subtitle: '别忘了领这些隐藏福利'
+            },
+            'zh-TW': {
+                app_title: '電商折扣計算器',
+                app_subtitle: '雙11/雙12/618 必備神器',
+                tab_calc: '智能計算器',
+                tab_compare: '平台比價表',
+                tab_tips: '省錢攻略',
+                sec_basic: '基礎信息',
+                lbl_price: '商品單價 (¥)',
+                lbl_qty: '購買數量',
+                sec_discounts: '折扣與滿減',
+                lbl_multibuy: '多件多折',
+                opt_none: '無折扣',
+                opt_2_95: '兩件95折',
+                opt_2_9: '兩件9折',
+                opt_2_85: '兩件85折',
+                opt_2_8: '兩件8折',
+                opt_3_8: '三件8折',
+                opt_3_75: '三件75折',
+                opt_3_7: '三件7折',
+                lbl_cross_store: '跨店滿減',
+                opt_custom: '自定義...',
+                lbl_every: '每滿 (門檻)',
+                lbl_minus: '減 (金額)',
+                lbl_shop_coupon: '店鋪優惠券 (¥)',
+                lbl_platform_coupon: '平台券/品類券/紅包 (¥)',
+                sec_advanced: '定金、積分與補貼',
+                lbl_enable_deposit: '啟用定金膨脹 (預售)',
+                lbl_deposit_paid: '實際支付定金',
+                lbl_deposit_inflated: '定金抵扣金額 (膨脹後)',
+                hint_deposit: '例如：付50元定金，尾款立減100元',
+                lbl_enable_points: '使用積分/金豆抵扣',
+                lbl_points_type: '抵扣方式',
+                opt_points_direct: '直接抵扣金額 (¥)',
+                opt_points_rate: '積分數量 (默認100分=1元)',
+                lbl_deduction_val: '數值',
+                lbl_subsidy: '平台/國家補貼 (¥)',
+                btn_calc: '計算到手價',
+                res_total_pay: '實付總額',
+                res_saved: '共省下',
+                res_per_item: '單件到手價',
+                res_orig: '原價總額',
+                res_discount_rate: '綜合折扣率',
+                title_rules: '各平台核心規則',
+                col_platform: '平台',
+                col_rules: '核心規則',
+                col_1item: '單件(100元)到手',
+                col_2items: '兩件到手',
+                col_3items: '三件到手',
+                tips_title: '特色省錢攻略',
+                tips_subtitle: '別忘了領這些隱藏福利'
+            },
+            'ja': {
+                app_title: '通販割引計算機',
+                app_subtitle: '独身の日・ブラックフライデー対応',
+                tab_calc: '計算機',
+                tab_compare: 'サイト比較',
+                tab_tips: 'お得情報',
+                sec_basic: '基本情報',
+                lbl_price: '単価 (¥)',
+                lbl_qty: '数量',
+                sec_discounts: '割引・キャンペーン',
+                lbl_multibuy: 'まとめ買い割引',
+                opt_none: 'なし',
+                opt_2_95: '2点 5% OFF',
+                opt_2_9: '2点 10% OFF',
+                opt_2_85: '2点 15% OFF',
+                opt_2_8: '2点 20% OFF',
+                opt_3_8: '3点 20% OFF',
+                opt_3_75: '3点 25% OFF',
+                opt_3_7: '3点 30% OFF',
+                lbl_cross_store: 'まとめ買い値引き',
+                opt_custom: 'カスタム...',
+                lbl_every: '〜円ごとに',
+                lbl_minus: '円引き',
+                lbl_shop_coupon: '店舗クーポン (¥)',
+                lbl_platform_coupon: 'サイトクーポン (¥)',
+                sec_advanced: '手付金・ポイント・補助金',
+                lbl_enable_deposit: '手付金増額 (予約販売)',
+                lbl_deposit_paid: '支払済の手付金',
+                lbl_deposit_inflated: '手付金の評価額',
+                hint_deposit: '例: 50元払って100元分として充当',
+                lbl_enable_points: 'ポイント利用',
+                lbl_points_type: '利用タイプ',
+                opt_points_direct: '金額指定 (¥)',
+                opt_points_rate: 'ポイント数 (100pt=1円)',
+                lbl_deduction_val: '値',
+                lbl_subsidy: '政府/公式補助金 (¥)',
+                btn_calc: '計算する',
+                res_total_pay: '支払総額',
+                res_saved: '節約額',
+                res_per_item: '1点あたり',
+                res_orig: '元値',
+                res_discount_rate: '実質割引率',
+                title_rules: 'サイト別ルール比較',
+                col_platform: 'サイト',
+                col_rules: '基本ルール',
+                col_1item: '1点購入(100元)',
+                col_2items: '2点購入',
+                col_3items: '3点購入',
+                tips_title: 'お得な裏技',
+                tips_subtitle: '見逃せない特典情報'
+            },
+            'ru': {
+                app_title: 'Калькулятор Скидок',
+                app_subtitle: 'Для распродаж 11.11 и 12.12',
+                tab_calc: 'Калькулятор',
+                tab_compare: 'Сравнение',
+                tab_tips: 'Советы',
+                sec_basic: 'Основное',
+                lbl_price: 'Цена за шт (¥)',
+                lbl_qty: 'Кол-во',
+                sec_discounts: 'Скидки и Акции',
+                lbl_multibuy: 'Скидка за объем',
+                opt_none: 'Нет',
+                opt_2_95: '2 шт -5%',
+                opt_2_9: '2 шт -10%',
+                opt_2_85: '2 шт -15%',
+                opt_2_8: '2 шт -20%',
+                opt_3_8: '3 шт -20%',
+                opt_3_75: '3 шт -25%',
+                opt_3_7: '3 шт -30%',
+                lbl_cross_store: 'Скидка от суммы',
+                opt_custom: 'Другое...',
+                lbl_every: 'Каждые',
+                lbl_minus: 'Скидка',
+                lbl_shop_coupon: 'Купон магазина (¥)',
+                lbl_platform_coupon: 'Купон платформы (¥)',
+                sec_advanced: 'Депозит, Баллы, Субсидии',
+                lbl_enable_deposit: 'Депозит (Предзаказ)',
+                lbl_deposit_paid: 'Оплаченный депозит',
+                lbl_deposit_inflated: 'Номинал депозита',
+                hint_deposit: 'Пример: платишь 50, считается как 100',
+                lbl_enable_points: 'Использовать баллы',
+                lbl_points_type: 'Тип списания',
+                opt_points_direct: 'Сумма (¥)',
+                opt_points_rate: 'Баллы (100б = 1¥)',
+                lbl_deduction_val: 'Значение',
+                lbl_subsidy: 'Субсидия (¥)',
+                btn_calc: 'Рассчитать',
+                res_total_pay: 'Итого к оплате',
+                res_saved: 'Экономия',
+                res_per_item: 'Цена за шт',
+                res_orig: 'Исходная цена',
+                res_discount_rate: 'Скидка',
+                title_rules: 'Сравнение платформ',
+                col_platform: 'Платформа',
+                col_rules: 'Правила',
+                col_1item: '1 шт (100¥)',
+                col_2items: '2 шт',
+                col_3items: '3 шт',
+                tips_title: 'Секреты экономии',
+                tips_subtitle: 'Дополнительные бонусы'
+            }
+        };
+
+        /* --- PLATFORM DATA --- */
+        const PLATFORM_DATA = [
+            {
+                name: {en:'Douyin', 'zh-CN':'抖音', 'zh-TW':'抖音', ja:'Douyin', ru:'Douyin'},
+                rules: {en:'Official cut 12%; Coupons over 500-25; Some shops 2 items 10% off', 'zh-CN':'官方立减12%；消费券满500减25；部分店铺两件9折', 'zh-TW':'官方立減12%；消費券滿500減25；部分店鋪兩件9折'},
+                p1: '¥88', p2: '¥176 / ¥180', p3: '¥264 / ¥240'
+            },
+            {
+                name: {en:'Taobao', 'zh-CN':'淘宝', 'zh-TW':'淘寶', ja:'Taobao', ru:'Taobao'},
+                rules: {en:'Official cut 12%; Category coupons 4000-400', 'zh-CN':'官方立减12%起；品类券满4000减400', 'zh-TW':'官方立減12%起；品類券滿4000減400'},
+                p1: '¥88', p2: '¥176', p3: '¥264'
+            },
+            {
+                name: {en:'JD', 'zh-CN':'京东', 'zh-TW':'京東', ja:'JD.com', ru:'JD'},
+                rules: {en:'Every 200-30; Nat. Subsidy stackable; Some items 2 for 20% off', 'zh-CN':'跨店每满200减30；国补叠加；部分两件8折', 'zh-TW':'跨店每滿200減30；國補疊加；部分兩件8折'},
+                p1: '¥100', p2: '¥130 / ¥160', p3: '¥190 / ¥210'
+            },
+            {
+                name: {en:'Pinduoduo', 'zh-CN':'拼多多', 'zh-TW':'拼多多', ja:'Pinduoduo', ru:'Pinduoduo'},
+                rules: {en:'Every 200-20; Brand subsidy; Direct drops 30-50%', 'zh-CN':'跨店满200减20；品牌联合补贴；直降30%-50%', 'zh-TW':'跨店滿200減20；品牌聯合補貼；直降30%-50%'},
+                p1: '¥70-80', p2: '¥180', p3: '¥250'
+            },
+            {
+                name: {en:'Vipshop', 'zh-CN':'唯品会', 'zh-TW':'唯品會', ja:'Vipshop', ru:'Vipshop'},
+                rules: {en:'Coupons 299-80; Super VIP 98% off; 2 items 10% off', 'zh-CN':'299减80穿戴券；超V会员98折；两件9折', 'zh-TW':'299減80穿戴券；超V會員98折；兩件9折'},
+                p1: '¥84', p2: '¥180', p3: '¥219'
+            },
+            {
+                name: {en:'Xiaohongshu', 'zh-CN':'小红书', 'zh-TW':'小紅書', ja:'RED', ru:'RED'},
+                rules: {en:'Shop discounts ~20-30%; Live stream coupons', 'zh-CN':'店铺自主直降20%-30%；直播间口令券', 'zh-TW':'店鋪自主直降20%-30%；直播間口令券'},
+                p1: '¥70-80', p2: '¥170', p3: '¥225'
+            }
+        ];
+
+        /* --- APP CONTROLLER --- */
+        const App = {
+            lang: 'en',
+
+            init: () => {
+                // 1. 优先读取 URL 参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const langFromUrl = urlParams.get('lang');
+                
+                if (langFromUrl && I18N[langFromUrl]) {
+                    App.lang = langFromUrl;
+                } else {
+                    // 2. 其次读取浏览器语言
+                    const navLang = navigator.language || navigator.userLanguage;
+                    if (navLang.startsWith('zh')) App.lang = navLang.includes('TW') || navLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+                    else if (navLang.startsWith('ja')) App.lang = 'ja';
+                    else if (navLang.startsWith('ru')) App.lang = 'ru';
+                    else App.lang = 'en';
+                }
+                
+                document.getElementById('lang-selector').value = App.lang;
+                App.applyLang();
+                
+                // Initialize Listeners
+                document.getElementById('full-reduction').addEventListener('change', (e) => {
+                    const customBox = document.getElementById('custom-reduction-box');
+                    if(e.target.value === 'custom') customBox.classList.remove('hidden');
+                    else customBox.classList.add('hidden');
+                });
+            },
+
+            changeLang: () => {
+                App.lang = document.getElementById('lang-selector').value;
+                
+                // 更新 URL
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('lang', App.lang);
+                window.history.pushState({}, '', newUrl);
+
+                App.applyLang();
+            },
+
+            applyLang: () => {
+                const t = I18N[App.lang] || I18N['en'];
+                
+                // 1. Update Static Text
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(t[key]) el.innerText = t[key];
+                    // Also update placeholder if needed (simple check)
+                    if(el.tagName === 'INPUT' && t[key]) el.placeholder = t[key]; 
+                });
+
+                // 2. Update Select Options text
+                document.querySelectorAll('option[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(t[key]) el.innerText = t[key];
+                });
+
+                // 3. Render Tables
+                App.renderComparison();
+            },
+
+            renderComparison: () => {
+                const tbody = document.getElementById('rules-table-body');
+                tbody.innerHTML = '';
+                PLATFORM_DATA.forEach(p => {
+                    const pName = p.name[App.lang] || p.name['en'];
+                    const pRule = p.rules[App.lang] || p.rules['en'] || p.rules['zh-CN']; // Fallback
+                    
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition";
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 font-bold text-slate-800 sticky left-0 bg-white border-r border-slate-100">${pName}</td>
+                        <td class="px-6 py-4 text-xs md:text-sm leading-relaxed">${pRule}</td>
+                        <td class="px-6 py-4 text-orange-600 font-mono font-bold">${p.p1}</td>
+                        <td class="px-6 py-4 font-mono">${p.p2}</td>
+                        <td class="px-6 py-4 font-mono text-slate-500">${p.p3}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            switchTab: (id) => {
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                document.getElementById(`tab-${id}`).classList.add('active');
+                
+                document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+                event.currentTarget.classList.add('active');
+            }
+        };
+
+        /* --- CALCULATOR LOGIC --- */
+        const Calc = {
+            toggleSection: (id) => {
+                const el = document.getElementById(id);
+                if (el.classList.contains('hidden')) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            },
+
+            updateInputs: () => {
+                // Future: Add logic to auto-select multi-buy discount based on qty
+            },
+
+            calculate: () => {
+                // 1. Get Values
+                const price = parseFloat(document.getElementById('base-price').value) || 0;
+                const qty = parseInt(document.getElementById('qty').value) || 1;
+                const multiBuyRate = parseFloat(document.getElementById('multi-buy-discount').value) || 1;
+                
+                const shopCoupon = parseFloat(document.getElementById('shop-coupon').value) || 0;
+                const platformCoupon = parseFloat(document.getElementById('platform-coupon').value) || 0;
+                const subsidy = parseFloat(document.getElementById('subsidy').value) || 0;
+
+                // 2. Base Calculation
+                let originalTotal = price * qty;
+                let runningTotal = originalTotal;
+
+                // 3. Apply Multi-buy
+                runningTotal = runningTotal * multiBuyRate;
+
+                // 4. Cross Store Full Reduction
+                const fullRedType = document.getElementById('full-reduction').value;
+                let fullRedDeduction = 0;
+                
+                let threshold = 0;
+                let minus = 0;
+
+                if (fullRedType === 'custom') {
+                    threshold = parseFloat(document.getElementById('custom-threshold').value) || 999999;
+                    minus = parseFloat(document.getElementById('custom-minus').value) || 0;
+                } else if (fullRedType !== '0') {
+                    const parts = fullRedType.split('-');
+                    threshold = parseFloat(parts[0]);
+                    minus = parseFloat(parts[1]);
+                }
+
+                if (threshold > 0 && minus > 0) {
+                    const count = Math.floor(runningTotal / threshold);
+                    fullRedDeduction = count * minus;
+                    runningTotal -= fullRedDeduction;
+                }
+
+                // 5. Coupons & Subsidies
+                runningTotal = runningTotal - shopCoupon - platformCoupon - subsidy;
+
+                // 6. Deposit Logic
+                let depositDiscount = 0;
+                if (document.getElementById('enable-deposit').checked) {
+                    const dPaid = parseFloat(document.getElementById('deposit-paid').value) || 0;
+                    const dInf = parseFloat(document.getElementById('deposit-inflated').value) || 0;
+                    if (dInf > dPaid) {
+                        depositDiscount = dInf - dPaid;
+                        runningTotal -= depositDiscount;
+                    }
+                }
+
+                // 7. Points
+                let pointsDeduction = 0;
+                if (document.getElementById('enable-points').checked) {
+                    const pType = document.getElementById('points-type').value;
+                    const pVal = parseFloat(document.getElementById('points-val').value) || 0;
+                    if (pType === 'direct') {
+                        pointsDeduction = pVal;
+                    } else {
+                        pointsDeduction = pVal / 100; 
+                    }
+                    runningTotal -= pointsDeduction;
+                }
+
+                // Safety check
+                if (runningTotal < 0) runningTotal = 0;
+
+                // 8. Render Results
+                document.getElementById('res-total').innerText = runningTotal.toFixed(2);
+                document.getElementById('res-original').innerText = originalTotal.toFixed(2);
+                
+                const saved = originalTotal - runningTotal;
+                document.getElementById('res-saved').innerText = saved.toFixed(2);
+                
+                const unitPrice = runningTotal / qty;
+                document.getElementById('res-unit').innerText = unitPrice.toFixed(2);
+
+                const rate = originalTotal > 0 ? ((1 - (runningTotal / originalTotal)) * 100).toFixed(1) : 0;
+                document.getElementById('res-rate').innerText = rate + '%';
+
+                // Breakdown HTML
+                const bdEl = document.getElementById('res-breakdown');
+                let html = '';
+                if(multiBuyRate < 1) html += `<div class="flex justify-between"><span>Multi-buy (${(multiBuyRate*10).toFixed(1)}折)</span> <span>- ¥${(originalTotal * (1-multiBuyRate)).toFixed(2)}</span></div>`;
+                if(fullRedDeduction > 0) html += `<div class="flex justify-between"><span>Full Reduction</span> <span>- ¥${fullRedDeduction}</span></div>`;
+                if(shopCoupon > 0) html += `<div class="flex justify-between"><span>Shop Coupon</span> <span>- ¥${shopCoupon}</span></div>`;
+                if(platformCoupon > 0) html += `<div class="flex justify-between"><span>Platform Coupon</span> <span>- ¥${platformCoupon}</span></div>`;
+                if(subsidy > 0) html += `<div class="flex justify-between text-green-600"><span>Subsidy</span> <span>- ¥${subsidy}</span></div>`;
+                if(depositDiscount > 0) html += `<div class="flex justify-between"><span>Deposit Bonus</span> <span>- ¥${depositDiscount}</span></div>`;
+                if(pointsDeduction > 0) html += `<div class="flex justify-between"><span>Points</span> <span>- ¥${pointsDeduction.toFixed(2)}</span></div>`;
+                
+                bdEl.innerHTML = html || '<div class="text-center italic text-slate-300">No discounts applied</div>';
+
+                // Show Card
+                document.getElementById('result-card').classList.remove('hidden');
+            }
+        };
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', App.init);
+
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

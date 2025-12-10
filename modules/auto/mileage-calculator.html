@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mileage Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="mileage_calculator">
+    <meta name="category" content="auto">
+    <meta name="icon" content="🚗">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Mileage Calculator">
+    <meta name="description" content="Calculate distance based on fuel consumption and fuel used.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="里程计算器">
+    <meta name="lang-description-zh-CN" content="根据燃油消耗量和使用的燃油量计算行驶距离。">
+    
+    <meta name="lang-title-zh-TW" content="里程計算器">
+    <meta name="lang-description-zh-TW" content="根據燃油消耗量和使用的燃油量計算行駛距離。">
+    
+    <meta name="lang-title-ja" content="燃費距離計算ツール">
+    <meta name="lang-description-ja" content="燃費と使用燃料に基づいて距離を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор пробега">
+    <meta name="lang-description-ru" content="Вычислите расстояние на основе расхода топлива и использованного топлива.">
+    
+    <meta name="lang-title-es" content="Calculadora de Kilometraje">
+    <meta name="lang-description-es" content="Calcula la distancia según el consumo de combustible y el combustible utilizado.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/auto/mileage-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="mileage_calculator" 
+         data-category="transportation" 
+         data-title="Mileage Calculator" 
+         data-icon="🚗">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="mileage-lang" onchange="MileageCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🚗 Mileage Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <!-- Fuel Efficiency -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="efficiency_label">Fuel Efficiency</label>
+                <div class="flex">
+                    <input type="number" id="fuel-efficiency" class="flex-1 p-2 border rounded-r-none focus:ring-2 focus:ring-blue-500 outline-none" placeholder="30" min="0.01" step="0.01">
+                    <div id="efficiency-unit" class="bg-gray-100 px-3 py-2 border border-l-0 rounded-r flex items-center text-gray-600">mpg</div>
+                </div>
+            </div>
+            
+            <!-- Fuel Used -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="fuel_used_label">Fuel Used</label>
+                <div class="flex">
+                    <input type="number" id="fuel-used" class="flex-1 p-2 border rounded-r-none focus:ring-2 focus:ring-blue-500 outline-none" placeholder="10" min="0.01" step="0.01">
+                    <div id="fuel-unit" class="bg-gray-100 px-3 py-2 border border-l-0 rounded-r flex items-center text-gray-600">gallons</div>
+                </div>
+            </div>
+            
+            <!-- Unit System -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="unit_system">Unit System</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="unit-system" value="imperial" checked class="text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2" data-i18n="imperial">Imperial (mpg, miles, gallons)</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="unit-system" value="metric" class="text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2" data-i18n="metric">Metric (L/100km, km, liters)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="MileageCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Distance</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="result_label">Calculated Distance</div>
+            <div id="distance-result" class="text-3xl font-bold text-blue-800">--</div>
+            <div id="calculation-details" class="text-sm text-gray-600 mt-4"></div>
+        </div>
+    </div>
+
+    <script>
+        const MileageCalc = {
+            i18n: {
+                'en': {
+                    title: '🚗 Mileage Calculator',
+                    efficiency_label: 'Fuel Efficiency',
+                    fuel_used_label: 'Fuel Used',
+                    unit_system: 'Unit System',
+                    imperial: 'Imperial',
+                    metric: 'Metric',
+                    btn_calc: 'Calculate Distance',
+                    result_label: 'Calculated Distance',
+                    err_invalid: 'Please enter valid values',
+                    calculation: 'Calculation: %efficiency% %eff_unit% × %fuel% %fuel_unit% = %distance% %dist_unit%'
+                },
+                'zh-CN': {
+                    title: '🚗 里程计算器',
+                    efficiency_label: '燃油效率',
+                    fuel_used_label: '燃油使用量',
+                    unit_system: '单位制',
+                    imperial: '英制',
+                    metric: '公制',
+                    btn_calc: '计算距离',
+                    result_label: '计算得出的距离',
+                    err_invalid: '请输入有效数值',
+                    calculation: '计算过程: %efficiency% %eff_unit% × %fuel% %fuel_unit% = %distance% %dist_unit%'
+                },
+                'zh-TW': {
+                    title: '🚗 里程計算器',
+                    efficiency_label: '燃油效率',
+                    fuel_used_label: '燃油使用量',
+                    unit_system: '單位制',
+                    imperial: '英制',
+                    metric: '公制',
+                    btn_calc: '計算距離',
+                    result_label: '計算得出的距離',
+                    err_invalid: '請輸入有效數值',
+                    calculation: '計算過程: %efficiency% %eff_unit% × %fuel% %fuel_unit% = %distance% %dist_unit%'
+                },
+                'ja': {
+                    title: '🚗 燃費距離計算ツール',
+                    efficiency_label: '燃費',
+                    fuel_used_label: '使用燃料',
+                    unit_system: '単位系',
+                    imperial: 'インペリアル単位',
+                    metric: 'メートル法',
+                    btn_calc: '距離を計算',
+                    result_label: '計算された距離',
+                    err_invalid: '有効な値を入力してください',
+                    calculation: '計算: %efficiency% %eff_unit% × %fuel% %fuel_unit% = %distance% %dist_unit%'
+                },
+                'ru': {
+                    title: '🚗 Калькулятор пробега',
+                    efficiency_label: 'Эффективность топлива',
+                    fuel_used_label: 'Использованное топливо',
+                    unit_system: 'Система единиц',
+                    imperial: 'Имперская',
+                    metric: 'Метрическая',
+                    btn_calc: 'Вычислить расстояние',
+                    result_label: 'Вычисленное расстояние',
+                    err_invalid: 'Введите действительные значения',
+                    calculation: 'Вычисление: %efficiency% %eff_unit% × %fuel% %fuel_unit% = %distance% %dist_unit%'
+                },
+                'es': {
+                    title: '🚗 Calculadora de Kilometraje',
+                    efficiency_label: 'Eficiencia de combustible',
+                    fuel_used_label: 'Combustible utilizado',
+                    unit_system: 'Sistema de unidades',
+                    imperial: 'Imperial',
+                    metric: 'Métrico',
+                    btn_calc: 'Calcular distancia',
+                    result_label: 'Distancia calculada',
+                    err_invalid: 'Ingrese valores válidos',
+                    calculation: 'Cálculo: %efficiency% %eff_unit% × %fuel% %fuel_unit% = %distance% %dist_unit%'
+                }
+            },
+
+            init: () => {
+                // 监听单位系统变化
+                document.querySelectorAll('input[name="unit-system"]').forEach(radio => {
+                    radio.addEventListener('change', MileageCalc.updateUnits);
+                });
+                MileageCalc.updateUnits();
+            },
+
+            updateUnits: () => {
+                const isImperial = document.querySelector('input[name="unit-system"][value="imperial"]').checked;
+                const efficiencyUnit = isImperial ? 'mpg' : 'L/100km';
+                const fuelUnit = isImperial ? 'gallons' : 'liters';
+                
+                document.getElementById('efficiency-unit').textContent = efficiencyUnit;
+                document.getElementById('fuel-unit').textContent = fuelUnit;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('mileage-lang').value;
+                const texts = MileageCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="mileage_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                MileageCalc.calc();
+            },
+
+            calc: () => {
+                const efficiency = parseFloat(document.getElementById('fuel-efficiency').value) || 0;
+                const fuelUsed = parseFloat(document.getElementById('fuel-used').value) || 0;
+                const isImperial = document.querySelector('input[name="unit-system"][value="imperial"]').checked;
+                const lang = document.getElementById('mileage-lang').value;
+                const texts = MileageCalc.i18n[lang];
+
+                if (efficiency <= 0 || fuelUsed <= 0) {
+                    document.getElementById('distance-result').innerText = texts.err_invalid;
+                    document.getElementById('calculation-details').innerText = '';
+                    return;
+                }
+
+                // 计算距离
+                let distance, effUnit, fuelUnit, distUnit;
+                
+                if (isImperial) {
+                    // 英制: 英里/加仑 (mpg)
+                    distance = efficiency * fuelUsed;
+                    effUnit = 'mpg';
+                    fuelUnit = 'gallons';
+                    distUnit = 'miles';
+                } else {
+                    // 公制: 升/100公里 (L/100km)
+                    distance = (fuelUsed / efficiency) * 100;
+                    effUnit = 'L/100km';
+                    fuelUnit = 'liters';
+                    distUnit = 'km';
+                }
+
+                // 显示结果
+                document.getElementById('distance-result').innerText = `${distance.toFixed(2)} ${distUnit}`;
+                
+                // 显示计算过程
+                const calculationText = texts.calculation
+                    .replace('%efficiency%', efficiency.toFixed(2))
+                    .replace('%eff_unit%', effUnit)
+                    .replace('%fuel%', fuelUsed.toFixed(2))
+                    .replace('%fuel_unit%', fuelUnit)
+                    .replace('%distance%', distance.toFixed(2))
+                    .replace('%dist_unit%', distUnit);
+                
+                document.getElementById('calculation-details').innerText = calculationText;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', MileageCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('mileage-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    MileageCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

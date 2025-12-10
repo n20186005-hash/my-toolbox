@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="🔒">
+    <title>Braille Encryption Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 樣式保持不變，確保工具的美觀與響應性 */
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 120px; resize: vertical; }
+        .result-card { background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .result-row { padding: 6px 0; border-bottom: 1px dashed #a7f3d0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #1e3a8a; display: block; margin-bottom: 4px; }
+        .result-value { font-weight: 600; color: #065f46; word-break: break-all; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        button { padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #22c55e; color: white; border: none; }
+        .btn-primary:hover { background: #16a34a; }
+        .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        .btn-secondary:hover { background: #e5e7eb; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/text-tools/braille-encrypt.html" />
+</head>
+<body>
+
+    <div class="tool-module" id="braille-encrypt-tool">
+        <!-- 語言選擇器 -->
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="BrailleTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">🔤 Braille Encryption Tool</h2>
+
+        <div class="space-y-6">
+            <!-- 輸入區 -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="input_section">Input Content</h3>
+                <div class="form-group">
+                    <label data-i18n="content_to_encrypt">Content to Encrypt</label>
+                    <textarea id="input_content" placeholder="Enter text to convert to braille..." oninput="BrailleTool.preview()" class="focus:ring-2 focus:ring-green-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <!-- 選項區 -->
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="options">Options</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label data-i18n="separator">Braille Character Separator</label>
+                        <select id="separator" onchange="BrailleTool.preview()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value=" " selected data-i18n="space">Space</option>
+                            <option value="" data-i18n="none">None</option>
+                            <option value="|" data-i18n="pipe">Pipe (|)</option>
+                            <option value="/" data-i18n="slash">Slash (/)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="case_sensitive">Case Sensitivity</label>
+                        <select id="case_sensitive" onchange="BrailleTool.preview()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="false" selected data-i18n="ignore_case">Ignore Case</option>
+                            <option value="true" data-i18n="preserve_case">Preserve Case</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 動作按鈕 -->
+            <div class="btn-group">
+                <button onclick="BrailleTool.encrypt()" class="btn-primary flex-1" data-i18n="encrypt_btn">Encrypt to Braille</button>
+                <button onclick="BrailleTool.clearAll()" class="btn-secondary" data-i18n="clear_btn">Clear All</button>
+                <button onclick="BrailleTool.copyResult()" class="btn-secondary" data-i18n="copy_btn">Copy Result</button>
+            </div>
+
+            <!-- 結果區 -->
+            <div class="summary-section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="results">Encryption Result</h3>
+                <div class="result-card">
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="braille_result">Braille Encrypted Text</span>
+                        <span class="result-value" id="braille_result">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-i18n="char_count">Character Count</span>
+                        <span class="result-value" id="char_count">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 介紹 -->
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">About Braille Encryption</h3>
+                <p data-i18n="intro_text">Braille encryption converts regular text into braille characters, a tactile writing system used by people who are visually impaired. This tool uses standard braille patterns for letters, numbers, and common symbols, allowing you to hide information in a visually distinctive format while maintaining readability for those familiar with braille.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BrailleTool = {
+            // 盲文字符映射（簡化版）
+            brailleMap: {
+                'a': '⠁', 'b': '⠃', 'c': '⠉', 'd': '⠙', 'e': '⠑', 'f': '⠋', 'g': '⠛', 'h': '⠓', 'i': '⠊', 'j': '⠚',
+                'k': '⠅', 'l': '⠇', 'm': '⠍', 'n': '⠝', 'o': '⠕', 'p': '⠏', 'q': '⠟', 'r': '⠗', 's': '⠎', 't': '⠞',
+                'u': '⠥', 'v': '⠧', 'w': '⠺', 'x': '⠭', 'y': '⠽', 'z': '⠵',
+                '1': '⠁', '2': '⠃', '3': '⠉', '4': '⠙', '5': '⠑', '6': '⠋', '7': '⠛', '8': '⠓', '9': '⠊', '0': '⠚',
+                ' ': ' ', '.': '⠲', ',': '⠂', ';': '⠆', ':': '⠒', '!': '⠖', '?': '⠦', '-': '⠤', '_': '⠤',
+                '(': '⠣', ')': '⠜', '/': '⠸', '\\': '⠸', '@': '⠈⠁', '#': '⠼⠉', '$': '⠼⠙', '%': '⠼⠑',
+                '^': '⠼⠋', '&': '⠼⠛', '*': '⠼⠓', '+': '⠼⠊', '=': '⠶'
+            },
+
+            i18n: {
+                // 國際化文本...
+                'en': {
+                    title: '🔤 Braille Encryption Tool',
+                    input_section: 'Input Content',
+                    content_to_encrypt: 'Content to Encrypt',
+                    options: 'Options',
+                    separator: 'Braille Character Separator',
+                    space: 'Space',
+                    none: 'None',
+                    pipe: 'Pipe (|)',
+                    slash: 'Slash (/',
+                    case_sensitive: 'Case Sensitivity',
+                    ignore_case: 'Ignore Case',
+                    preserve_case: 'Preserve Case',
+                    encrypt_btn: 'Encrypt to Braille',
+                    clear_btn: 'Clear All',
+                    copy_btn: 'Copy Result',
+                    results: 'Encryption Result',
+                    braille_result: 'Braille Encrypted Text',
+                    char_count: 'Character Count',
+                    intro_title: 'About Braille Encryption',
+                    intro_text: 'Braille encryption converts regular text into braille characters, a tactile writing system used by people who are visually impaired. This tool uses standard braille patterns for letters, numbers, and common symbols, allowing you to hide information in a visually distinctive format while maintaining readability for those familiar with braille.',
+                    copy_success: 'Result copied to clipboard!'
+                },
+                'zh-CN': {
+                    title: '🔤 盲文加密工具',
+                    input_section: '輸入內容',
+                    content_to_encrypt: '待加密內容',
+                    options: '選項',
+                    separator: '盲文字符分隔符',
+                    space: '空格',
+                    none: '無',
+                    pipe: '豎線 (|)',
+                    slash: '斜杠 (/',
+                    case_sensitive: '大小寫敏感性',
+                    ignore_case: '忽略大小寫',
+                    preserve_case: '保留大小寫',
+                    encrypt_btn: '加密為盲文',
+                    clear_btn: '全部清除',
+                    copy_btn: '複製結果',
+                    results: '加密結果',
+                    braille_result: '盲文加密文本',
+                    char_count: '字符數量',
+                    intro_title: '關於盲文加密',
+                    intro_text: '盲文加密將普通文本轉換為盲文字符，這是一種供視障人士使用的觸覺書寫系統。本工具使用標準盲文模式表示字母、數字和常見符號，讓您可以將信息隱藏在視覺獨特的格式中，同時保持熟悉盲文者的可讀性。',
+                    copy_success: '結果已複製到剪貼板！'
+                },
+                'zh-TW': {
+                    title: '🔤 盲文加密工具',
+                    input_section: '輸入內容',
+                    content_to_encrypt: '待加密內容',
+                    options: '選項',
+                    separator: '盲文字元分隔符',
+                    space: '空格',
+                    none: '無',
+                    pipe: '豎線 (|)',
+                    slash: '斜線 (/',
+                    case_sensitive: '大小寫敏感性',
+                    ignore_case: '忽略大小寫',
+                    preserve_case: '保留大小寫',
+                    encrypt_btn: '加密為盲文',
+                    clear_btn: '全部清除',
+                    copy_btn: '複製結果',
+                    results: '加密結果',
+                    braille_result: '盲文加密文字',
+                    char_count: '字元數量',
+                    intro_title: '關於盲文加密',
+                    intro_text: '盲文加密將普通文字轉換為盲文字元，這是一種供視障人士使用的觸覺書寫系統。本工具使用標準盲文模式表示字母、數字和常見符號，讓您可以將資訊隱藏在視覺獨特的格式中，同時保持熟悉盲文者的可讀性。',
+                    copy_success: '結果已複製到剪貼簿！'
+                },
+                'ja': {
+                    title: '🔤 点字暗号化ツール',
+                    input_section: '入力内容',
+                    content_to_encrypt: '暗号化する内容',
+                    options: 'オプション',
+                    separator: '点字文字の区切り文字',
+                    space: 'スペース',
+                    none: 'なし',
+                    pipe: 'パイプ (|)',
+                    slash: 'スラッシュ (/',
+                    case_sensitive: '大文字小文字の区別',
+                    ignore_case: '大文字小文字を無視',
+                    preserve_case: '大文字小文字を保持',
+                    encrypt_btn: '点字に暗号化',
+                    clear_btn: 'すべて消去',
+                    copy_btn: '結果をコピー',
+                    results: '暗号化結果',
+                    braille_result: '点字暗号化テキスト',
+                    char_count: '文字数',
+                    intro_title: '点字暗号化について',
+                    intro_text: '点字暗号化は、通常のテキストを点字文字に変換するもので、視覚障がい者が使用する触覚的な書記システムです。このツールは、文字、数字、一般的な記号に標準的な点字パターンを使用しており、点字に慣れている人には読みやすいまま、視覚的に特徴的な形式で情報を隠すことができます。',
+                    copy_success: '結果がクリップボードにコピーされました！'
+                },
+                'ru': {
+                    title: '🔤 Инструмент для шифрования брайля',
+                    input_section: 'Входные данные',
+                    content_to_encrypt: 'Содержимое для шифрования',
+                    options: 'Параметры',
+                    separator: 'Разделитель символов брайля',
+                    space: 'Пробел',
+                    none: 'Отсутствует',
+                    pipe: 'Вертикальная черта (|)',
+                    slash: 'Косая черта (/',
+                    case_sensitive: 'Чувствительность к регистру',
+                    ignore_case: 'Игнорировать регистр',
+                    preserve_case: 'Сохранять регистр',
+                    encrypt_btn: 'Зашифровать в брайль',
+                    clear_btn: 'Очистить все',
+                    copy_btn: 'Скопировать результат',
+                    results: 'Результат шифрования',
+                    braille_result: 'Зашифрованный текст брайля',
+                    char_count: 'Количество символов',
+                    intro_title: 'О шифровании брайля',
+                    intro_text: 'Шифрование брайля преобразует обычный текст в символы брайля — тактическую систему письма, используемую людьми с нарушением зрения. Этот инструмент использует стандартные шаблоны брайля для букв, цифр и обычных символов, позволяя скрывать информацию в визуально отличном формате при этом сохраняя читаемость для тех, кто знаком с брайлем.',
+                    copy_success: 'Результат скопирован в буфер обмена!'
+                }
+            },
+            
+            // 獲取 URL 查詢參數
+            getUrlParam: function(name) {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get(name);
+            },
+
+            // 設置 URL 查詢參數
+            setUrlParam: function(name, value) {
+                try {
+                    // 檢查當前協議是否為 'blob:'，這通常表示在一個受限的 iFrame 環境中
+                    if (window.location.protocol === 'blob:') {
+                        console.warn("Security policy prevents updating URL history in this environment (blob: URL). Language detection will rely on the initial URL parameters only.");
+                        // 在 blob: 環境中靜默失敗，避免 SecurityError
+                        return; 
+                    }
+
+                    const url = new URL(window.location);
+                    // 刪除舊參數，以防重複
+                    url.searchParams.delete(name);
+                    // 添加新參數
+                    url.searchParams.set(name, value);
+                    // 使用 replaceState 更新 URL，避免產生過多歷史記錄
+                    window.history.replaceState({}, '', url.toString());
+
+                } catch (e) {
+                    // 捕獲並日誌記錄其他潛在的 SecurityError
+                    if (e instanceof SecurityError) {
+                        console.error("Failed to update URL history due to SecurityError. Ignoring URL change.");
+                    } else {
+                        throw e; // 重新拋出非預期的錯誤
+                    }
+                }
+            },
+
+            init: function() {
+                // 1. 檢查 URL 中是否有 lang 參數
+                const urlLang = this.getUrlParam('lang');
+                const langSelector = document.getElementById('lang-selector');
+                
+                let initialLang = 'en'; // 預設語言
+
+                // 如果 URL 中有 lang 參數，且該語言在 i18n 中存在，則使用它
+                if (urlLang && this.i18n[urlLang]) {
+                    initialLang = urlLang;
+                } 
+
+                // 2. 將選擇器設置為初始語言
+                langSelector.value = initialLang;
+
+                // 3. 執行語言切換（更新 UI）
+                this.updateUI(initialLang);
+
+                // 4. 確保 URL 參數存在（如果頁面是從沒有參數的 URL 加載的，則嘗試添加參數）
+                this.setUrlParam('lang', initialLang);
+
+            },
+
+            changeLang: function() {
+                const newLang = document.getElementById('lang-selector').value;
+                
+                // 1. 更新 URL 參數
+                this.setUrlParam('lang', newLang);
+
+                // 2. 更新 UI
+                this.updateUI(newLang);
+            },
+
+            updateUI: function(lang) {
+                // 更新所有 data-i18n 屬性的元素內容
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+
+            encrypt: function() {
+                const input = document.getElementById('input_content').value;
+                const separator = document.getElementById('separator').value;
+                const caseSensitive = document.getElementById('case_sensitive').value === 'true';
+                
+                let result = [];
+                
+                for (let char of input) {
+                    let processedChar = caseSensitive ? char : char.toLowerCase();
+                    result.push(this.brailleMap[processedChar] || processedChar);
+                }
+                
+                const brailleText = result.join(separator);
+                document.getElementById('braille_result').textContent = brailleText;
+                document.getElementById('char_count').textContent = brailleText.length;
+            },
+
+            preview: function() {
+                if (document.getElementById('input_content').value.length > 0) {
+                    this.encrypt();
+                }
+            },
+
+            clearAll: function() {
+                document.getElementById('input_content').value = '';
+                document.getElementById('braille_result').textContent = '-';
+                document.getElementById('char_count').textContent = '0';
+            },
+
+            copyResult: function() {
+                const result = document.getElementById('braille_result').textContent;
+                if (result && result !== '-') {
+                    // 使用 document.execCommand('copy') 作為 iframe 環境中的兼容性選項
+                    const tempInput = document.createElement('textarea');
+                    tempInput.value = result;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+                    
+                    // 由於不能使用 alert，我們在控制台顯示一條短暫信息
+                    console.log('Result copied to clipboard!');
+                }
+            }
+        };
+
+        // Initialize the tool when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            BrailleTool.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

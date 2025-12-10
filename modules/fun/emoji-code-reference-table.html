@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="fun">
+    <meta name="icon" content="😊">
+    <title>Emoji 表情代码速查表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 15px; }
+        .emoji-card { padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .emoji-card:hover { background-color: #f0fdf4; border-color: #a7f3d0; transform: translateY(-2px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .emoji-char { font-size: 2.5rem; margin-bottom: 5px; line-height: 1.2; }
+        .emoji-code { font-family: monospace; font-size: 0.85rem; color: #6b7280; background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/fun/emoji-code-reference-table.html" />
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">😊 Emoji 表情代码速查表</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">搜索Emoji</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group mb-0">
+                        <label data-i18n="emoji_category">Emoji类别</label>
+                        <select id="category-select" onchange="Tool.search()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="all" data-i18n="all_categories">所有类别 (All)</option>
+                            <option value="face" data-i18n="face_emotions">面部表情 (Face)</option>
+                            <option value="hand" data-i18n="hand_gestures">手势 & 身体 (Hand)</option>
+                            <option value="food" data-i18n="food_drink">食物饮料 (Food)</option>
+                            <option value="nature" data-i18n="nature">自然 & 动物 (Nature)</option>
+                            <option value="object" data-i18n="objects">物品 & 符号 (Objects)</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label data-i18n="search_keyword">关键词</label>
+                        <input type="text" id="search-input" onkeyup="Tool.search()" placeholder="输入名称或代码..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="results">Emoji列表</h3>
+                    <span class="text-sm text-gray-500" id="count-display"></span>
+                </div>
+                <div id="results-container" class="emoji-grid">
+                    <!-- 表情将通过JS动态加载 -->
+                </div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于Emoji表情代码速查表</h3>
+                <p data-i18n="intro_text">本工具提供常用Emoji表情的代码参考，包括Unicode代码和简短描述，点击表情可复制其代码。适用于网页开发、社交媒体内容创作等场景，方便快速查找和使用所需表情符号。</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '😊 Emoji Code Reference Table',
+                    search: 'Search Emoji',
+                    'emoji_category': 'Category',
+                    'search_keyword': 'Keyword',
+                    'all_categories': 'All Categories',
+                    'face_emotions': 'Facial Expressions',
+                    'hand_gestures': 'Hand & Body',
+                    'food_drink': 'Food & Drink',
+                    'nature': 'Nature & Animals',
+                    'objects': 'Objects & Symbols',
+                    'results': 'Emoji List',
+                    'copied': 'Code Copied!',
+                    'intro_title': 'About Emoji Code Reference',
+                    'intro_text': 'This tool provides reference for common Emoji codes. Click an emoji to copy its Unicode.'
+                },
+                'zh-CN': {
+                    title: '😊 Emoji 表情代码速查表',
+                    search: '搜索Emoji',
+                    'emoji_category': 'Emoji类别',
+                    'search_keyword': '关键词',
+                    'all_categories': '所有类别',
+                    'face_emotions': '面部表情',
+                    'hand_gestures': '手势 & 身体',
+                    'food_drink': '食物饮料',
+                    'nature': '自然 & 动物',
+                    'objects': '物品 & 符号',
+                    'results': 'Emoji列表',
+                    'copied': '代码已复制！',
+                    'intro_title': '关于Emoji表情代码速查表',
+                    'intro_text': '本工具提供常用Emoji表情的代码参考，包括Unicode代码和简短描述，点击表情可复制其代码。'
+                },
+                'zh-TW': {
+                    title: '😊 Emoji 表情代碼速查表',
+                    search: '搜索Emoji',
+                    'emoji_category': 'Emoji類別',
+                    'search_keyword': '關鍵詞',
+                    'all_categories': '所有類別',
+                    'face_emotions': '面部表情',
+                    'hand_gestures': '手勢 & 身體',
+                    'food_drink': '食物飲料',
+                    'nature': '自然 & 動物',
+                    'objects': '物品 & 符號',
+                    'results': 'Emoji列表',
+                    'copied': '代碼已複製！',
+                    'intro_title': '關於Emoji表情代碼速查表',
+                    'intro_text': '本工具提供常用Emoji表情的代碼參考，包括Unicode代碼和簡短描述，點擊表情可複製其代碼。'
+                },
+                'ja': {
+                    title: '😊 Emoji コード早見表',
+                    search: 'Emojiを検索',
+                    'emoji_category': 'カテゴリー',
+                    'search_keyword': 'キーワード',
+                    'all_categories': 'すべて',
+                    'face_emotions': '顔・感情',
+                    'hand_gestures': '手・体',
+                    'food_drink': '食べ物・飲み物',
+                    'nature': '自然・動物',
+                    'objects': '物・記号',
+                    'results': 'Emojiリスト',
+                    'copied': 'コピーしました！',
+                    'intro_title': 'Emojiコード早見表について',
+                    'intro_text': '一般的なEmojiのコード情報を提供します。クリックしてコピーできます。'
+                },
+                'ru': {
+                    title: '😊 Коды Emoji',
+                    search: 'Поиск Emoji',
+                    'emoji_category': 'Категория',
+                    'search_keyword': 'Ключевое слово',
+                    'all_categories': 'Все',
+                    'face_emotions': 'Лица и эмоции',
+                    'hand_gestures': 'Жесты и тело',
+                    'food_drink': 'Еда и напитки',
+                    'nature': 'Природа и животные',
+                    'objects': 'Предметы и символы',
+                    'results': 'Список Emoji',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О справочнике Emoji',
+                    'intro_text': 'Справочник кодов Emoji. Нажмите, чтобы скопировать.'
+                }
+            },
+
+            // 完整 Emoji 数据 (约200+常用表情)
+            emojiData: [
+                // === Face & Emotions (面部表情) ===
+                { char: "😀", code: "U+1F600", name: "grinning face", category: "face", desc: "大笑" },
+                { char: "😃", code: "U+1F603", name: "grinning face with big eyes", category: "face", desc: "大眼笑" },
+                { char: "😄", code: "U+1F604", name: "grinning face with smiling eyes", category: "face", desc: "眯眼笑" },
+                { char: "😁", code: "U+1F601", name: "beaming face with smiling eyes", category: "face", desc: "嘻嘻" },
+                { char: "😆", code: "U+1F606", name: "grinning squinting face", category: "face", desc: "斜眼笑" },
+                { char: "😅", code: "U+1F605", name: "grinning face with sweat", category: "face", desc: "汗颜" },
+                { char: "🤣", code: "U+1F923", name: "rolling on the floor laughing", category: "face", desc: "笑倒在地" },
+                { char: "😂", code: "U+1F602", name: "face with tears of joy", category: "face", desc: "笑哭" },
+                { char: "🙂", code: "U+1F642", name: "slightly smiling face", category: "face", desc: "微笑" },
+                { char: "🙃", code: "U+1F643", name: "upside-down face", category: "face", desc: "倒脸" },
+                { char: "😉", code: "U+1F609", name: "winking face", category: "face", desc: "眨眼" },
+                { char: "😊", code: "U+1F60A", name: "smiling face with smiling eyes", category: "face", desc: "害羞笑" },
+                { char: "😇", code: "U+1F607", name: "smiling face with halo", category: "face", desc: "天使" },
+                { char: "🥰", code: "U+1F970", name: "smiling face with hearts", category: "face", desc: "喜滋滋" },
+                { char: "😍", code: "U+1F60D", name: "smiling face with heart-eyes", category: "face", desc: "色" },
+                { char: "🤩", code: "U+1F929", name: "star-struck", category: "face", desc: "眼冒金星" },
+                { char: "😘", code: "U+1F618", name: "face blowing a kiss", category: "face", desc: "飞吻" },
+                { char: "😗", code: "U+1F617", name: "kissing face", category: "face", desc: "亲亲" },
+                { char: "😚", code: "U+1F61A", name: "kissing face with closed eyes", category: "face", desc: "闭眼亲" },
+                { char: "😋", code: "U+1F60B", name: "face savoring food", category: "face", desc: "好吃" },
+                { char: "😛", code: "U+1F61B", name: "face with tongue", category: "face", desc: "吐舌" },
+                { char: "😜", code: "U+1F61C", name: "winking face with tongue", category: "face", desc: "鬼脸" },
+                { char: "🤪", code: "U+1F92A", name: "zany face", category: "face", desc: "滑稽" },
+                { char: "😝", code: "U+1F61D", name: "squinting face with tongue", category: "face", desc: "眯眼吐舌" },
+                { char: "🤑", code: "U+1F911", name: "money-mouth face", category: "face", desc: "钱" },
+                { char: "🤗", code: "U+1F917", name: "hugging face", category: "face", desc: "抱抱" },
+                { char: "🤭", code: "U+1F92D", name: "face with hand over mouth", category: "face", desc: "偷笑" },
+                { char: "🤫", code: "U+1F92B", name: "shushing face", category: "face", desc: "嘘" },
+                { char: "🤔", code: "U+1F914", name: "thinking face", category: "face", desc: "思考" },
+                { char: "🤐", code: "U+1F910", name: "zipper-mouth face", category: "face", desc: "闭嘴" },
+                { char: "🤨", code: "U+1F928", name: "face with raised eyebrow", category: "face", desc: "挑眉" },
+                { char: "😐", code: "U+1F610", name: "neutral face", category: "face", desc: "面无表情" },
+                { char: "😑", code: "U+1F611", name: "expressionless face", category: "face", desc: "无语" },
+                { char: "😶", code: "U+1F636", name: "face without mouth", category: "face", desc: "没嘴" },
+                { char: "😏", code: "U+1F60F", name: "smirking face", category: "face", desc: "得意" },
+                { char: "😒", code: "U+1F612", name: "unamused face", category: "face", desc: "不屑" },
+                { char: "🙄", code: "U+1F644", name: "face with rolling eyes", category: "face", desc: "翻白眼" },
+                { char: "😬", code: "U+1F62C", name: "grimacing face", category: "face", desc: "呲牙" },
+                { char: "🤥", code: "U+1F925", name: "lying face", category: "face", desc: "说谎" },
+                { char: "😌", code: "U+1F60C", name: "relieved face", category: "face", desc: "松口气" },
+                { char: "😔", code: "U+1F614", name: "pensive face", category: "face", desc: "沉思" },
+                { char: "😪", code: "U+1F62A", name: "sleepy face", category: "face", desc: "困" },
+                { char: "🤤", code: "U+1F924", name: "drooling face", category: "face", desc: "流口水" },
+                { char: "😴", code: "U+1F634", name: "sleeping face", category: "face", desc: "睡觉" },
+                { char: "😷", code: "U+1F637", name: "face with medical mask", category: "face", desc: "口罩" },
+                { char: "🤒", code: "U+1F912", name: "face with thermometer", category: "face", desc: "发烧" },
+                { char: "🤕", code: "U+1F915", name: "face with head-bandage", category: "face", desc: "受伤" },
+                { char: "🤢", code: "U+1F922", name: "nauseated face", category: "face", desc: "恶心" },
+                { char: "🤮", code: "U+1F92E", name: "face vomiting", category: "face", desc: "呕吐" },
+                { char: "🤧", code: "U+1F927", name: "sneezing face", category: "face", desc: "打喷嚏" },
+                { char: "🥵", code: "U+1F975", name: "hot face", category: "face", desc: "热" },
+                { char: "🥶", code: "U+1F976", name: "cold face", category: "face", desc: "冷" },
+                { char: "🥴", code: "U+1F974", name: "woozy face", category: "face", desc: "晕" },
+                { char: "😵", code: "U+1F635", name: "dizzy face", category: "face", desc: "晕头转向" },
+                { char: "🤯", code: "U+1F92F", name: "exploding head", category: "face", desc: "脑炸" },
+                { char: "🤠", code: "U+1F920", name: "cowboy hat face", category: "face", desc: "牛仔" },
+                { char: "🥳", code: "U+1F973", name: "partying face", category: "face", desc: "庆祝" },
+                { char: "😎", code: "U+1F60E", name: "smiling face with sunglasses", category: "face", desc: "墨镜" },
+                { char: "🤓", code: "U+1F913", name: "nerd face", category: "face", desc: "书呆子" },
+                { char: "🧐", code: "U+1F9D0", name: "face with monocle", category: "face", desc: "观察" },
+                { char: "😕", code: "U+1F615", name: "confused face", category: "face", desc: "困惑" },
+                { char: "😟", code: "U+1F61F", name: "worried face", category: "face", desc: "担心" },
+                { char: "🙁", code: "U+1F641", name: "slightly frowning face", category: "face", desc: "微愁" },
+                { char: "☹️", code: "U+2639", name: "frowning face", category: "face", desc: "愁眉苦脸" },
+                { char: "😮", code: "U+1F62E", name: "face with open mouth", category: "face", desc: "张嘴" },
+                { char: "😯", code: "U+1F62F", name: "hushed face", category: "face", desc: "吃惊" },
+                { char: "😲", code: "U+1F632", name: "astonished face", category: "face", desc: "震惊" },
+                { char: "😳", code: "U+1F633", name: "flushed face", category: "face", desc: "脸红" },
+                { char: "🥺", code: "U+1F97A", name: "pleading face", category: "face", desc: "恳求" },
+                { char: "😦", code: "U+1F626", name: "frowning face with open mouth", category: "face", desc: "啊" },
+                { char: "😧", code: "U+1F627", name: "anguished face", category: "face", desc: "痛苦" },
+                { char: "😨", code: "U+1F628", name: "fearful face", category: "face", desc: "害怕" },
+                { char: "😰", code: "U+1F630", name: "anxious face with sweat", category: "face", desc: "冷汗" },
+                { char: "😥", code: "U+1F625", name: "sad but relieved face", category: "face", desc: "汗" },
+                { char: "😢", code: "U+1F622", name: "crying face", category: "face", desc: "流泪" },
+                { char: "😭", code: "U+1F62D", name: "loudly crying face", category: "face", desc: "大哭" },
+                { char: "😱", code: "U+1F631", name: "face screaming in fear", category: "face", desc: "尖叫" },
+                { char: "😖", code: "U+1F616", name: "confounded face", category: "face", desc: "困扰" },
+                { char: "😣", code: "U+1F623", name: "persevering face", category: "face", desc: "坚持" },
+                { char: "😞", code: "U+1F61E", name: "disappointed face", category: "face", desc: "失望" },
+                { char: "😓", code: "U+1F613", name: "downcast face with sweat", category: "face", desc: "汗颜" },
+                { char: "😩", code: "U+1F629", name: "weary face", category: "face", desc: "疲惫" },
+                { char: "😫", code: "U+1F62B", name: "tired face", category: "face", desc: "累" },
+                { char: "🥱", code: "U+1F971", name: "yawning face", category: "face", desc: "打哈欠" },
+                { char: "😤", code: "U+1F624", name: "face with steam from nose", category: "face", desc: "傲慢/生气" },
+                { char: "😡", code: "U+1F621", name: "pouting face", category: "face", desc: "愤怒" },
+                { char: "😠", code: "U+1F620", name: "angry face", category: "face", desc: "生气" },
+                { char: "🤬", code: "U+1F92C", name: "face with symbols on mouth", category: "face", desc: "骂人" },
+                { char: "😈", code: "U+1F608", name: "smiling face with horns", category: "face", desc: "小恶魔" },
+                { char: "👿", code: "U+1F47F", name: "angry face with horns", category: "face", desc: "恶魔" },
+                { char: "💀", code: "U+1F480", name: "skull", category: "face", desc: "骷髅" },
+                { char: "☠️", code: "U+2620", name: "skull and crossbones", category: "face", desc: "海盗旗" },
+                { char: "💩", code: "U+1F4A9", name: "pile of poo", category: "face", desc: "便便" },
+                { char: "🤡", code: "U+1F921", name: "clown face", category: "face", desc: "小丑" },
+                { char: "👹", code: "U+1F479", name: "ogre", category: "face", desc: "鬼" },
+                { char: "👻", code: "U+1F47B", name: "ghost", category: "face", desc: "幽灵" },
+                { char: "👽", code: "U+1F47D", name: "alien", category: "face", desc: "外星人" },
+
+                // === Hand Gestures (手势) ===
+                { char: "👋", code: "U+1F44B", name: "waving hand", category: "hand", desc: "挥手" },
+                { char: "🤚", code: "U+1F91A", name: "raised back of hand", category: "hand", desc: "反手" },
+                { char: "🖐", code: "U+1F590", name: "hand with fingers splayed", category: "hand", desc: "手掌" },
+                { char: "✋", code: "U+270B", name: "raised hand", category: "hand", desc: "举手" },
+                { char: "🖖", code: "U+1F596", name: "vulcan salute", category: "hand", desc: "瓦肯礼" },
+                { char: "👌", code: "U+1F44C", name: "OK hand", category: "hand", desc: "好的" },
+                { char: "🤏", code: "U+1F90F", name: "pinching hand", category: "hand", desc: "一点点" },
+                { char: "✌️", code: "U+270C", name: "victory hand", category: "hand", desc: "耶" },
+                { char: "🤞", code: "U+1F91E", name: "crossed fingers", category: "hand", desc: "祝好运" },
+                { char: "🤟", code: "U+1F91F", name: "love-you gesture", category: "hand", desc: "爱你" },
+                { char: "🤘", code: "U+1F918", name: "sign of the horns", category: "hand", desc: "摇滚" },
+                { char: "🤙", code: "U+1F919", name: "call me hand", category: "hand", desc: "打电话" },
+                { char: "👈", code: "U+1F448", name: "backhand index pointing left", category: "hand", desc: "左指" },
+                { char: "👉", code: "U+1F449", name: "backhand index pointing right", category: "hand", desc: "右指" },
+                { char: "👆", code: "U+1F446", name: "backhand index pointing up", category: "hand", desc: "上指" },
+                { char: "👇", code: "U+1F447", name: "backhand index pointing down", category: "hand", desc: "下指" },
+                { char: "☝️", code: "U+261D", name: "index pointing up", category: "hand", desc: "指上" },
+                { char: "👍", code: "U+1F44D", name: "thumbs up", category: "hand", desc: "点赞" },
+                { char: "👎", code: "U+1F44E", name: "thumbs down", category: "hand", desc: "差评" },
+                { char: "✊", code: "U+270A", name: "raised fist", category: "hand", desc: "拳头" },
+                { char: "👊", code: "U+1F44A", name: "oncoming fist", category: "hand", desc: "出拳" },
+                { char: "🤛", code: "U+1F91B", name: "left-facing fist", category: "hand", desc: "左拳" },
+                { char: "🤜", code: "U+1F91C", name: "right-facing fist", category: "hand", desc: "右拳" },
+                { char: "👏", code: "U+1F44F", name: "clapping hands", category: "hand", desc: "鼓掌" },
+                { char: "🙌", code: "U+1F64C", name: "raising hands", category: "hand", desc: "欢呼" },
+                { char: "👐", code: "U+1F450", name: "open hands", category: "hand", desc: "张开手" },
+                { char: "🤲", code: "U+1F932", name: "palms up together", category: "hand", desc: "捧手" },
+                { char: "🤝", code: "U+1F91D", name: "handshake", category: "hand", desc: "握手" },
+                { char: "🙏", code: "U+1F64F", name: "folded hands", category: "hand", desc: "合十/拜托" },
+                { char: "💅", code: "U+1F485", name: "nail polish", category: "hand", desc: "美甲" },
+                { char: "💪", code: "U+1F4AA", name: "flexed biceps", category: "hand", desc: "肌肉" },
+                { char: "👂", code: "U+1F442", name: "ear", category: "hand", desc: "耳朵" },
+                { char: "👀", code: "U+1F440", name: "eyes", category: "hand", desc: "眼睛" },
+                { char: "💋", code: "U+1F48B", name: "kiss mark", category: "hand", desc: "吻痕" },
+                { char: "❤️", code: "U+2764", name: "red heart", category: "hand", desc: "红心" },
+                { char: "🧡", code: "U+1F9E1", name: "orange heart", category: "hand", desc: "橙心" },
+                { char: "💛", code: "U+1F49B", name: "yellow heart", category: "hand", desc: "黄心" },
+                { char: "💚", code: "U+1F49A", name: "green heart", category: "hand", desc: "绿心" },
+                { char: "💙", code: "U+1F499", name: "blue heart", category: "hand", desc: "蓝心" },
+                { char: "💜", code: "U+1F49C", name: "purple heart", category: "hand", desc: "紫心" },
+                { char: "🖤", code: "U+1F5A4", name: "black heart", category: "hand", desc: "黑心" },
+                { char: "🤍", code: "U+1F90D", name: "white heart", category: "hand", desc: "白心" },
+                { char: "💔", code: "U+1F494", name: "broken heart", category: "hand", desc: "心碎" },
+
+                // === Food & Drink (食物饮料) ===
+                { char: "🍇", code: "U+1F347", name: "grapes", category: "food", desc: "葡萄" },
+                { char: "🍈", code: "U+1F348", name: "melon", category: "food", desc: "哈密瓜" },
+                { char: "🍉", code: "U+1F349", name: "watermelon", category: "food", desc: "西瓜" },
+                { char: "🍊", code: "U+1F34A", name: "tangerine", category: "food", desc: "橘子" },
+                { char: "🍋", code: "U+1F34B", name: "lemon", category: "food", desc: "柠檬" },
+                { char: "🍌", code: "U+1F34C", name: "banana", category: "food", desc: "香蕉" },
+                { char: "🍍", code: "U+1F34D", name: "pineapple", category: "food", desc: "菠萝" },
+                { char: "🥭", code: "U+1F96D", name: "mango", category: "food", desc: "芒果" },
+                { char: "🍎", code: "U+1F34E", name: "red apple", category: "food", desc: "红苹果" },
+                { char: "🍏", code: "U+1F34F", name: "green apple", category: "food", desc: "青苹果" },
+                { char: "🍐", code: "U+1F350", name: "pear", category: "food", desc: "梨" },
+                { char: "🍑", code: "U+1F351", name: "peach", category: "food", desc: "桃子" },
+                { char: "🍒", code: "U+1F352", name: "cherries", category: "food", desc: "樱桃" },
+                { char: "🍓", code: "U+1F353", name: "strawberry", category: "food", desc: "草莓" },
+                { char: "🥝", code: "U+1F95D", name: "kiwi fruit", category: "food", desc: "猕猴桃" },
+                { char: "🍅", code: "U+1F345", name: "tomato", category: "food", desc: "番茄" },
+                { char: "🥑", code: "U+1F951", name: "avocado", category: "food", desc: "牛油果" },
+                { char: "🍆", code: "U+1F346", name: "eggplant", category: "food", desc: "茄子" },
+                { char: "🥔", code: "U+1F954", name: "potato", category: "food", desc: "土豆" },
+                { char: "🥕", code: "U+1F955", name: "carrot", category: "food", desc: "胡萝卜" },
+                { char: "🌽", code: "U+1F33D", name: "ear of corn", category: "food", desc: "玉米" },
+                { char: "🌶", code: "U+1F336", name: "hot pepper", category: "food", desc: "辣椒" },
+                { char: "🥒", code: "U+1F952", name: "cucumber", category: "food", desc: "黄瓜" },
+                { char: "🍄", code: "U+1F344", name: "mushroom", category: "food", desc: "蘑菇" },
+                { char: "🍞", code: "U+1F35E", name: "bread", category: "food", desc: "面包" },
+                { char: "🥐", code: "U+1F950", name: "croissant", category: "food", desc: "羊角包" },
+                { char: "🥖", code: "U+1F956", name: "baguette bread", category: "food", desc: "法棍" },
+                { char: "🧀", code: "U+1F9C0", name: "cheese wedge", category: "food", desc: "奶酪" },
+                { char: "🍖", code: "U+1F356", name: "meat on bone", category: "food", desc: "肉" },
+                { char: "🍗", code: "U+1F357", name: "poultry leg", category: "food", desc: "鸡腿" },
+                { char: "🥩", code: "U+1F969", name: "cut of meat", category: "food", desc: "牛排" },
+                { char: "🥓", code: "U+1F953", name: "bacon", category: "food", desc: "培根" },
+                { char: "🍔", code: "U+1F354", name: "hamburger", category: "food", desc: "汉堡" },
+                { char: "🍟", code: "U+1F35F", name: "french fries", category: "food", desc: "薯条" },
+                { char: "🍕", code: "U+1F355", name: "pizza", category: "food", desc: "披萨" },
+                { char: "🌭", code: "U+1F32D", name: "hot dog", category: "food", desc: "热狗" },
+                { char: "🥪", code: "U+1F96A", name: "sandwich", category: "food", desc: "三明治" },
+                { char: "🌮", code: "U+1F32E", name: "taco", category: "food", desc: "塔可" },
+                { char: "🌯", code: "U+1F32F", name: "burrito", category: "food", desc: "卷饼" },
+                { char: "🥚", code: "U+1F95A", name: "egg", category: "food", desc: "蛋" },
+                { char: "🍳", code: "U+1F373", name: "cooking", category: "food", desc: "煎蛋" },
+                { char: "🥘", code: "U+1F958", name: "shallow pan of food", category: "food", desc: "海鲜饭" },
+                { char: "🍲", code: "U+1F372", name: "pot of food", category: "food", desc: "炖菜" },
+                { char: "🥗", code: "U+1F957", name: "green salad", category: "food", desc: "沙拉" },
+                { char: "🍿", code: "U+1F37F", name: "popcorn", category: "food", desc: "爆米花" },
+                { char: "🍱", code: "U+1F371", name: "bento box", category: "food", desc: "便当" },
+                { char: "🍘", code: "U+1F358", name: "rice cracker", category: "food", desc: "仙贝" },
+                { char: "🍙", code: "U+1F359", name: "rice ball", category: "food", desc: "饭团" },
+                { char: "🍚", code: "U+1F35A", name: "cooked rice", category: "food", desc: "米饭" },
+                { char: "🍛", code: "U+1F35B", name: "curry rice", category: "food", desc: "咖喱" },
+                { char: "🍜", code: "U+1F35C", name: "steaming bowl", category: "food", desc: "面条" },
+                { char: "🍝", code: "U+1F35D", name: "spaghetti", category: "food", desc: "意面" },
+                { char: "🍠", code: "U+1F360", name: "roasted sweet potato", category: "food", desc: "烤红薯" },
+                { char: "🍣", code: "U+1F363", name: "sushi", category: "food", desc: "寿司" },
+                { char: "🍤", code: "U+1F364", name: "fried shrimp", category: "food", desc: "炸虾" },
+                { char: "🥟", code: "U+1F95F", name: "dumpling", category: "food", desc: "饺子" },
+                { char: "🍦", code: "U+1F366", name: "soft ice cream", category: "food", desc: "冰淇淋" },
+                { char: "🍩", code: "U+1F369", name: "doughnut", category: "food", desc: "甜甜圈" },
+                { char: "🍪", code: "U+1F36A", name: "cookie", category: "food", desc: "曲奇" },
+                { char: "🎂", code: "U+1F382", name: "birthday cake", category: "food", desc: "生日蛋糕" },
+                { char: "🍰", code: "U+1F370", name: "shortcake", category: "food", desc: "蛋糕" },
+                { char: "🍫", code: "U+1F36B", name: "chocolate bar", category: "food", desc: "巧克力" },
+                { char: "🍬", code: "U+1F36C", name: "candy", category: "food", desc: "糖果" },
+                { char: "🍭", code: "U+1F36D", name: "lollipop", category: "food", desc: "棒棒糖" },
+                { char: "🍯", code: "U+1F36F", name: "honey pot", category: "food", desc: "蜂蜜" },
+                { char: "🍼", code: "U+1F37C", name: "baby bottle", category: "food", desc: "奶瓶" },
+                { char: "🥛", code: "U+1F95B", name: "glass of milk", category: "food", desc: "牛奶" },
+                { char: "☕", code: "U+2615", name: "hot beverage", category: "food", desc: "咖啡/热饮" },
+                { char: "🍵", code: "U+1F375", name: "teacup without handle", category: "food", desc: "茶" },
+                { char: "🍶", code: "U+1F376", name: "sake", category: "food", desc: "清酒" },
+                { char: "🍾", code: "U+1F37E", name: "bottle with popping cork", category: "food", desc: "香槟" },
+                { char: "🍷", code: "U+1F377", name: "wine glass", category: "food", desc: "红酒" },
+                { char: "🍸", code: "U+1F378", name: "cocktail glass", category: "food", desc: "鸡尾酒" },
+                { char: "🍺", code: "U+1F37A", name: "beer mug", category: "food", desc: "啤酒" },
+                { char: "🍻", code: "U+1F37B", name: "clinking beer mugs", category: "food", desc: "干杯" },
+                { char: "🥤", code: "U+1F964", name: "cup with straw", category: "food", desc: "饮料" },
+
+                // === Nature & Animals (自然) ===
+                { char: "🐶", code: "U+1F436", name: "dog face", category: "nature", desc: "狗头" },
+                { char: "🐱", code: "U+1F431", name: "cat face", category: "nature", desc: "猫头" },
+                { char: "🐭", code: "U+1F42D", name: "mouse face", category: "nature", desc: "老鼠" },
+                { char: "🐹", code: "U+1F439", name: "hamster", category: "nature", desc: "仓鼠" },
+                { char: "🐰", code: "U+1F430", name: "rabbit face", category: "nature", desc: "兔子" },
+                { char: "🦊", code: "U+1F98A", name: "fox", category: "nature", desc: "狐狸" },
+                { char: "🐻", code: "U+1F43B", name: "bear", category: "nature", desc: "熊" },
+                { char: "🐼", code: "U+1F43C", name: "panda", category: "nature", desc: "熊猫" },
+                { char: "🐨", code: "U+1F428", name: "koala", category: "nature", desc: "考拉" },
+                { char: "🐯", code: "U+1F42F", name: "tiger face", category: "nature", desc: "老虎" },
+                { char: "🦁", code: "U+1F981", name: "lion", category: "nature", desc: "狮子" },
+                { char: "🐮", code: "U+1F42E", name: "cow face", category: "nature", desc: "牛" },
+                { char: "🐷", code: "U+1F437", name: "pig face", category: "nature", desc: "猪" },
+                { char: "🐸", code: "U+1F438", name: "frog", category: "nature", desc: "青蛙" },
+                { char: "🐵", code: "U+1F435", name: "monkey face", category: "nature", desc: "猴子" },
+                { char: "🙈", code: "U+1F648", name: "see-no-evil monkey", category: "nature", desc: "非礼勿视" },
+                { char: "🙉", code: "U+1F649", name: "hear-no-evil monkey", category: "nature", desc: "非礼勿听" },
+                { char: "🙊", code: "U+1F64A", name: "speak-no-evil monkey", category: "nature", desc: "非礼勿言" },
+                { char: "🐔", code: "U+1F414", name: "chicken", category: "nature", desc: "鸡" },
+                { char: "🐧", code: "U+1F427", name: "penguin", category: "nature", desc: "企鹅" },
+                { char: "🐦", code: "U+1F426", name: "bird", category: "nature", desc: "鸟" },
+                { char: "🦆", code: "U+1F986", name: "duck", category: "nature", desc: "鸭子" },
+                { char: "🦉", code: "U+1F989", name: "owl", category: "nature", desc: "猫头鹰" },
+                { char: "🦇", code: "U+1F987", name: "bat", category: "nature", desc: "蝙蝠" },
+                { char: "🐝", code: "U+1F41D", name: "honeybee", category: "nature", desc: "蜜蜂" },
+                { char: "🦄", code: "U+1F984", name: "unicorn", category: "nature", desc: "独角兽" },
+                { char: "🦋", code: "U+1F98B", name: "butterfly", category: "nature", desc: "蝴蝶" },
+                { char: "💐", code: "U+1F490", name: "bouquet", category: "nature", desc: "花束" },
+                { char: "🌸", code: "U+1F338", name: "cherry blossom", category: "nature", desc: "樱花" },
+                { char: "💮", code: "U+1F4AE", name: "white flower", category: "nature", desc: "白花" },
+                { char: "🌹", code: "U+1F339", name: "rose", category: "nature", desc: "玫瑰" },
+                { char: "🌺", code: "U+1F33A", name: "hibiscus", category: "nature", desc: "芙蓉" },
+                { char: "🌻", code: "U+1F33B", name: "sunflower", category: "nature", desc: "向日葵" },
+                { char: "🌷", code: "U+1F337", name: "tulip", category: "nature", desc: "郁金香" },
+                { char: "🌱", code: "U+1F331", name: "seedling", category: "nature", desc: "幼苗" },
+                { char: "🌲", code: "U+1F332", name: "evergreen tree", category: "nature", desc: "松树" },
+                { char: "🌳", code: "U+1F333", name: "deciduous tree", category: "nature", desc: "树" },
+                { char: "🌴", code: "U+1F334", name: "palm tree", category: "nature", desc: "椰树" },
+                { char: "🌵", code: "U+1F335", name: "cactus", category: "nature", desc: "仙人掌" },
+                { char: "🍀", code: "U+1F340", name: "four leaf clover", category: "nature", desc: "四叶草" },
+                { char: "🍁", code: "U+1F341", name: "maple leaf", category: "nature", desc: "枫叶" },
+                { char: "🌍", code: "U+1F30D", name: "globe showing Europe-Africa", category: "nature", desc: "地球" },
+                { char: "🌙", code: "U+1F319", name: "crescent moon", category: "nature", desc: "月亮" },
+                { char: "☀️", code: "U+2600", name: "sun", category: "nature", desc: "太阳" },
+                { char: "⭐", code: "U+2B50", name: "star", category: "nature", desc: "星星" },
+                { char: "☁️", code: "U+2601", name: "cloud", category: "nature", desc: "云" },
+                { char: "⛅", code: "U+26C5", name: "sun behind cloud", category: "nature", desc: "多云" },
+                { char: "⛈️", code: "U+26C8", name: "cloud with lightning and rain", category: "nature", desc: "雷雨" },
+                { char: "🌧️", code: "U+1F327", name: "cloud with rain", category: "nature", desc: "下雨" },
+                { char: "❄️", code: "U+2744", name: "snowflake", category: "nature", desc: "雪花" },
+                { char: "🌈", code: "U+1F308", name: "rainbow", category: "nature", desc: "彩虹" },
+                { char: "🔥", code: "U+1F525", name: "fire", category: "nature", desc: "火" },
+                { char: "💧", code: "U+1F4A7", name: "droplet", category: "nature", desc: "水滴" },
+                { char: "🌊", code: "U+1F30A", name: "water wave", category: "nature", desc: "海浪" },
+
+                // === Objects (物品) ===
+                { char: "⌚", code: "U+231A", name: "watch", category: "object", desc: "手表" },
+                { char: "📱", code: "U+1F4F1", name: "mobile phone", category: "object", desc: "手机" },
+                { char: "💻", code: "U+1F4BB", name: "laptop", category: "object", desc: "笔记本" },
+                { char: "⌨️", code: "U+2328", name: "keyboard", category: "object", desc: "键盘" },
+                { char: "🖥️", code: "U+1F5A5", name: "desktop computer", category: "object", desc: "电脑" },
+                { char: "📷", code: "U+1F4F7", name: "camera", category: "object", desc: "相机" },
+                { char: "🎥", code: "U+1F3A5", name: "movie camera", category: "object", desc: "摄影机" },
+                { char: "📞", code: "U+1F4DE", name: "telephone receiver", category: "object", desc: "电话" },
+                { char: "📺", code: "U+1F4FA", name: "television", category: "object", desc: "电视" },
+                { char: "📻", code: "U+1F4FB", name: "radio", category: "object", desc: "收音机" },
+                { char: "🎙️", code: "U+1F399", name: "studio microphone", category: "object", desc: "麦克风" },
+                { char: "⏰", code: "U+23F0", name: "alarm clock", category: "object", desc: "闹钟" },
+                { char: "⏳", code: "U+23F3", name: "hourglass not done", category: "object", desc: "沙漏" },
+                { char: "💡", code: "U+1F4A1", name: "light bulb", category: "object", desc: "灯泡" },
+                { char: "🔦", code: "U+1F526", name: "flashlight", category: "object", desc: "手电筒" },
+                { char: "💰", code: "U+1F4B0", name: "money bag", category: "object", desc: "钱袋" },
+                { char: "💎", code: "U+1F48E", name: "gem stone", category: "object", desc: "钻石" },
+                { char: "🔧", code: "U+1F527", name: "wrench", category: "object", desc: "扳手" },
+                { char: "🔨", code: "U+1F528", name: "hammer", category: "object", desc: "锤子" },
+                { char: "⚙️", code: "U+2699", name: "gear", category: "object", desc: "齿轮" },
+                { char: "🔫", code: "U+1F52B", name: "water pistol", category: "object", desc: "水枪" },
+                { char: "💣", code: "U+1F4A3", name: "bomb", category: "object", desc: "炸弹" },
+                { char: "🔪", code: "U+1F52A", name: "kitchen knife", category: "object", desc: "菜刀" },
+                { char: "🛡️", code: "U+1F6E1", name: "shield", category: "object", desc: "盾牌" },
+                { char: "💊", code: "U+1F48A", name: "pill", category: "object", desc: "药丸" },
+                { char: "💉", code: "U+1F489", name: "syringe", category: "object", desc: "针筒" },
+                { char: "🌡️", code: "U+1F321", name: "thermometer", category: "object", desc: "温度计" },
+                { char: "🚽", code: "U+1F6BD", name: "toilet", category: "object", desc: "马桶" },
+                { char: "🛁", code: "U+1F6C1", name: "bathtub", category: "object", desc: "浴缸" },
+                { char: "🔑", code: "U+1F511", name: "key", category: "object", desc: "钥匙" },
+                { char: "🎈", code: "U+1F388", name: "balloon", category: "object", desc: "气球" },
+                { char: "🎉", code: "U+1F389", name: "party popper", category: "object", desc: "礼花" },
+                { char: "🎁", code: "U+1F381", name: "wrapped gift", category: "object", desc: "礼物" },
+                { char: "✉️", code: "U+2709", name: "envelope", category: "object", desc: "信封" },
+                { char: "📦", code: "U+1F4E6", name: "package", category: "object", desc: "包裹" },
+                { char: "📍", code: "U+1F4CD", name: "round pushpin", category: "object", desc: "图钉" },
+                { char: "📎", code: "U+1F4CE", name: "paperclip", category: "object", desc: "回形针" },
+                { char: "📏", code: "U+1F4CF", name: "straight ruler", category: "object", desc: "尺子" },
+                { char: "🗑️", code: "U+1F5D1", name: "wastebasket", category: "object", desc: "垃圾桶" },
+                { char: "🛒", code: "U+1F6D2", name: "shopping cart", category: "object", desc: "购物车" },
+                { char: "🚗", code: "U+1F697", name: "automobile", category: "object", desc: "汽车" },
+                { char: "✈️", code: "U+2708", name: "airplane", category: "object", desc: "飞机" },
+                { char: "🚀", code: "U+1F680", name: "rocket", category: "object", desc: "火箭" },
+                { char: "🚲", code: "U+1F6B2", name: "bicycle", category: "object", desc: "自行车" },
+                { char: "⚓", code: "U+2693", name: "anchor", category: "object", desc: "锚" },
+                { char: "⚽", code: "U+26BD", name: "soccer ball", category: "object", desc: "足球" },
+                { char: "🏀", code: "U+1F3C0", name: "basketball", category: "object", desc: "篮球" },
+                { char: "🎮", code: "U+1F3AE", name: "video game", category: "object", desc: "游戏" },
+                { char: "🎲", code: "U+1F3B2", name: "game die", category: "object", desc: "色子" },
+                { char: "🎵", code: "U+1F3B5", name: "musical note", category: "object", desc: "音符" },
+                { char: "🎨", code: "U+1F3A8", name: "artist palette", category: "object", desc: "调色板" },
+            ],
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang(false);
+                } else {
+                    this.changeLang(false);
+                }
+                
+                // 初始加载所有表情
+                this.renderEmojis(this.emojiData);
+            },
+
+            changeLang: function(updateUrl = true) {
+                const lang = document.getElementById('lang-selector').value;
+                const i18nData = this.i18n[lang];
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18nData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            el.placeholder = i18nData[key];
+                        } else {
+                            el.textContent = i18nData[key];
+                        }
+                    }
+                });
+
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', url);
+                }
+                
+                document.title = i18nData['title'];
+            },
+
+            search: function() {
+                const keyword = document.getElementById('search-input').value.trim().toLowerCase();
+                const category = document.getElementById('category-select').value;
+                
+                let filtered = this.emojiData;
+                
+                // 按类别筛选
+                if (category !== 'all') {
+                    filtered = filtered.filter(item => item.category === category);
+                }
+                
+                // 按关键词筛选
+                if (keyword) {
+                    filtered = filtered.filter(item => 
+                        item.name.toLowerCase().includes(keyword) || 
+                        item.code.toLowerCase().includes(keyword) ||
+                        item.desc.toLowerCase().includes(keyword)
+                    );
+                }
+
+                this.renderEmojis(filtered);
+            },
+
+            renderEmojis: function(emojis) {
+                const resultsContainer = document.getElementById('results-container');
+                const countDisplay = document.getElementById('count-display');
+                
+                // 更新数量显示
+                countDisplay.textContent = `共 ${emojis.length} 个`;
+                
+                if (emojis.length === 0) {
+                    resultsContainer.innerHTML = `<p class="text-gray-400 italic col-span-full text-center py-10" data-i18n="no_results">未找到匹配的Emoji (No results found)</p>`;
+                    return;
+                }
+
+                let html = '';
+                emojis.forEach(emoji => {
+                    html += `
+                        <div class="emoji-card" onclick="Tool.copyEmojiCode('${emoji.code}')" title="点击复制 (Click to copy)">
+                            <div class="emoji-char">${emoji.char}</div>
+                            <div class="emoji-code">${emoji.code}</div>
+                            <div class="text-sm text-gray-800 font-medium truncate">${emoji.name}</div>
+                            <div class="text-xs text-gray-500 mt-1 truncate">${emoji.desc}</div>
+                        </div>
+                    `;
+                });
+
+                resultsContainer.innerHTML = html;
+            },
+
+            copyEmojiCode: function(code) {
+                navigator.clipboard.writeText(code).then(() => {
+                    const notification = document.getElementById('copy-notification');
+                    notification.style.opacity = "1";
+                    setTimeout(() => {
+                        notification.style.opacity = "0";
+                    }, 2000);
+                });
+            },
+
+            getI18nText: function(key) {
+                const lang = document.getElementById('lang-selector').value;
+                return this.i18n[lang]?.[key] || this.i18n['en'][key] || key;
+            }
+        };
+
+        window.onload = function() { Tool.init(); };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

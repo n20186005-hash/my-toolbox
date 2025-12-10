@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golf Handicap Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="golf_handicap_calc">
+    <meta name="category" content="sports">
+    <meta name="icon" content="⛳">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Golf Handicap Calculator">
+    <meta name="description" content="Calculate your golf handicap based on recent scores.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="高尔夫差点计算器">
+    <meta name="lang-description-zh-CN" content="根据最近的成绩计算您的高尔夫差点。">
+    
+    <meta name="lang-title-zh-TW" content="高爾夫差點計算器">
+    <meta name="lang-description-zh-TW" content="根據最近的成績計算您的高爾夫差點。">
+    
+    <meta name="lang-title-ja" content="ゴルフハンディキャップ計算ツール">
+    <meta name="lang-description-ja" content="直近のスコアからゴルフのハンディキャップを計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор гольфийного гандикапа">
+    <meta name="lang-description-ru" content="Вычислите ваш гольфийный гандикап на основе последних результатов.">
+    
+    <meta name="lang-title-es" content="Calculadora de Handicap de Golf">
+    <meta name="lang-description-es" content="Calcula tu handicap de golf según tus puntuaciones recientes.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .score-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/sports/golf-handicap-calculator.html.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="golf_handicap_calc" 
+         data-category="sports" 
+         data-title="Golf Handicap Calculator" 
+         data-icon="⛳">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="gh-lang" onchange="GolfHandicap.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">⛳ Golf Handicap Calculator</h2>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="course_rating_label">Course Rating</label>
+            <input type="number" step="0.1" id="course-rating" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="72.5" min="0">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="slope_rating_label">Slope Rating</label>
+            <input type="number" id="slope-rating" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="120" min="55" max="155">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="scores_label">Your Scores (up to 20)</label>
+            <div id="score-container">
+                <div class="score-row">
+                    <input type="number" class="score-input flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="90" min="0">
+                </div>
+            </div>
+            <button onclick="GolfHandicap.addScoreRow()" class="mt-2 text-sm text-blue-600 hover:text-blue-800" data-i18n="add_score">Add Another Score</button>
+        </div>
+
+        <button onclick="GolfHandicap.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Handicap</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Your Handicap Index</div>
+            <div id="gh-result" class="text-3xl font-bold text-blue-800">--</div>
+            <div id="gh-details" class="text-sm text-gray-600 mt-2 h-5"></div>
+        </div>
+    </div>
+
+    <script>
+        const GolfHandicap = {
+            i18n: {
+                'en': {
+                    title: '⛳ Golf Handicap Calculator',
+                    course_rating_label: 'Course Rating',
+                    slope_rating_label: 'Slope Rating',
+                    scores_label: 'Your Scores (up to 20)',
+                    add_score: 'Add Another Score',
+                    btn_calc: 'Calculate Handicap',
+                    res_label: 'Your Handicap Index',
+                    err_invalid: 'Invalid input',
+                    details: 'Based on %d scores'
+                },
+                'zh-CN': {
+                    title: '⛳ 高尔夫差点计算器',
+                    course_rating_label: '球场难度值',
+                    slope_rating_label: '坡度难度值',
+                    scores_label: '您的成绩（最多20个）',
+                    add_score: '添加另一个成绩',
+                    btn_calc: '计算差点',
+                    res_label: '您的差点指数',
+                    err_invalid: '输入无效',
+                    details: '基于%d个成绩计算'
+                },
+                'zh-TW': {
+                    title: '⛳ 高爾夫差點計算器',
+                    course_rating_label: '球場難度值',
+                    slope_rating_label: '坡度難度值',
+                    scores_label: '您的成績（最多20個）',
+                    add_score: '添加另一個成績',
+                    btn_calc: '計算差點',
+                    res_label: '您的差點指標',
+                    err_invalid: '輸入無效',
+                    details: '基於%d個成績計算'
+                },
+                'ja': {
+                    title: '⛳ ゴルフハンディキャップ計算ツール',
+                    course_rating_label: 'コースレーティング',
+                    slope_rating_label: 'スロープレーティング',
+                    scores_label: 'あなたのスコア（最大20個）',
+                    add_score: 'スコアを追加',
+                    btn_calc: 'ハンディキャップを計算',
+                    res_label: 'ハンディキャップ指数',
+                    err_invalid: '無効な入力',
+                    details: '%d個のスコアに基づく'
+                },
+                'ru': {
+                    title: '⛳ Калькулятор гольфийного гандикапа',
+                    course_rating_label: 'Рейтинг курса',
+                    slope_rating_label: 'Слоп-рейтинг',
+                    scores_label: 'Ваши результаты (до 20)',
+                    add_score: 'Добавить другой результат',
+                    btn_calc: 'Вычислить гандикап',
+                    res_label: 'Ваш гандикапный индекс',
+                    err_invalid: 'Неверный ввод',
+                    details: 'На основе %d результатов'
+                },
+                'es': {
+                    title: '⛳ Calculadora de Handicap de Golf',
+                    course_rating_label: 'Clasificación del Campo',
+                    slope_rating_label: 'Clasificación de Pendiente',
+                    scores_label: 'Tus Puntuaciones (hasta 20)',
+                    add_score: 'Añadir Otra Puntuación',
+                    btn_calc: 'Calcular Handicap',
+                    res_label: 'Tu Índice de Handicap',
+                    err_invalid: 'Entrada inválida',
+                    details: 'Basado en %d puntuaciones'
+                }
+            },
+
+            init: () => {
+                // 初始化默认值
+                document.getElementById('course-rating').value = 72.5;
+                document.getElementById('slope-rating').value = 120;
+                document.querySelector('.score-input').value = 90;
+            },
+
+            addScoreRow: () => {
+                const container = document.getElementById('score-container');
+                if (container.children.length < 20) {
+                    const row = document.createElement('div');
+                    row.className = 'score-row';
+                    row.innerHTML = `<input type="number" class="score-input flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="${GolfHandicap.getCurrentLang() === 'en' ? '90' : 
+                                    GolfHandicap.getCurrentLang() === 'zh-CN' || GolfHandicap.getCurrentLang() === 'zh-TW' ? '90' : 
+                                    GolfHandicap.getCurrentLang() === 'ja' ? '90' : 
+                                    GolfHandicap.getCurrentLang() === 'ru' ? '90' : '90'}" min="0">`;
+                    container.appendChild(row);
+                }
+            },
+
+            getCurrentLang: () => {
+                return document.getElementById('gh-lang').value;
+            },
+
+            changeLang: () => {
+                const lang = GolfHandicap.getCurrentLang();
+                const texts = GolfHandicap.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="golf_handicap_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 更新占位符
+                document.querySelectorAll('.score-input').forEach(input => {
+                    input.placeholder = lang === 'en' ? '90' : 
+                                      lang === 'zh-CN' || lang === 'zh-TW' ? '90' : 
+                                      lang === 'ja' ? '90' : 
+                                      lang === 'ru' ? '90' : '90';
+                });
+
+                // 重新计算以更新结果语言
+                const currentResult = document.getElementById('gh-result').innerText;
+                if (currentResult !== '--') {
+                    GolfHandicap.calc();
+                }
+            },
+
+            calc: () => {
+                const courseRating = parseFloat(document.getElementById('course-rating').value);
+                const slopeRating = parseInt(document.getElementById('slope-rating').value);
+                const scoreInputs = document.querySelectorAll('.score-input');
+                const lang = GolfHandicap.getCurrentLang();
+                const texts = GolfHandicap.i18n[lang];
+
+                // 验证输入
+                if (isNaN(courseRating) || isNaN(slopeRating) || slopeRating < 55 || slopeRating > 155) {
+                    document.getElementById('gh-result').innerText = texts.err_invalid;
+                    document.getElementById('gh-result').className = "text-xl font-bold text-red-600";
+                    document.getElementById('gh-details').innerText = "";
+                    return;
+                }
+
+                // 收集有效成绩
+                const scores = Array.from(scoreInputs)
+                    .map(input => parseInt(input.value))
+                    .filter(score => !isNaN(score) && score > 0);
+
+                if (scores.length === 0) {
+                    document.getElementById('gh-result').innerText = texts.err_invalid;
+                    document.getElementById('gh-result').className = "text-xl font-bold text-red-600";
+                    document.getElementById('gh-details').innerText = "";
+                    return;
+                }
+
+                // 计算差点 (简化版公式)
+                const differentials = scores.map(score => (score - courseRating) * 113 / slopeRating);
+                // 取最低的8个差点微分 (如果超过8个成绩)
+                const usedDifferentials = differentials.sort((a, b) => a - b).slice(0, Math.min(8, differentials.length));
+                const average = usedDifferentials.reduce((sum, diff) => sum + diff, 0) / usedDifferentials.length;
+                const handicap = Math.round(average * 10) / 10; // 保留一位小数
+
+                // 显示结果
+                const resultEl = document.getElementById('gh-result');
+                const detailsEl = document.getElementById('gh-details');
+                
+                resultEl.className = "text-3xl font-bold text-blue-800";
+                resultEl.innerText = handicap;
+                detailsEl.innerText = texts.details.replace('%d', scores.length);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', GolfHandicap.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('gh-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    GolfHandicap.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

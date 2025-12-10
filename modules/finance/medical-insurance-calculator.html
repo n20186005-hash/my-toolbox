@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Insurance Calculator</title>
+    <meta name="tool-id" content="medical_insurance_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="🏥">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background-color: #f3f4f6; }
+        
+        /* 标签页样式 */
+        .nav-btn { position: relative; transition: all 0.3s; }
+        .nav-btn.active { color: #10b981; background-color: #dcfce7; }
+        .nav-btn.active::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: #10b981; border-radius: 3px 3px 0 0;
+        }
+
+        /* 动画 */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 输入框去箭头 */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* 表格滚动条 */
+        .custom-scroll::-webkit-scrollbar { height: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/finance/medical-insurance-calculator.html" />
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col">
+
+    <div class="max-w-6xl mx-auto w-full flex-grow">
+        
+        <!-- 顶部导航栏 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 sticky top-2 z-20">
+            <div class="flex flex-col md:flex-row justify-between items-center p-3 md:px-6">
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-3 mb-3 md:mb-0 w-full md:w-auto">
+                    <div class="bg-gradient-to-br from-emerald-600 to-emerald-500 text-white p-2.5 rounded-lg shadow-md">
+                        <i class="fa-solid fa-heartbeat text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-800 leading-tight" data-i18n="app_title">Medical Insurance Calculator</h1>
+                        <p class="text-xs text-gray-400" data-i18n="app_subtitle">Healthcare Cost Assistant</p>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                    <!-- Language Selector -->
+                    <div class="relative group">
+                        <select id="lang-select" onchange="I18nModule.changeLanguage(this.value)" class="appearance-none bg-white border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 pr-8 cursor-pointer font-medium hover:border-emerald-300 transition">
+                            <option value="en">🇺🇸 English</option>
+                            <option value="zh-CN">🇨🇳 简体中文</option>
+                            <option value="zh-TW">🇭🇰 繁體中文</option>
+                            <option value="ja">🇯🇵 日本語</option>
+                            <option value="ru">🇷🇺 Русский</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden min-h-[600px] relative">
+            
+            <!-- 医保计算模块 -->
+            <div id="view-insurance" class="fade-in p-6 md:p-8">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+                    <!-- 左侧: 输入 -->
+                    <div class="lg:col-span-4 flex flex-col gap-6">
+                        <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+                                <i class="fa-solid fa-user-doctor text-emerald-500"></i> <span data-i18n="params_title">Insurance Parameters</span>
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="group">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="salary_label">Monthly Salary</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-money-bill"></i></div>
+                                        <input type="number" id="insurance-salary" step="100" class="w-full pl-9 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white" placeholder="5000">
+                                    </div>
+                                </div>
+
+                                <div class="group">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="rate_label">Company Contribution (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-building"></i></div>
+                                        <input type="number" id="insurance-company" step="0.1" value="12" class="w-full pl-9 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white" placeholder="12">
+                                    </div>
+                                </div>
+
+                                <div class="group">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="personal_label">Personal Contribution (%)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-user"></i></div>
+                                        <input type="number" id="insurance-personal" step="0.1" value="8" class="w-full pl-9 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white" placeholder="8">
+                                    </div>
+                                </div>
+
+                                <div class="group">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1" data-i18n="threshold_label">Minimum Threshold</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-line-horizontal"></i></div>
+                                        <input type="number" id="insurance-threshold" step="100" value="3000" class="w-full pl-9 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white" placeholder="3000">
+                                    </div>
+                                </div>
+
+                                <button onclick="InsuranceModule.calculate()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-emerald-500/30 transition-all transform active:scale-95 mt-2 flex justify-center items-center gap-2 group">
+                                    <i class="fa-solid fa-calculator group-hover:animate-pulse"></i> <span data-i18n="btn_calc">Calculate</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 提示卡片 -->
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-xs text-gray-500 leading-relaxed">
+                            <i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i> <span data-i18n="insurance_formula_hint">Formula: Contribution = Max(Salary, Minimum Threshold) × Rate</span>
+                        </div>
+                    </div>
+
+                    <!-- 右侧: 结果 -->
+                    <div class="lg:col-span-8 flex flex-col h-full">
+                        <div class="flex justify-between items-end mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800" data-i18n="results_title">Calculation Results</h3>
+                                <p class="text-sm text-gray-400 mt-1" data-i18n="results_subtitle">Insurance contribution breakdown</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="App.exportCSV('insurance')" class="text-xs font-medium text-emerald-600 hover:text-emerald-800 px-3 py-2 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition flex items-center gap-1">
+                                    <i class="fa-solid fa-download"></i> <span data-i18n="btn_export">Export</span>
+                                </button>
+                                <button onclick="App.clearData('insurance')" class="text-xs font-medium text-red-500 hover:text-red-700 px-3 py-2 bg-red-50 rounded-lg hover:bg-red-100 transition flex items-center gap-1">
+                                    <i class="fa-regular fa-trash-can"></i> <span data-i18n="btn_clear">Clear</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow overflow-hidden rounded-xl border border-gray-200 bg-white relative">
+                            <div class="absolute inset-0 overflow-auto custom-scroll">
+                                <table class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-500 uppercase bg-gray-50/80 sticky top-0 backdrop-blur-sm z-10">
+                                        <tr>
+                                            <th class="px-5 py-3 font-semibold" data-i18n="col_salary">Salary</th>
+                                            <th class="px-5 py-3 font-semibold" data-i18n="col_company">Company</th>
+                                            <th class="px-5 py-3 font-semibold" data-i18n="col_personal">Personal</th>
+                                            <th class="px-5 py-3 font-semibold text-emerald-600" data-i18n="col_total">Total</th>
+                                            <th class="px-5 py-3 text-center" data-i18n="col_action">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="insurance-list" class="divide-y divide-gray-100">
+                                        <!-- Data Injected Here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="text-center mt-6 text-gray-400 text-xs">
+            &copy; 2024 Medical Insurance Tools. All calculations are performed locally.
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 国际化模块 (I18N Module)
+         */
+        const I18nModule = {
+            currentLang: 'en',
+            
+            data: {
+                'en': {
+                    app_title: 'Medical Insurance Calculator',
+                    app_subtitle: 'Healthcare Cost Assistant',
+                    params_title: 'Insurance Parameters',
+                    salary_label: 'Monthly Salary',
+                    rate_label: 'Company Contribution (%)',
+                    personal_label: 'Personal Contribution (%)',
+                    threshold_label: 'Minimum Threshold',
+                    btn_calc: 'Calculate',
+                    insurance_formula_hint: 'Formula: Contribution = Max(Salary, Minimum Threshold) × Rate',
+                    results_title: 'Calculation Results',
+                    results_subtitle: 'Insurance contribution breakdown',
+                    btn_export: 'Export CSV',
+                    btn_clear: 'Clear',
+                    col_salary: 'Salary',
+                    col_company: 'Company Pay',
+                    col_personal: 'Personal Pay',
+                    col_total: 'Total Contribution',
+                    col_action: 'Action',
+                    empty_data: 'No data yet. Enter parameters to start.',
+                    confirm_clear: 'Are you sure you want to clear all data?'
+                },
+                'zh-CN': {
+                    app_title: '医保计算器',
+                    app_subtitle: '医疗保障计算助手',
+                    params_title: '参保参数',
+                    salary_label: '月工资收入',
+                    rate_label: '单位缴纳比例 (%)',
+                    personal_label: '个人缴纳比例 (%)',
+                    threshold_label: '最低缴费基数',
+                    btn_calc: '开始计算',
+                    insurance_formula_hint: '计算公式：缴费金额 =  max(工资, 最低基数) × 缴费比例',
+                    results_title: '计算结果',
+                    results_subtitle: '医保缴费明细',
+                    btn_export: '导出表格',
+                    btn_clear: '清空',
+                    col_salary: '工资收入',
+                    col_company: '单位缴纳',
+                    col_personal: '个人缴纳',
+                    col_total: '总缴费额',
+                    col_action: '操作',
+                    empty_data: '暂无数据，请在左侧输入参数并计算。',
+                    confirm_clear: '确定要清空所有数据吗？'
+                },
+                'zh-TW': {
+                    app_title: '醫保計算器',
+                    app_subtitle: '醫療保障計算助手',
+                    params_title: '參保參數',
+                    salary_label: '月工資收入',
+                    rate_label: '單位繳納比例 (%)',
+                    personal_label: '個人繳納比例 (%)',
+                    threshold_label: '最低繳費基數',
+                    btn_calc: '開始計算',
+                    insurance_formula_hint: '計算公式：繳費金額 =  max(工資, 最低基數) × 繳費比例',
+                    results_title: '計算結果',
+                    results_subtitle: '醫保繳費明細',
+                    btn_export: '導出表格',
+                    btn_clear: '清空',
+                    col_salary: '工資收入',
+                    col_company: '單位繳納',
+                    col_personal: '個人繳納',
+                    col_total: '總繳費額',
+                    col_action: '操作',
+                    empty_data: '暫無數據，請在左側輸入參數並計算。',
+                    confirm_clear: '確定要清空所有數據嗎？'
+                },
+                'ja': {
+                    app_title: '医療保険計算機',
+                    app_subtitle: '医療費支援ツール',
+                    params_title: '保険パラメータ',
+                    salary_label: '月収',
+                    rate_label: '会社負担率 (%)',
+                    personal_label: '個人負担率 (%)',
+                    threshold_label: '最低基準額',
+                    btn_calc: '計算する',
+                    insurance_formula_hint: '計算式：負担額 = max(給与, 最低基準額) × 負担率',
+                    results_title: '計算結果',
+                    results_subtitle: '医療保険負担明細',
+                    btn_export: 'CSV出力',
+                    btn_clear: 'クリア',
+                    col_salary: '給与',
+                    col_company: '会社負担',
+                    col_personal: '個人負担',
+                    col_total: '総負担額',
+                    col_action: '操作',
+                    empty_data: 'データなし。左側でパラメータを入力してください。',
+                    confirm_clear: 'すべてのデータをクリアしてもよろしいですか？'
+                },
+                'ru': {
+                    app_title: 'Калькулятор медицинского страхования',
+                    app_subtitle: 'Ассистент по медицинским расходам',
+                    params_title: 'Параметры страхования',
+                    salary_label: 'Ежемесячная зарплата',
+                    rate_label: 'Вклад компании (%)',
+                    personal_label: 'Личный вклад (%)',
+                    threshold_label: 'Минимальная планка',
+                    btn_calc: 'Рассчитать',
+                    insurance_formula_hint: 'Формула: Вклад = Max(Зарплата, Минимальная планка) × Ставка',
+                    results_title: 'Результаты расчета',
+                    results_subtitle: 'Разбивка взносов по страхованию',
+                    btn_export: 'Экспорт',
+                    btn_clear: 'Очистить',
+                    col_salary: 'Зарплата',
+                    col_company: 'Компания платит',
+                    col_personal: 'Личный платеж',
+                    col_total: 'Общий взнос',
+                    col_action: 'Действие',
+                    empty_data: 'Нет данных. Введите параметры для начала.',
+                    confirm_clear: 'Вы уверены, что хотите очистить все данные?'
+                }
+            },
+
+            init: () => {
+                const saved = localStorage.getItem('insurance_lang');
+                if (saved && I18nModule.data[saved]) {
+                    I18nModule.currentLang = saved;
+                } else {
+                    const navLang = navigator.language;
+                    if (navLang.startsWith('zh')) I18nModule.currentLang = navLang.includes('TW') || navLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+                    else if (navLang.startsWith('ja')) I18nModule.currentLang = 'ja';
+                    else if (navLang.startsWith('ru')) I18nModule.currentLang = 'ru';
+                    else I18nModule.currentLang = 'en';
+                }
+                document.getElementById('lang-select').value = I18nModule.currentLang;
+                I18nModule.apply();
+            },
+
+            changeLanguage: (lang) => {
+                I18nModule.currentLang = lang;
+                localStorage.setItem('insurance_lang', lang);
+                I18nModule.apply();
+                InsuranceModule.render();
+            },
+
+            apply: () => {
+                const texts = I18nModule.data[I18nModule.currentLang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(texts[key]) {
+                        if (el.tagName === 'INPUT') el.placeholder = texts[key];
+                        else el.innerText = texts[key];
+                    }
+                });
+                document.documentElement.lang = I18nModule.currentLang;
+            },
+
+            t: (key) => {
+                return I18nModule.data[I18nModule.currentLang][key] || key;
+            }
+        };
+
+        /**
+         * 存储模块 (Storage Module)
+         */
+        const StorageModule = {
+            get: (key) => JSON.parse(localStorage.getItem(key)) || [],
+            set: (key, data) => localStorage.setItem(key, JSON.stringify(data))
+        };
+
+        /**
+         * 医保计算模块 (Insurance Module)
+         */
+        const InsuranceModule = {
+            data: [],
+            
+            init: () => {
+                InsuranceModule.data = StorageModule.get('insurance_history');
+                InsuranceModule.render();
+            },
+
+            calculate: () => {
+                const salary = parseFloat(document.getElementById('insurance-salary').value);
+                const companyRate = parseFloat(document.getElementById('insurance-company').value) || 0;
+                const personalRate = parseFloat(document.getElementById('insurance-personal').value) || 0;
+                const threshold = parseFloat(document.getElementById('insurance-threshold').value) || 0;
+
+                if (isNaN(salary) || salary <= 0) return alert(I18nModule.t('empty_data'));
+
+                // Calculate based on max of salary and threshold
+                const base = Math.max(salary, threshold);
+                const companyPay = (base * companyRate / 100).toFixed(2);
+                const personalPay = (base * personalRate / 100).toFixed(2);
+                const total = (parseFloat(companyPay) + parseFloat(personalPay)).toFixed(2);
+
+                const record = {
+                    id: Date.now(),
+                    salary: salary.toFixed(2),
+                    threshold: threshold.toFixed(2),
+                    companyRate: companyRate,
+                    personalRate: personalRate,
+                    companyPay: companyPay,
+                    personalPay: personalPay,
+                    total: total
+                };
+
+                InsuranceModule.data.unshift(record);
+                if (InsuranceModule.data.length > 50) InsuranceModule.data.pop();
+                
+                StorageModule.set('insurance_history', InsuranceModule.data);
+                InsuranceModule.render();
+            },
+
+            delete: (id) => {
+                InsuranceModule.data = InsuranceModule.data.filter(item => item.id !== id);
+                StorageModule.set('insurance_history', InsuranceModule.data);
+                InsuranceModule.render();
+            },
+
+            clear: () => {
+                if(confirm(I18nModule.t('confirm_clear'))) {
+                    InsuranceModule.data = [];
+                    StorageModule.set('insurance_history', InsuranceModule.data);
+                    InsuranceModule.render();
+                }
+            },
+
+            render: () => {
+                const tbody = document.getElementById('insurance-list');
+                if (InsuranceModule.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">${I18nModule.t('empty_data')}</td></tr>`;
+                    return;
+                }
+                
+                tbody.innerHTML = InsuranceModule.data.map(item => `
+                    <tr class="hover:bg-emerald-50/50 transition border-b border-gray-50 last:border-0">
+                        <td class="px-5 py-3 font-mono">¥${item.salary}</td>
+                        <td class="px-5 py-3 text-gray-700">¥${item.companyPay} (${item.companyRate}%)</td>
+                        <td class="px-5 py-3 text-gray-700">¥${item.personalPay} (${item.personalRate}%)</td>
+                        <td class="px-5 py-3 font-bold text-emerald-600">¥${item.total}</td>
+                        <td class="px-5 py-3 text-center">
+                            <button onclick="InsuranceModule.delete(${item.id})" class="text-gray-300 hover:text-red-500 transition px-2">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        };
+
+        /**
+         * 应用工具模块 (App Module)
+         */
+        const App = {
+            exportCSV: (type) => {
+                if (type === 'insurance' && InsuranceModule.data.length === 0) {
+                    return alert(I18nModule.t('empty_data'));
+                }
+
+                let data, headers;
+                if (type === 'insurance') {
+                    headers = [
+                        I18nModule.t('col_salary'),
+                        I18nModule.t('col_company'),
+                        I18nModule.t('col_personal'),
+                        I18nModule.t('col_total')
+                    ];
+                    data = InsuranceModule.data.map(item => [
+                        item.salary,
+                        `${item.companyPay} (${item.companyRate}%)`,
+                        `${item.personalPay} (${item.personalRate}%)`,
+                        item.total
+                    ]);
+                }
+
+                // Create CSV content
+                let csv = headers.join(',') + '\n';
+                data.forEach(row => {
+                    csv += row.map(field => `"${field}"`).join(',') + '\n';
+                });
+
+                // Download
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.setAttribute('href', url);
+                a.setAttribute('download', `${type}_calculations_${new Date().toISOString().slice(0,10)}.csv`);
+                a.style.visibility = 'hidden';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            },
+
+            clearData: (type) => {
+                if (type === 'insurance') InsuranceModule.clear();
+            }
+        };
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            I18nModule.init();
+            InsuranceModule.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

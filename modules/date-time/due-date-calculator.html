@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Due Date Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="due_date_calculator">
+    <meta name="category" content="Date & Time">
+    <meta name="icon" content="📅">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Due Date Calculator">
+    <meta name="description" content="Calculate due dates by adding or subtracting days, weeks, months or years from a start date.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="截止日期计算器">
+    <meta name="lang-description-zh-CN" content="通过从起始日期添加或减去天数、周数、月数或年数来计算截止日期。">
+    
+    <meta name="lang-title-zh-TW" content="截止日期計算器">
+    <meta name="lang-description-zh-TW" content="通過從起始日期添加或減去天數、週數、月數或年數來計算截止日期。">
+    
+    <meta name="lang-title-ja" content="期限計算ツール">
+    <meta name="lang-description-ja" content="開始日から日数、週数、月数、または年数を加算または減算して期限を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор сроков выполнения">
+    <meta name="lang-description-ru" content="Вычисляйте сроки выполнения, добавляя или вычитая дни, недели, месяцы или годы от начальной даты.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .result-section { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 150px; }
+        .period-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .period-group { display: flex; align-items: center; gap: 5px; }
+        select, input[type="date"], input[type="number"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .result-item { background: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .result-label { font-size: 0.8rem; color: #666; }
+        .result-value { font-size: 1.2rem; font-weight: 500; }
+        .date-diff { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 0.9rem; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/date-time/due-date-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="due_date_calculator" 
+         data-category="calculators" 
+         data-title="Due Date Calculator" 
+         data-icon="📅">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="due-date-lang" onchange="DueDateCalculator.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📅 Due Date Calculator</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 起始日期 -->
+            <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="start_date">Start Date</label>
+                <input type="date" id="start-date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <!-- 操作类型 -->
+            <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="operation">Operation</label>
+                <select id="operation" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="add" selected data-i18n="add">Add</option>
+                    <option value="subtract" data-i18n="subtract">Subtract</option>
+                </select>
+            </div>
+            
+            <!-- 时间周期输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="period">Time Period</label>
+                <div class="period-inputs">
+                    <div class="period-group">
+                        <input type="number" id="years" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label class="text-sm text-gray-600" data-i18n="years">years</label>
+                    </div>
+                    <div class="period-group">
+                        <input type="number" id="months" min="0" max="11" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label class="text-sm text-gray-600" data-i18n="months">months</label>
+                    </div>
+                    <div class="period-group">
+                        <input type="number" id="weeks" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label class="text-sm text-gray-600" data-i18n="weeks">weeks</label>
+                    </div>
+                    <div class="period-group">
+                        <input type="number" id="days" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label class="text-sm text-gray-600" data-i18n="days">days</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="DueDateCalculator.clearValue()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="DueDateCalculator.calculate()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate Due Date</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="due-date-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="due-date-results" class="hidden">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="result">Result</div>
+            <div class="result-section">
+                <div class="result-item">
+                    <div class="result-label" data-i18n="due_date">Due Date</div>
+                    <div class="result-value" id="calculated-due-date">-</div>
+                    <div class="date-diff" id="date-diff-from-today">-</div>
+                </div>
+                
+                <div class="result-item">
+                    <div class="result-label" data-i18n="date_breakdown">Date Breakdown</div>
+                    <div class="result-value" id="date-breakdown">-</div>
+                </div>
+                
+                <div class="result-item">
+                    <div class="result-label" data-i18n="day_of_week">Day of the Week</div>
+                    <div class="result-value" id="day-of-week">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="notes">Notes:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1" id="notes-list">
+                <li data-i18n="note1">This calculator adds or subtracts the specified time period from the start date</li>
+                <li data-i18n="note2">Month calculations are approximate and based on calendar months</li>
+                <li data-i18n="note3">1 week = 7 days, 1 year is considered as 365 days</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const DueDateCalculator = {
+            i18n: {
+                'en': {
+                    title: '📅 Due Date Calculator',
+                    start_date: 'Start Date',
+                    operation: 'Operation',
+                    add: 'Add',
+                    subtract: 'Subtract',
+                    period: 'Time Period',
+                    years: 'years',
+                    months: 'months',
+                    weeks: 'weeks',
+                    days: 'days',
+                    clear: 'Clear',
+                    calculate: 'Calculate Due Date',
+                    result: 'Result',
+                    due_date: 'Due Date',
+                    date_breakdown: 'Date Breakdown',
+                    day_of_week: 'Day of the Week',
+                    notes: 'Notes:',
+                    note1: 'This calculator adds or subtracts the specified time period from the start date',
+                    note2: 'Month calculations are approximate and based on calendar months',
+                    note3: '1 week = 7 days, 1 year is considered as 365 days',
+                    err_invalid_date: 'Please select a valid start date',
+                    err_no_period: 'Please enter at least one time period value',
+                    days_from_today: 'Days from today: ',
+                    days_ago: 'days ago',
+                    days_from_now: 'days from now'
+                },
+                'zh-CN': {
+                    title: '📅 截止日期计算器',
+                    start_date: '起始日期',
+                    operation: '操作',
+                    add: '添加',
+                    subtract: '减去',
+                    period: '时间周期',
+                    years: '年',
+                    months: '月',
+                    weeks: '周',
+                    days: '天',
+                    clear: '清除',
+                    calculate: '计算截止日期',
+                    result: '结果',
+                    due_date: '截止日期',
+                    date_breakdown: '日期分解',
+                    day_of_week: '星期几',
+                    notes: '说明：',
+                    note1: '此计算器从起始日期添加或减去指定的时间段',
+                    note2: '月份计算是近似值，基于日历月份',
+                    note3: '1周 = 7天，1年按365天计算',
+                    err_invalid_date: '请选择有效的起始日期',
+                    err_no_period: '请至少输入一个时间段值',
+                    days_from_today: '与今天相差：',
+                    days_ago: '天前',
+                    days_from_now: '天后'
+                },
+                'zh-TW': {
+                    title: '📅 截止日期計算器',
+                    start_date: '起始日期',
+                    operation: '操作',
+                    add: '添加',
+                    subtract: '減去',
+                    period: '時間周期',
+                    years: '年',
+                    months: '月',
+                    weeks: '週',
+                    days: '天',
+                    clear: '清除',
+                    calculate: '計算截止日期',
+                    result: '結果',
+                    due_date: '截止日期',
+                    date_breakdown: '日期分解',
+                    day_of_week: '星期幾',
+                    notes: '說明：',
+                    note1: '此計算器從起始日期添加或減去指定的時間段',
+                    note2: '月份計算是近似值，基於日曆月份',
+                    note3: '1週 = 7天，1年按365天計算',
+                    err_invalid_date: '請選擇有效的起始日期',
+                    err_no_period: '請至少輸入一個時間段值',
+                    days_from_today: '與今天相差：',
+                    days_ago: '天前',
+                    days_from_now: '天后'
+                },
+                'ja': {
+                    title: '📅 期限計算ツール',
+                    start_date: '開始日',
+                    operation: '操作',
+                    add: '加算',
+                    subtract: '減算',
+                    period: '時間期間',
+                    years: '年',
+                    months: '月',
+                    weeks: '週',
+                    days: '日',
+                    clear: 'クリア',
+                    calculate: '期限を計算',
+                    result: '結果',
+                    due_date: '期限日',
+                    date_breakdown: '日付の内訳',
+                    day_of_week: '曜日',
+                    notes: '注釈：',
+                    note1: 'この計算機は、開始日に指定された時間期間を加算または減算します',
+                    note2: '月の計算は概算であり、カレンダーの月に基づいています',
+                    note3: '1週間 = 7日、1年は365日と見なされます',
+                    err_invalid_date: '有効な開始日を選択してください',
+                    err_no_period: '少なくとも1つの時間期間の値を入力してください',
+                    days_from_today: '今日からの日数：',
+                    days_ago: '日前',
+                    days_from_now: '日後'
+                },
+                'ru': {
+                    title: '📅 Калькулятор сроков выполнения',
+                    start_date: 'Начальная дата',
+                    operation: 'Операция',
+                    add: 'Добавить',
+                    subtract: 'Вычесть',
+                    period: 'Временной период',
+                    years: 'лет',
+                    months: 'месяцев',
+                    weeks: 'недель',
+                    days: 'дней',
+                    clear: 'Очистить',
+                    calculate: 'Вычислить срок',
+                    result: 'Результат',
+                    due_date: 'Срок выполнения',
+                    date_breakdown: 'Разбор даты',
+                    day_of_week: 'День недели',
+                    notes: 'Примечания:',
+                    note1: 'Этот калькулятор добавляет или вычитает указанный временной период из начальной даты',
+                    note2: 'Вычисления месяцев являются приблизительными и основаны на календарных месяцах',
+                    note3: '1 неделя = 7 дней, 1 год считается за 365 дней',
+                    err_invalid_date: 'Пожалуйста, выберите действительную начальную дату',
+                    err_no_period: 'Пожалуйста, введите хотя бы одно значение временного периода',
+                    days_from_today: 'Дней от сегодня: ',
+                    days_ago: 'дней назад',
+                    days_from_now: 'дней из будущего'
+                }
+            },
+            
+            // 初始化
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                // 设置默认日期为今天
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('start-date').value = today;
+            },
+            
+            // 日期计算辅助函数
+            addPeriodToDate: function(date, years, months, weeks, days) {
+                let result = new Date(date);
+                
+                // 添加年
+                result.setFullYear(result.getFullYear() + years);
+                
+                // 添加月（需要处理月份溢出）
+                let newMonth = result.getMonth() + months;
+                let yearOffset = Math.floor(newMonth / 12);
+                newMonth = newMonth % 12;
+                if (newMonth < 0) {
+                    newMonth += 12;
+                    yearOffset -= 1;
+                }
+                result.setFullYear(result.getFullYear() + yearOffset);
+                result.setMonth(newMonth);
+                
+                // 添加周和天（1周=7天）
+                const totalDays = weeks * 7 + days;
+                result.setDate(result.getDate() + totalDays);
+                
+                return result;
+            },
+            
+            // 计算两个日期之间的天数差
+            daysBetween: function(date1, date2) {
+                const oneDay = 24 * 60 * 60 * 1000; // 毫秒
+                const firstDate = new Date(date1);
+                const secondDate = new Date(date2);
+                return Math.round((secondDate - firstDate) / oneDay);
+            },
+            
+            // 格式化日期显示
+            formatDate: function(date) {
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                return new Date(date).toLocaleDateString(this.getCurrentLang(), options);
+            },
+            
+            // 格式化日期分解
+            formatDateBreakdown: function(date) {
+                const d = new Date(date);
+                const year = d.getFullYear();
+                const month = d.getMonth() + 1; // 月份从0开始
+                const day = d.getDate();
+                
+                return `${year} ${this.i18n[this.getCurrentLang()].years}, ${month} ${this.i18n[this.getCurrentLang()].months}, ${day} ${this.i18n[this.getCurrentLang()].days}`;
+            },
+            
+            // 获取星期几
+            getDayOfWeek: function(date) {
+                const options = { weekday: 'long' };
+                return new Date(date).toLocaleDateString(this.getCurrentLang(), options);
+            },
+            
+            // 计算截止日期
+            calculate: function() {
+                const startDate = document.getElementById('start-date').value;
+                const operation = document.getElementById('operation').value;
+                const years = parseInt(document.getElementById('years').value) || 0;
+                const months = parseInt(document.getElementById('months').value) || 0;
+                const weeks = parseInt(document.getElementById('weeks').value) || 0;
+                const days = parseInt(document.getElementById('days').value) || 0;
+                
+                const errorEl = document.getElementById('due-date-error');
+                const resultsEl = document.getElementById('due-date-results');
+                const today = new Date();
+                
+                // 验证输入
+                if (!startDate) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_date;
+                    errorEl.classList.remove('hidden');
+                    resultsEl.classList.add('hidden');
+                    return;
+                }
+                
+                if (years === 0 && months === 0 && weeks === 0 && days === 0) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_no_period;
+                    errorEl.classList.remove('hidden');
+                    resultsEl.classList.add('hidden');
+                    return;
+                }
+                
+                // 清除错误
+                errorEl.classList.add('hidden');
+                
+                // 根据操作类型计算日期
+                let dueDate;
+                if (operation === 'add') {
+                    dueDate = this.addPeriodToDate(startDate, years, months, weeks, days);
+                } else {
+                    // 减法就是添加负值
+                    dueDate = this.addPeriodToDate(startDate, -years, -months, -weeks, -days);
+                }
+                
+                // 计算与今天的差值
+                const daysDiff = this.daysBetween(today, dueDate);
+                let daysDiffText;
+                if (daysDiff === 0) {
+                    daysDiffText = this.i18n[this.getCurrentLang()].days_from_today + '0 ' + this.i18n[this.getCurrentLang()].days;
+                } else if (daysDiff > 0) {
+                    daysDiffText = this.i18n[this.getCurrentLang()].days_from_today + daysDiff + ' ' + this.i18n[this.getCurrentLang()].days_from_now;
+                } else {
+                    daysDiffText = this.i18n[this.getCurrentLang()].days_from_today + Math.abs(daysDiff) + ' ' + this.i18n[this.getCurrentLang()].days_ago;
+                }
+                
+                // 显示结果
+                document.getElementById('calculated-due-date').textContent = this.formatDate(dueDate);
+                document.getElementById('date-diff-from-today').textContent = daysDiffText;
+                document.getElementById('date-breakdown').textContent = this.formatDateBreakdown(dueDate);
+                document.getElementById('day-of-week').textContent = this.getDayOfWeek(dueDate);
+                
+                // 显示结果区域
+                resultsEl.classList.remove('hidden');
+            },
+            
+            // 清除输入
+            clearValue: function() {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('start-date').value = today;
+                document.getElementById('years').value = '0';
+                document.getElementById('months').value = '0';
+                document.getElementById('weeks').value = '0';
+                document.getElementById('days').value = '0';
+                document.getElementById('due-date-results').classList.add('hidden');
+                document.getElementById('due-date-error').classList.add('hidden');
+            },
+            
+            // 切换语言
+            changeLang: function() {
+                const lang = this.getCurrentLang();
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 更新操作下拉菜单选项
+                const operationSelect = document.getElementById('operation');
+                operationSelect.options[0].textContent = this.i18n[lang].add;
+                operationSelect.options[1].textContent = this.i18n[lang].subtract;
+                
+                // 如果有结果，重新计算以更新日期格式和文本
+                if (!document.getElementById('due-date-results').classList.contains('hidden')) {
+                    this.calculate();
+                }
+            },
+            
+            // 获取当前语言
+            getCurrentLang: function() {
+                return document.getElementById('due-date-lang').value;
+            }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            DueDateCalculator.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

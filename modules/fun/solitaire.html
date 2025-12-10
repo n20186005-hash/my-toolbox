@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="fun">
+    <title>接龙工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5', // 現代的靛藍色
+                        secondary: '#10B981', // 強調色
+                        neutral: '#4B5563', // 文本顏色
+                        lightbg: '#F3F4F6', // 模塊背景色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'custom': '0 10px 20px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            /* 表單控件優化 */
+            .form-group {
+                @apply mb-4;
+            }
+            .form-group label {
+                @apply block text-neutral text-sm font-medium mb-1;
+            }
+            .form-control {
+                @apply w-full border border-gray-300 rounded-lg px-4 py-2 transition duration-200 ease-in-out
+                       focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none shadow-sm;
+            }
+            /* 按鈕優化 */
+            .btn-primary {
+                @apply bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold transition duration-200 ease-in-out 
+                       hover:bg-primary/90 hover:shadow-lg active:bg-primary/80 focus:outline-none focus:ring-4 focus:ring-primary/40;
+            }
+            /* 結果容器樣式 */
+            .results-container {
+                @apply bg-lightbg rounded-xl p-5 border border-gray-200 shadow-inner;
+            }
+            .solitaire-item {
+                @apply flex items-center p-3 rounded-xl bg-white shadow-md transition duration-150 ease-in-out hover:bg-gray-50 border border-gray-100;
+            }
+            .solitaire-index {
+                @apply w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center mr-3 text-xs font-bold shrink-0;
+            }
+        }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/fun/solitaire.html" />
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8 flex justify-center items-start">
+    <div class="w-full max-w-xl mx-auto bg-white rounded-2xl shadow-custom overflow-hidden transition-shadow duration-300 hover:shadow-2xl">
+        <div class="p-6 md:p-8">
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <!-- 這裡的標題結構已經優化，支持多行顯示，並且通過 JS 動態注入 HTML -->
+                    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-none tracking-tight" data-i18n="title">
+                        <span class="block text-primary">接龙</span>
+                        <span class="block">工具</span>
+                    </h1>
+                    <p class="text-sm text-gray-500 mt-2 font-medium" data-i18n="intro_subtitle">特殊的詞語接龍挑戰</p>
+                </div>
+                <!-- 語言選擇下拉框 -->
+                <select id="lang-selector" class="form-control w-auto text-sm" onchange="Solitaire.changeLang()">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁体中文</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語</option>
+                    <option value="ru">Русский</option>
+                </select>
+            </div>
+
+            <div class="space-y-6">
+                <!-- 接龍設置 Card -->
+                <div class="p-5 bg-lightbg rounded-xl border border-gray-200 shadow-light">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4" data-i18n="settings">接龍設置</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="start_word" data-i18n="start_word">起始詞語</label>
+                            <input type="text" id="start_word" value="一个顶俩" class="form-control" oninput="Solitaire.validateStartWord()">
+                            <p id="start_word_error" class="text-red-500 text-sm mt-1 hidden" data-i18n="start_error">請以"一個頂倆"開始接龍</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="max_length" data-i18n="max_length">最大接龍長度</label>
+                            <input type="number" id="max_length" value="10" min="1" max="100" class="form-control" oninput="Solitaire.calculate()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 接龍規則設置 Card -->
+                <div class="p-5 bg-lightbg rounded-xl border border-gray-200 shadow-light">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="rules">接龍規則設置</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        <div class="form-group mb-0">
+                            <label class="flex items-center text-neutral font-medium cursor-pointer">
+                                <input type="checkbox" id="strict_mode" checked class="mr-2 h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary" onchange="Solitaire.calculate()">
+                                <span data-i18n="strict_mode">嚴格模式（必須尾字相同）</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <label for="min_length" data-i18n="min_word_length">最小詞語長度</label>
+                            <input type="number" id="min_length" value="2" min="1" max="10" class="form-control" oninput="Solitaire.calculate()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 結果與操作區 -->
+                <div class="results-container">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800" data-i18n="solitaire_results">接龍結果</h3>
+                        <button onclick="Solitaire.generate()" class="btn-primary" data-i18n="generate">
+                             <i class="fa fa-magic mr-1"></i> 生成接龍
+                        </button>
+                    </div>
+
+                    <div id="solitaire_list" class="space-y-3 max-h-80 overflow-y-auto p-2 -m-2">
+                        <div class="text-gray-500 italic text-center py-4" data-i18n="no_results">請點擊生成按鈕開始接龍</div>
+                    </div>
+                </div>
+
+                <!-- 關於工具 -->
+                <div class="intro-section mt-8 pt-4 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">關於本工具</h3>
+                    <p class="text-gray-600 leading-relaxed text-sm" data-i18n="intro_text">這是一個"一個頂倆"詞語接龍工具。由於"倆"字作為結尾很難找到合適的接龍詞語，因此成為了一個有趣的文字遊戲挑戰。您可以設置不同的規則來嘗試完成這個特殊的接龍遊戲。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const Solitaire = {
+            i18n: {
+                'zh-CN': {
+                    title: '<span class="text-primary block">接龙</span><span class="block">工具</span>',
+                    intro_subtitle: '特殊的词语接龙挑战',
+                    settings: '接龙设置',
+                    start_word: '起始词语',
+                    start_error: '请以"一个顶俩"开始接龙',
+                    max_length: '最大接龙长度',
+                    solitaire_results: '接龙结果',
+                    generate: '生成接龙',
+                    no_results: '请点击生成按钮开始接龙',
+                    rules: '接龙规则设置',
+                    strict_mode: '严格模式（必须尾字相同）',
+                    min_word_length: '最小词语长度',
+                    intro_title: '关于本工具',
+                    intro_text: '这是一个"一个顶俩"词语接龙工具。由于"俩"字作为结尾很难找到合适的接龙词语，因此成为了一个有趣的文字游戏挑战。您可以设置不同的规则来尝试完成这个特殊的接龙游戏。'
+                },
+                'zh-TW': {
+                    title: '<span class="text-primary block">接龍</span><span class="block">工具</span>',
+                    intro_subtitle: '特殊的詞語接龍挑戰',
+                    settings: '接龍設置',
+                    start_word: '起始詞語',
+                    start_error: '請以"一個頂倆"開始接龍',
+                    max_length: '最大接龍長度',
+                    solitaire_results: '接龍結果',
+                    generate: '生成接龍',
+                    no_results: '請點擊生成按鈕開始接龍',
+                    rules: '接龍規則設置',
+                    strict_mode: '嚴格模式（必須尾字相同）',
+                    min_word_length: '最小詞語長度',
+                    intro_title: '關於本工具',
+                    intro_text: '這是一個"一個頂倆"詞語接龍工具。由於"倆"字作為結尾很難找到合適的接龍詞語，因此成為了一個有趣的文字遊戲挑戰。您可以設置不同的規則來嘗試完成這個特殊的接龍遊戲。'
+                },
+                'en': {
+                    title: '<span class="text-primary block">Word</span><span class="block">Solitaire</span>',
+                    intro_subtitle: 'A unique word chain challenge',
+                    settings: 'Solitaire Settings',
+                    start_word: 'Starting Word',
+                    start_error: 'Please start with "一个顶俩"',
+                    max_length: 'Max Solitaire Length',
+                    solitaire_results: 'Solitaire Results',
+                    generate: 'Generate Solitaire',
+                    no_results: 'Please click generate to start',
+                    rules: 'Solitaire Rules',
+                    strict_mode: 'Strict Mode (must match last character)',
+                    min_word_length: 'Minimum Word Length',
+                    intro_title: 'About This Tool',
+                    intro_text: 'This is a "一个顶俩" (One vs Two) word solitaire tool. Because the character "俩" (two) is difficult to continue the solitaire, it has become an interesting word game challenge. You can set different rules to try to complete this special solitaire game.'
+                },
+                'ja': {
+                    title: '<span class="text-primary block">連なり</span><span class="block">ツール</span>',
+                    intro_subtitle: '特別な言葉の連鎖チャレンジ',
+                    settings: '連なり設定',
+                    start_word: '開始語句',
+                    start_error: '「一个顶俩」から始めてください',
+                    max_length: '最大連なり長さ',
+                    solitaire_results: '連なり結果',
+                    generate: '連なりを生成',
+                    no_results: '生成ボタンをクリックして開始',
+                    rules: '連なりルール設定',
+                    strict_mode: '厳格モード（最後の文字が一致する必要があります）',
+                    min_word_length: '最小語句長',
+                    intro_title: 'このツールについて',
+                    intro_text: 'これは「一个顶俩」という語句の連なりツールです。「俩」という文字は連なりを続けるのが難しいため、興味深い言葉ゲームの課題となっています。さまざまなルールを設定して、この特別な連なりゲームを完成させてみてください。'
+                },
+                'ru': {
+                    title: '<span class="text-primary block">Слова</span><span class="block">Цепочка</span>',
+                    intro_subtitle: 'Уникальное испытание словесной цепочкой',
+                    settings: 'Настройки接龙',
+                    start_word: 'Начальное слово',
+                    start_error: 'Пожалуйста, начните с "一个顶俩"',
+                    max_length: 'Максимальная длина接龙',
+                    solitaire_results: 'Результаты接龙',
+                    generate: 'Сгенерировать接龙',
+                    no_results: 'Нажмите生成, чтобы начать',
+                    rules: 'Правила接龙',
+                    strict_mode: 'Строгий режим (должен совпадать последний символ)',
+                    min_word_length: 'Минимальная длина слова',
+                    intro_title: 'О этом инструменте',
+                    intro_text: 'Это инструмент для игры в接龙 с словом "一个顶俩". Поскольку символ "俩" сложно продолжить в接龙, это стало интересным языковым вызовом. Вы можете установить разные правила, чтобы попробовать завершить эту специальную игру.'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                }
+                // 由於移除 history.pushState，這裡仍然呼叫 changeLang 來載入對應語言的文本
+                this.changeLang();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                
+                // 嘗試更新 URL 參數，方便分享
+                // 使用 try-catch 避免在某些預覽環境（如 Blob URL）中拋出 SecurityError
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {
+                    console.log('Update URL failed (expected in some preview environments):', e);
+                }
+                
+                const texts = this.i18n[lang];
+                if (!texts) return;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    
+                    if (key === 'generate') {
+                        // 特殊處理帶圖標的按鈕文本
+                        const icon = '<i class="fa fa-magic mr-1"></i>';
+                        el.innerHTML = icon + texts[key];
+                    } else if (key === 'intro_subtitle') {
+                         // 查找副標題元素並設置文本
+                         const subtitleEl = el.closest('div').querySelector('.text-sm.text-gray-500');
+                         if (subtitleEl) subtitleEl.innerText = texts[key];
+                    } else {
+                        // 使用 innerHTML 替換 innerText，以支持標題中的 HTML 標籤
+                        if (texts[key]) el.innerHTML = texts[key];
+                    }
+                });
+            },
+
+            validateStartWord: function() {
+                const startWord = document.getElementById('start_word').value.trim();
+                const errorEl = document.getElementById('start_word_error');
+                
+                if (startWord !== '一个顶俩') {
+                    errorEl.classList.remove('hidden');
+                    return false;
+                } else {
+                    errorEl.classList.add('hidden');
+                    return true;
+                }
+            },
+
+            generate: function() {
+                if (!this.validateStartWord()) return;
+                
+                const startWord = document.getElementById('start_word').value.trim();
+                const maxLength = parseInt(document.getElementById('max_length').value) || 10;
+                const strictMode = document.getElementById('strict_mode').checked;
+                const minLength = parseInt(document.getElementById('min_length').value) || 2;
+                
+                const solitaireList = [startWord];
+                let currentWord = startWord;
+                
+                // 簡單的詞語庫 - 增加詞彙以提高接龍成功率
+                const wordBank = [
+                    '俩相情愿', '俩小无猜', '俩全其美', '俩肋插刀',
+                    '俩面三刀', '俩俩相对', '俩手空空', '俩眼一抹黑',
+                    '俩虎相斗', '俩败俱伤', '俩小无猜', '俩袖清风',
+                    '俩次三番', '俩全其美', '俩相情愿', '俩虎相争',
+                    '俩字千金', '俩袖清风', '俩全其美', '俩面三刀',
+                    '俩手遮天', '俩败俱伤', '俩虎相争', '俩袖清风', 
+                    '俩难全', '俩败俱伤', '俩手空空',
+                ].filter(word => word !== startWord); 
+                
+                // 生成接龍
+                for (let i = 1; i < maxLength; i++) {
+                    const lastChar = currentWord[currentWord.length - 1];
+                    let nextWord = null;
+                    
+                    // 嘗試找到合適的下一個詞
+                    for (const word of wordBank) {
+                        if (word.length < minLength) continue;
+                        
+                        // 檢查是否已被使用
+                        if (solitaireList.includes(word)) continue; 
+                        
+                        if (strictMode) {
+                            if (word[0] === lastChar) {
+                                nextWord = word;
+                                break;
+                            }
+                        } else {
+                            // 非嚴格模式：允許下一個詞包含上一個詞的最後一個字
+                            if (word.includes(lastChar)) {
+                                nextWord = word;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (nextWord) {
+                        solitaireList.push(nextWord);
+                        currentWord = nextWord;
+                    } else {
+                        // 找不到合適的詞，結束接龍
+                        break;
+                    }
+                }
+                
+                // 顯示結果
+                this.displayResults(solitaireList);
+            },
+
+            displayResults: function(words) {
+                const listEl = document.getElementById('solitaire_list');
+                listEl.innerHTML = '';
+                const lang = document.getElementById('lang-selector').value;
+                const noResultsText = this.i18n[lang].no_results;
+
+                if (words.length === 1 && words[0] === document.getElementById('start_word').value.trim()) {
+                     listEl.innerHTML = `<div class="text-gray-500 italic text-center py-4">${noResultsText}</div>`;
+                     return;
+                }
+
+                words.forEach((word, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'solitaire-item'; 
+                    
+                    // 突出顯示連接字符
+                    const prevWord = index > 0 ? words[index - 1] : '';
+                    let displayWord = word;
+                    let connectionDetail = '';
+                    
+                    if (index > 0 && prevWord) {
+                        const lastChar = prevWord[prevWord.length - 1];
+                        const matchIndex = word.indexOf(lastChar);
+                        
+                        if (matchIndex !== -1) {
+                            // 突出顯示的詞
+                            displayWord = 
+                                word.substring(0, matchIndex) + 
+                                `<span class="text-secondary font-extrabold">${lastChar}</span>` + 
+                                word.substring(matchIndex + 1);
+                            
+                            // 連接詳情：上一個詞的尾字 -> 當前詞的匹配字
+                            connectionDetail = prevWord[prevWord.length - 1] + 
+                                               ' → ' + 
+                                               (matchIndex === 0 ? word[0] : word[matchIndex]);
+                        } else {
+                             // 如果沒有匹配上，顯示連接失敗（雖然在生成邏輯中應該避免）
+                             connectionDetail = '連接失敗';
+                        }
+                    }
+                    
+                    item.innerHTML = `
+                        <span class="solitaire-index">${index + 1}</span>
+                        <div class="flex flex-col flex-grow">
+                            <span class="text-lg font-semibold text-gray-800">${displayWord}</span>
+                            ${index > 0 ? `<span class="text-xs text-gray-400 mt-0.5">${connectionDetail}</span>` : ''}
+                        </div>
+                        <span class="text-xs text-gray-500 ml-4 hidden md:block">${word.length} 字</span>
+                    `;
+                    listEl.appendChild(item);
+                });
+            },
+
+            calculate: function() {
+                // 保持與模板結構一致，所有操作手動通過“生成接龍”按鈕觸發
+            }
+        };
+
+        window.onload = function() {
+            Solitaire.init();
+        };
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

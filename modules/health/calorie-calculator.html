@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calorie Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="calorie_calculator">
+    <meta name="category" content="health">
+    <meta name="icon" content="🍽️">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Calorie Calculator">
+    <meta name="description" content="Estimate daily calorie needs based on Mifflin-St Jeor equation.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="热量计算器">
+    <meta name="lang-description-zh-CN" content="根据Mifflin-St Jeor公式估算每日热量需求。">
+    
+    <meta name="lang-title-zh-TW" content="熱量計算器">
+    <meta name="lang-description-zh-TW" content="根據Mifflin-St Jeor公式估算每日熱量需求。">
+    
+    <meta name="lang-title-ja" content="カロリー計算機">
+    <meta name="lang-description-ja" content="Mifflin-St Jeor方程式に基づいて毎日のカロリー必要量を推定します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор калорий">
+    <meta name="lang-description-ru" content="Оцените суточные потребности в калориях по уравнению Миффлина-Ст-Джора.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result { background-color: #f0fdf4; border: 1px solid #16a34a; color: #059669; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .info { background-color: #eff8ff; border: 1px solid #3b82f6; color: #1e40af; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/health/calorie-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="calorie_calculator" 
+         data-category="health" 
+         data-title="Calorie Calculator" 
+         data-icon="🍽️">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="calorie-lang" onchange="CalorieCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🍽️ Calorie Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gender">Gender</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="male" checked class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="male">Male</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gender" value="female" class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="female">Female</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="unit_system">Unit System</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="metric" checked class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="metric">Metric (cm, kg)</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="units" value="imperial" class="text-green-600 focus:ring-green-500">
+                        <span data-i18n="imperial">Imperial (in, lbs)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="age-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="age">Age (years)</label>
+                <input type="number" id="age" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 30" min="10" max="120" value="30">
+            </div>
+            
+            <div id="height-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_cm">Height (cm)</label>
+                <input type="number" id="height-cm" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 175" min="50" max="250" value="175">
+            </div>
+            <div id="height-imperial" style="display: none;">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="height_in">Height (in)</label>
+                <input type="number" id="height-in" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 69" min="20" max="98" value="69">
+            </div>
+            
+            <div id="weight-metric">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_kg">Weight (kg)</label>
+                <input type="number" id="weight-kg" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 70" min="20" max="300" value="70">
+            </div>
+            <div id="weight-imperial" style="display: none;">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="weight_lbs">Weight (lbs)</label>
+                <input type="number" id="weight-lbs" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 154" min="44" max="661" value="154">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="activity_level">Activity Level</label>
+                <select id="activity-level" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none">
+                    <option value="1.2" data-i18n="activity_sedentary">Sedentary (little or no exercise)</option>
+                    <option value="1.375" data-i18n="activity_light" selected>Lightly Active (light exercise/sports 1-3 days/week)</option>
+                    <option value="1.55" data-i18n="activity_mod">Moderately Active (moderate exercise/sports 3-5 days/week)</option>
+                    <option value="1.725" data-i18n="activity_very">Very Active (hard exercise/sports 6-7 days/week)</option>
+                    <option value="1.9" data-i18n="activity_extra">Extra Active (very hard exercise/sports & physical job)</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="CalorieCalc.calc()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Daily Calories</button>
+
+        <div class="bg-green-50 p-6 rounded-lg border border-green-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="basal_metabolism">Basal Metabolic Rate (BMR)</div>
+            <div id="bmr-result" class="text-2xl font-bold text-green-800">--</div>
+            
+            <div class="mt-6 text-sm text-gray-500 mb-2" data-i18n="daily_calories">Daily Calorie Needs</div>
+            <div id="calorie-result" class="text-2xl font-bold text-green-800">--</div>
+            
+            <div class="info text-sm mt-4" data-i18n="formula_male">Male BMR: 10 × weight(kg) + 6.25 × height(cm) - 5 × age(y) + 5</div>
+            <div class="info text-sm mt-2" data-i18n="formula_female">Female BMR: 10 × weight(kg) + 6.25 × height(cm) - 5 × age(y) - 161</div>
+        </div>
+    </div>
+
+    <script>
+        const CalorieCalc = {
+            i18n: {
+                'en': {
+                    title: '🍽️ Calorie Calculator',
+                    gender: 'Gender',
+                    male: 'Male',
+                    female: 'Female',
+                    unit_system: 'Unit System',
+                    metric: 'Metric (cm, kg)',
+                    imperial: 'Imperial (in, lbs)',
+                    age: 'Age (years)',
+                    height_cm: 'Height (cm)',
+                    height_in: 'Height (in)',
+                    weight_kg: 'Weight (kg)',
+                    weight_lbs: 'Weight (lbs)',
+                    activity_level: 'Activity Level',
+                    activity_sedentary: 'Sedentary (little or no exercise)',
+                    activity_light: 'Lightly Active (light exercise/sports 1-3 days/week)',
+                    activity_mod: 'Moderately Active (moderate exercise/sports 3-5 days/week)',
+                    activity_very: 'Very Active (hard exercise/sports 6-7 days/week)',
+                    activity_extra: 'Extra Active (very hard exercise/sports & physical job)',
+                    btn_calc: 'Calculate Daily Calories',
+                    basal_metabolism: 'Basal Metabolic Rate (BMR)',
+                    daily_calories: 'Daily Calorie Needs',
+                    formula_male: 'Male BMR: 10 × weight(kg) + 6.25 × height(cm) - 5 × age(y) + 5',
+                    formula_female: 'Female BMR: 10 × weight(kg) + 6.25 × height(cm) - 5 × age(y) - 161',
+                    err_invalid: 'Please enter valid numbers',
+                    unit_kcal: 'kcal/day'
+                },
+                'zh-CN': {
+                    title: '🍽️ 热量计算器',
+                    gender: '性别',
+                    male: '男',
+                    female: '女',
+                    unit_system: '单位系统',
+                    metric: '公制（厘米，千克）',
+                    imperial: '英制（英寸，磅）',
+                    age: '年龄（岁）',
+                    height_cm: '身高（厘米）',
+                    height_in: '身高（英寸）',
+                    weight_kg: '体重（千克）',
+                    weight_lbs: '体重（磅）',
+                    activity_level: '活动水平',
+                    activity_sedentary: '久坐不动（很少或不运动）',
+                    activity_light: '轻度活动（轻度运动/运动 1-3 天/周）',
+                    activity_mod: '中度活动（中度运动/运动 3-5 天/周）',
+                    activity_very: '高度活动（高强度运动/运动 6-7 天/周）',
+                    activity_extra: '极高活动（极高强度运动/运动及体力工作）',
+                    btn_calc: '计算每日热量需求',
+                    basal_metabolism: '基础代谢率（BMR）',
+                    daily_calories: '每日热量需求',
+                    formula_male: '男性BMR：10 × 体重(千克) + 6.25 × 身高(厘米) - 5 × 年龄(岁) + 5',
+                    formula_female: '女性BMR：10 × 体重(千克) + 6.25 × 身高(厘米) - 5 × 年龄(岁) - 161',
+                    err_invalid: '请输入有效的数字',
+                    unit_kcal: '千卡/天'
+                },
+                'zh-TW': {
+                    title: '🍽️ 熱量計算器',
+                    gender: '性別',
+                    male: '男',
+                    female: '女',
+                    unit_system: '單位系統',
+                    metric: '公制（公分，公斤）',
+                    imperial: '英制（英寸，磅）',
+                    age: '年齡（歲）',
+                    height_cm: '身高（公分）',
+                    height_in: '身高（英寸）',
+                    weight_kg: '體重（公斤）',
+                    weight_lbs: '體重（磅）',
+                    activity_level: '活動水平',
+                    activity_sedentary: '久坐不動（很少或不運動）',
+                    activity_light: '輕度活動（輕度運動/運動 1-3 天/週）',
+                    activity_mod: '中度活動（中度運動/運動 3-5 天/週）',
+                    activity_very: '高度活動（高強度運動/運動 6-7 天/週）',
+                    activity_extra: '極高活動（極高強度運動/運動及體力工作）',
+                    btn_calc: '計算每日熱量需求',
+                    basal_metabolism: '基礎代謝率（BMR）',
+                    daily_calories: '每日熱量需求',
+                    formula_male: '男性BMR：10 × 體重(公斤) + 6.25 × 身高(公分) - 5 × 年齡(歲) + 5',
+                    formula_female: '女性BMR：10 × 體重(公斤) + 6.25 × 身高(公分) - 5 × 年齡(歲) - 161',
+                    err_invalid: '請輸入有效的數字',
+                    unit_kcal: '千卡/天'
+                },
+                'ja': {
+                    title: '🍽️ カロリー計算機',
+                    gender: '性別',
+                    male: '男性',
+                    female: '女性',
+                    unit_system: '単位系',
+                    metric: 'メートル法（cm、kg）',
+                    imperial: '帝国単位（インチ、ポンド）',
+                    age: '年齢（歳）',
+                    height_cm: '身長（cm）',
+                    height_in: '身長（インチ）',
+                    weight_kg: '体重（kg）',
+                    weight_lbs: '体重（ポンド）',
+                    activity_level: '活動レベル',
+                    activity_sedentary: '久坐生活（ほとんどまたは全く運動しない）',
+                    activity_light: '軽度活動（軽い運動/スポーツ 1-3日/週）',
+                    activity_mod: '中度活動（中等度の運動/スポーツ 3-5日/週）',
+                    activity_very: '高度活動（激しい運動/スポーツ 6-7日/週）',
+                    activity_extra: '超高活動（非常に激しい運動/スポーツと体力仕事）',
+                    btn_calc: '毎日のカロリー必要量を計算',
+                    basal_metabolism: '基礎代謝率（BMR）',
+                    daily_calories: '毎日のカロリー必要量',
+                    formula_male: '男性BMR：10 × 体重(kg) + 6.25 × 身長(cm) - 5 × 年齢(歳) + 5',
+                    formula_female: '女性BMR：10 × 体重(kg) + 6.25 × 身長(cm) - 5 × 年齢(歳) - 161',
+                    err_invalid: '有効な数値を入力してください',
+                    unit_kcal: 'kcal/日'
+                },
+                'ru': {
+                    title: '🍽️ Калькулятор калорий',
+                    gender: 'Пол',
+                    male: 'Мужской',
+                    female: 'Женский',
+                    unit_system: 'Система единиц',
+                    metric: 'Метрическая (см, кг)',
+                    imperial: 'Имперская (дюймы, фунты)',
+                    age: 'Возраст (годы)',
+                    height_cm: 'Рост (см)',
+                    height_in: 'Рост (дюймы)',
+                    weight_kg: 'Вес (кг)',
+                    weight_lbs: 'Вес (фунты)',
+                    activity_level: 'Уровень активности',
+                    activity_sedentary: 'Сидячий образ жизни (малое или отсутствующее физическое упражнение)',
+                    activity_light: 'Легко активный (легкие упражнения/спорт 1-3 дня/неделя)',
+                    activity_mod: 'Умеренно активный (умеренные упражнения/спорт 3-5 дней/неделя)',
+                    activity_very: 'Очень активный (напряженные упражнения/спорт 6-7 дней/неделя)',
+                    activity_extra: 'Экстра активный (очень напряженные упражнения/спорт и физическая работа)',
+                    btn_calc: 'Вычислить суточные калории',
+                    basal_metabolism: 'Базовый метаболический коэффициент (БМР)',
+                    daily_calories: 'Суточные потребности в калориях',
+                    formula_male: 'Мужской БМР: 10 × вес(кг) + 6.25 × рост(см) - 5 × возраст(лет) + 5',
+                    formula_female: 'Женский БМР: 10 × вес(кг) + 6.25 × рост(см) - 5 × возраст(лет) - 161',
+                    err_invalid: 'Введите действительные числа',
+                    unit_kcal: 'ккал/день'
+                }
+            },
+
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                // 监听单位系统变化
+                document.querySelectorAll('input[name="units"]').forEach(radio => {
+                    radio.addEventListener('change', () => this.toggleUnits());
+                });
+                this.toggleUnits();
+            },
+
+            toggleUnits: function() {
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                
+                document.getElementById('height-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('height-imperial').style.display = isMetric ? 'none' : 'block';
+                document.getElementById('weight-metric').style.display = isMetric ? 'block' : 'none';
+                document.getElementById('weight-imperial').style.display = isMetric ? 'none' : 'block';
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('calorie-lang').value;
+                // 更新普通文本
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                // 更新下拉选项
+                document.querySelectorAll('#activity-level option').forEach(option => {
+                    const key = option.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        option.textContent = this.i18n[lang][key];
+                    }
+                });
+            },
+
+            calc: function() {
+                const age = parseInt(document.getElementById('age').value);
+                const gender = document.querySelector('input[name="gender"]:checked').value;
+                const activityLevel = parseFloat(document.getElementById('activity-level').value);
+                const isMetric = document.querySelector('input[name="units"][value="metric"]').checked;
+                
+                let weight, height;
+                
+                if (isMetric) {
+                    weight = parseFloat(document.getElementById('weight-kg').value);
+                    height = parseFloat(document.getElementById('height-cm').value);
+                } else {
+                    weight = parseFloat(document.getElementById('weight-lbs').value) * 0.453592; // 转换为千克
+                    height = parseFloat(document.getElementById('height-in').value) * 2.54; // 转换为厘米
+                }
+
+                if (isNaN(age) || isNaN(weight) || isNaN(height) || age <= 0 || weight <= 0 || height <= 0) {
+                    alert(this.getCurrentLangData().err_invalid);
+                    return;
+                }
+
+                // 计算BMR (Mifflin-St Jeor公式)
+                let bmr;
+                if (gender === 'male') {
+                    bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+                } else {
+                    bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+                }
+
+                // 计算每日热量需求
+                const dailyCalories = bmr * activityLevel;
+
+                // 显示结果
+                const unit = this.getCurrentLangData().unit_kcal;
+                document.getElementById('bmr-result').textContent = Math.round(bmr) + ' ' + unit;
+                document.getElementById('calorie-result').textContent = Math.round(dailyCalories) + ' ' + unit;
+            },
+
+            getCurrentLangData: function() {
+                const lang = document.getElementById('calorie-lang').value;
+                return this.i18n[lang] || this.i18n['en'];
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => CalorieCalc.init());
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe Period Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="safe_period_calc">
+    <meta name="category" content="health">
+    <meta name="icon" content="📅">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Safe Period Calculator">
+    <meta name="description" content="Calculate your safe period based on menstrual cycle.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="安全期计算器">
+    <meta name="lang-description-zh-CN" content="根据月经周期计算您的安全期。">
+    
+    <meta name="lang-title-zh-TW" content="安全期計算器">
+    <meta name="lang-description-zh-TW" content="根據月經周期計算您的安全期。">
+    
+    <meta name="lang-title-ja" content="避妊期間計算ツール">
+    <meta name="lang-description-ja" content="月経周期に基づいて避妊期間を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор безопасного периода">
+    <meta name="lang-description-ru" content="Вычислите ваш безопасный период на основе менструального цикла.">
+    
+    <meta name="lang-title-es" content="Calculadora de período seguro">
+    <meta name="lang-description-es" content="Calcula tu período seguro según el ciclo menstrual.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .input-group { margin-bottom: 16px; }
+        .result-card { transition: all 0.3s ease; }
+        .period-label { display: inline-block; padding: 4px 8px; border-radius: 4px; margin: 2px; }
+        .safe { background-color: #dcfce7; color: #166534; }
+        .unsafe { background-color: #fee2e2; color: #991b1b; }
+        .intro-section { margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/health/safe-period-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="safe_period_calc" 
+         data-category="health" 
+         data-title="Safe Period Calculator" 
+         data-icon="📅">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="period-lang" onchange="SafePeriodCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">📅 Safe Period Calculator</h2>
+        
+        <div class="space-y-6">
+            <!-- 输入区域 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="last_period_label">First Day of Last Menstruation</label>
+                    <input type="date" id="last-period-date" 
+                           class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <div class="input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="cycle_length_label">Average Cycle Length (days)</label>
+                    <input type="number" id="cycle-length" min="21" max="35" value="28" 
+                           class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <div class="input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="period_length_label">Menstruation Duration (days)</label>
+                    <input type="number" id="period-length" min="3" max="7" value="5" 
+                           class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+            
+            <button onclick="SafePeriodCalc.calculate()" 
+                    class="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700 transition" 
+                    data-i18n="btn_calculate">Calculate Safe Period</button>
+            
+            <!-- 结果区域 -->
+            <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 result-card">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="next_period_label">Predicted Next Menstruation</div>
+                <div id="next-period" class="text-xl font-bold text-blue-800 mb-4">--</div>
+                
+                <div class="text-sm text-gray-500 mb-2" data-i18n="ovulation_label">Predicted Ovulation Period</div>
+                <div id="ovulation-period" class="text-xl font-bold text-blue-800 mb-4">--</div>
+                
+                <div class="text-sm text-gray-500 mb-2" data-i18n="safe_period_label">Calculated Safe Period</div>
+                <div id="safe-period" class="text-xl font-bold text-blue-800 mb-4">--</div>
+                
+                <div class="flex flex-wrap mt-4">
+                    <div id="calendar-days" class="w-full grid grid-cols-7 gap-1 text-center text-sm"></div>
+                </div>
+            </div>
+            
+            <!-- 介绍部分 -->
+            <div class="intro-section">
+                <h3 class="font-medium text-gray-800 mb-2" data-i18n="intro_title">About Safe Period Calculation</h3>
+                <p class="text-sm text-gray-600" data-i18n="intro_text">The safe period is a natural contraceptive method based on the menstrual cycle. It is most effective for women with regular cycles. This calculator provides an estimate only and should not be used as the sole method of contraception.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SafePeriodCalc = {
+            i18n: {
+                'en': {
+                    title: '📅 Safe Period Calculator',
+                    last_period_label: 'First Day of Last Menstruation',
+                    cycle_length_label: 'Average Cycle Length (days)',
+                    period_length_label: 'Menstruation Duration (days)',
+                    btn_calculate: 'Calculate Safe Period',
+                    next_period_label: 'Predicted Next Menstruation',
+                    ovulation_label: 'Predicted Ovulation Period',
+                    safe_period_label: 'Calculated Safe Period',
+                    safe: 'Safe',
+                    unsafe: 'Unsafe',
+                    menstrual: 'Menstrual',
+                    intro_title: 'About Safe Period Calculation',
+                    intro_text: 'The safe period is a natural contraceptive method based on the menstrual cycle. It is most effective for women with regular cycles. This calculator provides an estimate only and should not be used as the sole method of contraception.'
+                },
+                'zh-CN': {
+                    title: '📅 安全期计算器',
+                    last_period_label: '上次月经第一天',
+                    cycle_length_label: '平均周期长度（天）',
+                    period_length_label: '经期持续时间（天）',
+                    btn_calculate: '计算安全期',
+                    next_period_label: '预计下次月经',
+                    ovulation_label: '预计排卵期',
+                    safe_period_label: '计算的安全期',
+                    safe: '安全',
+                    unsafe: '不安全',
+                    menstrual: '经期',
+                    intro_title: '关于安全期计算',
+                    intro_text: '安全期是基于月经周期的自然避孕方法，对周期规律的女性最有效。本计算器仅提供估算，不应作为唯一的避孕方法。'
+                },
+                'zh-TW': {
+                    title: '📅 安全期計算器',
+                    last_period_label: '上次月經第一天',
+                    cycle_length_label: '平均週期長度（天）',
+                    period_length_label: '經期持續時間（天）',
+                    btn_calculate: '計算安全期',
+                    next_period_label: '預計下次月經',
+                    ovulation_label: '預計排卵期',
+                    safe_period_label: '計算的安全期',
+                    safe: '安全',
+                    unsafe: '不安全',
+                    menstrual: '經期',
+                    intro_title: '關於安全期計算',
+                    intro_text: '安全期是基於月經週期的自然避孕方法，對週期規律的女性最有效。本計算器僅提供估算，不應作為唯一的避孕方法。'
+                },
+                'ja': {
+                    title: '📅 避妊期間計算ツール',
+                    last_period_label: '前回月経の初日',
+                    cycle_length_label: '平均周期長（日）',
+                    period_length_label: '月経持続期間（日）',
+                    btn_calculate: '避妊期間を計算',
+                    next_period_label: '次回月経予測',
+                    ovulation_label: '排卵予測期間',
+                    safe_period_label: '計算された避妊期間',
+                    safe: '安全',
+                    unsafe: '不安全',
+                    menstrual: '月経期間',
+                    intro_title: '避妊期間計算について',
+                    intro_text: '避妊期間は月経周期に基づく自然避妊法で、周期が規則的な女性に最も効果的です。この計算機は概算を提供するもので、避妊の唯一の方法として使用すべきではありません。'
+                },
+                'ru': {
+                    title: '📅 Калькулятор безопасного периода',
+                    last_period_label: 'Первый день последней менструации',
+                    cycle_length_label: 'Средняя длительность цикла (дней)',
+                    period_length_label: 'Длительность менструации (дней)',
+                    btn_calculate: 'Вычислить безопасный период',
+                    next_period_label: 'Прогнозируемая следующая менструация',
+                    ovulation_label: 'Прогнозируемый овуляционный период',
+                    safe_period_label: 'Вычисленный безопасный период',
+                    safe: 'Безопасно',
+                    unsafe: 'Небезопасно',
+                    menstrual: 'Менструация',
+                    intro_title: 'О вычислении безопасного периода',
+                    intro_text: 'Безопасный период — это естественный метод контрацепции, основанный на менструальном цикле. Он наиболее эффективен для женщин с регулярными циклами. Этот калькулятор предоставляет только оценку и не должен использоваться как единственный метод контрацепции.'
+                },
+                'es': {
+                    title: '📅 Calculadora de período seguro',
+                    last_period_label: 'Primer día de la última menstruación',
+                    cycle_length_label: 'Duración promedio del ciclo (días)',
+                    period_length_label: 'Duración de la menstruación (días)',
+                    btn_calculate: 'Calcular período seguro',
+                    next_period_label: 'Próxima menstruación predicha',
+                    ovulation_label: 'Periodo de ovulación predicho',
+                    safe_period_label: 'Periodo seguro calculado',
+                    safe: 'Seguro',
+                    unsafe: 'No seguro',
+                    menstrual: 'Menstruación',
+                    intro_title: 'Acerca del cálculo del período seguro',
+                    intro_text: 'El período seguro es un método anticonceptivo natural basado en el ciclo menstrual. Es más eficaz para mujeres con ciclos regulares. Esta calculadora solo proporciona una estimación y no debe usarse como único método de anticoncepción.'
+                }
+            },
+
+            init: () => {
+                // 设置默认日期为30天前
+                const defaultDate = new Date();
+                defaultDate.setDate(defaultDate.getDate() - 30);
+                document.getElementById('last-period-date').valueAsDate = defaultDate;
+            },
+            
+            calculate: () => {
+                const lastPeriodDate = new Date(document.getElementById('last-period-date').value);
+                const cycleLength = parseInt(document.getElementById('cycle-length').value) || 28;
+                const periodLength = parseInt(document.getElementById('period-length').value) || 5;
+                
+                if (isNaN(lastPeriodDate.getTime())) {
+                    alert('Please select a valid date');
+                    return;
+                }
+                
+                // 计算下次月经日期
+                const nextPeriodDate = new Date(lastPeriodDate);
+                nextPeriodDate.setDate(nextPeriodDate.getDate() + cycleLength);
+                
+                // 计算排卵期（下次月经前14天）
+                const ovulationDate = new Date(nextPeriodDate);
+                ovulationDate.setDate(ovulationDate.getDate() - 14);
+                
+                // 排卵期前后各3天为危险期
+                const unsafeStart = new Date(ovulationDate);
+                unsafeStart.setDate(unsafeStart.getDate() - 3);
+                const unsafeEnd = new Date(ovulationDate);
+                unsafeEnd.setDate(unsafeEnd.getDate() + 3);
+                
+                // 计算安全期（月经期间和排卵危险期之外）
+                const safeStart1 = new Date(lastPeriodDate);
+                const safeEnd1 = new Date(lastPeriodDate);
+                safeEnd1.setDate(safeEnd1.getDate() + periodLength - 1);
+                
+                const safeStart2 = new Date(unsafeEnd);
+                safeStart2.setDate(safeStart2.getDate() + 1);
+                const safeEnd2 = new Date(nextPeriodDate);
+                safeEnd2.setDate(safeEnd2.getDate() - 1);
+                
+                // 更新结果显示
+                const formatDate = (date) => {
+                    return date.toLocaleDateString([document.getElementById('period-lang').value], {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                };
+                
+                document.getElementById('next-period').textContent = formatDate(nextPeriodDate);
+                document.getElementById('ovulation-period').textContent = `${formatDate(unsafeStart)} - ${formatDate(unsafeEnd)}`;
+                
+                let safePeriodText = '';
+                if (safeStart1 <= safeEnd1) {
+                    safePeriodText += `${formatDate(safeStart1)} - ${formatDate(safeEnd1)}`;
+                }
+                if (safeStart2 <= safeEnd2) {
+                    safePeriodText += (safePeriodText ? '; ' : '') + `${formatDate(safeStart2)} - ${formatDate(safeEnd2)}`;
+                }
+                document.getElementById('safe-period').textContent = safePeriodText;
+                
+                // 生成日历视图
+                SafePeriodCalc.generateCalendar(lastPeriodDate, cycleLength, periodLength, unsafeStart, unsafeEnd);
+            },
+            
+            generateCalendar: (lastPeriod, cycleLength, periodLength, unsafeStart, unsafeEnd) => {
+                const calendarDays = document.getElementById('calendar-days');
+                calendarDays.innerHTML = '';
+                
+                const startDate = new Date(lastPeriod);
+                const endDate = new Date(lastPeriod);
+                endDate.setDate(endDate.getDate() + cycleLength);
+                
+                const currentDate = new Date(startDate);
+                const lang = document.getElementById('period-lang').value;
+                const texts = SafePeriodCalc.i18n[lang];
+                
+                while (currentDate <= endDate) {
+                    const dayEl = document.createElement('div');
+                    dayEl.className = 'p-2 border rounded';
+                    
+                    // 格式化显示日期（仅日）
+                    dayEl.textContent = currentDate.getDate();
+                    
+                    // 判断日期类型
+                    const isMenstrual = currentDate <= new Date(lastPeriod.getTime() + (periodLength - 1) * 86400000);
+                    const isUnsafe = currentDate >= unsafeStart && currentDate <= unsafeEnd;
+                    
+                    if (isMenstrual) {
+                        dayEl.classList.add('period-label', 'menstrual');
+                        dayEl.title = texts.menstrual;
+                    } else if (isUnsafe) {
+                        dayEl.classList.add('period-label', 'unsafe');
+                        dayEl.title = texts.unsafe;
+                    } else {
+                        dayEl.classList.add('period-label', 'safe');
+                        dayEl.title = texts.safe;
+                    }
+                    
+                    calendarDays.appendChild(dayEl);
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            },
+            
+            changeLang: () => {
+                const lang = document.getElementById('period-lang').value;
+                const texts = SafePeriodCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="safe_period_calc"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) {
+                        el.innerText = texts[key];
+                    }
+                });
+                
+                // 如果已有计算结果，重新计算以更新日期格式
+                if (document.getElementById('next-period').textContent !== '--') {
+                    SafePeriodCalc.calculate();
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', SafePeriodCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('period-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    SafePeriodCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

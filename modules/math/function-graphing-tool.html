@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function Graphing Tool</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="function_graphing_tool">
+    <meta name="category" content="Math">
+    <meta name="icon" content="📈">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Function Graphing Tool">
+    <meta name="description" content="Visualize mathematical functions with interactive graphs.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="函数图像绘制工具">
+    <meta name="lang-description-zh-CN" content="通过交互式图形可视化数学函数。">
+    
+    <meta name="lang-title-zh-TW" content="函數圖像繪製工具">
+    <meta name="lang-description-zh-TW" content="通過交互式圖形可視化數學函數。">
+    
+    <meta name="lang-title-ja" content="関数グラフ描画ツール">
+    <meta name="lang-description-ja" content="対話型グラフで数学関数を可視化します。">
+    
+    <meta name="lang-title-ru" content="Инструмент для построения графиков функций">
+    <meta name="lang-description-ru" content="Визуализируйте математические функции с помощью интерактивных графиков.">
+    
+    <meta name="lang-title-es" content="Herramienta de representación gráfica de funciones">
+    <meta name="lang-description-es" content="Visualice funciones matemáticas con gráficos interactivos.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        #graph-container { height: 400px; margin: 20px 0; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/function-graphing-tool.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="function_graphing_tool" 
+         data-category="math" 
+         data-title="Function Graphing Tool" 
+         data-icon="📈">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="graph-lang" onchange="GraphTool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📈 Function Graphing Tool</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="function_label">Function (y = f(x))</label>
+                <input type="text" id="function" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. x^2, sin(x), 2x+3" value="x^2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="range_label">X Range</label>
+                <div class="flex gap-2">
+                    <input type="number" id="x-min" class="flex-1 p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="Min" value="-10">
+                    <input type="number" id="x-max" class="flex-1 p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="Max" value="10">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="GraphTool.plotGraph()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="plot_btn">Plot Graph</button>
+
+        <div class="bg-green-50 p-6 rounded-lg border border-green-100">
+            <div id="graph-container">
+                <canvas id="function-chart"></canvas>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="example_label" class="font-medium mb-1">Examples: x^2, sin(x), cos(x), tan(x), 2x+5, sqrt(x)</div>
+                <div data-i18n="tips_label" class="text-gray-600">Click and drag on the graph to explore. Use mouse wheel to zoom.</div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: Some complex functions may not render correctly. Ensure valid function syntax.</div>
+        </div>
+    </div>
+
+    <script>
+        const GraphTool = {
+            chart: null,
+            i18n: {
+                'en': {
+                    title: '📈 Function Graphing Tool',
+                    function_label: 'Function (y = f(x))',
+                    range_label: 'X Range',
+                    plot_btn: 'Plot Graph',
+                    example_label: 'Examples: x^2, sin(x), cos(x), tan(x), 2x+5, sqrt(x)',
+                    tips_label: 'Click and drag on the graph to explore. Use mouse wheel to zoom.',
+                    error_invalid: 'Invalid function or range',
+                    disclaimer: 'Disclaimer: Some complex functions may not render correctly. Ensure valid function syntax.'
+                },
+                'zh-CN': {
+                    title: '📈 函数图像绘制工具',
+                    function_label: '函数 (y = f(x))',
+                    range_label: 'X轴范围',
+                    plot_btn: '绘制图像',
+                    example_label: '示例：x^2、sin(x)、cos(x)、tan(x)、2x+5、sqrt(x)',
+                    tips_label: '在图像上点击并拖动以探索。使用鼠标滚轮缩放。',
+                    error_invalid: '无效的函数或范围',
+                    disclaimer: '免责声明：某些复杂函数可能无法正确渲染。请确保函数语法有效。'
+                },
+                'zh-TW': {
+                    title: '📈 函數圖像繪製工具',
+                    function_label: '函數 (y = f(x))',
+                    range_label: 'X軸範圍',
+                    plot_btn: '繪製圖像',
+                    example_label: '示例：x^2、sin(x)、cos(x)、tan(x)、2x+5、sqrt(x)',
+                    tips_label: '在圖像上點擊並拖動以探索。使用滑鼠滾輪縮放。',
+                    error_invalid: '無效的函數或範圍',
+                    disclaimer: '免責聲明：某些複雜函數可能無法正確渲染。請確保函數語法有效。'
+                },
+                'ja': {
+                    title: '📈 関数グラフ描画ツール',
+                    function_label: '関数 (y = f(x))',
+                    range_label: 'X範囲',
+                    plot_btn: 'グラフを描画',
+                    example_label: '例：x^2、sin(x)、cos(x)、tan(x)、2x+5、sqrt(x)',
+                    tips_label: 'グラフをクリックしてドラッグすると探査できます。マウスホイールでズームします。',
+                    error_invalid: '無効な関数または範囲',
+                    disclaimer: '免責事項：一部の複雑な関数は正しく描画されない場合があります。有効な関数構文を確認してください。'
+                },
+                'ru': {
+                    title: '📈 Инструмент для построения графиков функций',
+                    function_label: 'Функция (y = f(x))',
+                    range_label: 'Диапазон X',
+                    plot_btn: 'Построить график',
+                    example_label: 'Примеры: x^2, sin(x), cos(x), tan(x), 2x+5, sqrt(x)',
+                    tips_label: 'Щелкните и перетащите на графике для исследования. Используйте колесо мыши для масштабирования.',
+                    error_invalid: 'Неверная функция или диапазон',
+                    disclaimer: 'Отказ от ответственности: Некоторые сложные функции могут отображаться некорректно. Убедитесь в правильности синтаксиса функции.'
+                },
+                'es': {
+                    title: '📈 Herramienta de representación gráfica de funciones',
+                    function_label: 'Función (y = f(x))',
+                    range_label: 'Rango X',
+                    plot_btn: 'Representar gráfico',
+                    example_label: 'Ejemplos: x^2, sin(x), cos(x), tan(x), 2x+5, sqrt(x)',
+                    tips_label: 'Haga clic y arrastre en el gráfico para explorar. Use la rueda del ratón para hacer zoom.',
+                    error_invalid: 'Función o rango no válido',
+                    disclaimer: 'Descargo de responsabilidad: Algunas funciones complejas pueden no renderizarse correctamente. Asegúrese de usar una sintaxis de función válida.'
+                }
+            },
+
+            init: () => {
+                // 初始化图表
+                const ctx = document.getElementById('function-chart').getContext('2d');
+                GraphTool.chart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Function',
+                            data: [],
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'center',
+                                title: {
+                                    display: true,
+                                    text: 'X'
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                position: 'center',
+                                title: {
+                                    display: true,
+                                    text: 'Y'
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                });
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('graph-lang').value;
+                const texts = GraphTool.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="function_graphing_tool"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+            },
+
+            generateData: (func, xMin, xMax) => {
+                const data = [];
+                const steps = 200; // 采样点数
+                const step = (xMax - xMin) / steps;
+                
+                // 替换函数语法以适应JavaScript
+                let processedFunc = func.replace(/x/g, '(x)')
+                                       .replace(/\^/g, '**')
+                                       .replace(/sqrt\(/g, 'Math.sqrt(')
+                                       .replace(/sin\(/g, 'Math.sin(')
+                                       .replace(/cos\(/g, 'Math.cos(')
+                                       .replace(/tan\(/g, 'Math.tan(');
+                
+                // 创建计算函数
+                const calculate = new Function('x', `return ${processedFunc};`);
+                
+                for (let i = 0; i <= steps; i++) {
+                    const x = xMin + i * step;
+                    try {
+                        const y = calculate(x);
+                        if (!isNaN(y) && isFinite(y)) {
+                            data.push({x, y});
+                        }
+                    } catch (e) {
+                        // 跳过无效点
+                    }
+                }
+                
+                return data;
+            },
+
+            plotGraph: () => {
+                const func = document.getElementById('function').value.trim();
+                const xMin = parseFloat(document.getElementById('x-min').value);
+                const xMax = parseFloat(document.getElementById('x-max').value);
+                const lang = document.getElementById('graph-lang').value;
+                const texts = GraphTool.i18n[lang];
+
+                // 验证输入
+                if (!func || isNaN(xMin) || isNaN(xMax) || xMin >= xMax) {
+                    alert(texts.error_invalid);
+                    return;
+                }
+
+                try {
+                    // 生成数据点
+                    const data = GraphTool.generateData(func, xMin, xMax);
+                    
+                    // 更新图表
+                    GraphTool.chart.data.datasets[0].data = data;
+                    GraphTool.chart.data.datasets[0].label = `y = ${func}`;
+                    GraphTool.chart.options.scales.x.min = xMin;
+                    GraphTool.chart.options.scales.x.max = xMax;
+                    GraphTool.chart.update();
+                } catch (e) {
+                    alert(texts.error_invalid);
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', GraphTool.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('graph-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    GraphTool.changeLang();
+                }
+            }
+
+            // 初始绘制示例函数
+            GraphTool.plotGraph();
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

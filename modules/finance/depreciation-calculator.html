@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Depreciation Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="depreciation_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💸">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Depreciation Calculator">
+    <meta name="description" content="Calculate asset depreciation using various methods.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="折旧计算器">
+    <meta name="lang-description-zh-CN" content="使用多种方法计算资产折旧。">
+    
+    <meta name="lang-title-zh-TW" content="折舊計算器">
+    <meta name="lang-description-zh-TW" content="使用多種方法計算資產折舊。">
+    
+    <meta name="lang-title-ja" content="減価償却計算機">
+    <meta name="lang-description-ja" content="さまざまな方法を使用して資産の減価償却を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор амортизации">
+    <meta name="lang-description-ru" content="Вычислите амортизацию активов с использованием различных методов.">
+    
+    <meta name="lang-title-es" content="Calculadora de depreciación">
+    <meta name="lang-description-es" content="Calcule la depreciación de activos usando varios métodos.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/finance/depreciation-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="depreciation_calculator" 
+         data-category="finance" 
+         data-title="Depreciation Calculator" 
+         data-icon="💸">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="depr-lang" onchange="DepreciationCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💸 Depreciation Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="cost_label">Asset Cost ($)</label>
+                <input type="number" id="asset-cost" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 10000" min="0" step="0.01" value="10000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="salvage_label">Salvage Value ($)</label>
+                <input type="number" id="salvage-value" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 1000" min="0" step="0.01" value="1000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="life_label">Useful Life (Years)</label>
+                <input type="number" id="useful-life" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 5" min="1" max="50" value="5">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="method_label">Depreciation Method</label>
+                <select id="method" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="straight" data-i18n="straight_line">Straight Line</option>
+                    <option value="double" data-i18n="double_declining">Double Declining Balance</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="DepreciationCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Depreciation</button>
+
+        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="res_label">Depreciation Results</div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="annual_label">Annual Depreciation</div>
+                    <div id="annual-depreciation" class="text-xl font-bold text-blue-800">--</div>
+                </div>
+                <div class="bg-white p-3 rounded border border-gray-100">
+                    <div class="text-sm text-gray-500" data-i18n="book_label">Book Value After 1 Year</div>
+                    <div id="book-value" class="text-xl font-bold text-blue-800">--</div>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">Formula</div>
+                <div id="depr-formula" class="text-gray-600">--</div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual depreciation may vary based on tax regulations.</div>
+        </div>
+    </div>
+
+    <script>
+        const DepreciationCalc = {
+            i18n: {
+                'en': {
+                    title: '💸 Depreciation Calculator',
+                    cost_label: 'Asset Cost ($)',
+                    salvage_label: 'Salvage Value ($)',
+                    life_label: 'Useful Life (Years)',
+                    method_label: 'Depreciation Method',
+                    straight_line: 'Straight Line',
+                    double_declining: 'Double Declining Balance',
+                    btn_calc: 'Calculate Depreciation',
+                    res_label: 'Depreciation Results',
+                    annual_label: 'Annual Depreciation',
+                    book_label: 'Book Value After 1 Year',
+                    formula_label: 'Formula',
+                    straight_formula: 'Annual Depreciation = (Cost - Salvage Value) / Useful Life',
+                    double_formula: 'Depreciation Rate = 2 / Useful Life, Annual Depreciation = Book Value × Rate',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual depreciation may vary based on tax regulations.'
+                },
+                'zh-CN': {
+                    title: '💸 折旧计算器',
+                    cost_label: '资产成本（美元）',
+                    salvage_label: '残值（美元）',
+                    life_label: '使用年限（年）',
+                    method_label: '折旧方法',
+                    straight_line: '直线法',
+                    double_declining: '双倍余额递减法',
+                    btn_calc: '计算折旧',
+                    res_label: '折旧结果',
+                    annual_label: '年度折旧额',
+                    book_label: '一年后账面价值',
+                    formula_label: '计算公式',
+                    straight_formula: '年度折旧额 = (成本 - 残值) / 使用年限',
+                    double_formula: '折旧率 = 2 / 使用年限，年度折旧额 = 账面价值 × 折旧率',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。实际折旧可能因税收法规而异。'
+                },
+                'zh-TW': {
+                    title: '💸 折舊計算器',
+                    cost_label: '資產成本（美元）',
+                    salvage_label: '殘值（美元）',
+                    life_label: '使用年限（年）',
+                    method_label: '折舊方法',
+                    straight_line: '直線法',
+                    double_declining: '雙倍餘額遞減法',
+                    btn_calc: '計算折舊',
+                    res_label: '折舊結果',
+                    annual_label: '年度折舊額',
+                    book_label: '一年後賬面價值',
+                    formula_label: '計算公式',
+                    straight_formula: '年度折舊額 = (成本 - 殘值) / 使用年限',
+                    double_formula: '折舊率 = 2 / 使用年限，年度折舊額 = 賬面價值 × 折舊率',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。實際折舊可能因稅收法規而異。'
+                },
+                'ja': {
+                    title: '💸 減価償却計算機',
+                    cost_label: '資産価格（ドル）',
+                    salvage_label: '残存価値（ドル）',
+                    life_label: '耐用年数（年）',
+                    method_label: '減価償却方法',
+                    straight_line: '定額法',
+                    double_declining: '定率法（2倍）',
+                    btn_calc: '減価償却を計算',
+                    res_label: '減価償却結果',
+                    annual_label: '年間減価償却額',
+                    book_label: '1年後の帳簿価額',
+                    formula_label: '計算式',
+                    straight_formula: '年間減価償却額 = (原価 - 残存価値) / 耐用年数',
+                    double_formula: '償却率 = 2 / 耐用年数、年間減価償却額 = 帳簿価額 × 償却率',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際の減価償却は税制によって異なる場合があります。'
+                },
+                'ru': {
+                    title: '💸 Калькулятор амортизации',
+                    cost_label: 'Стоимость актива ($)',
+                    salvage_label: 'Ликвидационная стоимость ($)',
+                    life_label: 'Срок службы (лет)',
+                    method_label: 'Метод амортизации',
+                    straight_line: 'Линейный метод',
+                    double_declining: 'Удвоенный уменьшающийся остаток',
+                    btn_calc: 'Вычислить амортизацию',
+                    res_label: 'Результаты амортизации',
+                    annual_label: 'Годовая амортизация',
+                    book_label: 'Бухгалтерская стоимость через 1 год',
+                    formula_label: 'Формула',
+                    straight_formula: 'Годовая амортизация = (Стоимость - Ликвидационная стоимость) / Срок службы',
+                    double_formula: 'Ставка амортизации = 2 / Срок службы, Годовая амортизация = Бухгалтерская стоимость × Ставка',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактическая амортизация может отличаться в зависимости от налоговых регламентов.'
+                },
+                'es': {
+                    title: '💸 Calculadora de depreciación',
+                    cost_label: 'Costo del activo ($)',
+                    salvage_label: 'Valor residual ($)',
+                    life_label: 'Vida útil (años)',
+                    method_label: 'Método de depreciación',
+                    straight_line: 'Línea recta',
+                    double_declining: 'Balance decreciente doble',
+                    btn_calc: 'Calcular depreciación',
+                    res_label: 'Resultados de depreciación',
+                    annual_label: 'Depreciación anual',
+                    book_label: 'Valor en libros después de 1 año',
+                    formula_label: 'Fórmula',
+                    straight_formula: 'Depreciación anual = (Costo - Valor residual) / Vida útil',
+                    double_formula: 'Tasa de depreciación = 2 / Vida útil, Depreciación anual = Valor en libros × Tasa',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo una estimación. La depreciación real puede variar según las regulaciones fiscales.'
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('depr-lang').value;
+                const texts = DepreciationCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="depreciation_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 重新计算以更新结果语言
+                DepreciationCalc.calc();
+            },
+
+            calc: () => {
+                const cost = parseFloat(document.getElementById('asset-cost').value) || 0;
+                const salvage = parseFloat(document.getElementById('salvage-value').value) || 0;
+                const life = parseFloat(document.getElementById('useful-life').value) || 0;
+                const method = document.getElementById('method').value;
+                const lang = document.getElementById('depr-lang').value;
+                const texts = DepreciationCalc.i18n[lang];
+
+                const annualEl = document.getElementById('annual-depreciation');
+                const bookEl = document.getElementById('book-value');
+                const formulaEl = document.getElementById('depr-formula');
+
+                // 验证输入
+                if (isNaN(cost) || isNaN(salvage) || isNaN(life) || cost <= 0 || salvage < 0 || life <= 0 || salvage >= cost) {
+                    annualEl.innerText = texts.err_invalid;
+                    annualEl.className = "text-xl font-bold text-red-600";
+                    bookEl.innerText = "";
+                    formulaEl.innerText = "";
+                    return;
+                }
+
+                let annual, bookValue, formula;
+
+                // 计算折旧
+                if (method === 'straight') {
+                    annual = (cost - salvage) / life;
+                    bookValue = cost - annual;
+                    formula = texts.straight_formula;
+                } else { // double declining
+                    const rate = 2 / life;
+                    annual = cost * rate;
+                    bookValue = cost - annual;
+                    formula = texts.double_formula;
+                }
+
+                // 格式化结果
+                annual = annual.toFixed(2);
+                bookValue = bookValue.toFixed(2);
+
+                // 显示结果
+                annualEl.className = "text-xl font-bold text-blue-800";
+                annualEl.innerText = "$" + annual;
+                
+                bookEl.className = "text-xl font-bold text-blue-800";
+                bookEl.innerText = "$" + bookValue;
+                
+                formulaEl.innerText = formula;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', DepreciationCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('depr-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    DepreciationCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

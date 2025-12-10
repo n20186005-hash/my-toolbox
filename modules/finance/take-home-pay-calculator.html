@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Home Pay Calculator</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="take_home_pay_calculator">
+    <meta name="category" content="finance">
+    <meta name="icon" content="💵">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Take Home Pay Calculator">
+    <meta name="description" content="Calculate your net take home pay after taxes and deductions.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="实得工资计算器">
+    <meta name="lang-description-zh-CN" content="计算税后和扣除后的实际带回家工资。">
+    
+    <meta name="lang-title-zh-TW" content="實得工資計算器">
+    <meta name="lang-description-zh-TW" content="計算稅後和扣除後的實際帶回家工資。">
+    
+    <meta name="lang-title-ja" content="手取り給料計算機">
+    <meta name="lang-description-ja" content="税および控除後の実際の手取り給料を計算します。">
+    
+    <meta name="lang-title-ru" content="Калькулятор чистой зарплаты">
+    <meta name="lang-description-ru" content="Рассчитайте вашу чистую зарплату после налогов и удержаний.">
+    
+    <meta name="lang-title-es" content="Calculadora de salario neto">
+    <meta name="lang-description-es" content="Calcule su salario neto después de impuestos y deducciones.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .warning { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .deduction-item { background-color: #f9fafb; padding: 8px; border-radius: 4px; margin-bottom: 4px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/finance/take-home-pay-calculator.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="take_home_pay_calculator" 
+         data-category="finance" 
+         data-title="Take Home Pay Calculator" 
+         data-icon="💵">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="pay-lang" onchange="PayCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">💵 Take Home Pay Calculator</h2>
+        
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="gross_pay_label">Gross Monthly Pay ($)</label>
+                <input type="number" id="gross-pay" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 5000" min="100" max="200000" value="5000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="tax_rate_label">Estimated Tax Rate (%)</label>
+                <input type="number" id="tax-rate" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 22" min="0" max="50" step="0.1" value="22">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="insurance_label">Insurance Premiums ($)</label>
+                <input type="number" id="insurance" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 300" min="0" max="10000" value="300">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="retirement_label">Retirement Contributions ($)</label>
+                <input type="number" id="retirement" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 500" min="0" max="50000" value="500">
+            </div>
+        </div>
+
+        <button onclick="PayCalc.calc()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Take Home Pay</button>
+
+        <div class="bg-green-50 p-6 rounded-lg border border-green-100 text-center">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="take_home_label">Monthly Take Home Pay</div>
+            <div id="take-home-pay" class="text-3xl font-bold text-green-800">--</div>
+            
+            <div class="mt-6">
+                <div class="text-sm text-gray-500 mb-2" data-i18n="deductions_label">Total Deductions</div>
+                <div id="total-deductions" class="text-xl font-bold text-green-700">--</div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left">
+                <div data-i18n="breakdown_label" class="font-medium mb-2">Deductions Breakdown:</div>
+                <div id="deductions-breakdown" class="space-y-2 text-sm"></div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white rounded border border-gray-100 text-left text-sm">
+                <div data-i18n="formula_label" class="font-medium mb-1">Formula: Take Home = Gross Pay - Taxes - Insurance - Retirement</div>
+                <div id="pay-formula" class="text-gray-600">--</div>
+            </div>
+            
+            <div class="warning text-sm mt-4" data-i18n="disclaimer">Disclaimer: This is an estimate only. Actual take home pay may vary based on tax laws and deductions.</div>
+        </div>
+    </div>
+
+    <script>
+        const PayCalc = {
+            i18n: {
+                'en': {
+                    title: '💵 Take Home Pay Calculator',
+                    gross_pay_label: 'Gross Monthly Pay ($)',
+                    tax_rate_label: 'Estimated Tax Rate (%)',
+                    insurance_label: 'Insurance Premiums ($)',
+                    retirement_label: 'Retirement Contributions ($)',
+                    btn_calc: 'Calculate Take Home Pay',
+                    take_home_label: 'Monthly Take Home Pay',
+                    deductions_label: 'Total Deductions',
+                    breakdown_label: 'Deductions Breakdown:',
+                    formula_label: 'Formula: Take Home = Gross Pay - Taxes - Insurance - Retirement',
+                    err_invalid: 'Please enter valid numbers',
+                    disclaimer: 'Disclaimer: This is an estimate only. Actual take home pay may vary based on tax laws and deductions.',
+                    tax_deduction: 'Taxes',
+                    insurance_deduction: 'Insurance',
+                    retirement_deduction: 'Retirement'
+                },
+                'zh-CN': {
+                    title: '💵 实得工资计算器',
+                    gross_pay_label: '月总收入（美元）',
+                    tax_rate_label: '预估税率（%）',
+                    insurance_label: '保险费（美元）',
+                    retirement_label: '退休金缴纳（美元）',
+                    btn_calc: '计算实得工资',
+                    take_home_label: '月实得工资',
+                    deductions_label: '总扣除额',
+                    breakdown_label: '扣除明细：',
+                    formula_label: '公式：实得工资 = 总收入 - 税款 - 保险 - 退休金',
+                    err_invalid: '请输入有效的数字',
+                    disclaimer: '免责声明：这只是一个估计值。实际实得工资可能因税法和扣除项而异。',
+                    tax_deduction: '税款',
+                    insurance_deduction: '保险',
+                    retirement_deduction: '退休金'
+                },
+                'zh-TW': {
+                    title: '💵 實得工資計算器',
+                    gross_pay_label: '月總收入（美元）',
+                    tax_rate_label: '預估稅率（%）',
+                    insurance_label: '保險費（美元）',
+                    retirement_label: '退休金繳納（美元）',
+                    btn_calc: '計算實得工資',
+                    take_home_label: '月實得工資',
+                    deductions_label: '總扣除額',
+                    breakdown_label: '扣除明細：',
+                    formula_label: '公式：實得工資 = 總收入 - 稅款 - 保險 - 退休金',
+                    err_invalid: '請輸入有效的數字',
+                    disclaimer: '免責聲明：這只是一個估計值。實際實得工資可能因稅法和扣除項而異。',
+                    tax_deduction: '稅款',
+                    insurance_deduction: '保險',
+                    retirement_deduction: '退休金'
+                },
+                'ja': {
+                    title: '💵 手取り給料計算機',
+                    gross_pay_label: '月額総収入（ドル）',
+                    tax_rate_label: '推定税率（%）',
+                    insurance_label: '保険料（ドル）',
+                    retirement_label: '退職金拠出額（ドル）',
+                    btn_calc: '手取り給料を計算',
+                    take_home_label: '月額手取り給料',
+                    deductions_label: '総控除額',
+                    breakdown_label: '控除明細：',
+                    formula_label: '公式：手取り = 総収入 - 税 - 保険 - 退職金',
+                    err_invalid: '有効な数字を入力してください',
+                    disclaimer: '免責事項：これは推定値にすぎません。実際の手取り給料は税法と控除によって異なる場合があります。',
+                    tax_deduction: '税',
+                    insurance_deduction: '保険',
+                    retirement_deduction: '退職金'
+                },
+                'ru': {
+                    title: '💵 Калькулятор чистой зарплаты',
+                    gross_pay_label: 'Валовая месячная зарплата (доллары)',
+                    tax_rate_label: 'Предполагаемая налоговая ставка (%)',
+                    insurance_label: 'Страховые взносы (доллары)',
+                    retirement_label: 'Пенсионные взносы (доллары)',
+                    btn_calc: 'Рассчитать чистую зарплату',
+                    take_home_label: 'Ежемесячная чистая зарплата',
+                    deductions_label: 'Общие удержания',
+                    breakdown_label: 'Разбивка удержаний:',
+                    formula_label: 'Формула: Чистая зарплата = Валовая зарплата - Налоги - Страхование - Пенсия',
+                    err_invalid: 'Пожалуйста, введите действительные числа',
+                    disclaimer: 'Отказ от ответственности: Это только оценка. Фактическая чистая зарплата может отличаться в зависимости от налоговых законов и удержаний.',
+                    tax_deduction: 'Налоги',
+                    insurance_deduction: 'Страхование',
+                    retirement_deduction: 'Пенсия'
+                },
+                'es': {
+                    title: '💵 Calculadora de salario neto',
+                    gross_pay_label: 'Sueldo bruto mensual (USD)',
+                    tax_rate_label: 'Tasa impositiva estimada (%)',
+                    insurance_label: 'Prima de seguros (USD)',
+                    retirement_label: 'Contribuciones a jubilación (USD)',
+                    btn_calc: 'Calcular salario neto',
+                    take_home_label: 'Sueldo neto mensual',
+                    deductions_label: 'Deducciones totales',
+                    breakdown_label: 'Desglose de deducciones:',
+                    formula_label: 'Fórmula: Sueldo neto = Sueldo bruto - Impuestos - Seguros - Jubilación',
+                    err_invalid: 'Por favor, ingrese números válidos',
+                    disclaimer: 'Descargo de responsabilidad: Esto es solo una estimación. El sueldo neto real puede variar según las leyes fiscales y las deducciones.',
+                    tax_deduction: 'Impuestos',
+                    insurance_deduction: 'Seguros',
+                    retirement_deduction: 'Jubilación'
+                }
+            },
+
+            init: () => {},
+
+            changeLang: () => {
+                const lang = document.getElementById('pay-lang').value;
+                const texts = PayCalc.i18n[lang];
+                const elements = document.querySelectorAll('[data-id="take_home_pay_calculator"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                PayCalc.calc();
+            },
+
+            calc: () => {
+                const grossPay = parseFloat(document.getElementById('gross-pay').value) || 0;
+                const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+                const insurance = parseFloat(document.getElementById('insurance').value) || 0;
+                const retirement = parseFloat(document.getElementById('retirement').value) || 0;
+                const lang = document.getElementById('pay-lang').value;
+                const texts = PayCalc.i18n[lang];
+
+                const takeHomeEl = document.getElementById('take-home-pay');
+                const totalDeductionsEl = document.getElementById('total-deductions');
+                const breakdownEl = document.getElementById('deductions-breakdown');
+                const formulaEl = document.getElementById('pay-formula');
+
+                // 验证输入
+                if (isNaN(grossPay) || isNaN(taxRate) || isNaN(insurance) || isNaN(retirement) || 
+                    grossPay <= 0 || taxRate < 0 || taxRate > 100 || insurance < 0 || retirement < 0) {
+                    takeHomeEl.innerText = texts.err_invalid;
+                    takeHomeEl.className = "text-xl font-bold text-red-600";
+                    totalDeductionsEl.innerText = "--";
+                    breakdownEl.innerHTML = "";
+                    formulaEl.innerText = "";
+                    return;
+                }
+
+                // 计算实得工资
+                const taxes = grossPay * (taxRate / 100);
+                const totalDeductions = taxes + insurance + retirement;
+                const takeHomePay = grossPay - totalDeductions;
+
+                // 格式化货币
+                const formatCurrency = (amount) => {
+                    return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                };
+
+                // 显示结果
+                takeHomeEl.className = "text-3xl font-bold text-green-800";
+                takeHomeEl.innerText = formatCurrency(takeHomePay);
+                totalDeductionsEl.innerText = formatCurrency(totalDeductions);
+                
+                // 显示扣除明细
+                breakdownEl.innerHTML = `
+                    <div class="deduction-item">${texts.tax_deduction}: ${formatCurrency(taxes)} (${taxRate}%)</div>
+                    <div class="deduction-item">${texts.insurance_deduction}: ${formatCurrency(insurance)}</div>
+                    <div class="deduction-item">${texts.retirement_deduction}: ${formatCurrency(retirement)}</div>
+                `;
+                
+                // 显示计算公式
+                formulaEl.innerText = `${formatCurrency(takeHomePay)} = ${formatCurrency(grossPay)} - ${formatCurrency(taxes)} - ${formatCurrency(insurance)} - ${formatCurrency(retirement)}`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', PayCalc.init);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            } else if (userLang.startsWith('es')) {
+                targetLang = 'es';
+            }
+            
+            if (targetLang !== 'en') {
+                const langSelect = document.getElementById('pay-lang');
+                if(langSelect) {
+                    langSelect.value = targetLang;
+                    PayCalc.changeLang();
+                }
+            }
+        });
+    </script>
+
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

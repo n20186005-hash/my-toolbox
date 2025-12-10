@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="category" content="development-tools">
+    <meta charset="UTF-8">
+    <title>Temperature Converter Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #fff1f2; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/development-tools/temperature-converter.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="temp_conv" 
+         data-category="tools" 
+         data-title="Temperature Converter" 
+         data-icon="🌡️">
+        
+        <div class="absolute top-4 right-4">
+            <select id="tc-lang" onchange="TempConv.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🌡️ Temperature Converter</h2>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <!-- Input Side -->
+            <div>
+                <label class="block text-xs text-gray-500 mb-1" data-i18n="lbl_from">From</label>
+                <input type="number" id="tc-val-from" class="w-full p-2 border rounded mb-2 focus:ring-1 focus:ring-red-500" value="0" oninput="TempConv.convert('from')">
+                <select id="tc-unit-from" class="w-full p-2 border rounded bg-white text-sm" onchange="TempConv.convert('from')">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <!-- Output Side -->
+            <div>
+                <label class="block text-xs text-gray-500 mb-1" data-i18n="lbl_to">To</label>
+                <input type="number" id="tc-val-to" class="w-full p-2 border rounded mb-2 focus:ring-1 focus:ring-red-500 bg-gray-50" oninput="TempConv.convert('to')">
+                <select id="tc-unit-to" class="w-full p-2 border rounded bg-white text-sm" onchange="TempConv.convert('from')">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+        </div>
+        
+        <div class="bg-red-50 p-2 rounded text-xs text-red-800 text-center">
+            <span id="tc-formula">Formula: --</span>
+        </div>
+    </div>
+
+    <script>
+        const TempConv = {
+            i18n: {
+                'en': {
+                    title: '🌡️ Temperature Converter',
+                    lbl_from: 'From', lbl_to: 'To',
+                    u_c: 'Celsius (°C)', u_f: 'Fahrenheit (°F)', u_k: 'Kelvin (K)',
+                    u_r: 'Rankine (°R)', u_re: 'Réaumur (°Re)'
+                },
+                'zh-CN': {
+                    title: '🌡️ 温度换算器',
+                    lbl_from: '从', lbl_to: '到',
+                    u_c: '摄氏度 (°C)', u_f: '华氏度 (°F)', u_k: '开尔文 (K)',
+                    u_r: '兰金 (°R)', u_re: '列氏 (°Re)'
+                },
+                'zh-TW': {
+                    title: '🌡️ 溫度換算器',
+                    lbl_from: '從', lbl_to: '到',
+                    u_c: '攝氏度 (°C)', u_f: '華氏度 (°F)', u_k: '開爾文 (K)',
+                    u_r: '蘭金 (°R)', u_re: '列氏 (°Re)'
+                },
+                'ja': {
+                    title: '🌡️ 温度換算',
+                    lbl_from: '変換元', lbl_to: '変換先',
+                    u_c: '摂氏 (°C)', u_f: '華氏 (°F)', u_k: 'ケルビン (K)',
+                    u_r: 'ランキン (°R)', u_re: '列氏 (°Re)'
+                },
+                'ru': {
+                    title: '🌡️ Температура',
+                    lbl_from: 'Из', lbl_to: 'В',
+                    u_c: 'Цельсий (°C)', u_f: 'Фаренгейт (°F)', u_k: 'Кельвин (K)',
+                    u_r: 'Ранкин (°R)', u_re: 'Реомюр (°Re)'
+                },
+                'es': {
+                    title: '🌡️ Temperatura',
+                    lbl_from: 'De', lbl_to: 'A',
+                    u_c: 'Celsius (°C)', u_f: 'Fahrenheit (°F)', u_k: 'Kelvin (K)',
+                    u_r: 'Rankine (°R)', u_re: 'Réaumur (°Re)'
+                }
+            },
+
+            units: ['c', 'f', 'k', 'r', 're'],
+
+            init: () => {
+                TempConv.populate('tc-unit-from');
+                TempConv.populate('tc-unit-to');
+                document.getElementById('tc-unit-from').value = 'c';
+                document.getElementById('tc-unit-to').value = 'f';
+                TempConv.convert('from');
+            },
+
+            populate: (id) => {
+                const sel = document.getElementById(id);
+                const current = sel.value;
+                const lang = document.getElementById('tc-lang').value;
+                const txt = TempConv.i18n[lang];
+                
+                sel.innerHTML = '';
+                TempConv.units.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u;
+                    opt.text = txt['u_' + u];
+                    sel.appendChild(opt);
+                });
+                if(current) sel.value = current;
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('tc-lang').value;
+                const texts = TempConv.i18n[lang];
+                
+                document.querySelector('[data-i18n="title"]').innerText = texts.title;
+                document.querySelector('[data-i18n="lbl_from"]').innerText = texts.lbl_from;
+                document.querySelector('[data-i18n="lbl_to"]').innerText = texts.lbl_to;
+
+                TempConv.populate('tc-unit-from');
+                TempConv.populate('tc-unit-to');
+                TempConv.convert('from'); // refresh display
+            },
+
+            toCelsius: (val, unit) => {
+                if (unit === 'c') return val;
+                if (unit === 'f') return (val - 32) * 5/9;
+                if (unit === 'k') return val - 273.15;
+                if (unit === 'r') return (val - 491.67) * 5/9;
+                if (unit === 're') return val * 1.25;
+                return val;
+            },
+
+            fromCelsius: (val, unit) => {
+                if (unit === 'c') return val;
+                if (unit === 'f') return (val * 9/5) + 32;
+                if (unit === 'k') return val + 273.15;
+                if (unit === 'r') return (val + 273.15) * 9/5;
+                if (unit === 're') return val * 0.8;
+                return val;
+            },
+
+            convert: (dir) => {
+                const fromUnit = document.getElementById('tc-unit-from').value;
+                const toUnit = document.getElementById('tc-unit-to').value;
+                const format = (n) => parseFloat(n.toFixed(2));
+
+                let val;
+                if (dir === 'from') {
+                    val = parseFloat(document.getElementById('tc-val-from').value);
+                    if (isNaN(val)) { document.getElementById('tc-val-to').value = ''; return; }
+                    
+                    const cVal = TempConv.toCelsius(val, fromUnit);
+                    const res = TempConv.fromCelsius(cVal, toUnit);
+                    document.getElementById('tc-val-to').value = format(res);
+                } else {
+                    val = parseFloat(document.getElementById('tc-val-to').value);
+                    if (isNaN(val)) { document.getElementById('tc-val-from').value = ''; return; }
+                    
+                    const cVal = TempConv.toCelsius(val, toUnit);
+                    const res = TempConv.fromCelsius(cVal, fromUnit);
+                    document.getElementById('tc-val-from').value = format(res);
+                }
+                
+                // Show simple formula hint (only for C/F)
+                const hintEl = document.getElementById('tc-formula');
+                if ((fromUnit === 'c' && toUnit === 'f') || (fromUnit === 'f' && toUnit === 'c')) {
+                    hintEl.innerText = fromUnit === 'c' ? "Formula: (°C × 9/5) + 32 = °F" : "Formula: (°F − 32) × 5/9 = °C";
+                } else {
+                    hintEl.innerText = "";
+                }
+            }
+        };
+        
+        TempConv.init();
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>

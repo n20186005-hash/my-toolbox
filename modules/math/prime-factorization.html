@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prime Factorization</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="prime_factorization">
+    <meta name="category" content="Math">
+    <meta name="icon" content="🔧">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Prime Factorization">
+    <meta name="description" content="Factorize a number into its prime factors.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="分解质因数">
+    <meta name="lang-description-zh-CN" content="将一个数字分解为其质因数。">
+    
+    <meta name="lang-title-zh-TW" content="分解質因數">
+    <meta name="lang-description-zh-TW" content="將一個數字分解為其質因數。">
+    
+    <meta name="lang-title-ja" content="素因数分解">
+    <meta name="lang-description-ja" content="数値をその素因数に分解します。">
+    
+    <meta name="lang-title-ru" content="Простая факторизация">
+    <meta name="lang-description-ru" content="Факторизуйте число на простые множители.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 使用 Tailwind CSS */
+        .input-group {
+            @apply flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8;
+        }
+        .input-field {
+            @apply flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500;
+        }
+        .action-button {
+            @apply w-full sm:w-auto px-6 py-3 text-lg font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 transition duration-150 ease-in-out;
+        }
+        .result-box {
+            @apply bg-indigo-50 p-6 rounded-xl shadow-inner mb-6;
+        }
+        .step-box {
+            @apply bg-white p-4 rounded-lg shadow-md max-h-64 overflow-y-auto;
+        }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/prime-factorization.html" />
+</head>
+<!-- 调整: 主背景颜色从 bg-gray-50 变为 bg-gray-100 -->
+<body class="p-4 sm:p-8 bg-gray-100 min-h-screen">
+    <div class="max-w-4xl mx-auto" data-id="prime_factorization">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-6" data-i18n="title">🔧 Prime Factorization</h1>
+
+        <!-- 语言选择 -->
+        <div class="mb-6 flex justify-end items-center">
+            <label for="factor-lang" class="text-sm font-medium text-gray-700 mr-2">Language:</label>
+            <select id="factor-lang" onchange="FactorTool.changeLang()" class="p-2 border border-gray-300 rounded-lg shadow-sm">
+                <option value="en">English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
+            <!-- 输入区域 -->
+            <div class="input-group">
+                <label for="number-to-factor" class="sr-only" data-i18n="number_label">Number to factorize</label>
+                <input type="number" id="number-to-factor" placeholder="Enter a number (e.g., 120)" value="120" class="input-field text-xl" oninput="FactorTool.factorize()">
+                <button onclick="FactorTool.factorize()" class="action-button" data-i18n="btn_factorize">Factorize</button>
+            </div>
+
+            <!-- 结果显示区域 -->
+            <div class="result-box">
+                <p class="text-center text-sm font-medium text-indigo-600 mb-2">
+                    <span id="factor-number" class="text-xl font-mono text-indigo-800">120</span> <span data-i18n="res_label">Prime Factors of 120</span>:
+                </p>
+                <!-- 结果和错误信息显示在这里 -->
+                <div id="factor-result" class="text-2xl font-bold text-indigo-800 text-center mb-4">
+                    <!-- Initial result will be set by JS -->
+                </div>
+            </div>
+
+            <!-- 步骤说明区域 -->
+            <div class="step-box">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3" data-i18n="explanation">Factorization Steps:</h3>
+                <!-- 调整: 步骤文字颜色从 text-gray-600 变为 text-gray-800 -->
+                <pre id="factor-steps" class="whitespace-pre-wrap text-sm text-gray-800 font-mono"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FactorTool = {
+            i18n: {
+                'en': {
+                    title: '🔧 Prime Factorization',
+                    number_label: 'Number to factorize',
+                    btn_factorize: 'Factorize',
+                    // %s 占位符用于 numberEl 的内容
+                    res_label: 'Prime Factors of %s', 
+                    err_invalid: 'Please enter a valid number (≥ 2)',
+                    explanation: 'Factorization Steps:',
+                    is_prime: '%s is a prime number',
+                    result_intro: 'Final Result: ',
+                    step_line: 'Step %s: %s ÷ %s = %s'
+                },
+                'zh-CN': {
+                    title: '🔧 分解质因数',
+                    number_label: '要分解的数字',
+                    btn_factorize: '分解',
+                    res_label: '%s的质因数',
+                    err_invalid: '请输入有效的数字（≥ 2）',
+                    explanation: '分解步骤：',
+                    is_prime: '%s是一个质数',
+                    result_intro: '最终结果：',
+                    step_line: '步骤 %s: %s ÷ %s = %s'
+                },
+                'zh-TW': {
+                    title: '🔧 分解質因數',
+                    number_label: '要分解的數字',
+                    btn_factorize: '分解',
+                    res_label: '%s的質因數',
+                    err_invalid: '請輸入有效的數字（≥ 2）',
+                    explanation: '分解步驟：',
+                    is_prime: '%s是一個質數',
+                    result_intro: '最終結果：',
+                    step_line: '步驟 %s: %s ÷ %s = %s'
+                },
+                'ja': {
+                    title: '🔧 素因数分解',
+                    number_label: '因数分解する数',
+                    btn_factorize: '因数分解',
+                    res_label: '%sの素因数',
+                    err_invalid: '有効な数値を入力してください（≥ 2）',
+                    explanation: '因数分解手順：',
+                    is_prime: '%sは素数です',
+                    result_intro: '最終結果：',
+                    step_line: 'ステップ %s: %s ÷ %s = %s'
+                },
+                'ru': {
+                    title: '🔧 Простая факторизация',
+                    number_label: 'Число для факторизации',
+                    btn_factorize: 'Факторизировать',
+                    res_label: 'Простые множители %s',
+                    err_invalid: 'Введите действительное число (≥ 2)',
+                    explanation: 'Шаги факторизации:',
+                    is_prime: '%s является простым числом',
+                    result_intro: 'Конечный результат:',
+                    step_line: 'Шаг %s: %s ÷ %s = %s'
+                }
+            },
+
+            // 修复: changeLang 现在会调用 factorize 来更新所有语言依赖的文本和结果。
+            changeLang: () => {
+                const lang = document.getElementById('factor-lang').value;
+                const texts = FactorTool.i18n[lang];
+                // 仅选择当前工具容器内的 data-i18n 元素
+                const elements = document.querySelectorAll('[data-id="prime_factorization"] [data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                // 语言切换后，重新执行一次计算，以更新结果区域中依赖语言的文本
+                FactorTool.factorize(); 
+            },
+
+            isPrime: (n) => {
+                if (n <= 1) return false;
+                if (n <= 3) return true;
+                if (n % 2 === 0 || n % 3 === 0) return false;
+                
+                let i = 5;
+                while (i * i <= n) {
+                    if (n % i === 0 || n % (i + 2) === 0) return false;
+                    i += 6;
+                }
+                return true;
+            },
+
+            factorize: () => {
+                const inputEl = document.getElementById('number-to-factor');
+                const num = parseInt(inputEl.value);
+
+                const lang = document.getElementById('factor-lang').value;
+                const texts = FactorTool.i18n[lang];
+                
+                const resultEl = document.getElementById('factor-result');
+                const stepsEl = document.getElementById('factor-steps');
+                const numberEl = document.getElementById('factor-number');
+                const resLabelEl = document.querySelector('[data-i18n="res_label"]');
+                
+                // 总是根据当前输入值更新数字显示
+                numberEl.innerText = inputEl.value;
+
+                // 验证输入
+                if (isNaN(num) || num < 2) {
+                    resultEl.innerText = texts.err_invalid;
+                    resultEl.className = "text-xl font-bold text-red-600 text-center mb-4";
+                    stepsEl.innerText = "";
+                    // 修复：更新结果标题为通用提示
+                    resLabelEl.innerText = "Error:";
+                    return;
+                }
+                
+                // 修复：更新结果标题
+                resLabelEl.innerText = texts.res_label.replace('%s', num);
+                
+                // 检查是否为质数
+                if (FactorTool.isPrime(num)) {
+                    resultEl.className = "text-2xl font-bold text-indigo-800 text-center mb-4";
+                    resultEl.innerText = num;
+                    stepsEl.innerText = texts.is_prime.replace('%s', num);
+                    return;
+                }
+
+                // 分解质因数
+                let n = num;
+                const factors = [];
+                const steps = [];
+                let stepCount = 1;
+
+                // 处理2的情况
+                while (n % 2 === 0) {
+                    factors.push(2);
+                    steps.push(texts.step_line.replace('%s', stepCount).replace('%s', n).replace('%s', 2).replace('%s', n / 2));
+                    n = n / 2;
+                    stepCount++;
+                }
+
+                // 处理奇数情况
+                let i = 3;
+                while (i * i <= n) {
+                    while (n % i === 0) {
+                        factors.push(i);
+                        steps.push(texts.step_line.replace('%s', stepCount).replace('%s', n).replace('%s', i).replace('%s', n / i));
+                        n = n / i;
+                        stepCount++;
+                    }
+                    i += 2;
+                }
+
+                // 如果剩下的n是一个质数
+                if (n > 1) { // 必须大于 1
+                    factors.push(n);
+                    steps.push(texts.result_intro + n);
+                }
+
+                // 显示最终结果
+                resultEl.className = "text-2xl font-bold text-indigo-800 text-center mb-4";
+                resultEl.innerText = factors.join(' × ');
+                stepsEl.innerText = steps.join('\n');
+            }
+        };
+
+        // 修复: 确保在 DOMContentLoaded 时执行语言匹配和初始化渲染
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. 自动匹配浏览器语言
+            const userLang = navigator.language || navigator.userLanguage;
+            let targetLang = 'en'; 
+            if (userLang.startsWith('zh')) {
+                targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+            } else if (userLang.startsWith('ja')) {
+                targetLang = 'ja';
+            } else if (userLang.startsWith('ru')) {
+                targetLang = 'ru';
+            }
+            
+            const langSelect = document.getElementById('factor-lang');
+            if(langSelect) {
+                // 确保语言选择器设置为匹配的语言
+                // 只有当匹配的语言在选项中时才设置
+                const options = Array.from(langSelect.options).map(opt => opt.value);
+                if (options.includes(targetLang)) {
+                    langSelect.value = targetLang;
+                } else {
+                    langSelect.value = 'en'; // 默认回退到英文
+                }
+                
+                // 2. 首次调用 changeLang 以初始化多语言文本和计算
+                FactorTool.changeLang(); 
+            } else {
+                // 如果没有语言选择器，仍然执行一次计算以初始化结果
+                FactorTool.factorize();
+            }
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="category" content="conversion">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Length Converter Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #eff6ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
+        .result-table td { padding: 8px 4px; border-bottom: 1px solid #f3f4f6; }
+        .result-table tr:last-child td { border-bottom: none; }
+        .result-table .unit-name { color: #6b7280; font-size: 0.85em; }
+        .result-table .unit-value { font-family: monospace; font-weight: 600; color: #111827; text-align: right; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/conversion/length-converter.html" />
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="len_conv" 
+         data-category="tools" 
+         data-title="Math"
+         data-icon="📏">
+        
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="lc-lang" onchange="LenConv.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">📏 Length Converter</h2>
+
+        <!-- Main Converter Inputs -->
+        <div class="grid grid-cols-2 gap-4 mb-6 bg-blue-50 p-4 rounded-lg">
+            <!-- Input Side -->
+            <div>
+                <label class="block text-xs text-blue-600 font-bold mb-1" data-i18n="lbl_from">From</label>
+                <input type="number" id="lc-val-from" class="w-full p-2 border border-blue-200 rounded mb-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" value="1" oninput="LenConv.convert('from')">
+                <select id="lc-unit-from" class="w-full p-2 border border-blue-200 rounded bg-white text-sm" onchange="LenConv.convert('from')">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <!-- Output Side -->
+            <div>
+                <label class="block text-xs text-gray-500 mb-1" data-i18n="lbl_to">To</label>
+                <input type="number" id="lc-val-to" class="w-full p-2 border rounded mb-2 focus:ring-1 focus:ring-blue-500 bg-gray-50" oninput="LenConv.convert('to')">
+                <select id="lc-unit-to" class="w-full p-2 border rounded bg-white text-sm" onchange="LenConv.convert('from')">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+        </div>
+
+        <!-- Common Conversions List -->
+        <div class="mb-6">
+            <h3 class="text-sm font-bold text-gray-700 mb-2 border-l-4 border-indigo-500 pl-2" data-i18n="results_title">Conversion Results</h3>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <table class="w-full result-table text-sm">
+                    <tbody id="lc-common-results">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Description / Formulas -->
+        <div class="text-sm text-gray-600 bg-yellow-50 p-4 rounded border border-yellow-100 mb-4">
+            <h4 class="font-bold text-yellow-800 mb-2" data-i18n="desc_title">Note:</h4>
+            <ul class="list-disc pl-4 space-y-1 text-xs" id="lc-formulas">
+                <!-- Formulas injected via JS -->
+            </ul>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="mt-4 pt-4 border-t border-gray-100 text-center">
+            <a href="https://toolboxpro.top" target="_blank" class="text-xs text-gray-400 hover:text-indigo-500 transition-colors">toolboxpro.top</a>
+        </div>
+    </div>
+
+    <script>
+        const LenConv = {
+            i18n: {
+                'en': {
+                    title: '📏 Length Converter',
+                    lbl_from: 'From', lbl_to: 'To',
+                    results_title: 'Conversion Results',
+                    desc_title: 'Reference:',
+                    formulas: [
+                        '1 Meter = 39.3701 Inches',
+                        '1 Foot = 12 Inches',
+                        '1 Yard = 3 Feet',
+                        '1 Mile = 1.60934 Kilometers'
+                    ],
+                    u_m: 'Meter (m)', u_km: 'Kilometer (km)', u_cm: 'Centimeter (cm)', u_mm: 'Millimeter (mm)',
+                    u_um: 'Micrometer (µm)', u_nm: 'Nanometer (nm)',
+                    u_mi: 'Mile', u_yd: 'Yard', u_ft: 'Foot', u_in: 'Inch',
+                    u_nmi: 'Nautical Mile', u_ly: 'Light Year'
+                },
+                'zh-CN': {
+                    title: '📏 长度换算器',
+                    lbl_from: '从', lbl_to: '到',
+                    results_title: '转换结果',
+                    desc_title: '说明：',
+                    formulas: [
+                        '1米 = 39.3701英寸',
+                        '1英尺 = 12英寸',
+                        '1码 = 3英尺',
+                        '1英里 = 1.60934千米'
+                    ],
+                    u_m: '米 (m)', u_km: '千米 (km)', u_cm: '厘米 (cm)', u_mm: '毫米 (mm)',
+                    u_um: '微米 (µm)', u_nm: '纳米 (nm)',
+                    u_mi: '英里', u_yd: '码', u_ft: '英尺', u_in: '英寸',
+                    u_nmi: '海里', u_ly: '光年'
+                },
+                'zh-TW': {
+                    title: '📏 長度換算器',
+                    lbl_from: '從', lbl_to: '到',
+                    results_title: '轉換結果',
+                    desc_title: '說明：',
+                    formulas: [
+                        '1公尺 = 39.3701英寸',
+                        '1英尺 = 12英寸',
+                        '1碼 = 3英尺',
+                        '1英里 = 1.60934公里'
+                    ],
+                    u_m: '公尺 (m)', u_km: '公里 (km)', u_cm: '公分 (cm)', u_mm: '毫米 (mm)',
+                    u_um: '微米 (µm)', u_nm: '奈米 (nm)',
+                    u_mi: '英里', u_yd: '碼', u_ft: '英尺', u_in: '英寸',
+                    u_nmi: '海里', u_ly: '光年'
+                },
+                'ja': {
+                    title: '📏 長さ換算',
+                    lbl_from: '変換元', lbl_to: '変換先',
+                    results_title: '換算結果',
+                    desc_title: '説明：',
+                    formulas: [
+                        '1メートル = 39.3701インチ',
+                        '1フィート = 12インチ',
+                        '1ヤード = 3フィート',
+                        '1マイル = 1.60934キロメートル'
+                    ],
+                    u_m: 'メートル (m)', u_km: 'キロ (km)', u_cm: 'センチ (cm)', u_mm: 'ミリ (mm)',
+                    u_um: 'マイクロメートル (µm)', u_nm: 'ナノメートル (nm)',
+                    u_mi: 'マイル', u_yd: 'ヤード', u_ft: 'フィート', u_in: 'インチ',
+                    u_nmi: '海里', u_ly: '光年'
+                },
+                'ru': {
+                    title: '📏 Конвертер длины',
+                    lbl_from: 'Из', lbl_to: 'В',
+                    results_title: 'Результаты',
+                    desc_title: 'Справка:',
+                    formulas: [
+                        '1 Метр = 39.3701 Дюйма',
+                        '1 Фут = 12 Дюймов',
+                        '1 Ярд = 3 Фута',
+                        '1 Миля = 1.60934 Километра'
+                    ],
+                    u_m: 'Метр (м)', u_km: 'Километр (км)', u_cm: 'Сантиметр (см)', u_mm: 'Миллиметр (мм)',
+                    u_um: 'Микрометр (мкм)', u_nm: 'Нанометр (нм)',
+                    u_mi: 'Миля', u_yd: 'Ярд', u_ft: 'Фут', u_in: 'Дюйм',
+                    u_nmi: 'Морская миля', u_ly: 'Световой год'
+                },
+                'es': {
+                    title: '📏 Conversor de Longitud',
+                    lbl_from: 'De', lbl_to: 'A',
+                    results_title: 'Resultados',
+                    desc_title: 'Nota:',
+                    formulas: [
+                        '1 Metro = 39.3701 Pulgadas',
+                        '1 Pie = 12 Pulgadas',
+                        '1 Yarda = 3 Pies',
+                        '1 Milla = 1.60934 Kilómetros'
+                    ],
+                    u_m: 'Metro (m)', u_km: 'Kilómetro (km)', u_cm: 'Centímetro (cm)', u_mm: 'Milímetro (mm)',
+                    u_um: 'Micrómetro (µm)', u_nm: 'Nanómetro (nm)',
+                    u_mi: 'Milla', u_yd: 'Yarda', u_ft: 'Pie', u_in: 'Pulgada',
+                    u_nmi: 'Milla Náutica', u_ly: 'Año Luz'
+                }
+            },
+
+            // Factor relative to 1 Meter
+            units: [
+                { k: 'm', f: 1, i: 'u_m' },
+                { k: 'km', f: 1000, i: 'u_km' },
+                { k: 'cm', f: 0.01, i: 'u_cm' },
+                { k: 'mm', f: 0.001, i: 'u_mm' },
+                { k: 'um', f: 1e-6, i: 'u_um' },
+                { k: 'nm', f: 1e-9, i: 'u_nm' },
+                { k: 'mi', f: 1609.344, i: 'u_mi' },
+                { k: 'yd', f: 0.9144, i: 'u_yd' },
+                { k: 'ft', f: 0.3048, i: 'u_ft' },
+                { k: 'in', f: 0.0254, i: 'u_in' },
+                { k: 'nmi', f: 1852, i: 'u_nmi' },
+                { k: 'ly', f: 9.461e15, i: 'u_ly' }
+            ],
+
+            // Units to show in the "Common Results" table
+            commonUnits: ['m', 'cm', 'in', 'ft', 'yd', 'km', 'mi'],
+
+            init: () => {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && LenConv.i18n[lang]) {
+                    document.getElementById('lc-lang').value = lang;
+                }
+                
+                LenConv.changeLang(false); 
+                document.getElementById('lc-unit-from').value = 'm';
+                document.getElementById('lc-unit-to').value = 'ft';
+                LenConv.convert('from');
+            },
+
+            populate: (id) => {
+                const sel = document.getElementById(id);
+                const current = sel.value;
+                const lang = document.getElementById('lc-lang').value;
+                const txt = LenConv.i18n[lang];
+                
+                sel.innerHTML = '';
+                LenConv.units.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.k;
+                    opt.text = txt[u.i];
+                    sel.appendChild(opt);
+                });
+                if(current) sel.value = current;
+            },
+
+            changeLang: (updateUrl = true) => {
+                const lang = document.getElementById('lc-lang').value;
+                const texts = LenConv.i18n[lang];
+                
+                if(updateUrl) {
+                    try {
+                        const url = new URL(window.location);
+                        url.searchParams.set('lang', lang);
+                        window.history.replaceState({}, '', url);
+                    } catch (e) {}
+                }
+
+                document.querySelector('[data-i18n="title"]').innerText = texts.title;
+                document.querySelector('[data-i18n="lbl_from"]').innerText = texts.lbl_from;
+                document.querySelector('[data-i18n="lbl_to"]').innerText = texts.lbl_to;
+                document.querySelector('[data-i18n="results_title"]').innerText = texts.results_title;
+                document.querySelector('[data-i18n="desc_title"]').innerText = texts.desc_title;
+
+                // Update Formulas List
+                const formulaList = document.getElementById('lc-formulas');
+                formulaList.innerHTML = '';
+                texts.formulas.forEach(f => {
+                    const li = document.createElement('li');
+                    li.innerText = f;
+                    formulaList.appendChild(li);
+                });
+
+                LenConv.populate('lc-unit-from');
+                LenConv.populate('lc-unit-to');
+                
+                // Refresh calculations to update unit names in the results table
+                // We need to trigger a re-render of the table, find out current valid input
+                const dir = document.getElementById('lc-val-to').value === '' ? 'from' : 'from'; 
+                LenConv.convert(dir);
+            },
+
+            convert: (dir) => {
+                const fromUnit = document.getElementById('lc-unit-from').value;
+                const toUnit = document.getElementById('lc-unit-to').value;
+                const u1 = LenConv.units.find(u => u.k === fromUnit).f;
+                const u2 = LenConv.units.find(u => u.k === toUnit).f;
+
+                const format = (n) => {
+                    if (Math.abs(n) < 1e-6 && n !== 0) return n.toExponential(4);
+                    // Avoid tiny rounding errors like 0.3000000000004
+                    return parseFloat(n.toPrecision(8));
+                };
+
+                let val, meters;
+
+                if (dir === 'from') {
+                    val = parseFloat(document.getElementById('lc-val-from').value);
+                    if (isNaN(val)) { 
+                        document.getElementById('lc-val-to').value = ''; 
+                        document.getElementById('lc-common-results').innerHTML = '';
+                        return; 
+                    }
+                    meters = val * u1;
+                    const res = meters / u2;
+                    document.getElementById('lc-val-to').value = format(res);
+                } else {
+                    val = parseFloat(document.getElementById('lc-val-to').value);
+                    if (isNaN(val)) { 
+                        document.getElementById('lc-val-from').value = ''; 
+                        document.getElementById('lc-common-results').innerHTML = '';
+                        return; 
+                    }
+                    meters = val * u2;
+                    const res = meters / u1;
+                    document.getElementById('lc-val-from').value = format(res);
+                }
+
+                // Update Common Results Table
+                LenConv.updateCommonTable(meters);
+            },
+
+            updateCommonTable: (meters) => {
+                const tbody = document.getElementById('lc-common-results');
+                const lang = document.getElementById('lc-lang').value;
+                const txt = LenConv.i18n[lang];
+                tbody.innerHTML = '';
+
+                const format = (n) => {
+                    if (n === 0) return 0;
+                    if (Math.abs(n) < 1e-5 || Math.abs(n) > 1e7) return n.toExponential(4);
+                    return parseFloat(n.toFixed(5)); // Clean display for table
+                };
+
+                LenConv.commonUnits.forEach(k => {
+                    const u = LenConv.units.find(unit => unit.k === k);
+                    if(!u) return;
+                    
+                    const val = meters / u.f;
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="unit-name">${txt[u.i]}</td>
+                        <td class="unit-value">${format(val)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        };
+        
+        window.addEventListener('DOMContentLoaded', LenConv.init);
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="../../scripts/related.js"></script>
+    
+</body>
+</html>
