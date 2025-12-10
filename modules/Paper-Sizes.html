@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="Text Tools">
+    <meta name="icon" content="📏">
+    <title>纸张尺寸查询</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0fdf4; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto; position: relative; }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #4b5563; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .size-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .size-table th, .size-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        .size-table th { background-color: #f0fdf4; font-weight: 600; color: #4b5563; }
+        .size-table tr:hover { background-color: #f8fafc; cursor: pointer; }
+        .intro-section { margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; font-size: 0.95rem; color: #475569; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #16a34a; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+        .footer { margin-top: 30px; text-align: center; color: #6b7280; font-size: 0.9rem; }
+        
+        /* CSS Paper Visualization Styles */
+        .paper-visual-container {
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 1 / 1.414; /* A-series aspect ratio */
+            border: 2px solid #333;
+            margin: 20px auto;
+            position: relative;
+            background: #fff;
+            color: #444;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .paper-box {
+            position: absolute;
+            border: 1px solid #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: default;
+            background-color: rgba(240, 253, 244, 0.4);
+        }
+
+        .paper-box:hover {
+            background-color: rgba(34, 197, 94, 0.2);
+            z-index: 10;
+        }
+
+        /* Positioning for A-Series recursion */
+        .a0-label { position: absolute; bottom: 10px; left: 10px; font-size: 1.5rem; color: #94a3b8; }
+        
+        /* Recursively split the space */
+        .box-a1 { top: 0; right: 0; width: 50%; height: 100%; background-color: #f1f5f9; }
+        .box-a2 { top: 0; left: 0; width: 50%; height: 50%; background-color: #e2e8f0; }
+        .box-a3 { top: 50%; left: 0; width: 25%; height: 50%; background-color: #cbd5e1; }
+        .box-a4 { top: 50%; left: 25%; width: 25%; height: 25%; background-color: #ffffff; border: 2px solid #22c55e; color: #166534; }
+        .box-a5 { top: 75%; left: 25%; width: 12.5%; height: 25%; background-color: #f1f5f9; }
+        .box-a6 { top: 75%; left: 37.5%; width: 12.5%; height: 12.5%; background-color: #e2e8f0; font-size: 0.8rem; }
+        .box-a7 { top: 87.5%; left: 37.5%; width: 6.25%; height: 12.5%; background-color: #cbd5e1; font-size: 0.7rem; }
+        .box-a8 { top: 87.5%; left: 43.75%; width: 6.25%; height: 6.25%; background-color: #f8fafc; font-size: 0.6rem; }
+        
+        .paper-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: center;
+        }
+        .dim-text {
+            font-size: 0.7em;
+            font-weight: normal;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 640px) {
+            .paper-visual-container { max-width: 100%; }
+            .dim-text { display: none; } /* Hide dimensions on small screens for cleaner look */
+        }
+    </style>
+</head>
+<body>
+    <div class="tool-module">
+        <div class="absolute top-4 right-4">
+            <select id="lang-selector" onchange="Tool.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2" data-i18n="title">📏 纸张尺寸查询</h2>
+
+        <div class="space-y-6">
+            <div class="section">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" data-i18n="search">搜索纸张类型或尺寸</h3>
+                <div class="form-group">
+                    <label data-i18n="search_keyword">关键词</label>
+                    <input type="text" id="search-input" onkeyup="Tool.search()" placeholder="输入纸张类型或尺寸..." class="focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="size_standard">纸张标准</label>
+                    <select id="standard-filter" onchange="Tool.search()" class="focus:ring-2 focus:ring-green-500 outline-none">
+                        <option value="all" data-i18n="all_standards">所有标准</option>
+                        <option value="a" data-i18n="a_series">A系列</option>
+                        <option value="b" data-i18n="b_series">B系列</option>
+                        <option value="c" data-i18n="c_series">C系列</option>
+                        <option value="us" data-i18n="us_standard">美国标准</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700" data-i18n="results">纸张尺寸列表</h3>
+                    <span class="text-sm text-gray-500" id="count-display"></span>
+                </div>
+                <div id="results-container">
+                    <table class="size-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="paper_type">纸张类型</th>
+                                <th data-i18n="dimensions_mm">尺寸 (毫米)</th>
+                                <th data-i18n="dimensions_in">尺寸 (英寸)</th>
+                                <th data-i18n="aspect_ratio">纵横比</th>
+                            </tr>
+                        </thead>
+                        <tbody id="size-list">
+                            <!-- 数据将通过JS动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="intro-section">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800" data-i18n="intro_title">关于纸张尺寸查询工具</h3>
+                <p data-i18n="intro_text" class="mb-6">本工具提供各种标准纸张尺寸的参考信息，包括国际标准A、B、C系列和美国常用纸张尺寸。您可以查询不同纸张类型的具体尺寸（毫米和英寸）及纵横比，适用于设计、印刷、文档处理等场景。</p>
+                
+                <h4 class="font-medium mb-4 text-gray-700 border-l-4 border-green-500 pl-3" data-i18n="size_chart_title">ISO 216 A系列纸张尺寸示意图</h4>
+                
+                <!-- Pure CSS Paper Size Visualization -->
+                <div class="paper-visual-container" title="A0 Size">
+                    <div class="a0-label">A0</div>
+                    
+                    <div class="paper-box box-a1">
+                        <div class="paper-details">
+                            <span>A1</span>
+                            <span class="dim-text">594 x 841 mm</span>
+                        </div>
+                    </div>
+                    
+                    <div class="paper-box box-a2">
+                        <div class="paper-details">
+                            <span>A2</span>
+                            <span class="dim-text">420 x 594 mm</span>
+                        </div>
+                    </div>
+                    
+                    <div class="paper-box box-a3">
+                        <div class="paper-details">
+                            <span>A3</span>
+                            <span class="dim-text">297 x 420 mm</span>
+                        </div>
+                    </div>
+                    
+                    <div class="paper-box box-a4" title="Standard Document Size">
+                        <div class="paper-details">
+                            <span>A4</span>
+                            <span class="dim-text">210 x 297 mm</span>
+                        </div>
+                    </div>
+                    
+                    <div class="paper-box box-a5">
+                        <div class="paper-details">
+                            <span>A5</span>
+                            <span class="dim-text">148 x 210</span>
+                        </div>
+                    </div>
+                    
+                    <div class="paper-box box-a6">
+                        <span>A6</span>
+                    </div>
+                    
+                    <div class="paper-box box-a7">
+                        <span>A7</span>
+                    </div>
+                    
+                    <div class="paper-box box-a8">
+                        <span>A8</span>
+                    </div>
+                </div>
+                <p class="text-center text-xs text-gray-400 mt-2 mb-6" data-i18n="size_chart_caption">图示：A系列纸张尺寸关系，每一级都是上一级的一半。</p>
+                
+                <div class="mt-6 bg-white p-4 rounded-lg border border-gray-100">
+                    <h4 class="font-medium mb-3 text-gray-700 border-l-4 border-blue-400 pl-3" data-i18n="common_uses">常见用途参考</h4>
+                    <ul class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600" data-i18n="common_uses_list">
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A4:</span> 文档、信件、打印材料</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A3:</span> 图表、绘图、海报</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">B5:</span> 书籍、笔记本</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Letter:</span> 美国标准信纸</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Legal:</span> 法律文件</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">C4:</span> 适合装入A4纸张的信封</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>
+            <span data-i18n="footer_prefix">更多工具可访问：</span>
+            <a href="https://toolboxpro.top" target="_blank" class="text-green-600 hover:underline">toolboxpro.top</a>
+        </p>
+    </div>
+
+    <div id="copy-notification" class="copy-notification" data-i18n="copied">已复制！</div>
+
+    <script>
+        const Tool = {
+            i18n: {
+                'en': {
+                    title: '📏 Paper Size Calculator',
+                    search: 'Search Paper Type or Size',
+                    'search_keyword': 'Keyword',
+                    'size_standard': 'Paper Standard',
+                    'all_standards': 'All Standards',
+                    'a_series': 'A Series',
+                    'b_series': 'B Series',
+                    'c_series': 'C Series',
+                    'us_standard': 'US Standard',
+                    'results': 'Paper Size List',
+                    'paper_type': 'Paper Type',
+                    'dimensions_mm': 'Dimensions (mm)',
+                    'dimensions_in': 'Dimensions (in)',
+                    'aspect_ratio': 'Aspect Ratio',
+                    'copied': 'Copied!',
+                    'intro_title': 'About Paper Size Tool',
+                    'intro_text': 'This tool provides reference information for various standard paper sizes, including international standard A, B, C series and commonly used US paper sizes. You can check specific dimensions (in millimeters and inches) and aspect ratios for different paper types, suitable for design, printing, document processing and other scenarios.',
+                    'size_chart_title': 'ISO 216 A-Series Paper Size Chart',
+                    'size_chart_caption': 'Diagram: A-series paper size relationship, each size is half of the previous one.',
+                    'common_uses': 'Common Uses',
+                    'common_uses_list': `
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A4:</span> Documents, letters, printed materials</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A3:</span> Charts, drawings, posters</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">B5:</span> Books, notebooks</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Letter:</span> US standard letter paper</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Legal:</span> Legal documents</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">C4:</span> Envelopes for A4 papers</li>
+                    `,
+                    'footer_prefix': 'More tools at: ',
+                    'search_placeholder': 'Enter paper type or size...',
+                    'results_count': 'results found'
+                },
+                'zh-CN': {
+                    title: '📏 纸张尺寸查询',
+                    search: '搜索纸张类型或尺寸',
+                    'search_keyword': '关键词',
+                    'size_standard': '纸张标准',
+                    'all_standards': '所有标准',
+                    'a_series': 'A系列',
+                    'b_series': 'B系列',
+                    'c_series': 'C系列',
+                    'us_standard': '美国标准',
+                    'results': '纸张尺寸列表',
+                    'paper_type': '纸张类型',
+                    'dimensions_mm': '尺寸 (毫米)',
+                    'dimensions_in': '尺寸 (英寸)',
+                    'aspect_ratio': '纵横比',
+                    'copied': '已复制！',
+                    'intro_title': '关于纸张尺寸查询工具',
+                    'intro_text': '本工具提供各种标准纸张尺寸的参考信息，包括国际标准A、B、C系列和美国常用纸张尺寸。您可以查询不同纸张类型的具体尺寸（毫米和英寸）及纵横比，适用于设计、印刷、文档处理等场景。',
+                    'size_chart_title': 'ISO 216 A系列纸张尺寸示意图',
+                    'size_chart_caption': '图示：A系列纸张尺寸关系，每一级都是上一级的一半。',
+                    'common_uses': '常见用途参考',
+                    'common_uses_list': `
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A4:</span> 文档、信件、打印材料</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A3:</span> 图表、绘图、海报</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">B5:</span> 书籍、笔记本</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Letter:</span> 美国标准信纸</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Legal:</span> 法律文件</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">C4:</span> 适合装入A4纸张的信封</li>
+                    `,
+                    'footer_prefix': '更多工具可访问：',
+                    'search_placeholder': '输入纸张类型或尺寸...',
+                    'results_count': '条结果'
+                },
+                'zh-TW': {
+                    title: '📏 紙張尺寸查詢',
+                    search: '搜索紙張類型或尺寸',
+                    'search_keyword': '關鍵詞',
+                    'size_standard': '紙張標準',
+                    'all_standards': '所有標準',
+                    'a_series': 'A系列',
+                    'b_series': 'B系列',
+                    'c_series': 'C系列',
+                    'us_standard': '美國標準',
+                    'results': '紙張尺寸列表',
+                    'paper_type': '紙張類型',
+                    'dimensions_mm': '尺寸 (毫米)',
+                    'dimensions_in': '尺寸 (英寸)',
+                    'aspect_ratio': '縱橫比',
+                    'copied': '已複製！',
+                    'intro_title': '關於紙張尺寸查詢工具',
+                    'intro_text': '本工具提供各種標準紙張尺寸的參考信息，包括國際標準A、B、C系列和美國常用紙張尺寸。您可以查詢不同紙張類型的具體尺寸（毫米和英寸）及縱橫比，適用於設計、印刷、文檔處理等場景。',
+                    'size_chart_title': 'ISO 216 A系列紙張尺寸示意圖',
+                    'size_chart_caption': '圖示：A系列紙張尺寸關係，每一級都是上一級的一半。',
+                    'common_uses': '常見用途參考',
+                    'common_uses_list': `
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A4:</span> 文檔、信件、打印材料</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A3:</span>圖表、繪圖、海報</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">B5:</span> 書籍、筆記本</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Letter:</span> 美國標準信紙</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Legal:</span> 法律文件</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">C4:</span> 適合裝入A4紙張的信封</li>
+                    `,
+                    'footer_prefix': '更多工具可訪問：',
+                    'search_placeholder': '輸入紙張類型或尺寸...',
+                    'results_count': '條結果'
+                },
+                'ja': {
+                    title: '📏 用紙サイズ検索',
+                    search: '用紙タイプまたはサイズを検索',
+                    'search_keyword': 'キーワード',
+                    'size_standard': '用紙規格',
+                    'all_standards': 'すべての規格',
+                    'a_series': 'Aシリーズ',
+                    'b_series': 'Bシリーズ',
+                    'c_series': 'Cシリーズ',
+                    'us_standard': '米国規格',
+                    'results': '用紙サイズ一覧',
+                    'paper_type': '用紙タイプ',
+                    'dimensions_mm': '寸法 (ミリメートル)',
+                    'dimensions_in': '寸法 (インチ)',
+                    'aspect_ratio': 'アスペクト比',
+                    'copied': 'コピーしました！',
+                    'intro_title': '用紙サイズ検索ツールについて',
+                    'intro_text': 'このツールは、国際標準のA、B、Cシリーズや米国で一般的に使用されている用紙サイズなど、さまざまな標準用紙サイズの参考情報を提供します。さまざまな用紙タイプの具体的な寸法（ミリメートルとインチ）とアスペクト比を確認でき、デザイン、印刷、文書処理などの場面に適しています。',
+                    'size_chart_title': 'ISO 216 Aシリーズ用紙サイズ表',
+                    'size_chart_caption': '図：Aシリーズの用紙サイズの関係、各サイズは前のサイズの半分です。',
+                    'common_uses': '一般的な用途',
+                    'common_uses_list': `
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A4:</span> 文書、手紙、印刷資料</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A3:</span> 図表、図面、ポスター</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">B5:</span> 書籍、ノート</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Letter:</span> 米国標準のレター用紙</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Legal:</span> 法律文書</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">C4:</span> A4用紙を入れる封筒</li>
+                    `,
+                    'footer_prefix': 'その他のツール：',
+                    'search_placeholder': '用紙の種類またはサイズを入力...',
+                    'results_count': '件の結果'
+                },
+                'ru': {
+                    title: '📏 Размеры бумаги',
+                    search: 'Поиск типа или размера бумаги',
+                    'search_keyword': 'Ключевое слово',
+                    'size_standard': 'Стандарт бумаги',
+                    'all_standards': 'Все стандарты',
+                    'a_series': 'Серия A',
+                    'b_series': 'Серия B',
+                    'c_series': 'Серия C',
+                    'us_standard': 'Американский стандарт',
+                    'results': 'Список размеров бумаги',
+                    'paper_type': 'Тип бумаги',
+                    'dimensions_mm': 'Размеры (мм)',
+                    'dimensions_in': 'Размеры (дюймы)',
+                    'aspect_ratio': 'Пропорции',
+                    'copied': 'Скопировано!',
+                    'intro_title': 'О инструменте для определения размеров бумаги',
+                    'intro_text': 'Этот инструмент предоставляет справочную информацию о различных стандартных размерах бумаги, включая международные стандарты серий A, B, C и часто используемые американские размеры бумаги. Вы можете узнать конкретные размеры (в миллиметрах и дюймах) и пропорции разных типов бумаги, что удобно для дизайна, печати, обработки документов и других сценариев.',
+                    'size_chart_title': 'Таблица размеров бумаги серии ISO 216 A',
+                    'size_chart_caption': 'Схема: соотношение размеров бумаги серии A, каждый размер составляет половину предыдущего.',
+                    'common_uses': 'Общие применения',
+                    'common_uses_list': `
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A4:</span> Документы, письма, печатные материалы</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">A3:</span> Диаграммы, чертежи, плакаты</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">B5:</span> Книги, тетради</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Letter:</span> Американская стандартная писчая бумага</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">Legal:</span> Юридические документы</li>
+                        <li class="flex items-start"><span class="font-bold w-12 text-gray-800">C4:</span> Конверты для бумаги формата A4</li>
+                    `,
+                    'footer_prefix': 'Больше инструментов: ',
+                    'search_placeholder': 'Введите тип или размер бумаги...',
+                    'results_count': 'результатов'
+                }
+            },
+
+            // 纸张尺寸数据
+            sizeData: [
+                // A系列
+                { type: "A0", widthMm: 841, heightMm: 1189, widthIn: 33.1, heightIn: 46.8, ratio: "1:√2", standard: "a" },
+                { type: "A1", widthMm: 594, heightMm: 841, widthIn: 23.4, heightIn: 33.1, ratio: "1:√2", standard: "a" },
+                { type: "A2", widthMm: 420, heightMm: 594, widthIn: 16.5, heightIn: 23.4, ratio: "1:√2", standard: "a" },
+                { type: "A3", widthMm: 297, heightMm: 420, widthIn: 11.7, heightIn: 16.5, ratio: "1:√2", standard: "a" },
+                { type: "A4", widthMm: 210, heightMm: 297, widthIn: 8.3, heightIn: 11.7, ratio: "1:√2", standard: "a" },
+                { type: "A5", widthMm: 148, heightMm: 210, widthIn: 5.8, heightIn: 8.3, ratio: "1:√2", standard: "a" },
+                { type: "A6", widthMm: 105, heightMm: 148, widthIn: 4.1, heightIn: 5.8, ratio: "1:√2", standard: "a" },
+                { type: "A7", widthMm: 74, heightMm: 105, widthIn: 2.9, heightIn: 4.1, ratio: "1:√2", standard: "a" },
+                { type: "A8", widthMm: 52, heightMm: 74, widthIn: 2.0, heightIn: 2.9, ratio: "1:√2", standard: "a" },
+                
+                // B系列
+                { type: "B0", widthMm: 1000, heightMm: 1414, widthIn: 39.4, heightIn: 55.7, ratio: "1:√2", standard: "b" },
+                { type: "B1", widthMm: 707, heightMm: 1000, widthIn: 27.8, heightIn: 39.4, ratio: "1:√2", standard: "b" },
+                { type: "B2", widthMm: 500, heightMm: 707, widthIn: 19.7, heightIn: 27.8, ratio: "1:√2", standard: "b" },
+                { type: "B3", widthMm: 353, heightMm: 500, widthIn: 13.9, heightIn: 19.7, ratio: "1:√2", standard: "b" },
+                { type: "B4", widthMm: 250, heightMm: 353, widthIn: 9.8, heightIn: 13.9, ratio: "1:√2", standard: "b" },
+                { type: "B5", widthMm: 176, heightMm: 250, widthIn: 6.9, heightIn: 9.8, ratio: "1:√2", standard: "b" },
+                { type: "B6", widthMm: 125, heightMm: 176, widthIn: 4.9, heightIn: 6.9, ratio: "1:√2", standard: "b" },
+                { type: "B7", widthMm: 88, heightMm: 125, widthIn: 3.5, heightIn: 4.9, ratio: "1:√2", standard: "b" },
+                { type: "B8", widthMm: 62, heightMm: 88, widthIn: 2.4, heightIn: 3.5, ratio: "1:√2", standard: "b" },
+                
+                // C系列（信封）
+                { type: "C0", widthMm: 917, heightMm: 1297, widthIn: 36.1, heightIn: 51.1, ratio: "1:√2", standard: "c" },
+                { type: "C1", widthMm: 648, heightMm: 917, widthIn: 25.5, heightIn: 36.1, ratio: "1:√2", standard: "c" },
+                { type: "C2", widthMm: 458, heightMm: 648, widthIn: 18.0, heightIn: 25.5, ratio: "1:√2", standard: "c" },
+                { type: "C3", widthMm: 324, heightMm: 458, widthIn: 12.8, heightIn: 18.0, ratio: "1:√2", standard: "c" },
+                { type: "C4", widthMm: 229, heightMm: 324, widthIn: 9.0, heightIn: 12.8, ratio: "1:√2", standard: "c" },
+                { type: "C5", widthMm: 162, heightMm: 229, widthIn: 6.4, heightIn: 9.0, ratio: "1:√2", standard: "c" },
+                { type: "C6", widthMm: 114, heightMm: 162, widthIn: 4.5, heightIn: 6.4, ratio: "1:√2", standard: "c" },
+                
+                // 美国标准
+                { type: "Letter", widthMm: 216, heightMm: 279, widthIn: 8.5, heightIn: 11.0, ratio: "1:1.294", standard: "us" },
+                { type: "Legal", widthMm: 216, heightMm: 356, widthIn: 8.5, heightIn: 14.0, ratio: "1:1.647", standard: "us" },
+                { type: "Tabloid", widthMm: 279, heightMm: 432, widthIn: 11.0, heightIn: 17.0, ratio: "1:1.545", standard: "us" },
+                { type: "Ledger", widthMm: 432, heightMm: 279, widthIn: 17.0, heightIn: 11.0, ratio: "1:0.646", standard: "us" },
+                { type: "Junior Legal", widthMm: 127, heightMm: 203, widthIn: 5.0, heightIn: 8.0, ratio: "1:1.6", standard: "us" },
+                { type: "Half Letter", widthMm: 140, heightMm: 216, widthIn: 5.5, heightIn: 8.5, ratio: "1:1.545", standard: "us" }
+            ],
+
+            init: function() {
+                // 从URL获取语言参数
+                let lang = 'zh-CN';
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    lang = urlParams.get('lang') || 'zh-CN';
+                } catch (e) {
+                    console.log('无法访问URL参数:', e);
+                }
+                
+                // 设置语言选择器
+                document.getElementById('lang-selector').value = lang;
+                
+                // 初始化翻译
+                this.changeLang();
+                
+                // 初始加载所有数据
+                this.search();
+            },
+
+            changeLang: function() {
+                const lang = document.getElementById('lang-selector').value;
+                
+                // 更新URL参数
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('lang', lang);
+                    window.history.replaceState(null, null, '?' + urlParams.toString());
+                } catch (e) {
+                    console.warn('此环境不支持History API');
+                }
+                
+                // 应用翻译
+                document.querySelectorAll('[data-i18n]').forEach(element => {
+                    const key = element.getAttribute('data-i18n');
+                    if (this.i18n[lang] && this.i18n[lang][key]) {
+                        element.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 处理HTML内容的翻译（如列表）
+                document.querySelectorAll('[data-i18n="common_uses_list"]').forEach(element => {
+                    if (this.i18n[lang] && this.i18n[lang]['common_uses_list']) {
+                        element.innerHTML = this.i18n[lang]['common_uses_list'];
+                    }
+                });
+                
+                // 更新占位符
+                if(this.i18n[lang] && this.i18n[lang]['search_placeholder']) {
+                    document.getElementById('search-input').placeholder = this.i18n[lang]['search_placeholder'];
+                }
+                
+                // 重新搜索以更新显示
+                this.search();
+            },
+
+            search: function() {
+                const searchTerm = document.getElementById('search-input').value.toLowerCase();
+                const standardFilter = document.getElementById('standard-filter').value;
+                const lang = document.getElementById('lang-selector').value;
+                const resultsContainer = document.getElementById('size-list');
+                let filteredData = [];
+                
+                // 过滤数据
+                this.sizeData.forEach(item => {
+                    // 标准过滤
+                    if (standardFilter !== 'all' && item.standard !== standardFilter) {
+                        return;
+                    }
+                    
+                    // 关键词搜索
+                    const typeMatch = item.type.toLowerCase().includes(searchTerm);
+                    const mmMatch = `${item.widthMm}x${item.heightMm}`.includes(searchTerm) || 
+                                   `${item.heightMm}x${item.widthMm}`.includes(searchTerm);
+                    const inMatch = `${item.widthIn}x${item.heightIn}`.includes(searchTerm) || 
+                                   `${item.heightIn}x${item.widthIn}`.includes(searchTerm);
+                    
+                    if (typeMatch || mmMatch || inMatch) {
+                        filteredData.push(item);
+                    }
+                });
+                
+                // 更新计数显示
+                const countText = this.i18n[lang] && this.i18n[lang]['results_count'] ? this.i18n[lang]['results_count'] : '条结果';
+                document.getElementById('count-display').textContent = `${filteredData.length} ${countText}`;
+                
+                // 清空并填充结果
+                resultsContainer.innerHTML = '';
+                filteredData.forEach(item => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${item.type}</td>
+                        <td>${item.widthMm} × ${item.heightMm} mm</td>
+                        <td>${item.widthIn} × ${item.heightIn} in</td>
+                        <td>${item.ratio}</td>
+                    `;
+                    
+                    // 添加点击复制功能
+                    row.addEventListener('click', () => {
+                        const textToCopy = `${item.type}: ${item.widthMm}×${item.heightMm}mm (${item.widthIn}×${item.heightIn}in), ${item.ratio}`;
+                        const textArea = document.createElement("textarea");
+                        textArea.value = textToCopy;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        try {
+                            document.execCommand('copy');
+                            this.showNotification();
+                        } catch (err) {
+                            console.error('复制失败', err);
+                        }
+                        document.body.removeChild(textArea);
+                    });
+                    
+                    resultsContainer.appendChild(row);
+                });
+            },
+
+            showNotification: function() {
+                const notification = document.getElementById('copy-notification');
+                notification.style.opacity = '1';
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, 2000);
+            }
+        };
+
+        // 初始化工具
+        document.addEventListener('DOMContentLoaded', () => {
+            Tool.init();
+        });
+    </script>
+</body>
+</html>
