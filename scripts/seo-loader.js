@@ -1,33 +1,38 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. 自动生成面包屑
+    // 1. 启动面包屑 (修复版)
     initBreadcrumb();
     
-    // 2. 自动加载 SEO 数据
+    // 2. 启动SEO内容加载
     loadSeoData();
 });
 
 function initBreadcrumb() {
-    // 找到面包屑容器，如果没有就创建一个插在 tool-module 开头
+    // 1. 找到主容器 (工具的白色卡片区域)
+    const moduleDiv = document.querySelector('.tool-module');
+    if (!moduleDiv) return;
+
+    // 2. 检查是否已有面包屑
     let nav = document.getElementById('breadcrumb-nav');
+
+    // 3. 如果没有，就创建一个
     if (!nav) {
-        const moduleDiv = document.querySelector('.tool-module');
-        if (moduleDiv) {
-            nav = document.createElement('nav');
-            nav.id = 'breadcrumb-nav';
-            nav.className = 'breadcrumb text-sm text-gray-500 mb-4 flex items-center';
-            moduleDiv.insertBefore(nav, moduleDiv.firstChild);
-        } else {
-            return; // 找不到挂载点
-        }
+        nav = document.createElement('nav');
+        nav.id = 'breadcrumb-nav';
+        // 样式：灰色小字，下边距，弹性布局
+        nav.className = 'breadcrumb text-sm text-gray-500 mb-4 flex items-center'; 
     }
 
-    // 获取分类和标题
+    // 4. 【核心修复】强制将面包屑移动到容器的最开始位置 (Prepend)
+    // 无论它之前在哪里，这句话都会把它“提”到最前面
+    moduleDiv.prepend(nav);
+
+    // 5. 填充内容
     const categoryMeta = document.querySelector('meta[name="category"]');
     const category = categoryMeta ? categoryMeta.content : 'Tools';
     
-    // 尝试获取标题，去掉图标
+    // 获取标题并去掉前面的图标（如果标题里有图标的话）
     const h2 = document.querySelector('h2');
-    const title = h2 ? h2.innerText.replace(/^[^\w\u4e00-\u9fa5]+/, '').trim() : 'Current Tool';
+    const title = h2 ? h2.innerText.replace(/^[^\w\u4e00-\u9fa5]+/, '').trim() : document.title;
 
     nav.innerHTML = `
         <a href="/" class="text-green-600 hover:underline">Home</a> 
@@ -39,30 +44,27 @@ function initBreadcrumb() {
 }
 
 async function loadSeoData() {
-    // 获取工具 ID (文件名)
     let toolId = document.querySelector('meta[name="tool-id"]')?.content;
-    
-    // 如果 HTML 里没写 meta tool-id，尝试从 URL 获取 (备用方案)
     if (!toolId) {
         const path = window.location.pathname;
         const filename = path.substring(path.lastIndexOf('/') + 1);
         toolId = filename.replace('.html', '');
     }
 
-    // 找到 SEO 容器，如果没有就创建一个插在 body 底部
+    // SEO内容容器 (通常放在底部)
     let container = document.getElementById('toolbox-seo-wrapper-unique-id');
     if (!container) {
         container = document.createElement('div');
         container.id = 'toolbox-seo-wrapper-unique-id';
         container.className = 'seo-content mt-10 pt-6 border-t border-green-50 text-gray-700';
-        // 插在 .tool-module 内部的最后面
         const moduleDiv = document.querySelector('.tool-module');
-        if (moduleDiv) moduleDiv.appendChild(container);
+        if (moduleDiv) moduleDiv.appendChild(container); // SEO内容放在末尾
     }
 
     if (!toolId) return;
 
     try {
+        // 加载 JSON 数据
         const response = await fetch('/seo-data.json');
         if (!response.ok) return;
         
@@ -75,14 +77,12 @@ async function loadSeoData() {
                 <p class="mb-4 leading-relaxed">${data.description || data.intro || data.introduction || ''}</p>
             `;
 
-            // 渲染 Steps
             if (data.steps && data.steps.length > 0) {
                 html += `<h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">How to Use</h3><ul class="list-disc pl-5 space-y-2 mb-6">`;
                 data.steps.forEach(step => html += `<li>${step}</li>`);
                 html += `</ul>`;
             }
 
-            // 渲染 FAQ
             const faqs = data.faqs || data.faq || [];
             if (faqs.length > 0) {
                 html += `<h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">FAQ</h3>`;
@@ -94,6 +94,7 @@ async function loadSeoData() {
                 });
             }
             container.innerHTML = html;
+            container.classList.remove('hidden');
         }
     } catch (e) {
         console.error('SEO Auto-load failed', e);
