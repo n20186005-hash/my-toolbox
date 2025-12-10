@@ -1,141 +1,101 @@
-/**
- * Toolbox Pro SEO Content Loader (v2.0)
- * 新增功能：自动生成面包屑导航 (Breadcrumbs)
- */
-(function() {
-    const CONFIG = {
-        containerId: 'toolbox-seo-wrapper-unique-id',
-        jsonPath: '/seo-data.json'
-    };
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. 自动生成面包屑
+    initBreadcrumb();
+    
+    // 2. 自动加载 SEO 数据
+    loadSeoData();
+});
 
-    const SeoLoader = {
-        init: async function() {
-            const container = document.getElementById(CONFIG.containerId);
-            if (!container) return;
-
-            // 1. 获取 Tool ID
-            let toolId = container.dataset.toolId;
-            if (!toolId) {
-                const mainTool = document.getElementById('main-tool-container');
-                if (mainTool) toolId = mainTool.getAttribute('data-id');
-            }
-            if (!toolId) {
-                const path = window.location.pathname;
-                toolId = path.substring(path.lastIndexOf('/') + 1).replace('.html', '');
-            }
-
-            if (!toolId) return;
-
-            // 2. 加载数据
-            try {
-                const res = await fetch(CONFIG.jsonPath + '?v=' + new Date().getDate());
-                if (!res.ok) return;
-                
-                const allData = await res.json();
-                const toolData = allData[toolId];
-
-                if (toolData) {
-                    // ★ 获取当前页面分类 (为了面包屑)
-                    const metaCat = document.querySelector('meta[name="category"]');
-                    const category = metaCat ? metaCat.content : 'Tools';
-                    
-                    // 渲染内容 (带面包屑)
-                    this.render(container, toolData, category);
-                    this.injectSchema(toolData);
-                    
-                    if (toolData.title) {
-                        document.title = `${toolData.title} | Toolbox Pro`;
-                    }
-                }
-            } catch (e) {
-                console.warn('SEO Content Load Skipped:', e);
-            }
-        },
-
-        render: function(target, data, category) {
-            // ★ 面包屑导航 HTML
-            const breadcrumbHtml = `
-                <nav class="flex text-sm text-gray-500 mb-6" aria-label="Breadcrumb">
-                    <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                        <li class="inline-flex items-center">
-                            <a href="/" class="hover:text-blue-600 flex items-center gap-1">
-                                🏠 Home
-                            </a>
-                        </li>
-                        <li>
-                            <div class="flex items-center">
-                                <span class="mx-2 text-gray-400">/</span>
-                                <span class="capitalize hover:text-blue-600 cursor-default">${category}</span>
-                            </div>
-                        </li>
-                        <li aria-current="page">
-                            <div class="flex items-center">
-                                <span class="mx-2 text-gray-400">/</span>
-                                <span class="text-gray-400 truncate max-w-[150px] sm:max-w-xs">${data.title}</span>
-                            </div>
-                        </li>
-                    </ol>
-                </nav>
-            `;
-
-            let html = `
-                <div class="mt-12 p-6 bg-white rounded-xl border border-gray-100 shadow-sm text-gray-700 font-sans">
-                    ${breadcrumbHtml} <h2 class="text-2xl font-bold mb-4 text-gray-800">${data.title || 'About This Tool'}</h2>
-                    <div class="prose max-w-none mb-8 text-sm leading-relaxed text-gray-600">
-                        ${data.intro || ''}
-                    </div>
-            `;
-
-            if (data.steps && data.steps.length) {
-                html += `
-                    <h3 class="text-lg font-bold mb-3 text-gray-800">How to Use</h3>
-                    <ol class="list-decimal list-inside space-y-2 mb-8 bg-gray-50 p-4 rounded-lg text-sm">
-                        ${data.steps.map(step => `<li>${step}</li>`).join('')}
-                    </ol>
-                `;
-            }
-
-            if (data.faq && data.faq.length) {
-                html += `<h3 class="text-lg font-bold mb-3 text-gray-800">FAQ</h3><div class="space-y-3">`;
-                data.faq.forEach(item => {
-                    html += `
-                        <details class="group bg-gray-50 rounded-lg">
-                            <summary class="cursor-pointer p-3 font-medium text-gray-800 hover:bg-gray-100 rounded-lg transition list-none flex justify-between items-center text-sm">
-                                <span>${item.q}</span>
-                                <span class="text-gray-400 group-open:rotate-180 transition">▼</span>
-                            </summary>
-                            <div class="px-3 pb-3 text-sm text-gray-600 mt-1 pl-4 border-l-2 border-green-500 ml-3 mb-2">${item.a}</div>
-                        </details>
-                    `;
-                });
-                html += `</div>`;
-            }
-
-            html += `</div>`;
-            target.innerHTML = html;
-        },
-
-        injectSchema: function(data) {
-            // ... Schema 代码保持不变 ...
-            const script = document.createElement('script');
-            script.type = 'application/ld+json';
-            script.text = JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "WebApplication",
-                "name": data.title,
-                "description": (data.intro || "").substring(0, 150),
-                "url": window.location.href,
-                "applicationCategory": "UtilityApplication",
-                "operatingSystem": "All",
-                "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
-            });
-            document.head.appendChild(script);
+function initBreadcrumb() {
+    // 找到面包屑容器，如果没有就创建一个插在 tool-module 开头
+    let nav = document.getElementById('breadcrumb-nav');
+    if (!nav) {
+        const moduleDiv = document.querySelector('.tool-module');
+        if (moduleDiv) {
+            nav = document.createElement('nav');
+            nav.id = 'breadcrumb-nav';
+            nav.className = 'breadcrumb text-sm text-gray-500 mb-4 flex items-center';
+            moduleDiv.insertBefore(nav, moduleDiv.firstChild);
+        } else {
+            return; // 找不到挂载点
         }
-    };
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => SeoLoader.init());
-    } else {
-        SeoLoader.init();
     }
-})();
+
+    // 获取分类和标题
+    const categoryMeta = document.querySelector('meta[name="category"]');
+    const category = categoryMeta ? categoryMeta.content : 'Tools';
+    
+    // 尝试获取标题，去掉图标
+    const h2 = document.querySelector('h2');
+    const title = h2 ? h2.innerText.replace(/^[^\w\u4e00-\u9fa5]+/, '').trim() : 'Current Tool';
+
+    nav.innerHTML = `
+        <a href="/" class="text-green-600 hover:underline">Home</a> 
+        <span class="mx-2">/</span> 
+        <span class="text-gray-500">${category}</span> 
+        <span class="mx-2">/</span> 
+        <span class="text-gray-800 font-medium">${title}</span>
+    `;
+}
+
+async function loadSeoData() {
+    // 获取工具 ID (文件名)
+    let toolId = document.querySelector('meta[name="tool-id"]')?.content;
+    
+    // 如果 HTML 里没写 meta tool-id，尝试从 URL 获取 (备用方案)
+    if (!toolId) {
+        const path = window.location.pathname;
+        const filename = path.substring(path.lastIndexOf('/') + 1);
+        toolId = filename.replace('.html', '');
+    }
+
+    // 找到 SEO 容器，如果没有就创建一个插在 body 底部
+    let container = document.getElementById('toolbox-seo-wrapper-unique-id');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toolbox-seo-wrapper-unique-id';
+        container.className = 'seo-content mt-10 pt-6 border-t border-green-50 text-gray-700';
+        // 插在 .tool-module 内部的最后面
+        const moduleDiv = document.querySelector('.tool-module');
+        if (moduleDiv) moduleDiv.appendChild(container);
+    }
+
+    if (!toolId) return;
+
+    try {
+        const response = await fetch('/seo-data.json');
+        if (!response.ok) return;
+        
+        const allData = await response.json();
+        const data = allData[toolId];
+
+        if (data) {
+            let html = `
+                <h2 class="text-2xl font-bold text-green-800 mb-4">${data.title || data.seo_title || 'Tool Info'}</h2>
+                <p class="mb-4 leading-relaxed">${data.description || data.intro || data.introduction || ''}</p>
+            `;
+
+            // 渲染 Steps
+            if (data.steps && data.steps.length > 0) {
+                html += `<h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">How to Use</h3><ul class="list-disc pl-5 space-y-2 mb-6">`;
+                data.steps.forEach(step => html += `<li>${step}</li>`);
+                html += `</ul>`;
+            }
+
+            // 渲染 FAQ
+            const faqs = data.faqs || data.faq || [];
+            if (faqs.length > 0) {
+                html += `<h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">FAQ</h3>`;
+                faqs.forEach(f => {
+                    html += `<div class="mb-4 border-l-4 border-green-200 pl-4">
+                        <div class="font-bold text-green-800 mb-1">${f.question || f.q}</div>
+                        <div class="text-gray-600">${f.answer || f.a}</div>
+                    </div>`;
+                });
+            }
+            container.innerHTML = html;
+        }
+    } catch (e) {
+        console.error('SEO Auto-load failed', e);
+    }
+}
