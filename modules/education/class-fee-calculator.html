@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="education">
+    <title>班级费用管理计算器 - toolboxpro.top</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }
+        .lang-switch {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.8rem;
+        }
+        .lang-switch button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .lang-switch button:hover {
+            background-color: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+        .calculator-box {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .calculator-box h2 {
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-group button {
+            padding: 0.8rem 1.2rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-add-row {
+            background-color: #28a745;
+            color: #fff;
+        }
+        .btn-add-row:hover {
+            background-color: #218838;
+        }
+        .btn-reset {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        .btn-reset:hover {
+            background-color: #c82333;
+        }
+        .btn-save-img {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+        .btn-save-img:hover {
+            background-color: #138496;
+        }
+        .btn-clear {
+            background-color: #ff7f0e;
+            color: #fff;
+        }
+        .btn-clear:hover {
+            background-color: #d96c0d;
+        }
+        .btn-new-table {
+            background-color: #6f42c1;
+            color: #fff;
+        }
+        .btn-new-table:hover {
+            background-color: #5a32a3;
+        }
+        .table-container {
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            margin-bottom: 2rem;
+        }
+        .table-title-edit {
+            margin-bottom: 1rem;
+        }
+        .table-title-edit input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .table-title-edit input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 0.8rem;
+            text-align: center;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        td input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        td input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .delete-btn {
+            background-color: #ffc107;
+            color: #333;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .delete-btn:hover {
+            background-color: #e0a800;
+        }
+        .total-row {
+            font-weight: 600;
+            background-color: #f0f8ff;
+        }
+        .total-row td {
+            font-size: 1.05rem;
+        }
+        .intro {
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            color: #555;
+            line-height: 1.6;
+        }
+        .loading-tip {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 1rem 2rem;
+            border-radius: 4px;
+            display: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-tip" id="loadingTip" data-key="savingTip">正在生成图片，请稍候...</div>
+
+    <div class="lang-switch">
+        <button data-lang="zh-CN">简体中文</button>
+        <button data-lang="en">English</button>
+        <button data-lang="ja">日本語</button>
+        <button data-lang="zh-TW">繁體中文</button>
+        <button data-lang="ru">Русский</button>
+    </div>
+
+    <div class="calculator-box">
+        <h2 data-key="title">班级费用管理计算器</h2>
+        <div class="btn-group">
+            <button class="btn-add-row" data-key="addRowBtn">新增收支记录</button>
+            <button class="btn-clear" data-key="clearBtn">一键清空表格</button>
+            <button class="btn-new-table" data-key="newTableBtn">新建空白表格</button>
+            <button class="btn-reset" data-key="resetBtn">恢复初始数据</button>
+            <button class="btn-save-img" data-key="saveImgBtn">保存表格为图片</button>
+        </div>
+    </div>
+
+    <div class="table-container" id="tableToSave">
+        <div class="table-title-edit">
+            <input type="text" id="tableTitleInput" value="" placeholder="请输入表格标题" data-key="tableTitlePlaceholder">
+        </div>
+        <table id="feeTable">
+            <thead>
+                <tr>
+                    <<<th data-key="thSeq">序号</</</th>
+                    <<<th data-key="thDate">日期</</</th>
+                    <<<th data-key="thIncome">收入</</</th>
+                    <<<th data-key="thExpense">支出</</</th>
+                    <<<th data-key="thBalance">余额</</</th>
+                    <<<th data-key="thDetail">明细</</</th>
+                    <<<th data-key="thRemark">备注</</</th>
+                    <<<th data-key="thAction">操作</</</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- 默认空白表格，仅保留一行空白记录 -->
+                <tr>
+                    <td>1</td>
+                    <td><input type="text" placeholder="YYYY.MM.DD" class="date-input"></td>
+                    <td><input type="number" value="0.00" step="0.01" class="income-input"></td>
+                    <td><input type="number" value="0.00" step="0.01" class="expense-input"></td>
+                    <td class="balance-cell">0.00</td>
+                    <td><input type="text" placeholder="输入明细" class="detail-input"></td>
+                    <td><input type="text" placeholder="输入备注" class="remark-input"></td>
+                    <td><button class="delete-btn" data-key="deleteBtn">删除</button></td>
+                </tr>
+            </tbody>
+            <<<tfoot>
+                <tr class="total-row">
+                    <td colspan="2" data-key="totalLabel">合计:</td>
+                    <td id="totalIncome">0.00</td>
+                    <td id="totalExpense">0.00</td>
+                    <td id="finalBalance">0.00</td>
+                    <td colspan="3"></td>
+                </tr>
+            </</</tfoot>
+        </table>
+    </div>
+
+    <div class="intro">
+        <p data-key="intro1">本工具为可编辑的班级费用管理计算器，支持修改表格标题、手动录入或修改收支记录，可新增/删除行，且能自动计算每笔记录的实时余额及整体收支合计。</p>
+        <p data-key="intro2">工具支持一键清空表格、新建空白表格功能，同时支持将收支表格保存为高清图片；支持多语言切换，切换语言时URL参数同步更新，方便班级管理人员共享协作。</p>
+    </div>
+
+    <script>
+        const langConfig = {
+            "zh-CN": {
+                title: "班级费用管理计算器",
+                addRowBtn: "新增收支记录",
+                clearBtn: "一键清空表格",
+                newTableBtn: "新建空白表格",
+                resetBtn: "恢复初始数据",
+                saveImgBtn: "保存表格为图片",
+                savingTip: "正在生成图片，请稍候...",
+                tableTitlePlaceholder: "请输入表格标题",
+                thSeq: "序号",
+                thDate: "日期",
+                thIncome: "收入",
+                thExpense: "支出",
+                thBalance: "余额",
+                thDetail: "明细",
+                thRemark: "备注",
+                thAction: "操作",
+                deleteBtn: "删除",
+                totalLabel: "合计:",
+                intro1: "本工具为可编辑的班级费用管理计算器，支持修改表格标题、手动录入或修改收支记录，可新增/删除行，且能自动计算每笔记录的实时余额及整体收支合计。",
+                intro2: "工具支持一键清空表格、新建空白表格功能，同时支持将收支表格保存为高清图片；支持多语言切换，切换语言时URL参数同步更新，方便班级管理人员共享协作。",
+                saveSuccess: "表格已成功保存为高清图片！",
+                clearConfirm: "确定要清空所有表格数据吗？此操作不可恢复！",
+                newTableConfirm: "确定要新建空白表格吗？当前数据将被替换！"
+            },
+            "en": {
+                title: "Class Fee Management Calculator",
+                addRowBtn: "Add Income/Expense Record",
+                clearBtn: "Clear Table with One Click",
+                newTableBtn: "Create New Blank Table",
+                resetBtn: "Restore Initial Data",
+                saveImgBtn: "Save Table as Image",
+                savingTip: "Generating image, please wait...",
+                tableTitlePlaceholder: "Enter table title",
+                thSeq: "No.",
+                thDate: "Date",
+                thIncome: "Income",
+                thExpense: "Expense",
+                thBalance: "Balance",
+                thDetail: "Detail",
+                thRemark: "Remark",
+                thAction: "Action",
+                deleteBtn: "Delete",
+                totalLabel: "Total:",
+                intro1: "This tool is an editable class fee management calculator that supports modifying the table title, manually entering or modifying income and expenditure records, adding/deleting rows, and can automatically calculate the real-time balance of each record and the overall income and expenditure total.",
+                intro2: "The tool supports one-click table clearing and new blank table creation functions, and also supports saving the income and expenditure table as a high-definition image; it supports multi-language switching, and URL parameters are updated synchronously when switching languages, facilitating sharing and collaboration among class managers.",
+                saveSuccess: "The table has been successfully saved as a high-definition image!",
+                clearConfirm: "Are you sure you want to clear all table data? This operation cannot be undone!",
+                newTableConfirm: "Are you sure you want to create a new blank table? Current data will be replaced!"
+            },
+            "ja": {
+                title: "クラス費用管理計算機",
+                addRowBtn: "収支レコードを追加",
+                clearBtn: "ワンクリックでテーブルをクリア",
+                newTableBtn: "新規空白テーブルを作成",
+                resetBtn: "初期データを復元",
+                saveImgBtn: "テーブルを画像として保存",
+                savingTip: "画像を生成中です、しばらくお待ちください...",
+                tableTitlePlaceholder: "テーブルのタイトルを入力してください",
+                thSeq: "番号",
+                thDate: "日付",
+                thIncome: "収入",
+                thExpense: "支出",
+                thBalance: "残高",
+                thDetail: "明細",
+                thRemark: "備考",
+                thAction: "操作",
+                deleteBtn: "削除",
+                totalLabel: "合計:",
+                intro1: "本ツールは編集可能なクラス費用管理計算機で、テーブルタイトルの変更、収支レコードの手動入力や修正、行の追加・削除に対応し、各レコードのリアルタイム残高と全体の収支合計を自動計算できます。",
+                intro2: "ツールにはワンクリックでテーブルをクリア、新規空白テーブルを作成する機能が追加されており、収支テーブルを高画質画像として保存することもできます。多言語切り替えに対応し、言語切り替え時にURLパラメータも同期更新されるため、クラス管理者が共有・協力しやすくなっています。",
+                saveSuccess: "テーブルが高画質画像として正常に保存されました！",
+                clearConfirm: "テーブルのすべてのデータをクリアしてもよろしいですか？この操作は元に戻せません！",
+                newTableConfirm: "新規空白テーブルを作成してもよろしいですか？現在のデータは置き換えられます！"
+            },
+            "zh-TW": {
+                title: "班級費用管理計算器",
+                addRowBtn: "新增收支紀錄",
+                clearBtn: "一鍵清空表格",
+                newTableBtn: "新建空白表格",
+                resetBtn: "恢復初始數據",
+                saveImgBtn: "保存表格為圖片",
+                savingTip: "正在生成圖片，請稍候...",
+                tableTitlePlaceholder: "請輸入表格標題",
+                thSeq: "序號",
+                thDate: "日期",
+                thIncome: "收入",
+                thExpense: "支出",
+                thBalance: "餘額",
+                thDetail: "明細",
+                thRemark: "備註",
+                thAction: "操作",
+                deleteBtn: "刪除",
+                totalLabel: "合計:",
+                intro1: "本工具為可編輯的班級費用管理計算器，支援修改表格標題、手動錄入或修改收支紀錄，可新增/刪除列，且能自動計算每筆紀錄的即時餘額及整體收支合計。",
+                intro2: "工具支援一鍵清空表格、新建空白表格功能，同時支援將收支表格保存為高畫質圖片；支援多語言切換，切換語言時URL參數同步更新，方便班級管理人員共享協作。",
+                saveSuccess: "表格已成功保存為高畫質圖片！",
+                clearConfirm: "確定要清空所有表格數據嗎？此操作不可復原！",
+                newTableConfirm: "確定要新建空白表格嗎？目前數據將被替換！"
+            },
+            "ru": {
+                title: "Калькулятор управления классными расходами",
+                addRowBtn: "Добавить запись о доходах и расходах",
+                clearBtn: "Очистить таблицу одним кликом",
+                newTableBtn: "Создать новую пустую таблицу",
+                resetBtn: "Восстановить исходные данные",
+                saveImgBtn: "Сохранить таблицу как изображение",
+                savingTip: "Генерация изображения, пожалуйста, подождите...",
+                tableTitlePlaceholder: "Введите заголовок таблицы",
+                thSeq: "№",
+                thDate: "Дата",
+                thIncome: "Доход",
+                thExpense: "Расход",
+                thBalance: "Баланс",
+                thDetail: "Детали",
+                thRemark: "Примечание",
+                thAction: "Действие",
+                deleteBtn: "Удалить",
+                totalLabel: "Итого:",
+                intro1: "Этот инструмент — редактируемый калькулятор управления классными расходами, поддерживающий изменение заголовка таблицы, ручной ввод или изменение записей о доходах и расходах, добавление/удаление строк, а также автоматический расчет реального баланса каждой записи и общего суммы доходов и расходов.",
+                intro2: "Инструмент добавил функции очистки таблицы одним кликом и создания новой пустой таблицы, а также поддерживает сохранение таблицы доходов и расходов в виде высококачественного изображения; поддерживается переключение между несколькими языками, при переключении языка параметры URL обновляются синхронно, что облегчает совместную работу менеджеров класса.",
+                saveSuccess: "Таблица успешно сохранена как высококачественное изображение!",
+                clearConfirm: "Вы уверены, что хотите очистить все данные таблицы? Это действие нельзя отменить!",
+                newTableConfirm: "Вы уверены, что хотите создать новую пустую таблицу? Текущие данные будут заменены!"
+            }
+        };
+
+        function getLangFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const lang = urlParams.get('lang');
+            return lang && Object.keys(langConfig).includes(lang) ? lang : 'zh-CN';
+        }
+
+        function setLang(lang) {
+            document.querySelectorAll('[data-key]').forEach(el => {
+                if (el.id === 'tableTitleInput') {
+                    el.placeholder = langConfig[lang][el.dataset.key];
+                } else {
+                    el.textContent = langConfig[lang][el.dataset.key];
+                }
+            });
+            document.documentElement.lang = lang;
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('lang', lang);
+            window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+            document.title = `${langConfig[lang].title} - toolboxpro.top`;
+        }
+
+        let currentLang = getLangFromUrl();
+        setLang(currentLang);
+
+        document.querySelectorAll('.lang-switch button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentLang = btn.dataset.lang;
+                setLang(currentLang);
+            });
+        });
+
+        function calculateAll() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            let prevBalance = 0;
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            rows.forEach((row, index) => {
+                row.querySelector('td:first-child').textContent = index + 1;
+                
+                const income = parseFloat(row.querySelector('.income-input').value) || 0;
+                const expense = parseFloat(row.querySelector('.expense-input').value) || 0;
+
+                totalIncome += income;
+                totalExpense += expense;
+
+                if (index === 0) {
+                    prevBalance = income - expense;
+                } else {
+                    prevBalance = prevBalance + income - expense;
+                }
+                row.querySelector('.balance-cell').textContent = prevBalance.toFixed(2);
+            });
+
+            document.getElementById('totalIncome').textContent = totalIncome.toFixed(2);
+            document.getElementById('totalExpense').textContent = totalExpense.toFixed(2);
+            document.getElementById('finalBalance').textContent = prevBalance.toFixed(2);
+        }
+
+        document.querySelector('.btn-add-row').addEventListener('click', () => {
+            const tableBody = document.getElementById('tableBody');
+            const newRow = document.createElement('tr');
+            const rowCount = tableBody.children.length + 1;
+
+            newRow.innerHTML = `
+                <td>${rowCount}</td>
+                <td><input type="text" placeholder="YYYY.MM.DD" class="date-input"></td>
+                <td><input type="number" value="0.00" step="0.01" class="income-input"></td>
+                <td><input type="number" value="0.00" step="0.01" class="expense-input"></td>
+                <td class="balance-cell">0.00</td>
+                <td><input type="text" placeholder="输入明细" class="detail-input"></td>
+                <td><input type="text" placeholder="输入备注" class="remark-input"></td>
+                <td><button class="delete-btn" data-key="deleteBtn">${langConfig[currentLang].deleteBtn}</button></td>
+            `;
+
+            tableBody.appendChild(newRow);
+            newRow.querySelector('.delete-btn').addEventListener('click', deleteRow);
+            bindInputEvents(newRow);
+            calculateAll();
+        });
+
+        function deleteRow() {
+            const row = this.closest('tr');
+            row.remove();
+            calculateAll();
+        }
+
+        function bindInputEvents(row) {
+            const incomeInput = row.querySelector('.income-input');
+            const expenseInput = row.querySelector('.expense-input');
+
+            incomeInput.addEventListener('input', calculateAll);
+            expenseInput.addEventListener('input', calculateAll);
+        }
+
+        document.querySelectorAll('#tableBody tr').forEach(row => {
+            bindInputEvents(row);
+            row.querySelector('.delete-btn').addEventListener('click', deleteRow);
+        });
+
+        document.querySelector('.btn-reset').addEventListener('click', () => {
+            if (confirm('确定要恢复初始数据吗？当前修改将被覆盖！')) {
+                window.location.reload();
+            }
+        });
+
+        document.querySelector('.btn-save-img').addEventListener('click', () => {
+            const loadingTip = document.getElementById('loadingTip');
+            loadingTip.style.display = 'block';
+
+            const tableToSave = document.getElementById('tableToSave');
+            html2canvas(tableToSave, {
+                scale: 3,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                loadingTip.style.display = 'none';
+
+                const link = document.createElement('a');
+                link.download = `班级费用表_${new Date().toLocaleDateString().replace(/\//g, '-')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                alert(langConfig[currentLang].saveSuccess);
+            }).catch(err => {
+                loadingTip.style.display = 'none';
+                alert('图片生成失败，请重试！');
+            });
+        });
+
+        const tableTitleInput = document.getElementById('tableTitleInput');
+        tableTitleInput.addEventListener('focus', () => {
+            if (tableTitleInput.value === langConfig[currentLang].tableTitlePlaceholder) {
+                tableTitleInput.value = '';
+            }
+        });
+        tableTitleInput.addEventListener('blur', () => {
+            if (!tableTitleInput.value.trim()) {
+                tableTitleInput.value = '';
+            }
+        });
+
+        document.querySelector('.btn-clear').addEventListener('click', () => {
+            if (confirm(langConfig[currentLang].clearConfirm)) {
+                const tableBody = document.getElementById('tableBody');
+                tableBody.innerHTML = '';
+                calculateAll();
+            }
+        });
+
+        document.querySelector('.btn-new-table').addEventListener('click', () => {
+            if (confirm(langConfig[currentLang].newTableConfirm)) {
+                const tableBody = document.getElementById('tableBody');
+                const newBlankRow = document.createElement('tr');
+                newBlankRow.innerHTML = `
+                    <td>1</td>
+                    <td><input type="text" placeholder="YYYY.MM.DD" class="date-input"></td>
+                    <td><input type="number" value="0.00" step="0.01" class="income-input"></td>
+                    <td><input type="number" value="0.00" step="0.01" class="expense-input"></td>
+                    <td class="balance-cell">0.00</td>
+                    <td><input type="text" placeholder="输入明细" class="detail-input"></td>
+                    <td><input type="text" placeholder="输入备注" class="remark-input"></td>
+                    <td><button class="delete-btn" data-key="deleteBtn">${langConfig[currentLang].deleteBtn}</button></td>
+                `;
+                tableBody.innerHTML = '';
+                tableBody.appendChild(newBlankRow);
+                newBlankRow.querySelector('.delete-btn').addEventListener('click', deleteRow);
+                bindInputEvents(newBlankRow);
+                calculateAll();
+                tableTitleInput.value = '';
+            }
+        });
+    </script>
+</body>
+</html>
