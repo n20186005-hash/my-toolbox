@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daylight Saving Time Schedule</title>
+    
+    <!-- Meta Info -->
+    <meta name="tool-id" content="daylight_saving_time">
+    <meta name="category" content="date-time">
+    <meta name="icon" content="⏰">
+    <meta name="title" content="Daylight Saving Time Schedule">
+    <meta name="description" content="Check Daylight Saving Time (DST) schedules, start and end dates worldwide with automatic yearly updates.">
+
+    <!-- Multilingual Meta -->
+    <meta name="lang-title-zh-CN" content="夏令时/冬令时查询工具">
+    <meta name="lang-description-zh-CN" content="自动查询全球主要国家和地区的夏令时（DST）开始与结束时间，支持多语言搜索及跨年显示。">
+    <meta name="lang-title-zh-TW" content="夏令時/冬令時查詢工具">
+    <meta name="lang-title-es" content="Horario de Verano Mundial">
+    <meta name="lang-title-ru" content="Летнее время в мире">
+    <meta name="lang-title-hi" content="डेलाइट सेविंग टाइम शेड्यूल">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            /* Dark Mode (Default) */
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-header: #0f172a; 
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
+            --accent: #38bdf8; /* Sky Blue */
+            --accent-hover: #0ea5e9;
+            --border: #334155;
+            --row-hover: #263346;
+            --input-bg: #0f172a;
+            --tag-bg: rgba(56, 189, 248, 0.1);
+            --tag-text: #38bdf8;
+            --scrollbar-thumb: #334155;
+        }
+
+        /* Light Mode */
+        :root[data-theme="light"] {
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-header: #f8fafc;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --accent: #0284c7; 
+            --accent-hover: #0369a1;
+            --border: #e2e8f0;
+            --row-hover: #f8fafc;
+            --input-bg: #ffffff;
+            --tag-bg: #e0f2fe;
+            --tag-text: #0284c7;
+            --scrollbar-thumb: #cbd5e1;
+        }
+
+        body { 
+            background: var(--bg-body); 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .tool-container {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            min-height: 85vh;
+            transition: all 0.3s ease;
+        }
+
+        /* Header */
+        .header-title { text-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* Table Container */
+        .table-wrapper {
+            flex: 1;
+            overflow: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-top: 20px;
+            position: relative;
+            max-height: 60vh;
+        }
+
+        /* Custom Scrollbar */
+        .table-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
+        .table-wrapper::-webkit-scrollbar-track { background: transparent; }
+        .table-wrapper::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+        
+        table {
+            width: 100%;
+            border-collapse: separate; 
+            border-spacing: 0;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        th {
+            background: var(--bg-header);
+            padding: 16px;
+            font-weight: 600;
+            color: var(--text-sub);
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+            transition: background-color 0.3s;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+            transition: border-color 0.3s;
+            vertical-align: middle;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tbody tr { transition: background-color 0.2s; }
+        tbody tr:hover { background-color: var(--row-hover); }
+
+        /* Status Tags */
+        .status-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            background: var(--tag-bg);
+            color: var(--tag-text);
+        }
+
+        /* Search & Inputs */
+        .search-box {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 16px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 300px;
+            transition: all 0.2s;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+
+        select, .icon-btn {
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: 42px;
+        }
+        .icon-btn:hover, select:hover {
+            border-color: var(--accent);
+            background-color: var(--row-hover);
+        }
+
+        /* Features Section */
+        .features-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            color: var(--text-sub);
+        }
+        .features-title {
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        .features-list li {
+            background: var(--input-bg);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.9em;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .feature-icon { color: var(--accent); }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-sub);
+            font-style: italic;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tool-container { padding: 16px; min-height: auto; }
+            .header-flex { flex-direction: column; align-items: flex-start; }
+            .controls-row { flex-direction: column; width: 100%; margin-top: 10px; }
+            .search-box { max-width: 100%; }
+            .action-group { width: 100%; display: flex; justify-content: space-between; gap: 10px; }
+            .action-group select { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="tool-container">
+    
+    <!-- Top Header -->
+    <div class="flex justify-between items-center mb-6 header-flex">
+        <div>
+            <h2 class="text-2xl font-bold flex items-center gap-3 header-title" style="color: var(--text-main)">
+                <span class="text-3xl filter drop-shadow-lg">⏰</span>
+                <span data-i18n="title">Daylight Saving Time Schedule</span>
+            </h2>
+            <p class="text-sm mt-2 intro-text" style="color: var(--text-sub)">
+                <span data-i18n="subtitle">Find out when DST starts and ends worldwide.</span>
+                <span id="current-year-display" class="ml-1 px-2 py-0.5 rounded bg-[rgba(56,189,248,0.1)] text-[var(--accent)] font-mono text-xs"></span>
+            </p>
+        </div>
+        
+        <div class="flex items-center gap-3 controls-row">
+            <input type="text" id="search-input" class="search-box" placeholder="Search country or city..." onkeyup="DSTTool.filter()">
+            
+            <div class="action-group flex gap-2">
+                <!-- Theme Toggle -->
+                <button onclick="DSTTool.toggleTheme()" class="icon-btn flex items-center justify-center w-[42px]" title="Toggle Theme">
+                    <span id="theme-icon" style="font-size: 1.2rem;">🌙</span>
+                </button>
+
+                <!-- Language Selector -->
+                <select id="lang-select" onchange="DSTTool.changeLang()" class="focus:outline-none">
+                    <option value="en">English</option>
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="es">Español</option>
+                    <option value="ru">Русский</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-wrapper">
+        <table id="dst-table">
+            <thead>
+                <tr>
+                    <th width="30%" data-i18n="th_region">Region / Country</th>
+                    <th width="25%" id="th-start">DST Start</th>
+                    <th width="25%" id="th-end">DST End</th>
+                    <th width="20%" data-i18n="th_status">Status</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- JavaScript will populate this -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Features Section -->
+    <div class="features-section">
+        <h3 class="features-title"><span class="feature-icon">★</span> <span data-i18n="feat_title">Features</span></h3>
+        <ul class="features-list">
+            <li>
+                <span class="feature-icon">✓</span>
+                <span data-i18n="feat_1">Check DST start and end dates for major countries worldwide.</span>
+            </li>
+            <li>
+                <span class="feature-icon">✓</span>
+                <span data-i18n="feat_2">Automatically calculate upcoming time changes for current/next year.</span>
+            </li>
+            <li>
+                <span class="feature-icon">✓</span>
+                <span data-i18n="feat_3">Supports multilingual search for countries and cities.</span>
+            </li>
+            <li>
+                <span class="feature-icon">✓</span>
+                <span data-i18n="feat_4">Dark mode support for comfortable viewing at night.</span>
+            </li>
+        </ul>
+    </div>
+
+</div>
+
+<script>
+// --- Helper Functions for Date Calculation ---
+
+// Get nth weekday of month (e.g., 2nd Sunday of March)
+// n: 1 (1st), 2 (2nd), ... -1 (last)
+// weekday: 0 (Sun) to 6 (Sat)
+function getNthWeekday(year, month, weekday, n) {
+    const date = new Date(year, month, 1);
+    const days = [];
+    while (date.getMonth() === month) {
+        if (date.getDay() === weekday) {
+            days.push(new Date(date));
+        }
+        date.setDate(date.getDate() + 1);
+    }
+    if (n > 0) return days[n - 1];
+    return days[days.length + n]; // Handles negative (last)
+}
+
+function formatDate(date) {
+    if (!date) return '-';
+    // Format: YYYY-MM-DD
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+// Rules for specific regions
+const DSTRules = {
+    // US: Start 2nd Sun March, End 1st Sun Nov
+    us: (year) => ({
+        start: getNthWeekday(year, 2, 0, 2), // March is index 2
+        end: getNthWeekday(year, 10, 0, 1)   // Nov is index 10
+    }),
+    // EU: Start last Sun March, End last Sun Oct
+    eu: (year) => ({
+        start: getNthWeekday(year, 2, 0, -1),
+        end: getNthWeekday(year, 9, 0, -1)
+    }),
+    // AU (South): Start 1st Sun Oct (Year), End 1st Sun April (Year + 1)
+    au: (year) => ({
+        start: getNthWeekday(year, 9, 0, 1),
+        end: getNthWeekday(year + 1, 3, 0, 1) // April is index 3
+    }),
+    // NZ (South): Start last Sun Sept (Year), End 1st Sun April (Year + 1)
+    nz: (year) => ({
+        start: getNthWeekday(year, 8, 0, -1), // Sept index 8
+        end: getNthWeekday(year + 1, 3, 0, 1)
+    }),
+    // Chile (Approx): Start 1st Sat Sept, End 1st Sat April (next year)
+    // Note: Chile rules fluctuate, this is the most common recent rule
+    cl: (year) => ({
+        start: getNthWeekday(year, 8, 6, 1), // Sept, Saturday
+        end: getNthWeekday(year + 1, 3, 6, 1) // April, Saturday
+    }),
+    // Egypt: Last Fri April to Last Thu Oct
+    eg: (year) => ({
+        start: getNthWeekday(year, 3, 5, -1), // April, Friday
+        end: getNthWeekday(year, 9, 4, -1)    // Oct, Thursday
+    }),
+    // Mexico Border (Same as US)
+    mx: (year) => ({
+        start: getNthWeekday(year, 2, 0, 2),
+        end: getNthWeekday(year, 10, 0, 1)
+    })
+};
+
+// --- Data Source ---
+const currentYear = new Date().getFullYear();
+
+// Build the data dynamically based on the current year
+const generateData = (year) => [
+    {
+        id: "us",
+        names: { en: "USA & Canada", "zh-CN": "美国 & 加拿大", "zh-TW": "美國 & 加拿大", es: "EE.UU. y Canadá", ru: "США и Канада", hi: "संयुक्त राज्य अमेरिका और कनाडा", ja: "米国 & カナダ" },
+        rule: "us",
+        hemisphere: "north"
+    },
+    {
+        id: "eu",
+        names: { en: "European Union (UK, France, Germany...)", "zh-CN": "欧盟 (英国, 法国, 德国...)", "zh-TW": "歐盟 (英國, 法國, 德國...)", es: "Unión Europea (Reino Unido, Francia...)", ru: "Евросоюз (Великобритания, Германия...)", hi: "यूरोपीय संघ (यूके, फ्रांस...)", ja: "欧州連合 (英国, 仏, 独...)" },
+        rule: "eu",
+        hemisphere: "north"
+    },
+    {
+        id: "au",
+        names: { en: "Australia (SE states)", "zh-CN": "澳大利亚 (东南州)", "zh-TW": "澳洲 (東南州)", es: "Australia (Sureste)", ru: "Австралия (ЮВ)", hi: "ऑस्ट्रेलिया (दक्षिण पूर्व)", ja: "オーストラリア (南東部)" },
+        rule: "au",
+        hemisphere: "south"
+    },
+    {
+        id: "nz",
+        names: { en: "New Zealand", "zh-CN": "新西兰", "zh-TW": "紐西蘭", es: "Nueva Zelanda", ru: "Новая Зеландия", hi: "न्यूजीलैंड", ja: "ニュージーランド" },
+        rule: "nz",
+        hemisphere: "south"
+    },
+    {
+        id: "mx",
+        names: { en: "Mexico (Border Cities)", "zh-CN": "墨西哥 (边境城市)", "zh-TW": "墨西哥 (邊境城市)", es: "México (Ciudades Fronterizas)", ru: "Мексика (Приграничные города)", hi: "मेक्सिको (सीमावर्ती शहर)", ja: "メキシコ (国境都市)" },
+        rule: "mx",
+        hemisphere: "north"
+    },
+    {
+        id: "cl",
+        names: { en: "Chile", "zh-CN": "智利", "zh-TW": "智利", es: "Chile", ru: "Чили", hi: "चिली", ja: "チリ" },
+        rule: "cl",
+        hemisphere: "south"
+    },
+    {
+        id: "eg",
+        names: { en: "Egypt", "zh-CN": "埃及", "zh-TW": "埃及", es: "Egipto", ru: "Египет", hi: "मिस्र", ja: "エジプト" },
+        rule: "eg",
+        hemisphere: "north"
+    },
+    // Countries with NO DST (Static)
+    {
+        id: "jp",
+        names: { en: "Japan", "zh-CN": "日本", "zh-TW": "日本", es: "Japón", ru: "Япония", hi: "जापान", ja: "日本" },
+        active: false
+    },
+    {
+        id: "cn",
+        names: { en: "China", "zh-CN": "中国", "zh-TW": "中國", es: "China", ru: "Китай", hi: "चीन", ja: "中国" },
+        active: false
+    },
+    {
+        id: "in",
+        names: { en: "India", "zh-CN": "印度", "zh-TW": "印度", es: "India", ru: "Индия", hi: "भारत", ja: "インド" },
+        active: false
+    },
+    {
+        id: "ru",
+        names: { en: "Russia", "zh-CN": "俄罗斯", "zh-TW": "俄羅斯", es: "Rusia", ru: "Россия", hi: "रूस", ja: "ロシア" },
+        active: false
+    },
+    {
+        id: "sg",
+        names: { en: "Singapore", "zh-CN": "新加坡", "zh-TW": "新加坡", es: "Singapur", ru: "Сингапур", hi: "सिंगापुर", ja: "シンガポール" },
+        active: false
+    }
+];
+
+// Calculate dates and inject into data
+const processedData = generateData(currentYear).map(item => {
+    if (item.active === false) {
+        return { ...item, startStr: '-', endStr: '-', active: false };
+    }
+    
+    // Calculate based on rule
+    const dates = DSTRules[item.rule](currentYear);
+    return {
+        ...item,
+        startStr: formatDate(dates.start),
+        endStr: formatDate(dates.end),
+        active: true
+    };
+});
+
+
+// --- Translations ---
+const i18n = {
+    "en": {
+        title: "Daylight Saving Time Schedule",
+        subtitle: "Check worldwide DST start and end dates.",
+        th_region: "Region / Country",
+        th_start: `DST Start`,
+        th_end: `DST End`,
+        th_status: "Status",
+        status_observed: "Observed",
+        status_none: "Not Observed",
+        search_ph: "Search country...",
+        feat_title: "Features",
+        feat_1: "Check DST start and end dates for major countries worldwide.",
+        feat_2: "Automatically calculate upcoming time changes for current/next year.",
+        feat_3: "Supports multilingual search for countries and cities.",
+        feat_4: "Dark mode support for comfortable viewing at night.",
+        no_results: "No matching regions found."
+    },
+    "zh-CN": {
+        title: "夏令时/冬令时查询工具",
+        subtitle: "查询全球主要地区的夏令时开始与结束时间。",
+        th_region: "国家 / 地区",
+        th_start: `夏令时开始 (拨快1小时)`,
+        th_end: `夏令时结束 (拨慢1小时)`,
+        th_status: "实行状态",
+        status_observed: "实行夏令时",
+        status_none: "不实行",
+        search_ph: "搜索国家或地区...",
+        feat_title: "功能特点",
+        feat_1: "查询全球主要国家的夏令时开始和结束日期。",
+        feat_2: "自动根据当前年份计算时间变更（支持跨年）。",
+        feat_3: "支持使用多种语言搜索国家和城市。",
+        feat_4: "支持深色模式，夜间查询更护眼。",
+        no_results: "未找到匹配的地区。"
+    },
+    "zh-TW": {
+        title: "夏令時/冬令時查詢工具",
+        subtitle: "查詢全球主要地區的夏令時開始與結束時間。",
+        th_region: "國家 / 地區",
+        th_start: `夏令時開始 (撥快1小時)`,
+        th_end: `夏令時結束 (撥慢1小時)`,
+        th_status: "實行狀態",
+        status_observed: "實行夏令時",
+        status_none: "不實行",
+        search_ph: "搜索國家或地區...",
+        feat_title: "功能特點",
+        feat_1: "查詢全球主要國家的夏令時開始和結束日期。",
+        feat_2: "自動根據當前年份計算時間變更（支持跨年）。",
+        feat_3: "支持使用多種語言搜索國家和城市。",
+        feat_4: "支持深色模式，夜間查詢更護眼。",
+        no_results: "未找到匹配的地區。"
+    },
+    "es": {
+        title: "Horario de Verano Mundial",
+        subtitle: "Consulte las fechas de inicio y fin del horario de verano.",
+        th_region: "País / Región",
+        th_start: `Inicio (Adelantar reloj)`,
+        th_end: `Fin (Atrasar reloj)`,
+        th_status: "Estado",
+        status_observed: "Se observa",
+        status_none: "No se observa",
+        search_ph: "Buscar país...",
+        feat_title: "Características",
+        feat_1: "Consulte fechas de horario de verano de los principales países.",
+        feat_2: "Calcula automáticamente los cambios de hora para el año actual.",
+        feat_3: "Búsqueda multilingüe de países y ciudades.",
+        feat_4: "Modo oscuro para una visualización cómoda.",
+        no_results: "No se encontraron resultados."
+    },
+    "ru": {
+        title: "Летнее время в мире",
+        subtitle: "Проверьте даты начала и окончания летнего времени.",
+        th_region: "Регион / Страна",
+        th_start: `Начало (Часы вперед)`,
+        th_end: `Конец (Часы назад)`,
+        th_status: "Статус",
+        status_observed: "Используется",
+        status_none: "Не используется",
+        search_ph: "Поиск страны...",
+        feat_title: "Функции",
+        feat_1: "Даты перехода на летнее время для основных стран.",
+        feat_2: "Автоматический расчет изменений времени на текущий год.",
+        feat_3: "Многоязычный поиск стран и городов.",
+        feat_4: "Темный режим для удобного просмотра.",
+        no_results: "Совпадений не найдено."
+    },
+    "hi": {
+        title: "डेलाइट सेविंग टाइम शेड्यूल",
+        subtitle: "दुनिया भर में डीएसटी शुरू और समाप्त होने की तारीखें देखें।",
+        th_region: "क्षेत्र / देश",
+        th_start: `आरंभ (घड़ी आगे)`,
+        th_end: `समाप्त (घड़ी पीछे)`,
+        th_status: "स्थिति",
+        status_observed: "लागू होता है",
+        status_none: "लागू नहीं",
+        search_ph: "देश खोजें...",
+        feat_title: "विशेषताएँ",
+        feat_1: "प्रमुख देशों के लिए DST तिथियां जांचें।",
+        feat_2: "वर्तमान वर्ष के लिए स्वचालित रूप से समय परिवर्तन की गणना करें।",
+        feat_3: "देशों के लिए बहुभाषी खोज का समर्थन करता है।",
+        feat_4: "रात में देखने के लिए डार्क मोड।",
+        no_results: "कोई मेल नहीं मिला।"
+    },
+    "ja": {
+        title: "サマータイム (DST) 予定表",
+        subtitle: "世界各地のサマータイム開始・終了日を確認できます。",
+        th_region: "国 / 地域",
+        th_start: `開始日 (時計を進める)`,
+        th_end: `終了日 (時計を戻す)`,
+        th_status: "実施状況",
+        status_observed: "実施あり",
+        status_none: "実施なし",
+        search_ph: "国名で検索...",
+        feat_title: "特徴",
+        feat_1: "主要国のサマータイム開始・終了日を確認。",
+        feat_2: "今年度の時間変更スケジュールを自動計算。",
+        feat_3: "多言語での国名・都市名検索に対応。",
+        feat_4: "目に優しいダークモード搭載。",
+        no_results: "一致する地域が見つかりません。"
+    }
+};
+
+const DSTTool = {
+    currentLang: 'en',
+    currentTheme: 'dark',
+
+    init() {
+        // 1. Theme
+        const savedTheme = localStorage.getItem('dst_theme') || 'dark';
+        this.setTheme(savedTheme);
+
+        // 2. Language
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlLang = urlParams.get('lang');
+        const savedLang = localStorage.getItem('dst_lang');
+
+        // Check if lang exists in i18n
+        if (urlLang && i18n[urlLang]) {
+            this.currentLang = urlLang;
+        } else if (savedLang && i18n[savedLang]) {
+            this.currentLang = savedLang;
+        } else {
+            this.currentLang = 'en';
+        }
+
+        // 3. UI Update
+        document.getElementById('lang-select').value = this.currentLang;
+        
+        // Show current year context in UI
+        const nextYear = currentYear + 1;
+        document.getElementById('current-year-display').textContent = `${currentYear}-${nextYear}`;
+
+        this.updateTexts();
+        this.render(processedData);
+    },
+
+    render(data) {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+        const texts = i18n[this.currentLang];
+
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="no-results">${texts.no_results}</td></tr>`;
+            return;
+        }
+
+        // Use the exact currentLang to fetch the name
+        // The data keys (zh-CN, etc) now match i18n keys exactly
+        const langKey = this.currentLang;
+
+        data.forEach(item => {
+            // Get localized name or fallback to English
+            let name = item.names[langKey];
+            if (!name) name = item.names['en'];
+
+            const activeText = item.active ? texts.status_observed : texts.status_none;
+            const activeClass = item.active 
+                ? 'background:rgba(16, 185, 129, 0.1); color:#10b981;' // Greenish for Active
+                : 'background:rgba(100, 116, 139, 0.1); color:#94a3b8;'; // Grey for Inactive
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <div class="font-bold text-lg mb-1">${name}</div>
+                </td>
+                <td style="color:var(--accent)">${item.startStr}</td>
+                <td style="color:var(--text-sub)">${item.endStr}</td>
+                <td><span class="status-tag" style="${activeClass}">${activeText}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    },
+
+    filter() {
+        const query = document.getElementById('search-input').value.toLowerCase();
+        
+        const filtered = processedData.filter(item => {
+            // Search in ALL name translations (values of the names object)
+            // This ensures searching "Meiguo" or "United States" both work regardless of current interface language
+            const nameMatch = Object.values(item.names).some(val => val && val.toLowerCase().includes(query));
+            return nameMatch;
+        });
+        
+        this.render(filtered);
+    },
+
+    toggleTheme() {
+        const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+        this.setTheme(newTheme);
+    },
+
+    setTheme(theme) {
+        this.currentTheme = theme;
+        const icon = document.getElementById('theme-icon');
+        
+        if (theme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+            icon.textContent = '☀️';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            icon.textContent = '🌙';
+        }
+        localStorage.setItem('dst_theme', theme);
+    },
+
+    changeLang() {
+        this.currentLang = document.getElementById('lang-select').value;
+        localStorage.setItem('dst_lang', this.currentLang);
+        
+        // Update URL Parameter
+        try {
+            const url = new URL(window.location);
+            url.searchParams.set('lang', this.currentLang);
+            window.history.pushState({}, '', url);
+        } catch (e) {
+            console.warn('URL update not supported');
+        }
+
+        this.updateTexts();
+        this.filter(); // Re-render table to update names
+    },
+
+    updateTexts() {
+        const texts = i18n[this.currentLang];
+        
+        // Update elements with data-i18n
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (texts[key]) el.textContent = texts[key];
+        });
+
+        // Update headers dynamically with year
+        // We append the year to the translated header text for clarity
+        // Northern Hemisphere usually fits in currentYear. Southern splits. 
+        // For simplicity, we just put (Year) or (Year/Year+1) in the header is tricky via generic text.
+        // Instead, we just use the localized headers from i18n which are generic "Start" and "End"
+        // And the rows show the specific dates (YYYY-MM-DD).
+
+        // Update placeholder
+        document.getElementById('search-input').placeholder = texts.search_ph;
+        
+        // Update Page Title
+        document.title = texts.title;
+    }
+};
+
+window.onload = () => DSTTool.init();
+
+</script>
+
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="category" content="weather-health">
+    <title>Sun-Earth & HD Dot Map</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            /* 地图专用配色 */
+            --map-bg: #0f172a;
+            --dot-day: #38bdf8;
+            --dot-night: #1e3a8a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { padding: 2rem; max-width: 1200px; margin: 0 auto; background-color: var(--bg-color); color: var(--text-color); }
+
+        /* Header */
+        .header-controls { display: flex; justify-content: flex-end; margin-bottom: 1.5rem; }
+        .lang-switch { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .lang-switch button { padding: 0.4rem 0.8rem; border: 1px solid #ddd; border-radius: 4px; background-color: var(--card-bg); cursor: pointer; transition: all 0.2s; font-size: 0.85rem; color: #555; }
+        .lang-switch button:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        .lang-switch button.active { background-color: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+
+        /* Main Box */
+        .calculator-box { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 2rem; }
+        .calculator-box h2 { margin-bottom: 0.5rem; color: var(--primary-color); font-size: 1.8rem; }
+        .calculator-box p.subtitle { color: #7f8c8d; margin-bottom: 1.5rem; font-size: 1rem; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 1.5rem; }
+        
+        /* Buttons */
+        .btn { padding: 0.7rem 1.2rem; border: none; border-radius: 6px; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { background-color: #27ae60; color: #fff; } .btn-primary:hover { background-color: #219150; }
+        .btn-action { background-color: #8e44ad; color: #fff; } .btn-action:hover { background-color: #732d91; }
+        .btn-danger { background-color: #e74c3c; color: #fff; } .btn-danger:hover { background-color: #c0392b; }
+        .btn-info { background-color: #2980b9; color: #fff; } .btn-info:hover { background-color: #2471a3; }
+        .btn-warning { background-color: #f39c12; color: #fff; } .btn-warning:hover { background-color: #d68910; }
+        
+        /* Table */
+        .table-container { background-color: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); overflow-x: auto; margin-bottom: 2rem; }
+        .table-title-edit { margin-bottom: 1rem; text-align: center; }
+        .table-title-edit input { width: 100%; max-width: 500px; padding: 0.5rem; border: 1px solid transparent; border-bottom: 2px solid #eee; font-size: 1.5rem; font-weight: 700; text-align: center; color: var(--primary-color); outline: none; }
+        .table-title-edit input:focus { border-bottom-color: var(--accent-color); }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { background-color: #f8f9fa; color: #666; font-weight: 600; padding: 1rem; text-align: center; border-bottom: 2px solid #eee; white-space: nowrap; }
+        td { padding: 0.8rem; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle; }
+        td input.date-input { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 0.95rem; width: 220px; }
+        .readonly-cell { font-family: 'Courier New', monospace; font-weight: 500; color: #2c3e50; }
+        .remark-cell { font-size: 0.9rem; }
+        .status-near { color: #e74c3c; font-weight: bold; }
+        .status-far { color: #3498db; font-weight: bold; }
+        .delete-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 0.9rem; padding: 0.3rem 0.6rem; border-radius: 4px; }
+        .delete-btn:hover { background-color: #fadbd8; }
+
+        /* Map Section (升级版) */
+        .visualization-box { background-color: var(--card-bg); padding: 0; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 2rem; overflow: hidden; position: relative; }
+        .map-header { padding: 1.5rem 1.5rem 0.5rem; display: flex; justify-content: space-between; align-items: flex-start; }
+        .map-header-text h3 { color: var(--primary-color); margin-bottom: 0.3rem;}
+        .map-header-text p { color: #7f8c8d; font-size: 0.9rem; }
+        
+        .map-wrapper { 
+            position: relative; 
+            width: 100%; 
+            height: 0; 
+            padding-bottom: 50%; 
+            background-color: var(--map-bg); /* 深色背景 */
+            margin-top: 1rem; 
+            border-top: 1px solid #334155; 
+            cursor: crosshair;
+        }
+        #dayNightCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+        
+        /* Map Overlay Info */
+        .map-overlay-info { 
+            position: absolute; 
+            bottom: 10px; 
+            left: 10px; 
+            background: rgba(15, 23, 42, 0.9); 
+            color: #fff;
+            padding: 8px 12px; 
+            border-radius: 6px; 
+            font-size: 0.85rem; 
+            z-index: 3; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+            border: 1px solid #334155; 
+            font-family: monospace; 
+        }
+        .map-loading {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background: rgba(15, 23, 42, 0.95); z-index: 10;
+            color: #38bdf8; font-weight: bold;
+            transition: opacity 0.5s;
+        }
+
+        /* Intro */
+        .intro { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); color: #555; line-height: 1.8; }
+        .intro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem; }
+        .intro-item h4 { color: var(--primary-color); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        @media (max-width: 768px) { .intro-grid { grid-template-columns: 1fr; } .map-header { flex-direction: column; gap: 1rem; } body { padding: 1rem; } .btn-group { flex-direction: column; } .btn { width: 100%; justify-content: center; } }
+        .loading-tip { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0,0,0,0.85); color: white; padding: 1rem 2rem; border-radius: 8px; z-index: 1000; display: none; backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body>
+    <div class="loading-tip" id="loadingTip">Generating Image...</div>
+
+    <div class="header-controls">
+        <div class="lang-switch">
+            <button data-lang="zh-CN" class="active">简体中文</button>
+            <button data-lang="zh-TW">繁體中文</button>
+            <button data-lang="en">English</button>
+            <button data-lang="ja">日本語</button>
+            <button data-lang="ru">Русский</button>
+        </div>
+    </div>
+
+    <div class="calculator-box">
+        <h2 data-key="title">日地距离与昼夜模拟器</h2>
+        <p class="subtitle" data-key="subtitle">实时计算地球与太阳的距离、光行时间，并模拟全球昼夜交替。</p>
+        <div class="btn-group">
+            <button class="btn btn-primary btn-add-row" data-key="addRowBtn">➕ 添加时间点</button>
+            <button class="btn btn-action btn-refresh-now" data-key="addNowBtn">⏱️ 添加当前时间</button>
+            <button class="btn btn-warning btn-clear" data-key="clearBtn">🗑️ 清空表格</button>
+            <button class="btn btn-danger btn-reset" data-key="resetBtn">🔄 恢复默认</button>
+            <button class="btn btn-info btn-save-img" data-key="saveImgBtn">📷 保存为图片</button>
+        </div>
+    </div>
+
+    <div class="table-container" id="tableToSave">
+        <div class="table-title-edit">
+            <input type="text" id="tableTitleInput" value="太阳-地球距离监测表" data-key="defaultTableTitle">
+        </div>
+        <table id="distanceTable">
+            <thead>
+                <tr>
+                    <th data-key="thSeq" style="width: 50px;">#</th>
+                    <th data-key="thDate">观察时间 (当地)</th>
+                    <th data-key="thDistKm">距离 (千米)</th>
+                    <th data-key="thDistAU">距离 (天文单位)</th>
+                    <th data-key="thLightTime">光行时间</th>
+                    <th data-key="thRemark">状态</th>
+                    <th data-key="thAction" style="width: 80px;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="visualization-box">
+        <div class="map-header">
+            <div class="map-header-text">
+                <h3 data-key="mapTitle">🌍 高清点阵昼夜模拟</h3>
+                <p data-key="mapSubtitle">基于 60,000+ 数据点实时渲染。高亮区域为白昼，深色为黑夜。</p>
+            </div>
+            <!-- Upload removed in favor of HD Dot Map, keeps UI clean -->
+        </div>
+        <div class="map-wrapper" id="mapWrapper">
+            <div id="mapLoading" class="map-loading">Initializing HD Map...</div>
+            <canvas id="dayNightCanvas"></canvas>
+            <div class="map-overlay-info" id="mapOverlayInfo">
+                UTC: <span id="mapUtcTime">--:--</span> | Sun: <span id="subsolarCoords">--</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="intro">
+        <h3 data-key="introTitle">关于此工具</h3>
+        <div class="intro-grid">
+            <div class="intro-item">
+                <h4 data-key="introSub1">📏 计算原理</h4>
+                <p data-key="intro1">利用 VSOP87 算法计算太阳位置。表格实时显示地心到日心的距离。近日点（1月）约 0.983 AU；远日点（7月）约 1.017 AU。</p>
+            </div>
+            <div class="intro-item">
+                <h4 data-key="introSub2">🗺️ 地图可视化</h4>
+                <p data-key="intro2">使用高清点阵实时渲染。<br>🔵 <strong>亮蓝点</strong>：受太阳直射的白昼区域。<br>🌑 <strong>深蓝点</strong>：背对太阳的黑夜区域。<br>☀️ <strong>红点</strong>：太阳直射点位置。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Language Configuration ---
+        const langConfig = {
+            "zh-CN": { title: "日地距离与昼夜模拟器", subtitle: "实时计算地球与太阳的距离，并模拟全球昼夜交替。", addRowBtn: "添加自定义时间", addNowBtn: "添加当前时间", clearBtn: "清空表格", resetBtn: "恢复默认", saveImgBtn: "保存为图片", savingTip: "正在生成高清图片...", defaultTableTitle: "太阳-地球距离监测表", thSeq: "序号", thDate: "观察时间 (当地)", thDistKm: "距离 (km)", thDistAU: "距离 (AU)", thLightTime: "光行时间", thRemark: "状态", thAction: "操作", deleteBtn: "删除", mapTitle: "🌍 高清点阵昼夜模拟", mapSubtitle: "基于 60,000+ 数据点实时渲染。高亮区域为白昼，深色为黑夜。", introTitle: "关于此工具", introSub1: "📏 计算原理", intro1: "本工具利用 VSOP87 算法计算太阳在黄道上的位置。表格实时显示地心到日心的距离。近日点（1月）约 0.983 AU；远日点（7月）约 1.017 AU。", introSub2: "🗺️ 地图可视化说明", intro2: "使用高清点阵实时渲染。<br>🔵 <strong>亮蓝点</strong>：受太阳直射的白昼区域。<br>🌑 <strong>深蓝点</strong>：背对太阳的黑夜区域。<br>☀️ <strong>红点</strong>：太阳直射点位置。", confirmClear: "确定清空所有数据吗？", statusPerihelion: "近日点 ☀️", statusAphelion: "远日点 ❄️", statusAvg: "平均距离", mapInfo: "UTC时间" },
+            "zh-TW": { title: "日地距離與晝夜模擬器", subtitle: "即時計算地球與太陽的距離，並模擬全球晝夜交替。", addRowBtn: "添加自訂時間", addNowBtn: "添加目前時間", clearBtn: "清空表格", resetBtn: "恢復預設", saveImgBtn: "保存為圖片", savingTip: "正在生成高畫質圖片...", defaultTableTitle: "太陽-地球距離監測表", thSeq: "序號", thDate: "觀察時間 (當地)", thDistKm: "距離 (km)", thDistAU: "距離 (AU)", thLightTime: "光行時間", thRemark: "狀態", thAction: "操作", deleteBtn: "刪除", mapTitle: "🌍 高清點陣晝夜模擬", mapSubtitle: "基於 60,000+ 數據點即時渲染。高亮區域為白晝，深色為黑夜。", introTitle: "關於此工具", introSub1: "📏 計算原理", intro1: "本工具利用 VSOP87 算法計算太陽在黃道上的位置。表格即時顯示地心到日心的距離。近日點（1月）約 0.983 AU；遠日點（7月）約 1.017 AU。", introSub2: "🗺️ 地圖可視化說明", intro2: "使用高清點陣即時渲染。<br>🔵 <strong>亮藍點</strong>：受太陽直射的白晝區域。<br>🌑 <strong>深藍點</strong>：背對太陽的黑夜區域。<br>☀️ <strong>紅點</strong>：太陽直射點位置。", confirmClear: "確定清空所有數據嗎？", statusPerihelion: "近日點 ☀️", statusAphelion: "遠日點 ❄️", statusAvg: "平均距離", mapInfo: "UTC時間" },
+            "en": { title: "Sun-Earth Distance & Day/Night Map", subtitle: "Real-time calculation of distance and Day/Night visualization.", addRowBtn: "Add Custom Time", addNowBtn: "Add Current Time", clearBtn: "Clear Table", resetBtn: "Reset", saveImgBtn: "Save Image", savingTip: "Generating image...", defaultTableTitle: "Sun-Earth Distance Log", thSeq: "#", thDate: "Local Time", thDistKm: "Distance (km)", thDistAU: "Distance (AU)", thLightTime: "Light Time", thRemark: "Status", thAction: "Action", deleteBtn: "Del", mapTitle: "🌍 HD Dot Matrix Day/Night", mapSubtitle: "Real-time rendering with 60,000+ data points. Bright dots are day, dark are night.", introTitle: "About This Tool", introSub1: "📏 Calculation Principle", intro1: "Using VSOP87 algorithm for precise Sun position. Perihelion (closest) is around Jan (~0.983 AU); Aphelion (farthest) around July (~1.017 AU).", introSub2: "🗺️ Map Visualization", intro2: "Real-time HD Dot Matrix rendering.<br>🔵 <strong>Bright Blue</strong>: Daylight area.<br>🌑 <strong>Dark Blue</strong>: Night time area.<br>☀️ <strong>Red Dot</strong>: Subsolar point.", confirmClear: "Clear all data?", statusPerihelion: "Perihelion ☀️", statusAphelion: "Aphelion ❄️", statusAvg: "Avg Dist", mapInfo: "UTC Time" },
+            "ja": { title: "太陽・地球距離と昼夜マップ", subtitle: "リアルタイムの距離計算と世界昼夜マップシミュレーション。", addRowBtn: "時間を指定追加", addNowBtn: "現在時刻追加", clearBtn: "表をクリア", resetBtn: "初期化", saveImgBtn: "画像保存", savingTip: "画像生成中...", defaultTableTitle: "太陽-地球距離記録表", thSeq: "No.", thDate: "現地時間", thDistKm: "距離 (km)", thDistAU: "距離 (AU)", thLightTime: "光の到達時間", thRemark: "状態", thAction: "操作", deleteBtn: "削除", mapTitle: "🌍 高解像度ドット昼夜マップ", mapSubtitle: "60,000以上のデータポイントでリアルタイムレンダリング。明るい点は昼、暗い点は夜。", introTitle: "このツールについて", introSub1: "📏 計算原理", intro1: "VSOP87アルゴリズムを使用して、黄道上の太陽の位置を計算します。近日点（1月）は約0.983 AU、遠日点（7月）は約1.017 AUです。", introSub2: "🗺️ 地図の可視化", intro2: "HDドットマトリックスレンダリング。<br>🔵 <strong>明るい青</strong>：昼のエリア。<br>🌑 <strong>暗い青</strong>：夜のエリア。<br>☀️ <strong>赤い点</strong>：太陽直下点。", confirmClear: "データをすべて消去しますか？", statusPerihelion: "近日点 ☀️", statusAphelion: "遠日点 ❄️", statusAvg: "平均距離", mapInfo: "UTC時間" },
+            "ru": { title: "Расстояние Земля-Солнце", subtitle: "Расчет расстояния и карта день/ночь.", addRowBtn: "Добавить время", addNowBtn: "Текущее время", clearBtn: "Очистить", resetBtn: "Сброс", saveImgBtn: "Сохранить", savingTip: "Создание изображения...", defaultTableTitle: "Журнал расстояний", thSeq: "№", thDate: "Местное время", thDistKm: "Расстояние (км)", thDistAU: "Расстояние (AU)", thLightTime: "Свет. время", thRemark: "Статус", thAction: "Действие", deleteBtn: "Удл", mapTitle: "🌍 HD Точечная карта", mapSubtitle: "Рендеринг в реальном времени с 60 000+ точек. Светлые - день, темные - ночь.", introTitle: "Об инструменте", introSub1: "📏 Принцип расчета", intro1: "Использует алгоритм VSOP87. Перигелий (янв) ~0.983 AU; Афелий (июль) ~1.017 AU.", introSub2: "🗺️ Визуализация карты", intro2: "Точечная HD карта.<br>🔵 <strong>Светло-синий</strong>: День.<br>🌑 <strong>Темно-синий</strong>: Ночь.<br>☀️ <strong>Красная точка</strong>: Солнце.", confirmClear: "Очистить все данные?", statusPerihelion: "Перигелий ☀️", statusAphelion: "Афелий ❄️", statusAvg: "Среднее", mapInfo: "Время UTC" }
+        };
+
+        // --- 2. Astronomy Math ---
+        const AU_IN_KM = 149597870.7;
+        const C_LIGHT_SPEED = 299792.458; 
+        const rad = deg => deg * (Math.PI / 180);
+        const deg = r => r * (180 / Math.PI);
+
+        function getJulianDate(dateObj) {
+            let Y = dateObj.getUTCFullYear(), M = dateObj.getUTCMonth() + 1, D = dateObj.getUTCDate();
+            let h = dateObj.getUTCHours(), m = dateObj.getUTCMinutes(), s = dateObj.getUTCSeconds();
+            if (M <= 2) { Y -= 1; M += 12; }
+            const A = Math.floor(Y / 100);
+            const B = 2 - A + Math.floor(A / 4);
+            const dayFraction = (h + m/60 + s/3600) / 24;
+            return Math.floor(365.25 * (Y + 4716)) + Math.floor(30.6001 * (M + 1)) + D + dayFraction + B - 1524.5;
+        }
+
+        function calculateAstronomy(dateObj) {
+            const JD = getJulianDate(dateObj);
+            const T = (JD - 2451545.0) / 36525; 
+            const e = 0.016708634 - 0.000042037 * T - 0.0000001267 * T * T; 
+            let L0 = 280.46646 + 36000.76983 * T; 
+            let M_sol = 357.52911 + 35999.05029 * T; 
+            L0 %= 360; M_sol %= 360;
+            const M_rad = rad(M_sol);
+            const C = (1.914602 - 0.004817 * T) * Math.sin(M_rad) + (0.019993 - 0.000101 * T) * Math.sin(2 * M_rad);
+            const v = M_sol + C; 
+            const v_rad = rad(v);
+            const R = (1.000001018 * (1 - e * e)) / (1 + e * Math.cos(v_rad));
+            const distanceKm = R * AU_IN_KM;
+            const lightTimeSec = distanceKm / C_LIGHT_SPEED;
+            let omega = 125.04 - 1934.136 * T;
+            let lambda = L0 + C - 0.00569 - 0.00478 * Math.sin(rad(omega));
+            let epsilon = 23.439291 - 0.0130042 * T;
+            const lambda_rad = rad(lambda), epsilon_rad = rad(epsilon);
+            let alpha_rad = Math.atan2(Math.cos(epsilon_rad) * Math.sin(lambda_rad), Math.cos(lambda_rad));
+            let delta_rad = Math.asin(Math.sin(epsilon_rad) * Math.sin(lambda_rad));
+            let alpha = deg(alpha_rad), delta = deg(delta_rad);
+            let GMST0 = 280.46061837 + 360.98564736629 * (JD - 2451545.0);
+            GMST0 %= 360; if (GMST0 < 0) GMST0 += 360;
+            let GHA = GMST0 - alpha;
+            let subLon = -GHA;
+            subLon %= 360; if (subLon > 180) subLon -= 360; if (subLon < -180) subLon += 360;
+            let statusKey = "statusAvg";
+            if (R < 0.99) statusKey = "statusPerihelion";
+            if (R > 1.01) statusKey = "statusAphelion";
+            return { au: R, km: distanceKm, lightTimeSec: lightTimeSec, statusKey: statusKey, subSolar: { lat: delta, lon: subLon } };
+        }
+
+        // --- 3. HD Dot Map Engine ---
+        
+        // High Definition Geographic Polygons (0-1000 coordinate space)
+        const geoPolygons = [
+            // North America
+            [[160,50],[200,50],[250,30],[300,50],[320,100],[280,150],[250,200],[230,220],[200,200],[180,210],[150,180],[100,120],[80,80],[120,60]], 
+            [[180,210],[210,240],[220,260],[200,250],[190,230]], // Mexico
+            [[250,30],[350,20],[400,10],[380,80],[320,100]], // Greenland
+            // South America
+            [[240,260],[280,260],[320,300],[350,350],[340,400],[300,480],[280,500],[260,450],[240,350],[230,300]],
+            // Europe
+            [[450,80],[500,70],[550,80],[530,130],[500,140],[480,130],[460,110],[440,100]], 
+            [[420,90],[440,90],[440,110],[430,120],[420,110]], // UK
+            // Africa
+            [[440,150],[500,150],[550,160],[600,200],[620,250],[580,350],[550,420],[500,380],[460,300],[430,200]],
+            [[600,200],[640,210],[630,230]], // Horn
+            // Asia
+            [[550,80],[650,70],[800,70],[900,80],[950,100],[920,150],[880,180],[850,220],[800,250],[750,280],[700,250],[650,200],[600,160]], 
+            [[750,280],[780,320],[800,300]], // India
+            [[850,220],[880,260],[900,250]], // SE Asia
+            [[920,130],[950,140],[940,160],[920,150]], // Japan
+            // Australia
+            [[850,350],[950,350],[960,420],[900,450],[850,420],[840,380]],
+            [[970,450],[990,480],[980,490],[960,460]], // NZ
+            [[800,300],[850,300],[860,320],[800,310]] // Indonesia
+        ];
+
+        const MapEngine = {
+            cols: 360, // Ultra High Res
+            rows: 180,
+            dots: [],
+            canvas: null,
+            ctx: null,
+            initDone: false,
+            
+            init: function() {
+                this.canvas = document.getElementById('dayNightCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Pre-calculate dots rasterization (heavy op, run once)
+                setTimeout(() => {
+                    this.generateDots();
+                    this.initDone = true;
+                    document.getElementById('mapLoading').style.opacity = 0;
+                    setTimeout(() => document.getElementById('mapLoading').remove(), 500);
+                    triggerRedraw(); // Draw initial state
+                }, 50);
+            },
+            
+            generateDots: function() {
+                const data = [];
+                for(let r=0; r<this.rows; r++) {
+                    for(let c=0; c<this.cols; c++) {
+                        // Map grid to polygon space (0-1000, 0-500)
+                        const gx = (c / this.cols) * 1000;
+                        const gy = (r / this.rows) * 500;
+                        
+                        let isLand = false;
+                        for(let poly of geoPolygons) {
+                            if(this.pointInPoly(gx, gy, poly)) {
+                                isLand = true;
+                                break;
+                            }
+                        }
+                        
+                        if (isLand) {
+                            data.push({
+                                x: c / this.cols,
+                                y: r / this.rows,
+                                lon: (c / this.cols) * 360 - 180,
+                                lat: 90 - (r / this.rows) * 180
+                            });
+                        }
+                    }
+                }
+                this.dots = data;
+            },
+            
+            pointInPoly: function(x, y, poly) {
+                let inside = false;
+                for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                    const xi = poly[i][0], yi = poly[i][1];
+                    const xj = poly[j][0], yj = poly[j][1];
+                    const intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                    if (intersect) inside = !inside;
+                }
+                return inside;
+            },
+
+            draw: function(sunLat, sunLon) {
+                if(!this.initDone) return;
+                
+                // Resize Canvas
+                const wrapper = document.getElementById('mapWrapper');
+                const w = wrapper.clientWidth * 2;
+                const h = wrapper.clientHeight * 2;
+                if(this.canvas.width !== w) {
+                    this.canvas.width = w;
+                    this.canvas.height = h;
+                }
+                
+                const ctx = this.ctx;
+                
+                // 1. Background (Deep Space)
+                ctx.fillStyle = "#0f172a";
+                ctx.fillRect(0, 0, w, h);
+                
+                // 2. Grid lines (Subtle)
+                ctx.strokeStyle = "rgba(255,255,255,0.03)";
+                ctx.lineWidth = 1;
+                for(let i=0; i<=360; i+=30) {
+                    const x = (i/360)*w;
+                    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+                }
+                for(let i=0; i<=180; i+=30) {
+                    const y = (i/180)*h;
+                    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+                }
+
+                // 3. Draw Dots with Day/Night Logic
+                const dotSize = (w / this.cols) * 0.7;
+                
+                // Great Circle Distance Logic
+                const sunPhi = rad(sunLat);
+                const sunTheta = rad(sunLon);
+                
+                const sinPhi = Math.sin(sunPhi);
+                const cosPhi = Math.cos(sunPhi);
+                
+                for(let dot of this.dots) {
+                    // Dot spherical coords
+                    const dPhi = rad(dot.lat);
+                    const dTheta = rad(dot.lon);
+                    
+                    // Cosine of angle between dot and sun
+                    // cos(c) = sin(lat1)sin(lat2) + cos(lat1)cos(lat2)cos(lon1-lon2)
+                    const cosC = Math.sin(dPhi)*sinPhi + Math.cos(dPhi)*cosPhi*Math.cos(dTheta - sunTheta);
+                    
+                    // If cosC > 0, it's day (angle < 90). If < 0, night.
+                    // We can add a twilight zone for aesthetics
+                    
+                    if (cosC > 0) {
+                        ctx.fillStyle = "#38bdf8"; // Day: Cyan Blue
+                        ctx.globalAlpha = 0.9;
+                    } else if (cosC > -0.1) {
+                        ctx.fillStyle = "#38bdf8"; // Twilight
+                        ctx.globalAlpha = 0.4;
+                    } else {
+                        ctx.fillStyle = "#1e3a8a"; // Night: Deep Blue
+                        ctx.globalAlpha = 0.3;
+                    }
+                    
+                    const x = dot.x * w;
+                    const y = dot.y * h;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, dotSize, 0, Math.PI*2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1.0;
+
+                // 4. Draw Sun
+                const sunX = (sunLon + 180) / 360 * w;
+                const sunY = (90 - sunLat) / 180 * h;
+                
+                ctx.save();
+                ctx.shadowColor = "#ef4444";
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = "#ef4444";
+                ctx.beginPath(); ctx.arc(sunX, sunY, 6, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+                
+                // 5. Draw Midnight Point (Moon)
+                let moonLon = sunLon + 180; if(moonLon>180) moonLon-=360;
+                const moonLat = -sunLat;
+                const moonX = (moonLon + 180) / 360 * w;
+                const moonY = (90 - moonLat) / 180 * h;
+                
+                ctx.fillStyle = "rgba(255,255,255,0.3)";
+                ctx.beginPath(); ctx.arc(moonX, moonY, 4, 0, Math.PI*2); ctx.fill();
+            }
+        };
+
+        // --- 4. Main App Logic ---
+        let currentLang = 'zh-CN';
+        
+        function updateUrlLang(lang) {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('lang', lang);
+                window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+            } catch (e) { }
+        }
+
+        function getLangFromUrl() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                return lang && langConfig[lang] ? lang : 'zh-CN';
+            } catch(e) { return 'zh-CN'; }
+        }
+
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('[data-key]').forEach(el => {
+                if (el.tagName !== 'INPUT') {
+                    el.innerHTML = langConfig[lang][el.dataset.key];
+                }
+            });
+            document.querySelectorAll('.lang-switch button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            recalcAll();
+            updateUrlLang(lang);
+            document.title = langConfig[lang].title;
+        }
+
+        const tableBody = document.getElementById('tableBody');
+
+        function formatNumber(num) {
+            return num.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        }
+        
+        function formatLightTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = (seconds % 60).toFixed(2);
+            return `${m}m ${s}s`;
+        }
+
+        function addRow(dateObj = new Date()) {
+            const tr = document.createElement('tr');
+            const offset = dateObj.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(dateObj - offset)).toISOString().slice(0, 16);
+
+            tr.innerHTML = `
+                <td class="seq-cell"></td>
+                <td><input type="datetime-local" class="date-input" value="${localISOTime}"></td>
+                <td class="readonly-cell km-cell">--</td>
+                <td class="readonly-cell au-cell">--</td>
+                <td class="readonly-cell light-cell">--</td>
+                <td class="remark-cell"></td>
+                <td><button class="delete-btn" data-key="deleteBtn">${langConfig[currentLang].deleteBtn}</button></td>
+            `;
+
+            tableBody.appendChild(tr);
+            const dateInput = tr.querySelector('.date-input');
+            const deleteBtn = tr.querySelector('.delete-btn');
+
+            dateInput.addEventListener('input', () => updateRow(tr, true)); 
+            deleteBtn.addEventListener('click', () => { tr.remove(); updateSeq(); });
+            updateRow(tr, true); 
+            updateSeq();
+        }
+
+        function triggerRedraw() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            if (rows.length > 0) updateRow(rows[rows.length-1], true);
+        }
+
+        function updateRow(tr, updateMap = false) {
+            const dateInput = tr.querySelector('.date-input');
+            if (!dateInput.value) return;
+
+            const dateObj = new Date(dateInput.value);
+            const result = calculateAstronomy(dateObj);
+
+            tr.querySelector('.km-cell').textContent = formatNumber(result.km);
+            tr.querySelector('.au-cell').textContent = result.au.toFixed(7);
+            tr.querySelector('.light-cell').textContent = formatLightTime(result.lightTimeSec);
+            
+            const remarkCell = tr.querySelector('.remark-cell');
+            remarkCell.textContent = langConfig[currentLang][result.statusKey];
+            remarkCell.className = 'remark-cell';
+            if (result.statusKey === 'statusPerihelion') remarkCell.classList.add('status-near');
+            if (result.statusKey === 'statusAphelion') remarkCell.classList.add('status-far');
+
+            if (updateMap) {
+                // Call Dot Map Engine
+                MapEngine.draw(result.subSolar.lat, result.subSolar.lon);
+                
+                document.getElementById('mapUtcTime').textContent = dateObj.toISOString().slice(11, 16);
+                document.getElementById('subsolarCoords').textContent = `${result.subSolar.lat.toFixed(1)}°N, ${result.subSolar.lon.toFixed(1)}°E`;
+            }
+        }
+
+        function updateSeq() {
+            document.querySelectorAll('#tableBody tr').forEach((tr, index) => {
+                tr.querySelector('.seq-cell').textContent = index + 1;
+            });
+        }
+        
+        function recalcAll() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(tr => {
+                tr.querySelector('.delete-btn').textContent = langConfig[currentLang].deleteBtn;
+                updateRow(tr, false);
+            });
+            if (rows.length > 0) updateRow(rows[rows.length - 1], true);
+        }
+
+        document.querySelector('.btn-add-row').addEventListener('click', () => addRow(new Date()));
+        document.querySelector('.btn-refresh-now').addEventListener('click', () => addRow(new Date()));
+        document.querySelector('.btn-clear').addEventListener('click', () => { if (confirm(langConfig[currentLang].confirmClear)) { tableBody.innerHTML = ''; addRow(new Date()); } });
+        document.querySelector('.btn-reset').addEventListener('click', () => window.location.reload());
+        document.querySelector('.btn-save-img').addEventListener('click', () => {
+            const loadingTip = document.getElementById('loadingTip');
+            loadingTip.style.display = 'block';
+            loadingTip.textContent = langConfig[currentLang].savingTip;
+            const tableToSave = document.getElementById('tableToSave');
+            const originalOverflow = tableToSave.style.overflow;
+            tableToSave.style.overflow = 'visible';
+            html2canvas(tableToSave, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+            .then(canvas => {
+                tableToSave.style.overflow = originalOverflow;
+                loadingTip.style.display = 'none';
+                const link = document.createElement('a');
+                link.download = `SunEarth_Log_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => { console.error(err); loadingTip.style.display = 'none'; alert('Saved! (Check security settings if map is blank)'); });
+        });
+        document.querySelectorAll('.lang-switch button').forEach(btn => {
+            btn.addEventListener('click', () => setLang(btn.dataset.lang));
+        });
+        window.addEventListener('resize', () => { 
+            // Trigger redraw on resize
+            const rows = document.querySelectorAll('#tableBody tr'); 
+            if(rows.length > 0) updateRow(rows[rows.length-1], true); 
+        });
+
+        // Init
+        MapEngine.init(); // Start Dot Map Engine
+        const initialLang = getLangFromUrl();
+        setLang(initialLang);
+        addRow(new Date());
+
+    </script>
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

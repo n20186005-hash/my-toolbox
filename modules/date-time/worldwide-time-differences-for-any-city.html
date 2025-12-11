@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Difference Calculator</title>
+    
+    <!-- 基础元信息 -->
+    <meta name="tool-id" content="time_difference_calc">
+    <meta name="category" content="date-time">
+    <meta name="icon" content="🕰️">
+    
+    <!-- 默认英文元信息 -->
+    <meta name="title" content="Time Difference Calculator - World Clock & Time Zone Converter">
+    <meta name="description" content="Calculate the time difference between two cities or time zones worldwide. Find the best time to call or schedule meetings across different locations.">
+    
+    <!-- 多语言元信息配置 -->
+    <meta name="lang-title-zh-CN" content="时差计算器 - 世界时钟与时区转换">
+    <meta name="lang-description-zh-CN" content="计算全球两个城市或时区之间的时间差。查询异地当前时间，方便安排跨国会议或通话。">
+    
+    <meta name="lang-title-zh-TW" content="時差計算器 - 世界時鐘與時區轉換">
+    <meta name="lang-description-zh-TW" content="計算全球兩個城市或時區之間的時間差。查詢異地當前時間，方便安排跨國會議或通話。">
+    
+    <meta name="lang-title-ja" content="時差計算ツール - 世界時計とタイムゾーン変換">
+    <meta name="lang-description-ja" content="世界中の2つの都市またはタイムゾーン間の時差を計算します。異なる場所間での電話や会議の最適な時間を見つけます。">
+    
+    <meta name="lang-title-ru" content="Калькулятор разницы во времени">
+    <meta name="lang-description-ru" content="Рассчитайте разницу во времени между двумя городами или часовыми поясами. Найдите лучшее время для звонков или планирования встреч.">
+
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            padding: 20px; 
+            background: #f0f9ff; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+        }
+        .tool-module { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 10px 15px rgba(0,0,0,0.1); 
+            max-width: 900px; 
+            margin: 0 auto; 
+            position: relative; 
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .swap-btn-container {
+            display: flex;
+            align-items: flex-end; /* Align with input box bottom */
+            justify-content: center;
+            padding-bottom: 14px; /* Adjust based on label height */
+        }
+        @media (max-width: 768px) {
+            .swap-btn-container {
+                padding: 0;
+                margin: -10px 0;
+                z-index: 10;
+                align-items: center;
+            }
+        }
+        .swap-btn {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #3b82f6;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+        .swap-btn:hover {
+            background: #3b82f6;
+            color: white;
+            transform: rotate(180deg);
+        }
+        .input-group { 
+            position: relative;
+        }
+        label { 
+            display: block; 
+            font-size: 14px; 
+            color: #374151; 
+            margin-bottom: 6px; 
+            font-weight: 600;
+        }
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 8px; 
+            transition: all 0.2s;
+            font-size: 16px;
+            background-color: #fff;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .result-box {
+            background: linear-gradient(to bottom right, #eff6ff, #fff);
+            padding: 24px;
+            border-radius: 12px;
+            margin-top: 24px;
+            border: 1px solid #dbeafe;
+            text-align: center;
+            display: none;
+        }
+        .result-box.show {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .main-diff {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1e40af;
+            margin-bottom: 16px;
+            line-height: 1.3;
+        }
+        .clock-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            flex: 1;
+            min-width: 200px;
+        }
+        .clock-time {
+            font-size: 32px;
+            font-weight: 700;
+            color: #111827;
+            font-variant-numeric: tabular-nums;
+        }
+        .clock-date {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        .clock-label {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #4b5563;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .intro-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        .intro-section h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        .intro-section p {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .popular-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            transition: all 0.2s;
+            position: relative;
+            group: 'card';
+        }
+        .popular-card:hover {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+        .popular-card:hover .btn-delete {
+            opacity: 1;
+        }
+        .pop-city { font-weight: 600; font-size: 14px; color: #374151; margin-bottom: 2px; }
+        .pop-time { font-family: monospace; font-size: 16px; color: #1d4ed8; font-weight: 700; }
+        .pop-date { font-size: 11px; color: #6b7280; }
+        .btn-delete {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 20px;
+            height: 20px;
+            background: #fee2e2;
+            color: #ef4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .btn-delete:hover {
+            background: #ef4444;
+            color: white;
+        }
+        .control-btn {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-add { background: #dbeafe; color: #1e40af; }
+        .btn-add:hover { background: #bfdbfe; }
+        .btn-clear { background: #f3f4f6; color: #4b5563; }
+        .btn-clear:hover { background: #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="tool-module" 
+         data-id="time_difference_calc" 
+         data-category="date-time" 
+         data-title="Time Difference Calculator" 
+         data-icon="🕰️">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4 z-20">
+            <select id="lang-select" onchange="TimeCalc.changeLang()" 
+                    class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 w-auto cursor-pointer">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
+            <span class="text-3xl">🕰️</span>
+            <span data-i18n="title">Time Difference Calculator</span>
+        </h2>
+        
+        <!-- 输入表单 (带交换按钮) -->
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 mb-6 relative z-10">
+            <div class="input-group">
+                <label data-i18n="label_from">From (Location 1)</label>
+                <input type="text" id="city-a" list="cities-list" placeholder="e.g. New York">
+            </div>
+            
+            <div class="swap-btn-container">
+                <button class="swap-btn" onclick="TimeCalc.swapCities()" title="Swap Locations">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="input-group">
+                <label data-i18n="label_to">To (Location 2)</label>
+                <input type="text" id="city-b" list="cities-list" placeholder="e.g. London">
+            </div>
+        </div>
+
+        <!-- 数据列表 -->
+        <datalist id="cities-list">
+            <!-- 由 JS 填充 -->
+        </datalist>
+
+        <!-- 计算按钮 -->
+        <button onclick="TimeCalc.manualCalc()" 
+                class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition shadow-sm hover:shadow-md flex justify-center items-center gap-2 mb-2" 
+                id="btn-calc">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+            </svg>
+            <span data-i18n="btn_calc">Calculate Difference</span>
+        </button>
+        
+        <div id="error-msg" class="text-red-500 text-sm mt-2 text-center hidden bg-red-50 p-2 rounded border border-red-100"></div>
+
+        <!-- 结果展示区域 -->
+        <div id="result-box" class="result-box">
+            <div class="main-diff" id="diff-text"></div>
+            
+            <div class="flex flex-col md:flex-row gap-4 mt-6 justify-center">
+                <!-- 时钟 1 -->
+                <div class="clock-card border-l-4 border-l-blue-500">
+                    <div class="clock-label" id="label-city-a">City 1</div>
+                    <div class="clock-time" id="time-city-a">--:--</div>
+                    <div class="clock-date" id="date-city-a">--</div>
+                    <div class="text-xs text-gray-400 mt-2" id="tz-city-a"></div>
+                </div>
+
+                <!-- 连接符 -->
+                <div class="flex items-center justify-center text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 transform rotate-90 md:rotate-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </div>
+
+                <!-- 时钟 2 -->
+                <div class="clock-card border-l-4 border-l-green-500">
+                    <div class="clock-label" id="label-city-b">City 2</div>
+                    <div class="clock-time" id="time-city-b">--:--</div>
+                    <div class="clock-date" id="date-city-b">--</div>
+                    <div class="text-xs text-gray-400 mt-2" id="tz-city-b"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 热门城市 (带管理功能) -->
+        <div class="mt-10 pt-8 border-t border-gray-100">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-700 flex items-center gap-2">
+                    <span class="text-blue-500">⚡</span> 
+                    <span data-i18n="popular_title">Popular Cities</span>
+                </h3>
+                <div class="flex gap-2">
+                    <button onclick="TimeCalc.addCurrentCity()" class="control-btn btn-add" title="Add Destination City">
+                        <span>+</span> <span data-i18n="btn_add">Add</span>
+                    </button>
+                    <button onclick="TimeCalc.clearPopularCities()" class="control-btn btn-clear" title="Clear All">
+                        <span data-i18n="btn_clear">Clear</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" id="popular-grid">
+                <!-- 由 JS 填充 -->
+            </div>
+            
+            <!-- 列表为空时的提示 -->
+            <div id="empty-msg" class="hidden text-center text-gray-400 py-4 text-sm">
+                <span data-i18n="msg_empty">List is empty</span>
+                <button onclick="TimeCalc.restoreDefaultPopular()" class="text-blue-500 hover:underline ml-2" data-i18n="btn_restore">Restore Default</button>
+            </div>
+        </div>
+
+        <!-- 功能介绍 -->
+        <div class="intro-section">
+            <h3 data-i18n="intro_title">About Time Difference Calculator</h3>
+            <p data-i18n="intro_p1">This tool helps you calculate the time difference between two major cities or time zones around the world. It automatically adjusts for Daylight Saving Time (DST) rules.</p>
+            <p data-i18n="intro_p2">Simply enter the names of two locations to see the current time in both places and exactly how many hours one is ahead or behind the other. It is useful for scheduling international calls, webinars, or travel planning.</p>
+        </div>
+    </div>
+
+    <script>
+        // 扩展的城市数据库 (包含 IANA Timezone ID)
+        const citiesDB = [
+            { n: "New York", tz: "America/New_York" },
+            { n: "London", tz: "Europe/London" },
+            { n: "Paris", tz: "Europe/Paris" },
+            { n: "Tokyo", tz: "Asia/Tokyo" },
+            { n: "Beijing", tz: "Asia/Shanghai" },
+            { n: "Shanghai", tz: "Asia/Shanghai" },
+            { n: "Hong Kong", tz: "Asia/Hong_Kong" },
+            { n: "Taipei", tz: "Asia/Taipei" },
+            { n: "Singapore", tz: "Asia/Singapore" },
+            { n: "Sydney", tz: "Australia/Sydney" },
+            { n: "Moscow", tz: "Europe/Moscow" },
+            { n: "Los Angeles", tz: "America/Los_Angeles" },
+            { n: "Dubai", tz: "Asia/Dubai" },
+            { n: "Mumbai", tz: "Asia/Kolkata" },
+            { n: "Toronto", tz: "America/Toronto" },
+            { n: "Berlin", tz: "Europe/Berlin" },
+            { n: "Rome", tz: "Europe/Rome" },
+            { n: "Bangkok", tz: "Asia/Bangkok" },
+            { n: "Seoul", tz: "Asia/Seoul" },
+            { n: "Cairo", tz: "Africa/Cairo" },
+            { n: "Rio de Janeiro", tz: "America/Sao_Paulo" },
+            { n: "Cape Town", tz: "Africa/Johannesburg" },
+            { n: "Mexico City", tz: "America/Mexico_City" },
+            { n: "Istanbul", tz: "Europe/Istanbul" },
+            { n: "Jakarta", tz: "Asia/Jakarta" },
+            { n: "Kyiv", tz: "Europe/Kyiv" },
+            { n: "Vancouver", tz: "America/Vancouver" },
+            { n: "San Francisco", tz: "America/Los_Angeles" },
+            { n: "Chicago", tz: "America/Chicago" },
+            { n: "Denver", tz: "America/Denver" },
+            { n: "Phoenix", tz: "America/Phoenix" },
+            { n: "Honolulu", tz: "Pacific/Honolulu" },
+            { n: "Anchorage", tz: "America/Anchorage" },
+            { n: "Auckland", tz: "Pacific/Auckland" },
+            { n: "Perth", tz: "Australia/Perth" },
+            { n: "New Delhi", tz: "Asia/Kolkata" },
+            { n: "Kuala Lumpur", tz: "Asia/Kuala_Lumpur" },
+            { n: "Manila", tz: "Asia/Manila" },
+            { n: "Hanoi", tz: "Asia/Bangkok" },
+            { n: "Riyadh", tz: "Asia/Riyadh" },
+            { n: "Tel Aviv", tz: "Asia/Jerusalem" },
+            { n: "Athens", tz: "Europe/Athens" },
+            { n: "Madrid", tz: "Europe/Madrid" },
+            { n: "Zurich", tz: "Europe/Zurich" },
+            { n: "Sao Paulo", tz: "America/Sao_Paulo" },
+            { n: "Buenos Aires", tz: "America/Argentina/Buenos_Aires" }
+        ];
+
+        // 默认热门城市 (8个，布局更协调)
+        const defaultPopularCities = [
+            "Beijing", "London", "New York", "Tokyo", "Paris", "Moscow", "Sydney", "Dubai"
+        ];
+
+        const TimeCalc = {
+            timerId: null,
+            activeResult: false,
+            currentPopularList: [], // 当前显示的热门城市列表
+            
+            i18n: {
+                'en': {
+                    title: '🕰️ Time Difference Calculator',
+                    label_from: 'From (Location 1)',
+                    label_to: 'To (Location 2)',
+                    btn_calc: 'Calculate Difference',
+                    popular_title: 'Popular Cities',
+                    intro_title: 'About Time Difference Calculator',
+                    intro_p1: 'This tool helps you calculate the time difference between two major cities or time zones around the world. It automatically adjusts for Daylight Saving Time (DST) rules.',
+                    intro_p2: 'Simply enter the names of two locations to see the current time in both places and exactly how many hours one is ahead or behind the other.',
+                    err_city: 'Please select a valid city from the list.',
+                    ahead: 'is {h} hours {m} minutes ahead of',
+                    behind: 'is {h} hours {m} minutes behind',
+                    same: 'is the same time as',
+                    exact_hours: 'hours',
+                    today: 'Today',
+                    tomorrow: 'Tomorrow',
+                    yesterday: 'Yesterday',
+                    btn_add: 'Add',
+                    btn_clear: 'Clear',
+                    btn_restore: 'Restore Default',
+                    msg_empty: 'Popular list is empty.',
+                    msg_added: 'Added!',
+                    msg_exist: 'Already exists.'
+                },
+                'zh-CN': {
+                    title: '🕰️ 时差计算器',
+                    label_from: '地点 1 (基准)',
+                    label_to: '地点 2 (比较)',
+                    btn_calc: '计算时差',
+                    popular_title: '热门城市实时时间',
+                    intro_title: '关于时差计算器',
+                    intro_p1: '此工具帮助您计算全球两个主要城市或时区之间的时间差。它会自动根据夏令时 (DST) 规则进行调整。',
+                    intro_p2: '只需输入两个地点的名称，即可查看两地的实时时间，以及确切的早晚小时数。',
+                    err_city: '请从列表中选择一个有效的城市。',
+                    ahead: '比 {ref} 早 {h} 小时 {m} 分钟', 
+                    behind: '比 {ref} 晚 {h} 小时 {m} 分钟',
+                    same: '与 {ref} 时间相同',
+                    exact_hours: '小时',
+                    today: '今天',
+                    tomorrow: '明天',
+                    yesterday: '昨天',
+                    btn_add: '添加当前',
+                    btn_clear: '清空',
+                    btn_restore: '恢复默认',
+                    msg_empty: '暂无热门城市。',
+                    msg_added: '已添加！',
+                    msg_exist: '已存在。'
+                },
+                'zh-TW': {
+                    title: '🕰️ 時差計算器',
+                    label_from: '地點 1 (基準)',
+                    label_to: '地點 2 (比較)',
+                    btn_calc: '計算時差',
+                    popular_title: '熱門城市實時時間',
+                    intro_title: '關於時差計算器',
+                    intro_p1: '此工具幫助您計算全球兩個主要城市或時區之間的時間差。它會自動根據夏令時 (DST) 規則進行調整。',
+                    intro_p2: '只需輸入兩個地點的名稱，即可查看兩地的實時時間，以及確切的早晚小時數。',
+                    err_city: '請從列表中選擇一個有效的城市。',
+                    ahead: '比 {ref} 早 {h} 小時 {m} 分鐘',
+                    behind: '比 {ref} 晚 {h} 小時 {m} 分鐘',
+                    same: '與 {ref} 時間相同',
+                    exact_hours: '小時',
+                    today: '今天',
+                    tomorrow: '明天',
+                    yesterday: '昨天',
+                    btn_add: '添加當前',
+                    btn_clear: '清空',
+                    btn_restore: '恢復默認',
+                    msg_empty: '暫無熱門城市。',
+                    msg_added: '已添加！',
+                    msg_exist: '已存在。'
+                },
+                'ja': {
+                    title: '🕰️ 時差計算ツール',
+                    label_from: '場所 1 (基準)',
+                    label_to: '場所 2 (比較)',
+                    btn_calc: '時差を計算',
+                    popular_title: '人気都市の現在時刻',
+                    intro_title: '時差計算ツールについて',
+                    intro_p1: 'このツールは、世界の主要都市やタイムゾーン間の時差を計算するのに役立ちます。サマータイム（DST）も自動的に調整されます。',
+                    intro_p2: '2つの場所の名前を入力するだけで、両方の現在時刻と、正確に何時間進んでいるか、または遅れているかを確認できます。',
+                    err_city: 'リストから有効な都市を選択してください。',
+                    ahead: 'は {ref} より {h} 時間 {m} 分 進んでいます',
+                    behind: 'は {ref} より {h} 時間 {m} 分 遅れています',
+                    same: 'は {ref} と同じ時間です',
+                    exact_hours: '時間',
+                    today: '今日',
+                    tomorrow: '明日',
+                    yesterday: '昨日',
+                    btn_add: '追加',
+                    btn_clear: 'クリア',
+                    btn_restore: 'デフォルトに戻す',
+                    msg_empty: 'リストは空です。',
+                    msg_added: '追加しました！',
+                    msg_exist: '既に存在します。'
+                },
+                'ru': {
+                    title: '🕰️ Разница во времени',
+                    label_from: 'Место 1',
+                    label_to: 'Место 2',
+                    btn_calc: 'Рассчитать',
+                    popular_title: 'Популярные города',
+                    intro_title: 'О калькуляторе времени',
+                    intro_p1: 'Этот инструмент помогает рассчитать разницу во времени между двумя городами. Он автоматически учитывает летнее время (DST).',
+                    intro_p2: 'Просто введите названия двух мест, чтобы увидеть текущее время и точную разницу.',
+                    err_city: 'Пожалуйста, выберите город из списка.',
+                    ahead: 'опережает {ref} на {h} ч. {m} мин.',
+                    behind: 'отстает от {ref} на {h} ч. {m} мин.',
+                    same: '— время совпадает с {ref}',
+                    exact_hours: 'ч.',
+                    today: 'Сегодня',
+                    tomorrow: 'Завтра',
+                    yesterday: 'Вчера',
+                    btn_add: 'Добавить',
+                    btn_clear: 'Очистить',
+                    btn_restore: 'Сброс',
+                    msg_empty: 'Список пуст.',
+                    msg_added: 'Добавлено!',
+                    msg_exist: 'Уже есть.'
+                }
+            },
+
+            init: () => {
+                const dataList = document.getElementById('cities-list');
+                citiesDB.sort((a,b) => a.n.localeCompare(b.n));
+                citiesDB.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.n;
+                    dataList.appendChild(option);
+                });
+
+                // Load Popular Cities from LocalStorage or Default
+                TimeCalc.loadPopularCities();
+
+                // URL Params handling
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                
+                let targetLang = 'en';
+                if (lang && TimeCalc.i18n[lang]) {
+                    targetLang = lang;
+                } else {
+                    const userLang = navigator.language || navigator.userLanguage;
+                    if (userLang.startsWith('zh')) {
+                        targetLang = userLang.includes('TW') || userLang.includes('HK') ? 'zh-TW' : 'zh-CN';
+                    } else if (userLang.startsWith('ja')) targetLang = 'ja';
+                    else if (userLang.startsWith('ru')) targetLang = 'ru';
+                }
+
+                document.getElementById('lang-select').value = targetLang;
+                TimeCalc.changeLang();
+                
+                // Start Global Tick
+                TimeCalc.tick();
+                setInterval(TimeCalc.tick, 1000);
+            },
+
+            changeLang: () => {
+                const lang = document.getElementById('lang-select').value;
+                const texts = TimeCalc.i18n[lang];
+                
+                try {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.replaceState({}, '', url);
+                } catch(e) { console.warn('History API not supported'); }
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (texts[key]) el.innerText = texts[key];
+                });
+
+                const phCity1 = lang.startsWith('zh') ? "例如：Beijing" : "e.g. Beijing";
+                const phCity2 = lang.startsWith('zh') ? "例如：London" : "e.g. London";
+                document.getElementById('city-a').placeholder = phCity1;
+                document.getElementById('city-b').placeholder = phCity2;
+
+                if (TimeCalc.activeResult) {
+                    TimeCalc.calcLogic(); // Update result text immediately
+                }
+            },
+
+            getCityData: (name) => {
+                return citiesDB.find(c => c.n.toLowerCase() === name.toLowerCase());
+            },
+
+            // --- Popular Cities Management ---
+
+            loadPopularCities: () => {
+                const stored = localStorage.getItem('timeCalc_popular');
+                if (stored) {
+                    try {
+                        TimeCalc.currentPopularList = JSON.parse(stored);
+                    } catch(e) {
+                        TimeCalc.currentPopularList = [...defaultPopularCities];
+                    }
+                } else {
+                    TimeCalc.currentPopularList = [...defaultPopularCities];
+                }
+                TimeCalc.renderPopularGrid();
+            },
+
+            savePopularCities: () => {
+                localStorage.setItem('timeCalc_popular', JSON.stringify(TimeCalc.currentPopularList));
+                TimeCalc.renderPopularGrid();
+                TimeCalc.tick(); // Force time update
+            },
+
+            addCurrentCity: () => {
+                const nameB = document.getElementById('city-b').value.trim();
+                const city = TimeCalc.getCityData(nameB);
+                const lang = document.getElementById('lang-select').value;
+                const texts = TimeCalc.i18n[lang];
+
+                if (!city) {
+                    alert(texts.err_city);
+                    return;
+                }
+
+                // Check duplicates
+                if (TimeCalc.currentPopularList.includes(city.n)) {
+                    alert(texts.msg_exist);
+                    return;
+                }
+
+                TimeCalc.currentPopularList.push(city.n);
+                TimeCalc.savePopularCities();
+            },
+
+            removePopularCity: (name, event) => {
+                if(event) event.stopPropagation(); // Prevent card click
+                TimeCalc.currentPopularList = TimeCalc.currentPopularList.filter(c => c !== name);
+                TimeCalc.savePopularCities();
+            },
+
+            clearPopularCities: () => {
+                if(confirm('Are you sure you want to clear all?')) {
+                    TimeCalc.currentPopularList = [];
+                    TimeCalc.savePopularCities();
+                }
+            },
+
+            restoreDefaultPopular: () => {
+                TimeCalc.currentPopularList = [...defaultPopularCities];
+                TimeCalc.savePopularCities();
+            },
+
+            renderPopularGrid: () => {
+                const popGrid = document.getElementById('popular-grid');
+                const emptyMsg = document.getElementById('empty-msg');
+                popGrid.innerHTML = '';
+
+                if (TimeCalc.currentPopularList.length === 0) {
+                    emptyMsg.classList.remove('hidden');
+                } else {
+                    emptyMsg.classList.add('hidden');
+                    TimeCalc.currentPopularList.forEach(name => {
+                        const city = TimeCalc.getCityData(name);
+                        if(city) {
+                            const div = document.createElement('div');
+                            div.className = 'popular-card';
+                            const idBase = city.n.replace(/[^a-zA-Z0-9]/g, '');
+                            div.innerHTML = `
+                                <div class="btn-delete" onclick="TimeCalc.removePopularCity('${city.n}', event)">×</div>
+                                <div class="pop-city">${city.n}</div>
+                                <div class="pop-time" id="pop-time-${idBase}">--:--</div>
+                                <div class="pop-date" id="pop-date-${idBase}">--</div>
+                            `;
+                            // Click to set as "To" city
+                            div.onclick = () => {
+                                document.getElementById('city-b').value = city.n;
+                                TimeCalc.manualCalc();
+                            };
+                            div.title = "Click to set as Destination";
+                            popGrid.appendChild(div);
+                        }
+                    });
+                }
+            },
+
+            // --- Swap Functionality ---
+            swapCities: () => {
+                const elA = document.getElementById('city-a');
+                const elB = document.getElementById('city-b');
+                
+                const valA = elA.value;
+                const valB = elB.value;
+
+                elA.value = valB;
+                elB.value = valA;
+
+                // Animate slightly
+                const icon = document.querySelector('.swap-btn svg');
+                if(icon) {
+                    icon.style.transition = 'transform 0.3s';
+                    icon.style.transform = icon.style.transform === 'rotate(180deg)' ? 'rotate(0deg)' : 'rotate(180deg)';
+                }
+
+                // If both valid, recalc
+                if (valA && valB) {
+                    TimeCalc.manualCalc();
+                }
+            },
+
+            // --- Timer & Calc Logic ---
+
+            tick: () => {
+                const now = new Date();
+                const lang = document.getElementById('lang-select').value;
+                const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: false };
+                const optionsDate = { weekday: 'short', month: 'short', day: 'numeric' };
+
+                // 1. Update Popular Cities
+                TimeCalc.currentPopularList.forEach(name => {
+                    const city = TimeCalc.getCityData(name);
+                    if(city) {
+                        const idBase = city.n.replace(/[^a-zA-Z0-9]/g, '');
+                        const timeEl = document.getElementById(`pop-time-${idBase}`);
+                        const dateEl = document.getElementById(`pop-date-${idBase}`);
+                        
+                        if(timeEl && dateEl) {
+                            timeEl.innerText = now.toLocaleTimeString(lang, { ...optionsTime, timeZone: city.tz });
+                            dateEl.innerText = now.toLocaleDateString(lang, { ...optionsDate, timeZone: city.tz });
+                        }
+                    }
+                });
+
+                // 2. Update Result Box (if active)
+                if(TimeCalc.activeResult) {
+                    TimeCalc.calcLogic();
+                }
+            },
+
+            manualCalc: () => {
+                const lang = document.getElementById('lang-select').value;
+                const nameA = document.getElementById('city-a').value.trim();
+                const nameB = document.getElementById('city-b').value.trim();
+                const errorEl = document.getElementById('error-msg');
+                const resultBox = document.getElementById('result-box');
+
+                errorEl.classList.add('hidden');
+                
+                const cityA = TimeCalc.getCityData(nameA);
+                const cityB = TimeCalc.getCityData(nameB);
+
+                if (!cityA || !cityB) {
+                    errorEl.innerText = TimeCalc.i18n[lang].err_city;
+                    errorEl.classList.remove('hidden');
+                    resultBox.classList.remove('show');
+                    TimeCalc.activeResult = false;
+                    return;
+                }
+
+                TimeCalc.activeResult = true;
+                resultBox.classList.add('show');
+                
+                document.getElementById('label-city-a').innerText = cityA.n;
+                document.getElementById('label-city-b').innerText = cityB.n;
+                document.getElementById('tz-city-a').innerText = cityA.tz;
+                document.getElementById('tz-city-b').innerText = cityB.tz;
+
+                TimeCalc.calcLogic();
+            },
+
+            calcLogic: () => {
+                if(!TimeCalc.activeResult) return;
+
+                const nameA = document.getElementById('city-a').value.trim();
+                const nameB = document.getElementById('city-b').value.trim();
+                const cityA = TimeCalc.getCityData(nameA);
+                const cityB = TimeCalc.getCityData(nameB);
+                const lang = document.getElementById('lang-select').value;
+
+                if(!cityA || !cityB) return;
+
+                const now = new Date();
+                const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: '' };
+                const optionsDate = { weekday: 'short', month: 'short', day: 'numeric', timeZone: '' };
+
+                optionsTime.timeZone = cityA.tz; optionsDate.timeZone = cityA.tz;
+                document.getElementById('time-city-a').innerText = new Intl.DateTimeFormat(lang, optionsTime).format(now);
+                document.getElementById('date-city-a').innerText = new Intl.DateTimeFormat(lang, optionsDate).format(now);
+
+                optionsTime.timeZone = cityB.tz; optionsDate.timeZone = cityB.tz;
+                document.getElementById('time-city-b').innerText = new Intl.DateTimeFormat(lang, optionsTime).format(now);
+                document.getElementById('date-city-b').innerText = new Intl.DateTimeFormat(lang, optionsDate).format(now);
+
+                const strA = new Date().toLocaleString('en-US', { timeZone: cityA.tz });
+                const strB = new Date().toLocaleString('en-US', { timeZone: cityB.tz });
+                const dateA = new Date(strA);
+                const dateB = new Date(strB);
+                
+                let diffMs = dateB - dateA;
+                const isAhead = diffMs >= 0;
+                diffMs = Math.abs(diffMs);
+                
+                const totalMinutes = Math.floor(diffMs / (1000 * 60));
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+
+                const texts = TimeCalc.i18n[lang];
+                let diffText = "";
+
+                if (hours === 0 && minutes === 0) {
+                    diffText = `${cityB.n} ${texts.same.replace('{ref}', cityA.n)}`;
+                } else {
+                    if (lang.startsWith('zh') || lang === 'ja') {
+                        const template = isAhead ? texts.ahead : texts.behind;
+                        let finalStr = template
+                            .replace('{ref}', cityA.n)
+                            .replace('{h}', hours)
+                            .replace('{m}', minutes);
+                        if (minutes === 0) finalStr = finalStr.replace(/\s?0\s?(分钟|分|мин\.)/, '').trim();
+                        diffText = `<span class="text-gray-700">${cityB.n}</span> ${finalStr}`;
+                    } else if (lang === 'ru') {
+                            const template = isAhead ? texts.ahead : texts.behind;
+                            let finalStr = template
+                            .replace('{ref}', cityA.n)
+                            .replace('{h}', hours)
+                            .replace('{m}', minutes);
+                            if (minutes === 0) finalStr = finalStr.replace(/ 0 мин\./, '');
+                            diffText = `<span class="text-gray-700">${cityB.n}</span> ${finalStr}`;
+                    } else {
+                        const template = isAhead ? texts.ahead : texts.behind;
+                        let finalStr = template
+                            .replace('{h}', hours)
+                            .replace('{m}', minutes);
+                            if (minutes === 0) finalStr = finalStr.replace(' 0 minutes', '');
+                        diffText = `<span class="text-gray-700">${cityB.n}</span> ${finalStr} <span class="text-gray-700">${cityA.n}</span>`;
+                    }
+                }
+                document.getElementById('diff-text').innerHTML = diffText;
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', TimeCalc.init);
+    </script>
+
+    <!-- 结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>
