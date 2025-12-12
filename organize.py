@@ -7,6 +7,12 @@ import json
 MODULES_DIR = 'modules'
 TOOLS_JSON_FILE = 'tools.json'
 
+# --- 0. 你的 AdSense 广告代码 ---
+ADSENSE_SCRIPT = r'''
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+'''
+
 # --- 1. 核心关键词分类配置 ---
 KEYWORD_CATEGORIES = {
     'date-time': ['date', 'time', 'clock', 'calendar', 'stopwatch', 'timer', 'zone', 'age', 'runyue', 'countdown', 'timestamp'],
@@ -44,7 +50,7 @@ SPECIFIC_FIXES = {
     'world-clock-meeting-planner': 'date-time'
 }
 
-# --- 3. 图标备份库 (根据你之前的上传记录恢复) ---
+# --- 3. 图标备份库 ---
 BACKUP_ICONS = {
     'molarity': '🧪', 'molecular': '⚗️', 'half-life': '⚛️', 'periodic': '🧬', 'chemical': '🧪',
     'z-score': '📊', 'standard-deviation': '📈', 'probability': '🎲', 'p-value': '📈', 'statistics': '📊',
@@ -121,30 +127,34 @@ def to_kebab_case(name):
     return clean_name + '.html'
 
 def get_icon(tool_id, filename, existing_icon_map):
-    """
-    智能获取图标：
-    1. 优先用现有的 tools.json 里的
-    2. 其次用备份库 BACKUP_ICONS 里的 (模糊匹配)
-    3. 最后默认 🔧
-    """
-    # 1. 现有
     if tool_id in existing_icon_map and existing_icon_map[tool_id] != '🔧':
         return existing_icon_map[tool_id]
-    
-    # 2. 备份库 (尝试匹配 filename 中的关键词)
-    # 因为备份库的 key 是简化的，所以我们看看 filename 是否包含 key
     for key, icon in BACKUP_ICONS.items():
         if key in filename.lower():
             return icon
-            
     return '🔧'
+
+def inject_ads_to_file(file_path):
+    """自动给文件植入 AdSense 代码"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 如果文件里已经有 client ID，就说明加过了，直接返回
+        if 'ca-pub-9279583389810634' in content:
+            return
+
+        if '</head>' in content:
+            new_content = content.replace('</head>', f'{ADSENSE_SCRIPT}\n</head>')
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            print(f"💰 [自动广告] 已为新文件添加广告: {os.path.basename(file_path)}")
+    except Exception as e:
+        print(f"⚠️ 广告植入失败: {file_path} - {e}")
 
 def get_category_from_content(file_path, filename):
     tool_id = filename.replace('.html', '')
-    
-    if tool_id in SPECIFIC_FIXES:
-        return SPECIFIC_FIXES[tool_id]
-
+    if tool_id in SPECIFIC_FIXES: return SPECIFIC_FIXES[tool_id]
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
@@ -155,15 +165,11 @@ def get_category_from_content(file_path, filename):
                 if 'math' in raw_cat: return 'math'
                 raw_cat = raw_cat.replace('&', '').replace(' ', '-')
                 return re.sub(r'-+', '-', raw_cat)
-    except Exception:
-        pass
-
+    except Exception: pass
     lower_name = filename.lower()
     for cat_folder, keywords in KEYWORD_CATEGORIES.items():
         for kw in keywords:
-            if kw in lower_name:
-                return cat_folder
-                
+            if kw in lower_name: return cat_folder
     return 'others'
 
 def main():
@@ -171,22 +177,18 @@ def main():
         print(f"错误：找不到 {MODULES_DIR} 文件夹。")
         return
 
-    # --- 0. 读取现有的 tools.json (抢救图标) ---
+    # --- 0. 读取旧图标数据 ---
     existing_icon_map = {}
     if os.path.exists(TOOLS_JSON_FILE):
         try:
             with open(TOOLS_JSON_FILE, 'r', encoding='utf-8') as f:
                 old_data = json.load(f)
                 for item in old_data:
-                    # 只有当图标不是默认扳手时，才保存下来
-                    if 'icon' in item and item['icon'] != '🔧':
-                        existing_icon_map[item['id']] = item['icon']
-            print(f"📦 已从旧文件读取 {len(existing_icon_map)} 个图标备份。")
-        except:
-            print("⚠️ 旧 tools.json 读取失败或不存在，将使用内置备份库恢复图标。")
+                    if 'icon' in item: existing_icon_map[item['id']] = item['icon']
+        except: pass
 
-    # --- 1. 移动文件 ---
-    print("开始检查并移动文件...")
+    # --- 1. 移动文件 & 自动补全广告 ---
+    print("开始整理文件并检查广告代码...")
     for root, dirs, files in os.walk(MODULES_DIR):
         for filename in files:
             if filename.endswith('.html'):
@@ -196,34 +198,30 @@ def main():
                 target_dir = os.path.join(MODULES_DIR, correct_category)
                 target_path = os.path.join(target_dir, new_filename)
                 
+                # 移动文件
                 if os.path.abspath(original_path) != os.path.abspath(target_path):
-                    if not os.path.exists(target_dir):
-                        os.makedirs(target_dir)
-                    try:
-                        shutil.move(original_path, target_path)
-                    except Exception:
-                        pass
+                    if not os.path.exists(target_dir): os.makedirs(target_dir)
+                    try: shutil.move(original_path, target_path)
+                    except: pass
+                
+                # 🔥 关键点：文件就位后，立即检查并注入广告
+                inject_ads_to_file(target_path)
 
-    # --- 2. 生成 tools.json (带图标恢复) ---
-    print("正在生成 tools.json 并恢复图标...")
+    # --- 2. 生成 tools.json ---
+    print("正在更新 tools.json...")
     tools_data = []
-    
     for root, dirs, files in os.walk(MODULES_DIR):
         for file in files:
             if file.endswith('.html'):
                 tool_id = file.replace('.html', '')
                 current_folder = os.path.basename(root)
                 category = current_folder
-                
                 if tool_id in SPECIFIC_FIXES: category = SPECIFIC_FIXES[tool_id]
                 elif current_folder == MODULES_DIR: category = 'others'
-                
                 if category == 'Date & Time' or ('date' in category and 'time' in category): category = 'date-time'
                 if category == 'Math': category = 'math'
-
-                display_title = tool_id.replace('-', ' ').title()
                 
-                # --- 图标恢复魔法 ---
+                display_title = tool_id.replace('-', ' ').title()
                 restored_icon = get_icon(tool_id, file, existing_icon_map)
 
                 tools_data.append({
@@ -232,17 +230,14 @@ def main():
                     "category": category,
                     "path": f"modules/{category}/{file}".replace('\\', '/'),
                     "description": f"Free online {display_title} tool.",
-                    "icon": restored_icon  # 使用恢复后的图标
+                    "icon": restored_icon
                 })
     
     tools_data.sort(key=lambda x: x['category'])
-    
     with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(tools_data, f, indent=2, ensure_ascii=False)
 
-    print("-" * 30)
-    print(f"✅ 修复完成！分类已统一，图标已恢复。")
-    print(f"✅ 请刷新网页查看效果。")
+    print(f"✅ 处理完成！分类已整理，广告已检查，列表已更新。")
 
 if __name__ == '__main__':
     main()
