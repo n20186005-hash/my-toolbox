@@ -7,150 +7,174 @@ import json
 MODULES_DIR = 'modules'
 TOOLS_JSON_FILE = 'tools.json'
 
-# --- 核心修改：基于你提供的最新分类列表 ---
-# 键(Key)是分类名称(我们会把它转成文件夹名)，值(Value)是文件名中可能包含的关键词
-# 如果文件里没有 meta category 标签，脚本会尝试用这些词来归类
+# --- 1. 核心关键词分类配置 ---
 KEYWORD_CATEGORIES = {
+    'date-time': ['date', 'time', 'clock', 'calendar', 'stopwatch', 'timer', 'zone', 'age', 'runyue', 'countdown', 'timestamp'],
+    'math': ['calculator', 'math', 'algebra', 'geometry', 'stat', 'average', 'prime', 'factor', 'number', 'percent', 'fraction'],
+    'finance': ['401k', 'loan', 'mortgage', 'salary', 'tax', 'invest', 'currency', 'interest', 'retirement', 'deposit', 'bank'],
+    'development-tools': ['code', 'json', 'xml', 'html', 'css', 'base64', 'dev', 'minify', 'formatter', 'hash', 'encrypt', 'language'],
+    'e-commerce-operations': ['profit', 'margin', 'amazon', 'ebay', 'shopify', 'discount', 'sales', 'shipping'],
+    'image-tools': ['image', 'photo', 'resize', 'crop', 'png', 'jpg', 'svg', 'compress', 'watermark'],
+    'text-tools': ['text', 'word', 'count', 'lorem', 'string', 'case', 'editor', 'markdown', 'font', 'pinyin'],
     'color-tool': ['color', 'rgb', 'hex', 'palette', 'picker', 'contrast'],
-    'crypto-tools': ['crypto', 'hash', 'bitcoin', 'eth', 'aes', 'md5', 'sha', 'encryption'],
-    'date-time': ['date', 'time', 'clock', 'calendar', 'stopwatch', 'timer', 'zone', 'age'],
-    'development-tools': ['code', 'json', 'xml', 'html', 'css', 'base64', 'dev', 'minify', 'formatter'],
-    'e-commerce-operations': ['profit', 'margin', 'amazon', 'ebay', 'shopify', 'discount', 'sales'],
-    'image-tools': ['image', 'photo', 'resize', 'crop', 'png', 'jpg', 'svg', 'compress', 'converter'],
-    'math': ['calculator', 'math', 'algebra', 'geometry', 'stat', 'average', 'prime', 'factor'],
-    'text-tools': ['text', 'word', 'count', 'lorem', 'string', 'case', 'editor', 'markdown'],
-    'astrology': ['zodiac', 'horoscope', 'astro', 'sign', 'birth', 'star'],
-    'auto': ['car', 'fuel', 'mpg', 'gas', 'vehicle', 'loan'],
+    'health': ['bmi', 'calorie', 'fat', 'health', 'heart', 'pregnancy', 'bac', 'bmr', 'tdee', 'macro', 'body'],
+    'life': ['life', 'habit', 'goal', 'wedding', 'event', 'shengxiao', 'zodiac'],
+    'auto': ['car', 'fuel', 'mpg', 'gas', 'vehicle', 'loan', 'plate', 'vin'],
+    'physics': ['physic', 'force', 'velocity', 'gravity', 'acceleration', 'density', 'power'],
     'chemistry': ['chem', 'periodic', 'molar', 'atom', 'molecule', 'ph'],
-    'construction': ['concrete', 'brick', 'tile', 'paint', 'construction', 'roof'],
-    'conversion': ['convert', 'unit', 'farenheit', 'celsius', 'weight', 'length', 'volume'],
-    'education': ['grade', 'gpa', 'study', 'student', 'school'],
+    'conversion': ['convert', 'unit', 'farenheit', 'celsius', 'weight', 'length', 'volume', 'temperature'],
+    'education': ['grade', 'gpa', 'study', 'student', 'school', 'exam'],
     'electronics': ['resistor', 'ohm', 'voltage', 'circuit', 'capactior'],
-    'finance': ['401k', 'loan', 'mortgage', 'salary', 'tax', 'invest', 'currency', 'interest', 'retirement'],
-    'fun': ['game', 'joke', 'meme', 'random', 'decision'],
-    'gardening': ['garden', 'plant', 'seed', 'soil', 'water'],
-    'health': ['bmi', 'calorie', 'fat', 'health', 'heart', 'pregnancy', 'bac', 'bmr', 'tdee', 'macro'],
-    'life': ['life', 'habit', 'goal', 'wedding', 'event'],
-    'pets': ['pet', 'dog', 'cat', 'food', 'animal'],
-    'physics': ['physic', 'force', 'velocity', 'gravity', 'acceleration'],
+    'fun': ['game', 'joke', 'meme', 'random', 'decision', 'dice', 'love'],
     'security': ['password', 'generator', 'security', '2fa', 'totp'],
-    'sports': ['sport', 'running', 'pace', 'score', 'team'],
+    'construction': ['concrete', 'brick', 'tile', 'paint', 'roof'],
+    'gardening': ['garden', 'plant', 'seed', 'soil', 'water'],
+    'pets': ['pet', 'dog', 'cat', 'food', 'animal', 'fish'],
+    'sports': ['sport', 'running', 'pace', 'score', 'team', 'golf'],
     'statistics': ['probability', 'mean', 'median', 'mode', 'deviation'],
-    'weather-health': ['weather', 'air', 'quality', 'aqi', 'humidity']
+    'weather-health': ['weather', 'air', 'quality', 'aqi', 'humidity', 'sun']
+}
+
+# --- 2. 强力纠错名单 (新增) ---
+# 这里专门处理那些容易分错，或者 Meta 标签写错的文件
+# 格式： '文件名ID': '正确的分类'
+SPECIFIC_FIXES = {
+    'mortgage-calculator-uk': 'finance',      # 之前错误: date-time
+    'canadian-mortgage': 'finance',           # 之前错误: date-time
+    'percentage-calculator': 'math',          # 之前错误: date-time
+    'language-switcher': 'development-tools', # 之前错误: date-time
+    'world-clock-meeting-planner': 'date-time' # 之前有空格问题
 }
 
 def to_kebab_case(name):
-    """将文件名转换为 kebab-case (例如: AgeCalculator.html -> age-calculator.html)"""
+    """文件名转 kebab-case"""
     name_no_ext = os.path.splitext(name)[0]
-    # 1. 在大写字母前加连字符
     s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1-\2', name_no_ext)
     s1 = re.sub(r'([a-z0-9])([A-Z])', r'\1-\2', s1)
-    # 2. 转小写，替换空格和下划线
     clean_name = s1.lower().replace(' ', '-').replace('_', '-')
-    # 3. 避免连续的连字符 (例如 --)
     clean_name = re.sub(r'-+', '-', clean_name)
     return clean_name + '.html'
 
-def clean_category_name(raw_cat):
-    """
-    规范化分类名称：
-    'Date & Time' -> 'date-time'
-    'E Commerce Operations' -> 'e-commerce-operations'
-    """
-    if not raw_cat:
-        return 'others'
-    
-    # 转小写
-    cat = raw_cat.lower().strip()
-    # 替换 & 为 'and' 或者直接去除，这里选择直接去除符号保留单词
-    cat = cat.replace('&', '')
-    # 替换空格为连字符
-    cat = cat.replace(' ', '-')
-    # 去除多余连字符
-    cat = re.sub(r'-+', '-', cat)
-    return cat
-
 def get_category_from_content(file_path, filename):
-    """优先从文件 meta 标签读取，其次用关键词匹配"""
+    """获取分类逻辑"""
+    tool_id = filename.replace('.html', '')
     
-    # 1. 尝试从文件内容读取 meta category
+    # Priority 0: 检查是否在强力纠错名单里
+    if tool_id in SPECIFIC_FIXES:
+        print(f"🔧 触发强制纠错: {tool_id} -> {SPECIFIC_FIXES[tool_id]}")
+        return SPECIFIC_FIXES[tool_id]
+
+    # Priority 1: 尝试从 meta 标签读取
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
             match = re.search(r'<meta\s+name=["\']category["\']\s+content=["\'](.*?)["\']', content, re.IGNORECASE)
             if match:
-                raw_cat = match.group(1).strip()
-                if raw_cat:
-                    # 即使 meta 标签里写的是 "Date & Time"，我们也把它转成 "date-time"
-                    return clean_category_name(raw_cat)
-    except Exception as e:
-        print(f"Error reading {filename}: {e}")
+                raw_cat = match.group(1).lower().strip()
+                # 强制清洗逻辑
+                if 'date' in raw_cat and 'time' in raw_cat: return 'date-time'
+                if 'math' in raw_cat: return 'math'
+                
+                raw_cat = raw_cat.replace('&', '').replace(' ', '-')
+                return re.sub(r'-+', '-', raw_cat)
+    except Exception:
+        pass
 
-    # 2. 如果没找到 tag，用文件名关键词匹配
+    # Priority 2: 关键词匹配
     lower_name = filename.lower()
     for cat_folder, keywords in KEYWORD_CATEGORIES.items():
         for kw in keywords:
-            # 如果文件名包含关键词 (例如文件名含 401k，匹配到 finance)
             if kw in lower_name:
                 return cat_folder
                 
     return 'others'
 
+def generate_tools_json():
+    """生成 JSON"""
+    print("正在扫描所有工具生成 JSON...")
+    tools_data = []
+    
+    for root, dirs, files in os.walk(MODULES_DIR):
+        for file in files:
+            if file.endswith('.html'):
+                tool_id = file.replace('.html', '')
+                
+                # 获取当前所在的实际文件夹名
+                current_folder = os.path.basename(root)
+                
+                # 如果文件在根目录(未分类)，或者是我们已知的错误分类，我们需要纠正 category 字段
+                # 注意：这里主要决定写入 JSON 的 category 值
+                category = current_folder
+                
+                # 再次检查纠错名单，确保 JSON 里也是对的
+                if tool_id in SPECIFIC_FIXES:
+                    category = SPECIFIC_FIXES[tool_id]
+                elif current_folder == MODULES_DIR: # 如果还在根目录
+                    category = 'others'
+                
+                # 强制统一名称显示
+                if category == 'Date & Time' or ('date' in category and 'time' in category):
+                    category = 'date-time'
+                if category == 'Math':
+                    category = 'math'
+
+                display_title = tool_id.replace('-', ' ').title()
+                
+                tools_data.append({
+                    "id": tool_id,
+                    "title": display_title,
+                    "category": category,
+                    "path": f"modules/{category}/{file}".replace('\\', '/'), # 注意路径要对应实际位置
+                    "description": f"Free online {display_title} tool.",
+                    "icon": "🔧"
+                })
+    
+    tools_data.sort(key=lambda x: x['category'])
+    return tools_data
+
 def main():
     if not os.path.exists(MODULES_DIR):
-        print(f"错误：找不到 {MODULES_DIR} 文件夹。请确保脚本在 my-toolbox 根目录！")
+        print(f"错误：找不到 {MODULES_DIR} 文件夹。")
         return
 
-    # 只处理根目录下的 .html 文件，不重复处理已经在子文件夹里的
-    files = [f for f in os.listdir(MODULES_DIR) if f.endswith('.html') and os.path.isfile(os.path.join(MODULES_DIR, f))]
-    
-    print(f"找到 {len(files)} 个待处理文件...")
-    
-    tools_data = []
+    # --- 第一步：移动整理文件 (包含对已分类文件的再次检查) ---
+    # 我们遍历整个 modules 目录，看看有没有文件放错地方了
+    print("开始检查并移动文件...")
+    for root, dirs, files in os.walk(MODULES_DIR):
+        for filename in files:
+            if filename.endswith('.html'):
+                original_path = os.path.join(root, filename)
+                
+                # 计算它应该在哪个分类
+                correct_category = get_category_from_content(original_path, filename)
+                new_filename = to_kebab_case(filename)
+                
+                # 目标路径
+                target_dir = os.path.join(MODULES_DIR, correct_category)
+                target_path = os.path.join(target_dir, new_filename)
+                
+                # 如果当前路径和目标路径不一样，说明放错地方了，移动它！
+                # (排除掉路径完全相同的情况)
+                if os.path.abspath(original_path) != os.path.abspath(target_path):
+                    if not os.path.exists(target_dir):
+                        os.makedirs(target_dir)
+                    
+                    try:
+                        shutil.move(original_path, target_path)
+                        print(f"📦 移动/纠正: {filename} -> {correct_category}/{new_filename}")
+                    except Exception as e:
+                        print(f"⚠️ 移动失败: {filename} - {e}")
 
-    for filename in files:
-        original_path = os.path.join(MODULES_DIR, filename)
-        
-        # A. 确定分类 (文件夹名)
-        category_folder = get_category_from_content(original_path, filename)
-        
-        # B. 确定新文件名
-        new_filename = to_kebab_case(filename)
-        
-        # C. 创建目标文件夹
-        target_dir = os.path.join(MODULES_DIR, category_folder)
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
-            
-        target_path = os.path.join(target_dir, new_filename)
-        
-        # D. 移动文件
-        if os.path.exists(target_path) and target_path != original_path:
-             print(f"警告：{category_folder}/{new_filename} 已存在，跳过。")
-        else:
-            shutil.move(original_path, target_path)
-            print(f"Move: {filename} -> {category_folder}/{new_filename}")
+    # --- 第二步：生成 tools.json ---
+    final_data = generate_tools_json()
 
-        # E. 生成数据供 json 使用
-        # 简单的 Title 处理：把连字符变成空格，首字母大写
-        display_title = new_filename.replace('.html', '').replace('-', ' ').title()
-        
-        # 特殊处理：如果是 'bmi' 这种词，最好全大写，这里简单处理先用 Title Case
-        tools_data.append({
-            "id": new_filename.replace('.html', ''),
-            "title": display_title,
-            "category": category_folder, # 这里记录的是 normalized 的分类名 (e.g. date-time)
-            "path": f"modules/{category_folder}/{new_filename}",
-            "description": f"Free online {display_title} tool." 
-        })
-
-    # 写入 tools.json
     with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
-        json.dump(tools_data, f, indent=2, ensure_ascii=False)
+        json.dump(final_data, f, indent=2, ensure_ascii=False)
 
     print("-" * 30)
-    print(f"处理完成！tools.json 已更新。")
-    print(f"分类文件夹已采用 SEO 友好的 URL 格式 (如 date-time, e-commerce-operations)")
+    print(f"✅ 处理完成！tools.json 已更新。")
+    print(f"✅ 修正了 英国房贷、百分比计算器 等特定文件的分类。")
+    print(f"✅ 时间分类强制统一为: date-time")
 
 if __name__ == '__main__':
     main()
