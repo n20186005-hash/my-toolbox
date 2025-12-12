@@ -35,19 +35,84 @@ KEYWORD_CATEGORIES = {
     'weather-health': ['weather', 'air', 'quality', 'aqi', 'humidity', 'sun']
 }
 
-# --- 2. 强力纠错名单 (新增) ---
-# 这里专门处理那些容易分错，或者 Meta 标签写错的文件
-# 格式： '文件名ID': '正确的分类'
+# --- 2. 强力纠错名单 ---
 SPECIFIC_FIXES = {
-    'mortgage-calculator-uk': 'finance',      # 之前错误: date-time
-    'canadian-mortgage': 'finance',           # 之前错误: date-time
-    'percentage-calculator': 'math',          # 之前错误: date-time
-    'language-switcher': 'development-tools', # 之前错误: date-time
-    'world-clock-meeting-planner': 'date-time' # 之前有空格问题
+    'mortgage-calculator-uk': 'finance',
+    'canadian-mortgage': 'finance',
+    'percentage-calculator': 'math',
+    'language-switcher': 'development-tools',
+    'world-clock-meeting-planner': 'date-time'
+}
+
+# --- 3. 图标备份库 (根据你之前的上传记录恢复) ---
+BACKUP_ICONS = {
+    'molarity': '🧪', 'molecular': '⚗️', 'half-life': '⚛️', 'periodic': '🧬', 'chemical': '🧪',
+    'z-score': '📊', 'standard-deviation': '📈', 'probability': '🎲', 'p-value': '📈', 'statistics': '📊',
+    'confidence': '📈', 'sample-size': '📊', 'weight': '👤', 'gfr': '🔍', 'body-type': '📏',
+    'safe-period': '📅', 'bra-size': '👙', 'ovulation': '🌙', 'calorie': '🍽️', 'anorexic': '📊',
+    'overweight': '⚖️', 'sleep': '😴', 'ideal-weight': '⚖️', 'shoe-size': '👟', 'pregnancy': '👶',
+    'height': '📏', 'fetal': '👶', 'bmr': '❤️', 'carbohydrate': '🍞', 'blood': '🅱️',
+    'heart-rate': '❤️', 'food-calorie': '🍎', 'lean-body': '💪', 'body-fat': '📊', 'macro': '🥗',
+    'protein': '🥩', 'shengxiao': '🐉', 'clock': '🔧', 'timestamp': '⏱️', 'day-of-week': '📅',
+    'time-card': '⏰', 'duration': '⏰', 'runyue': '📅', 'unix': '🔧', 'percent': '🔧',
+    'race-time': '🔧', 'mortgage': '🔧', 'converter': '⏱️', 'countdown': '📅', 'pomodoro': '⏱️',
+    'life-count': '📅', 'age': '🎂', 'day-counter': '📆', 'pace': '🏃', 'date-calc': '📆',
+    'stopwatch': '⏱️', 'daylight': '⏰', 'meeting': '🔧', 'love': '🔧', 'zone': '🌐',
+    'map': '🌍', 'hours': '⏰', 'chunjie': '🧧', 'difference': '🕰️', 'days': '📆',
+    'birthday': '🎂', 'abbreviations': '🕒', 'relative': '👨‍👩‍👧‍👦', 'mobile': '📱', 'region': '🌍',
+    'marriage': '💍', 'usa': '🗺️', 'id-query': '🔧', 'zodiac': '🎂', 'capitals': '🌍',
+    'hash': '🔒', 'sphere': '🔧', 'deposit': '🔧', 'vocabulary': '💻', 'selector': '🔍',
+    'conception': '🔧', 'sql': '🔧', 'shopping': '🔧', 'qr': '📱', 'compound': '🔧',
+    'energy': '🔧', 'gpa': '🎓', 'speed': '🚀', 'tdee': '🔧', 'mime': '📄',
+    'prism': '🔧', 'absolute': '🔧', 'subnet': '🔗', 'retirement': '🔧', 'torus': '🔧',
+    'power': '⚡', 'fat': '🔧', 'temperature': '🔧', 'salary': '🔧', 'chinese': '🔧',
+    'ua': '🔍', 'bac': '🔧', 'autoprefixer': '🎨', 'currency': '💱', 'sudoku': '🔧',
+    'minifier': '🎨', 'inventory': '🔧', 'cidr': '🔗', 'html': '🔧', 'discount': '🔧',
+    'debt': '🔧', 'points': '🔧', 'cron': '⏰', 'regex': '🔍', 'exam': '🔧',
+    'frustum': '🔧', 'cone': '🔧', 'vscode': '⌨️', 'curl': '🔄', 'linux': '🐧',
+    'year': '🔧', 'case': '🔧', 'programmer': '💻', 'url': '🔗', 'cdn': '🔍',
+    'bmi': '🔧', 'vat': '🔧', 'title': '🔧', 'vim': '⌨️', 'go': '🔄',
+    'loan': '🔧', 'git': '🔧', 'bandwidth': '🔧', 'net-pay': '🔧', 'xml': '🔄',
+    'pressure': '🔧', 'entities': '🔤', 'dwz': '🔧', 'editor': '📝', 'investment': '🔧',
+    'javascript': '🔧', 'markdown': '🔧', 'cylinder': '🔧', 'escape': '🔗', 'whois': '🔍',
+    'http': '🌐', 'key': '⌨️', 'base': '🔧', 'request': '🔗', 'final': '🔧',
+    'bsa': '🔧', 'star': '⭐', 'mass': '⚖️', 'density': '⚖️', 'class': '🔧',
+    'college': '🎓', 'gaokao': '🎓', 'global': '🌍', 'grade': '📚', 'sun': '🔧',
+    'heat': '🌡️', 'wind': '🌬️', 'weather': '🌤️', 'water': '💧', 'prime': '🔧',
+    'length': '📏', 'fraction': '🔢', 'roman': '🔢', 'multi': '🔧', 'binary': '🔢',
+    'scientific': '🔢', 'bernoulli': 'B', 'ratio': '📊', 'gamma': '📐', 'fibonacci': '🔢',
+    'taylor': '🔬', '3d': '🔺', 'area': '📏', 'limit': '📈', 'integral': '∫',
+    'complex': '√', 'cos': '📐', 'exponent': 'ⁿ', 'gas': '🔬', 'trigonometry': 'sin',
+    'ring': '💍', 'derivative': '📈', 'traffic': '📊', 'gcd': '🧮', 'common': '🔗',
+    'hex': '🔣', 'variance': 'σ', 'footage': '📏', 'distance': '📍', 'random': '🎲',
+    'surface': '📏', 'factor': '🧮', 'big': '🔢', 'factoring': '🔢', 'hexagonal': '🔧',
+    'volume': '📦', 'graphing': '📈', 'pythagorean': '📐', 'quadratic': '📐', 'combination': 'C',
+    'simplifier': '✏️', 'expression': '📐', 'factorial': '❏', 'average': '📊', 'error': '%%',
+    'lcm': '🔢', 'log': '🔢', 'permutation': '🔢', 'series': '🔢', 'root': '√',
+    'division': '➗', '2d': '📐', 'basic': '➕', 'sequence': '🔢', 'equation': '📐',
+    'circular': '⭕', 'latex': '∑', 'cube': '³', 'right': '🔺', 'rounding': '📐',
+    'inverse': '🔄', 'matrix': '🧮', 'slope': '📉', 'euler': 'E', 'advanced': '🔧',
+    'notation': '🔬', 'triangle': '🔺', 'mileage': '🚗', 'plate': '🚗', 'fuel': '⛽',
+    'tire': '🚗', 'horsepower': '🚗', 'vin': '🚗', 'engine': '🚗', 'tank': '🐠',
+    'concrete': '🏗️', 'tile': '🧱', 'roofing': '🏠', 'stair': '🔺', 'gravel': '⛏️',
+    'pricing': '🔧', 'forbidden': '✂️', 'pinduoduo': '🛍️', 'operation': '🛍️', 'amazon': '🛍️',
+    'shipping': '🔧', 'tax': '🔧', 'compare': '🛍️', 'trademark': '🏷️', 'resistor': '🎛️',
+    'sampling': '📊', 'resistance': 'Ω', 'voltage': '⚡', 'zener': '💡', 'current': '⚡',
+    'electricity': '🔌', '2fa': '🔒', 'password': '🔐', 'check': '🔑', 'golf': '⛳',
+    'payment': '💰', 'amortization': '📋', 'commission': '💸', 'take-home': '💵', 'cash': '💳',
+    'roth': '💹', 'va': '🏠', '401k': '💰', 'personal': '💰', 'tip': '💸',
+    'rent': '🏠', 'boat': '🚤', 'cd': '💲', 'gdp': '📊', 'future': '💰',
+    'inflation': '💸', 'income': '💰', 'finance': '💰', 'insurance': '🏥', 'rental': '🏠',
+    'uk': '🏠', 'depreciation': '💸', 'student': '🎓', 'anime4k': '🖼️', 'btu': '🔥',
+    'storage': '🔧', 'cpu': '💻', 'unit': '🔄', 'conversion': '🔄', 'emoji': '😊',
+    'renpin': '😊', 'dice': '🎲', 'solitaire': '🔧', 'paper': '📏', 'new-word': '🔧',
+    'japanese': '🔤', 'translator': '🌐', 'zero-width': '🔒', 'symbols': '🔣', 'remover': '✂️',
+    'morse': '🔐', 'font': '✏️', 'letter': 'Aa', 'braille': '🔒', 'autospace': '🔤',
+    'pinyin': '🔤', 'speech': '🔊', 'abstract': '🔧', 'encoding': '🔤', 'mulch': '🌱',
+    'colors': '🎨'
 }
 
 def to_kebab_case(name):
-    """文件名转 kebab-case"""
     name_no_ext = os.path.splitext(name)[0]
     s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1-\2', name_no_ext)
     s1 = re.sub(r'([a-z0-9])([A-Z])', r'\1-\2', s1)
@@ -55,32 +120,44 @@ def to_kebab_case(name):
     clean_name = re.sub(r'-+', '-', clean_name)
     return clean_name + '.html'
 
+def get_icon(tool_id, filename, existing_icon_map):
+    """
+    智能获取图标：
+    1. 优先用现有的 tools.json 里的
+    2. 其次用备份库 BACKUP_ICONS 里的 (模糊匹配)
+    3. 最后默认 🔧
+    """
+    # 1. 现有
+    if tool_id in existing_icon_map and existing_icon_map[tool_id] != '🔧':
+        return existing_icon_map[tool_id]
+    
+    # 2. 备份库 (尝试匹配 filename 中的关键词)
+    # 因为备份库的 key 是简化的，所以我们看看 filename 是否包含 key
+    for key, icon in BACKUP_ICONS.items():
+        if key in filename.lower():
+            return icon
+            
+    return '🔧'
+
 def get_category_from_content(file_path, filename):
-    """获取分类逻辑"""
     tool_id = filename.replace('.html', '')
     
-    # Priority 0: 检查是否在强力纠错名单里
     if tool_id in SPECIFIC_FIXES:
-        print(f"🔧 触发强制纠错: {tool_id} -> {SPECIFIC_FIXES[tool_id]}")
         return SPECIFIC_FIXES[tool_id]
 
-    # Priority 1: 尝试从 meta 标签读取
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
             match = re.search(r'<meta\s+name=["\']category["\']\s+content=["\'](.*?)["\']', content, re.IGNORECASE)
             if match:
                 raw_cat = match.group(1).lower().strip()
-                # 强制清洗逻辑
                 if 'date' in raw_cat and 'time' in raw_cat: return 'date-time'
                 if 'math' in raw_cat: return 'math'
-                
                 raw_cat = raw_cat.replace('&', '').replace(' ', '-')
                 return re.sub(r'-+', '-', raw_cat)
     except Exception:
         pass
 
-    # Priority 2: 关键词匹配
     lower_name = filename.lower()
     for cat_folder, keywords in KEYWORD_CATEGORIES.items():
         for kw in keywords:
@@ -89,92 +166,83 @@ def get_category_from_content(file_path, filename):
                 
     return 'others'
 
-def generate_tools_json():
-    """生成 JSON"""
-    print("正在扫描所有工具生成 JSON...")
+def main():
+    if not os.path.exists(MODULES_DIR):
+        print(f"错误：找不到 {MODULES_DIR} 文件夹。")
+        return
+
+    # --- 0. 读取现有的 tools.json (抢救图标) ---
+    existing_icon_map = {}
+    if os.path.exists(TOOLS_JSON_FILE):
+        try:
+            with open(TOOLS_JSON_FILE, 'r', encoding='utf-8') as f:
+                old_data = json.load(f)
+                for item in old_data:
+                    # 只有当图标不是默认扳手时，才保存下来
+                    if 'icon' in item and item['icon'] != '🔧':
+                        existing_icon_map[item['id']] = item['icon']
+            print(f"📦 已从旧文件读取 {len(existing_icon_map)} 个图标备份。")
+        except:
+            print("⚠️ 旧 tools.json 读取失败或不存在，将使用内置备份库恢复图标。")
+
+    # --- 1. 移动文件 ---
+    print("开始检查并移动文件...")
+    for root, dirs, files in os.walk(MODULES_DIR):
+        for filename in files:
+            if filename.endswith('.html'):
+                original_path = os.path.join(root, filename)
+                correct_category = get_category_from_content(original_path, filename)
+                new_filename = to_kebab_case(filename)
+                target_dir = os.path.join(MODULES_DIR, correct_category)
+                target_path = os.path.join(target_dir, new_filename)
+                
+                if os.path.abspath(original_path) != os.path.abspath(target_path):
+                    if not os.path.exists(target_dir):
+                        os.makedirs(target_dir)
+                    try:
+                        shutil.move(original_path, target_path)
+                    except Exception:
+                        pass
+
+    # --- 2. 生成 tools.json (带图标恢复) ---
+    print("正在生成 tools.json 并恢复图标...")
     tools_data = []
     
     for root, dirs, files in os.walk(MODULES_DIR):
         for file in files:
             if file.endswith('.html'):
                 tool_id = file.replace('.html', '')
-                
-                # 获取当前所在的实际文件夹名
                 current_folder = os.path.basename(root)
-                
-                # 如果文件在根目录(未分类)，或者是我们已知的错误分类，我们需要纠正 category 字段
-                # 注意：这里主要决定写入 JSON 的 category 值
                 category = current_folder
                 
-                # 再次检查纠错名单，确保 JSON 里也是对的
-                if tool_id in SPECIFIC_FIXES:
-                    category = SPECIFIC_FIXES[tool_id]
-                elif current_folder == MODULES_DIR: # 如果还在根目录
-                    category = 'others'
+                if tool_id in SPECIFIC_FIXES: category = SPECIFIC_FIXES[tool_id]
+                elif current_folder == MODULES_DIR: category = 'others'
                 
-                # 强制统一名称显示
-                if category == 'Date & Time' or ('date' in category and 'time' in category):
-                    category = 'date-time'
-                if category == 'Math':
-                    category = 'math'
+                if category == 'Date & Time' or ('date' in category and 'time' in category): category = 'date-time'
+                if category == 'Math': category = 'math'
 
                 display_title = tool_id.replace('-', ' ').title()
                 
+                # --- 图标恢复魔法 ---
+                restored_icon = get_icon(tool_id, file, existing_icon_map)
+
                 tools_data.append({
                     "id": tool_id,
                     "title": display_title,
                     "category": category,
-                    "path": f"modules/{category}/{file}".replace('\\', '/'), # 注意路径要对应实际位置
+                    "path": f"modules/{category}/{file}".replace('\\', '/'),
                     "description": f"Free online {display_title} tool.",
-                    "icon": "🔧"
+                    "icon": restored_icon  # 使用恢复后的图标
                 })
     
     tools_data.sort(key=lambda x: x['category'])
-    return tools_data
-
-def main():
-    if not os.path.exists(MODULES_DIR):
-        print(f"错误：找不到 {MODULES_DIR} 文件夹。")
-        return
-
-    # --- 第一步：移动整理文件 (包含对已分类文件的再次检查) ---
-    # 我们遍历整个 modules 目录，看看有没有文件放错地方了
-    print("开始检查并移动文件...")
-    for root, dirs, files in os.walk(MODULES_DIR):
-        for filename in files:
-            if filename.endswith('.html'):
-                original_path = os.path.join(root, filename)
-                
-                # 计算它应该在哪个分类
-                correct_category = get_category_from_content(original_path, filename)
-                new_filename = to_kebab_case(filename)
-                
-                # 目标路径
-                target_dir = os.path.join(MODULES_DIR, correct_category)
-                target_path = os.path.join(target_dir, new_filename)
-                
-                # 如果当前路径和目标路径不一样，说明放错地方了，移动它！
-                # (排除掉路径完全相同的情况)
-                if os.path.abspath(original_path) != os.path.abspath(target_path):
-                    if not os.path.exists(target_dir):
-                        os.makedirs(target_dir)
-                    
-                    try:
-                        shutil.move(original_path, target_path)
-                        print(f"📦 移动/纠正: {filename} -> {correct_category}/{new_filename}")
-                    except Exception as e:
-                        print(f"⚠️ 移动失败: {filename} - {e}")
-
-    # --- 第二步：生成 tools.json ---
-    final_data = generate_tools_json()
-
+    
     with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
-        json.dump(final_data, f, indent=2, ensure_ascii=False)
+        json.dump(tools_data, f, indent=2, ensure_ascii=False)
 
     print("-" * 30)
-    print(f"✅ 处理完成！tools.json 已更新。")
-    print(f"✅ 修正了 英国房贷、百分比计算器 等特定文件的分类。")
-    print(f"✅ 时间分类强制统一为: date-time")
+    print(f"✅ 修复完成！分类已统一，图标已恢复。")
+    print(f"✅ 请刷新网页查看效果。")
 
 if __name__ == '__main__':
     main()
