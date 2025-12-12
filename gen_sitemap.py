@@ -1,62 +1,80 @@
+import json
 import os
 import datetime
 
-# 配置
-# ⚠️ 这里一定要填你真实的域名，不要带最后的斜杠
-SITE_DOMAIN = "https://toolboxpro.top"
-MODULES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modules')
-OUTPUT_FILE = 'sitemap.xml'
+# --- 配置区域 ---
+# 你的网站域名 (注意：不要带最后的斜杠 /)
+DOMAIN = "https://toolboxpro.top"
+TOOLS_FILE = "tools.json"
+OUTPUT_FILE = "sitemap.xml"
+
+# XML 标准头尾
+XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+XML_FOOTER = '</urlset>'
 
 def generate_sitemap():
-    if not os.path.exists(MODULES_DIR):
-        print("错误：找不到 modules 文件夹")
+    print("🗺️ 正在根据 tools.json 生成网站地图...")
+    
+    # 1. 检查 tools.json 是否存在
+    if not os.path.exists(TOOLS_FILE):
+        print(f"❌ 错误：找不到 {TOOLS_FILE}。请先运行 organize.py！")
         return
 
-    urls = []
+    # 获取今天的日期
+    today = datetime.date.today().isoformat()
     
-    # 1. 添加首页
-    urls.append({
-        "loc": f"{SITE_DOMAIN}/",
-        "lastmod": datetime.date.today().isoformat(),
-        "priority": "1.0"
-    })
+    xml_content = XML_HEADER
 
-    # 2. 遍历所有工具
-    print("正在扫描文件...")
-    for root, dirs, files in os.walk(MODULES_DIR):
-        for file in files:
-            if file.endswith('.html'):
-                # 获取相对路径 (例如: finance/401k-calculator.html)
-                # 我们要把 Windows 的反斜杠 \ 换成 URL 的正斜杠 /
-                rel_path = os.path.relpath(os.path.join(root, file), MODULES_DIR).replace('\\', '/')
-                
-                # 拼接完整 URL
-                full_url = f"{SITE_DOMAIN}/modules/{rel_path}"
-                
-                urls.append({
-                    "loc": full_url,
-                    "lastmod": datetime.date.today().isoformat(),
-                    "priority": "0.8"
-                })
+    # --- 2. 添加首页 (权重最高 1.0) ---
+    xml_content += f"""  <url>
+    <loc>{DOMAIN}/</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>\n"""
 
-    # 3. 生成 XML 内容
-    xml_content = ['<?xml version="1.0" encoding="UTF-8"?>']
-    xml_content.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    # --- 3. 读取 tools.json 添加工具页 (权重 0.8) ---
+    try:
+        with open(TOOLS_FILE, 'r', encoding='utf-8') as f:
+            tools = json.load(f)
+            
+        print(f"📦 发现 {len(tools)} 个工具，正在写入...")
+
+        for tool in tools:
+            # 获取路径 (例如 modules/date-time/timestamp.html)
+            path = tool['path']
+            
+            # 确保路径开头没有斜杠，避免 https://toolboxpro.top//modules... 这种情况
+            if path.startswith('/'):
+                path = path[1:]
+            
+            # 拼接完整 URL
+            full_url = f"{DOMAIN}/{path}"
+            
+            # 转义 URL 中的特殊字符 (比如 & 变为 &amp;)
+            full_url = full_url.replace("&", "&amp;")
+
+            xml_content += f"""  <url>
+    <loc>{full_url}</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>\n"""
+
+    except Exception as e:
+        print(f"❌ 读取错误: {e}")
+        return
+
+    # --- 4. 结束并保存 ---
+    xml_content += XML_FOOTER
     
-    for url in urls:
-        xml_content.append('  <url>')
-        xml_content.append(f'    <loc>{url["loc"]}</loc>')
-        xml_content.append(f'    <lastmod>{url["lastmod"]}</lastmod>')
-        xml_content.append(f'    <priority>{url["priority"]}</priority>')
-        xml_content.append('  </url>')
-    
-    xml_content.append('</urlset>')
-
-    # 4. 写入文件
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(xml_content))
-    
-    print(f"成功生成 {OUTPUT_FILE}！包含 {len(urls)} 个链接。")
+        f.write(xml_content)
+        
+    print("-" * 30)
+    print(f"✅ 成功生成: {OUTPUT_FILE}")
+    print(f"✅ 共包含链接数: {len(tools) + 1}")
+    print("🚀 现在，你可以 git push 提交代码了！")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     generate_sitemap()
