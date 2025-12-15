@@ -44,43 +44,26 @@ KEYWORD_CATEGORIES = {
 # --- 2. 强力纠错名单 ---
 # 格式: 'filename-without-extension': 'category-folder-name'
 SPECIFIC_FIXES = {
-    #原有修正
-    'mortgage-calculator-uk': 'finance',
-    'canadian-mortgage': 'finance',
-    'percentage-calculator': 'math',
+    # --- Date & Time (强制归类) ---
+    'digital-clock-stopwatch': 'date-time',
+    'unix-timestamp-converter': 'date-time',
+    'race-time-predictor': 'date-time',
     'world-clock-meeting-planner': 'date-time',
-    'tdee-calculator': 'health',
-
-    # Fun
+    'days-between-dates': 'date-time',
+    'time-zone-abbreviations-worldwide-list': 'date-time',
+    'worldwide-time-differences-for-any-city': 'date-time',
+    'time-zone-map': 'date-time',
+    'daylight-saving-time': 'date-time',
+    'date-to-chinese-uppercase': 'date-time',
+    'day-of-year-calculator': 'date-time',
+    
+    # --- Fun ---
+    'love-marriage-calculator': 'fun',
     'sudoku-solver': 'fun',
 
-    # Math
-    'body-surface-area-calculator': 'math',
-    'cone-calculator': 'math',
-    'frustum-calculator': 'math',
-    'cylinder-calculator': 'math',
-    'standard-calculator': 'math',
-    'sphere-calculator': 'math',
-    'rectangular-prism-calculator': 'math',
-    'btu-calculator': 'math',
-
-    # Date & Time
-    'day-of-year-calculator': 'date-time',
-
-    # Health
-    'bmi-calculator': 'health',
-    'bac-calculator': 'health',
-    'energy-converter': 'health',
-    'weight-watchers-points-calculator': 'health',
-    'conception-calculator': 'health',
-    'fat-intake-calculator': 'health',
-
-    # Education
-    'comprehensive-gpa-calculator': 'education',
-    'exam-countdown': 'education',
-    'final-grade-calculator': 'education',
-
-    # Finance
+    # --- Finance ---
+    'mortgage-calculator-uk': 'finance',
+    'canadian-mortgage': 'finance',
     'auto-loan-comparison': 'finance',
     'bank-deposit-calculator': 'finance',
     'compound-interest': 'finance',
@@ -93,20 +76,47 @@ SPECIFIC_FIXES = {
     'salary-tax-stimator': 'finance',
     'salary-converter': 'finance',
     'retirement-calculator': 'finance',
-    'retirement-calculato': 'finance', # 兼容可能的拼写错误
+    'retirement-calculato': 'finance',
 
-    # E-commerce Operations
+    # --- Math ---
+    'percentage-calculator': 'math',
+    'multi-language': 'math', # 科学计算器
+    'body-surface-area-calculator': 'math',
+    'cone-calculator': 'math',
+    'frustum-calculator': 'math',
+    'cylinder-calculator': 'math',
+    'standard-calculator': 'math',
+    'sphere-calculator': 'math',
+    'rectangular-prism-calculator': 'math',
+    'btu-calculator': 'math',
+
+    # --- Health ---
+    'pregnancy-timeline': 'health',
+    'tdee-calculator': 'health',
+    'bmi-calculator': 'health',
+    'bac-calculator': 'health',
+    'energy-converter': 'health',
+    'weight-watchers-points-calculator': 'health',
+    'conception-calculator': 'health',
+    'fat-intake-calculator': 'health',
+
+    # --- E-commerce Operations ---
+    'language-switcher': 'e-commerce-operations',
     'currency-calculator': 'e-commerce-operations',
-    'language-switcher': 'e-commerce-operations', # 从 development-tools 修改为 e-commerce
     'title-generator': 'e-commerce-operations',
 
-    # Conversion
+    # --- Education ---
+    'comprehensive-gpa-calculator': 'education',
+    'exam-countdown': 'education',
+    'final-grade-calculator': 'education',
+
+    # --- Conversion ---
     'power-converter': 'conversion',
     'temperature-converter': 'conversion',
     'speed-converter': 'conversion',
     'pressure-converter': 'conversion',
 
-    # Text Tools
+    # --- Text Tools ---
     'chinese-capital-number': 'text-tools',
     'text-case-converter': 'text-tools',
 }
@@ -149,6 +159,18 @@ BACKUP_ICONS = {
     'pressure': '⏲️',
     'chinese': '🧧', 'capital-number': '🔢',
     'case': '🔠',
+    'date-to-chinese': '🧧',
+    'love': '❤️', 'marriage': '💍',
+    'digital-clock': '⏰', 'stopwatch': '⏱️',
+    'unix': '⏳', 'timestamp': '⏱️',
+    'race-time': '🏁', 'predictor': '🏃',
+    'meeting': '🤝', 'planner': '📅',
+    'days-between': '🗓️',
+    'abbreviations': '🔤',
+    'differences': '🌍',
+    'map': '🗺️',
+    'daylight': '☀️', 'saving': '🕒',
+    'multi-language': '🧮',
 
     # 原始图标库 (保持不变)
     'molarity': '🧪', 'molecular': '⚗️', 'half-life': '⚛️', 'periodic': '🧬', 'chemical': '🧪',
