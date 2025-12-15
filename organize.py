@@ -15,9 +15,7 @@ ADSENSE_SCRIPT = r'''
 
 # --- 1. 核心关键词分类配置 ---
 KEYWORD_CATEGORIES = {
-    # 强制统一为 date-time
     'date-time': ['date', 'time', 'clock', 'calendar', 'stopwatch', 'timer', 'zone', 'age', 'runyue', 'countdown', 'timestamp', 'daylight', 'duration', 'meeting', 'world'],
-    
     'math': ['calculator', 'math', 'algebra', 'geometry', 'stat', 'average', 'prime', 'factor', 'number', 'percent', 'fraction'],
     'finance': ['401k', 'loan', 'mortgage', 'salary', 'tax', 'invest', 'currency', 'interest', 'retirement', 'deposit', 'bank'],
     'development-tools': ['code', 'json', 'xml', 'html', 'css', 'base64', 'dev', 'minify', 'formatter', 'hash', 'encrypt', 'language'],
@@ -43,19 +41,19 @@ KEYWORD_CATEGORIES = {
     'weather-health': ['weather', 'air', 'quality', 'aqi', 'humidity', 'sun']
 }
 
-# --- 2. 强力纠错名单 (已包含您刚才追加的所有规则) ---
+# --- 2. 强力纠错名单 ---
 SPECIFIC_FIXES = {
     # --- Date & Time (强制统一) ---
-    'digital-clock-stopwatch': 'date-time', # Confirmed
-    'unix-timestamp-converter': 'date-time', # Confirmed
-    'race-time-predictor': 'date-time', # Confirmed
-    'world-clock-meeting-planner': 'date-time', # Confirmed
-    'days-between-dates': 'date-time', # Confirmed
-    'time-zone-abbreviations-worldwide-list': 'date-time', # Confirmed
-    'worldwide-time-differences-for-any-city': 'date-time', # Confirmed
-    'time-zone-map': 'date-time', # Confirmed
-    'daylight-saving-time': 'date-time', # Confirmed
-    'date-to-chinese-uppercase': 'date-time', # Confirmed
+    'digital-clock-stopwatch': 'date-time',
+    'unix-timestamp-converter': 'date-time',
+    'race-time-predictor': 'date-time',
+    'world-clock-meeting-planner': 'date-time',
+    'days-between-dates': 'date-time',
+    'time-zone-abbreviations-worldwide-list': 'date-time',
+    'worldwide-time-differences-for-any-city': 'date-time',
+    'time-zone-map': 'date-time',
+    'daylight-saving-time': 'date-time',
+    'date-to-chinese-uppercase': 'date-time',
     'day-of-year-calculator': 'date-time', 
     'age-calculator': 'date-time',
     'calendar-generator': 'date-time',
@@ -63,12 +61,12 @@ SPECIFIC_FIXES = {
     'stopwatch': 'date-time',
     
     # --- Fun ---
-    'love-marriage-calculator': 'fun', # Confirmed
+    'love-marriage-calculator': 'fun',
     'sudoku-solver': 'fun', 
 
     # --- Finance ---
-    'mortgage-calculator-uk': 'finance', # Confirmed
-    'canadian-mortgage': 'finance', # Confirmed
+    'mortgage-calculator-uk': 'finance',
+    'canadian-mortgage': 'finance',
     'auto-loan-comparison': 'finance',
     'bank-deposit-calculator': 'finance',
     'compound-interest': 'finance',
@@ -84,13 +82,13 @@ SPECIFIC_FIXES = {
     'retirement-calculato': 'finance',
 
     # --- E-commerce Operations ---
-    'language-switcher': 'e-commerce-operations', # Confirmed
+    'language-switcher': 'e-commerce-operations',
     'currency-calculator': 'e-commerce-operations',
     'title-generator': 'e-commerce-operations',
 
     # --- Math ---
-    'percentage-calculator': 'math', # Confirmed
-    'multi-language': 'math', # Confirmed (科学计算器)
+    'percentage-calculator': 'math',
+    'multi-language': 'math', 
     'body-surface-area-calculator': 'math',
     'cone-calculator': 'math',
     'frustum-calculator': 'math',
@@ -101,7 +99,7 @@ SPECIFIC_FIXES = {
     'btu-calculator': 'math',
 
     # --- Health ---
-    'pregnancy-timeline': 'health', # Confirmed
+    'pregnancy-timeline': 'health',
     'tdee-calculator': 'health',
     'bmi-calculator': 'health',
     'bac-calculator': 'health',
@@ -126,9 +124,9 @@ SPECIFIC_FIXES = {
     'text-case-converter': 'text-tools',
 }
 
-# --- 3. 图标备份库 ---
+# --- 3. 图标备份库 (完整展开版) ---
 BACKUP_ICONS = {
-    # 常用图标
+    # 特定工具图标
     'sudoku': '🧩',
     'bsa': '🧍', 'body-surface': '🧍',
     'cone': '📐', 
@@ -177,7 +175,7 @@ BACKUP_ICONS = {
     'daylight': '☀️', 'saving': '🕒',
     'multi-language': '🧮',
 
-    # 原始保留图标
+    # 学科与通用图标
     'molarity': '🧪', 'molecular': '⚗️', 'half-life': '⚛️', 'periodic': '🧬', 'chemical': '🧪',
     'z-score': '📊', 'standard-deviation': '📈', 'probability': '🎲', 'p-value': '📈', 'statistics': '📊',
     'confidence': '📈', 'sample-size': '📊', 'weight': '👤', 'gfr': '🔍', 'body-type': '📏',
@@ -244,7 +242,6 @@ BACKUP_ICONS = {
 }
 
 def to_kebab_case(name):
-    """文件名标准化：全部小写，短横线连接"""
     name_no_ext = os.path.splitext(name)[0]
     s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1-\2', name_no_ext)
     s1 = re.sub(r'([a-z0-9])([A-Z])', r'\1-\2', s1)
@@ -253,7 +250,6 @@ def to_kebab_case(name):
     return clean_name + '.html'
 
 def get_icon(tool_id, filename, existing_icon_map):
-    """根据工具ID和文件名获取图标，优先使用旧图标和BACKUP_ICONS。"""
     if tool_id in existing_icon_map and existing_icon_map[tool_id] != '🔧':
         return existing_icon_map[tool_id]
     for key, icon in BACKUP_ICONS.items():
@@ -262,42 +258,31 @@ def get_icon(tool_id, filename, existing_icon_map):
     return '🔧'
 
 def inject_ads_to_file(file_path):
-    """自动给文件植入 AdSense 代码"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        
-        if 'ca-pub-9279583389810634' in content:
-            return
-
+        if 'ca-pub-9279583389810634' in content: return
         if '</head>' in content:
             new_content = content.replace('</head>', f'{ADSENSE_SCRIPT}\n</head>')
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(new_content)
-            print(f"💰 [自动广告] 已为新文件添加广告: {os.path.basename(file_path)}")
-    except Exception as e:
-        print(f"⚠️ 广告植入失败: {file_path} - {e}")
+    except: pass
 
 def get_category_from_content(file_path, filename):
     tool_id = filename.replace('.html', '')
-    
-    # 1. 绝对优先：SPECIFIC_FIXES
     if tool_id in SPECIFIC_FIXES: return SPECIFIC_FIXES[tool_id]
     
-    # 2. 关键词模糊匹配
     lower_name = filename.lower()
     for cat_folder, keywords in KEYWORD_CATEGORIES.items():
         for kw in keywords:
             if kw in lower_name: return cat_folder
             
-    # 3. 如果文件内容里有 meta category，读取并转换
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
             match = re.search(r'<meta\s+name=["\']category["\']\s+content=["\'](.*?)["\']', content, re.IGNORECASE)
             if match:
                 raw_cat = match.group(1).lower().strip()
-                # 强力清洗时间标签
                 if 'date' in raw_cat or 'time' in raw_cat: return 'date-time'
                 return raw_cat.replace(' ', '-').replace('&', '')
     except: pass
@@ -309,7 +294,6 @@ def main():
         print(f"错误：找不到 {MODULES_DIR} 文件夹。")
         return
 
-    # --- 0. 读取旧图标数据 ---
     existing_icon_map = {}
     if os.path.exists(TOOLS_JSON_FILE):
         try:
@@ -319,17 +303,14 @@ def main():
                     if 'icon' in item: existing_icon_map[item['id']] = item['icon']
         except: pass
 
-    # --- 1. 移动文件 & 自动补全广告 ---
+    # 1. 整理文件
     print(">>> 开始文件整理...")
     for root, dirs, files in os.walk(MODULES_DIR):
         for filename in files:
             if filename.endswith('.html'):
                 original_path = os.path.join(root, filename)
-                
-                # 获取分类 (强制逻辑已在 get_category_from_content 中处理)
                 category = get_category_from_content(original_path, filename)
                 
-                # 二次保险：如果包含 date 或 time，强制设为 date-time
                 if 'date' in category or 'time' in category:
                     category = 'date-time'
 
@@ -337,18 +318,16 @@ def main():
                 target_dir = os.path.join(MODULES_DIR, category)
                 target_path = os.path.join(target_dir, new_filename)
                 
-                # 移动文件
                 if os.path.abspath(original_path) != os.path.abspath(target_path):
                     if not os.path.exists(target_dir): os.makedirs(target_dir)
                     try: shutil.move(original_path, target_path)
-                    except Exception as e: print(f"移动失败: {filename} -> {e}")
+                    except: pass
                 
-                # 注入广告
                 if os.path.exists(target_path):
                     inject_ads_to_file(target_path)
 
-    # --- 2. 生成 tools.json ---
-    print(">>> 正在生成 tools.json (强制统一标签为 date-time)...")
+    # 2. 生成 JSON
+    print(">>> 正在生成 tools.json...")
     tools_data = []
     
     for root, dirs, files in os.walk(MODULES_DIR):
@@ -356,36 +335,38 @@ def main():
             if file.endswith('.html'):
                 tool_id = file.replace('.html', '')
                 current_folder = os.path.basename(root)
-                
-                # 默认使用文件夹名作为分类
                 final_category = current_folder
                 
-                # ⚡️ 最终防线：强制清洗 category 字段 ⚡️
-                # 只要看起来像时间，就必须是 'date-time'
-                if final_category.lower() in ['date & time', 'date_time', 'datetime', 'time-tools']:
-                    final_category = 'date-time'
-                
-                # 如果文件夹就是 date-time，保持原样
-                if 'date' in final_category and 'time' in final_category:
+                # --- 核心：这里是避免重复标签的关键 ---
+                # 如果分类里包含 date、time 等字眼，一律强制转为 date-time
+                # 这样可以防止 "Date & Time", "Date_Time", "date and time" 等变种出现
+                cat_lower = final_category.lower()
+                if 'date' in cat_lower or 'time' in cat_lower:
                     final_category = 'date-time'
 
                 display_title = tool_id.replace('-', ' ').title()
-                restored_icon = get_icon(tool_id, file, existing_icon_map)
-
                 tools_data.append({
                     "id": tool_id,
                     "title": display_title,
-                    "category": final_category,  # 这里将被写入 JSON，保证是 date-time
-                    "path": f"modules/{current_folder}/{file}".replace('\\', '/'), # 物理路径
+                    "category": final_category, 
+                    "path": f"modules/{current_folder}/{file}".replace('\\', '/'),
                     "description": f"Free online {display_title} tool.",
-                    "icon": restored_icon
+                    "icon": get_icon(tool_id, file, existing_icon_map)
                 })
     
+    # 3. 终极清洗：确保没有漏网之鱼
+    # 遍历所有数据，最后再检查一遍 category
+    for item in tools_data:
+        c = item['category'].lower()
+        if 'date' in c or 'time' in c:
+            item['category'] = 'date-time'
+
     tools_data.sort(key=lambda x: (x['category'], x['id']))
+    
     with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(tools_data, f, indent=2, ensure_ascii=False)
 
-    print(f"✅ 完成！分类已更新，时间标签已统一，图标数据完整。")
+    print(f"✅ 完成！所有重复的时间标签已被强制合并为 date-time。")
 
 if __name__ == '__main__':
     main()
