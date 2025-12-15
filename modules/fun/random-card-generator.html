@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Card Generator - Pick a Playing Card</title>
+    
+    <meta name="tool-id" content="random-card-generator">
+    <meta name="category" content="fun">
+    <meta name="icon" content="🃏">
+    <meta name="title" content="Random Card Generator">
+    <meta name="description" content="Draw random playing cards from a standard 52-card deck. Draw 1 to 10 cards at once. Useful for magic, games, and probability.">
+
+    <meta name="lang-title-zh-CN" content="随机扑克牌生成器 - 在线抽牌工具">
+    <meta name="lang-description-zh-CN" content="在线从52张标准扑克牌中随机抽取。支持一次抽取1-10张不重复的牌，适用于魔术练习、游戏决策或概率教学。">
+    <meta name="lang-title-zh-TW" content="隨機撲克牌生成器 - 在線抽牌工具">
+    <meta name="lang-title-pl" content="Generator Losowych Kart">
+    <meta name="lang-title-es" content="Generador de Cartas Aleatorias">
+    <meta name="lang-title-ru" content="Генератор случайных карт">
+    <meta name="lang-title-hi" content="रैंडम कार्ड जनरेटर">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
+            --accent: #f43f5e;
+            --accent-hover: #e11d48;
+            --border: #334155;
+        }
+
+        :root[data-theme="light"] {
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-input: #f8fafc;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --accent: #e11d48; 
+            --accent-hover: #be123c;
+            --border: #e2e8f0;
+        }
+
+        body { 
+            background: var(--bg-body); 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        .tool-container {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 900px;
+            margin: 0 auto;
+            border: 1px solid var(--border);
+            min-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .display-area {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            min-height: 300px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            perspective: 1000px;
+        }
+
+        .poker-card {
+            width: 140px;
+            height: 200px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            font-family: 'Times New Roman', serif;
+            transition: transform 0.3s;
+            user-select: none;
+        }
+
+        .display-area.many-items .poker-card {
+            width: 100px;
+            height: 150px;
+            padding: 6px;
+        }
+        .display-area.many-items .card-corner { font-size: 1.2rem; }
+        .display-area.many-items .card-center { font-size: 2.5rem; }
+
+        .poker-card.red { color: #d93025; }
+        .poker-card.black { color: #1a1a1a; }
+
+        .card-corner {
+            font-size: 1.5rem;
+            line-height: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .card-corner.bottom { transform: rotate(180deg); }
+        .card-center {
+            font-size: 3.5rem;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .animate-flip { animation: flipIn 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) backwards; }
+        @keyframes flipIn { 0% { transform: rotateY(90deg); opacity: 0; } 100% { transform: rotateY(0deg); opacity: 1; } }
+
+        .action-btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .action-btn:hover { background-color: var(--accent-hover); }
+
+        select, .icon-btn {
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            height: 42px;
+        }
+        .icon-btn:hover, select:hover { border-color: var(--accent); }
+
+        .options-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: var(--bg-input);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .article-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
+            color: var(--text-sub);
+        }
+        .article-section h2 { font-size: 1.5rem; color: var(--text-main); margin-top: 2rem; margin-bottom: 1rem; }
+        .article-section h3 { font-size: 1.25rem; color: var(--text-main); margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .article-section p { margin-bottom: 1rem; line-height: 1.7; }
+        .article-section ul { list-style: disc; padding-left: 20px; margin-bottom: 1rem; }
+        .article-section li { margin-bottom: 0.5rem; }
+        [data-lang-group] { display: none; }
+        [data-lang-group].active { display: block; }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+<div class="tool-container">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold flex items-center gap-3" style="color: var(--text-main)">
+                <span class="text-3xl filter drop-shadow-lg">🃏</span>
+                <span data-i18n="title">Random Card Generator</span>
+            </h2>
+            <p class="text-sm mt-2 font-mono" style="color: var(--text-sub)">
+                <span data-i18n="subtitle">Draw from a 52-card standard deck</span>
+                <span id="current-year-display" class="ml-1 px-2 py-0.5 rounded bg-[rgba(244,63,94,0.1)] text-[var(--accent)] text-xs"></span>
+            </p>
+        </div>
+        <div class="flex items-center gap-2 self-end md:self-auto">
+            <button onclick="Tool.toggleTheme()" class="icon-btn flex items-center justify-center w-[42px]"><span id="theme-icon">🌙</span></button>
+            <select id="lang-select" onchange="Tool.changeLang()" class="focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="pl">Polski</option>
+                <option value="es">Español</option>
+                <option value="ru">Русский</option>
+                <option value="hi">हिन्दी</option>
+            </select>
+        </div>
+    </div>
+
+    <div>
+        <div class="options-bar">
+            <label class="font-medium text-[var(--text-sub)] flex items-center gap-2">
+                <span data-i18n="qty_label">Quantity:</span>
+                <select id="qty-select" class="w-20 text-center font-bold">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+            </label>
+        </div>
+
+        <div id="display-container" class="display-area">
+            <!-- Cards go here -->
+        </div>
+
+        <button class="action-btn" onclick="Tool.generate()" data-i18n="btn_generate">Draw Card</button>
+    </div>
+
+    <!-- Enhanced SEO Content -->
+    <div class="article-section">
+        <div data-lang-group="en">
+            <h2>About Random Card Generator</h2>
+            <p>The Random Card Generator is a digital simulation of a standard 52-card French deck. It allows users to draw one or multiple cards (up to 10) instantly, ensuring a random and fair distribution every time.</p>
+            
+            <h3>Key Features</h3>
+            <ul>
+                <li><strong>No Duplicates:</strong> When drawing multiple cards (e.g., 5 cards for a poker hand), the tool ensures no card is repeated in a single draw.</li>
+                <li><strong>Standard Deck:</strong> Includes all 4 suits (Hearts, Diamonds, Clubs, Spades) and 13 ranks (2-10, J, Q, K, A).</li>
+            </ul>
+
+            <h3>Common Uses</h3>
+            <ul>
+                <li><strong>Magic Tricks:</strong> Practice mentalism or card counting without carrying a physical deck.</li>
+                <li><strong>Probability Math:</strong> Excellent for teaching statistics and probability in classrooms.</li>
+                <li><strong>Games:</strong> Forgot your deck? Use this tool for drinking games, role-playing games (RPGs), or board games.</li>
+            </ul>
+
+            <h3>FAQ</h3>
+            <p><strong>Q: Are Jokers included?</strong><br>A: No, this generator uses the standard 52-card deck without Jokers.</p>
+            <p><strong>Q: Is the shuffle fair?</strong><br>A: Yes, we use a digital Fisher-Yates shuffle algorithm to ensure true randomness.</p>
+        </div>
+
+        <div data-lang-group="zh-CN">
+            <h2>关于随机扑克牌生成器</h2>
+            <p>随机扑克牌生成器是标准 52 张法式扑克牌的数字模拟工具。它允许用户立即抽取一张或多张牌（最多 10 张），并确保每次分配都是随机和公平的。</p>
+            
+            <h3>主要功能</h3>
+            <ul>
+                <li><strong>无重复：</strong>当一次抽取多张牌时（例如抽取 5 张作为一手扑克牌），工具会确保在单次抽取中不会出现重复的牌。</li>
+                <li><strong>标准牌库：</strong>包含所有 4 种花色（红心、方块、梅花、黑桃）和 13 个等级（2-10, J, Q, K, A）。</li>
+            </ul>
+
+            <h3>常见用途</h3>
+            <ul>
+                <li><strong>魔术戏法：</strong>无需携带实体扑克牌即可练习心灵魔术或记牌。</li>
+                <li><strong>概率数学：</strong>非常适合在课堂上教授统计学和概率论。</li>
+                <li><strong>游戏替代：</strong>忘了带扑克牌？用这个工具来进行酒令游戏、角色扮演游戏 (RPG) 或桌游。</li>
+            </ul>
+
+            <h3>常见问题 (FAQ)</h3>
+            <p><strong>问：包含大小王（Jokers）吗？</strong><br>答：不，此生成器使用不含大小王的标准 52 张牌库。</p>
+            <p><strong>问：洗牌公平吗？</strong><br>答：是的，我们使用数字 Fisher-Yates 洗牌算法来确保真正的随机性。</p>
+        </div>
+
+        <div data-lang-group="zh-TW">
+            <h2>關於隨機撲克牌生成器</h2>
+            <p>隨機撲克牌生成器是標準 52 張法式撲克牌的數位模擬工具。它允許用戶立即抽取一張或多張牌（最多 10 張），並確保每次分配都是隨機和公平的。</p>
+            
+            <h3>主要功能</h3>
+            <ul>
+                <li><strong>無重複：</strong>當一次抽取多張牌時，工具會確保在單次抽取中不會出現重複的牌。</li>
+                <li><strong>標準牌庫：</strong>包含所有 4 種花色（紅心、方塊、梅花、黑桃）和 13 個等級（2-10, J, Q, K, A）。</li>
+            </ul>
+
+            <h3>常見用途</h3>
+            <ul>
+                <li><strong>魔術戲法：</strong>無需攜帶實體撲克牌即可練習心靈魔術或記牌。</li>
+                <li><strong>遊戲替代：</strong>忘了帶撲克牌？用這個工具來進行酒令遊戲或桌遊。</li>
+            </ul>
+
+            <h3>常見問題 (FAQ)</h3>
+            <p><strong>問：包含大小王（Jokers）嗎？</strong><br>答：不，此生成器使用不含大小王的標準 52 張牌庫。</p>
+        </div>
+
+        <div data-lang-group="es">
+            <h2>Sobre el Generador de Cartas</h2>
+            <p>Esta herramienta simula una baraja estándar de 52 cartas. Permite sacar de 1 a 10 cartas al instante.</p>
+            
+            <h3>Características</h3>
+            <ul>
+                <li><strong>Sin duplicados:</strong> Garantiza que no se repitan cartas en una sola tirada.</li>
+                <li><strong>Baraja completa:</strong> Incluye Corazones, Diamantes, Tréboles y Picas.</li>
+            </ul>
+
+            <h3>Usos</h3>
+            <ul>
+                <li><strong>Trucos de Magia:</strong> Practica sin una baraja física.</li>
+                <li><strong>Juegos:</strong> Úsalo si olvidaste tus cartas en casa.</li>
+            </ul>
+
+            <h3>Preguntas Frecuentes</h3>
+            <p><strong>P: ¿Hay comodines?</strong><br>R: No, solo las 52 cartas estándar.</p>
+        </div>
+
+        <div data-lang-group="pl">
+            <h2>O Generatorze Kart</h2>
+            <p>To narzędzie symuluje standardową talię 52 kart. Możesz wylosować do 10 kart jednocześnie.</p>
+            
+            <h3>Funkcje</h3>
+            <ul>
+                <li><strong>Brak powtórzeń:</strong> Karty nie powtarzają się w jednym rozdaniu.</li>
+                <li><strong>Pełna talia:</strong> Kier, Karo, Trefl, Pik.</li>
+            </ul>
+
+            <h3>Zastosowania</h3>
+            <ul>
+                <li><strong>Gry:</strong> Zastępstwo dla prawdziwej talii.</li>
+                <li><strong>Nauka:</strong> Obliczanie prawdopodobieństwa w matematyce.</li>
+            </ul>
+        </div>
+
+        <div data-lang-group="ru">
+            <h2>О генераторе карт</h2>
+            <p>Этот инструмент имитирует стандартную колоду из 52 карт. Вы можете вытянуть до 10 карт за раз.</p>
+            
+            <h3>Особенности</h3>
+            <ul>
+                <li><strong>Без повторов:</strong> Карты не повторяются в одной раздаче.</li>
+                <li><strong>Полная колода:</strong> Черви, Бубны, Трефы, Пики.</li>
+            </ul>
+
+            <h3>Использование</h3>
+            <ul>
+                <li><strong>Фокусы:</strong> Тренировка без физической колоды.</li>
+                <li><strong>Игры:</strong> Если вы забыли карты дома.</li>
+            </ul>
+        </div>
+
+        <div data-lang-group="hi">
+            <h2>रैंडम कार्ड जनरेटर के बारे में</h2>
+            <p>यह टूल 52-कार्ड डेक का एक डिजिटल सिमुलेशन है। आप एक बार में 10 कार्ड तक निकाल सकते हैं।</p>
+            
+            <h3>विशेषताएँ</h3>
+            <ul>
+                <li><strong>कोई दोहराव नहीं:</strong> एक बार में कार्ड दोहराए नहीं जाते हैं।</li>
+                <li><strong>मानक डेक:</strong> सभी 4 सूट और 13 रैंक शामिल हैं।</li>
+            </ul>
+
+            <h3>उपयोग</h3>
+            <ul>
+                <li><strong>जादू:</strong> अभ्यास के लिए उपयोगी।</li>
+                <li><strong>खेल:</strong> यदि आपके पास कार्ड नहीं हैं तो इसका उपयोग करें।</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+const currentYear = new Date().getFullYear();
+const i18n = {
+    "en": { title: "Random Card Generator", subtitle: "Draw from 52-card deck", btn_generate: "Draw Card", qty_label: "Quantity:" },
+    "zh-CN": { title: "随机扑克牌生成器", subtitle: "在线抽取扑克牌", btn_generate: "抽牌", qty_label: "数量:" },
+    "zh-TW": { title: "隨機撲克牌生成器", subtitle: "在線抽取撲克牌", btn_generate: "抽牌", qty_label: "數量:" },
+    "es": { title: "Generador de Cartas", subtitle: "Sacar cartas", btn_generate: "Sacar Carta", qty_label: "Cantidad:" },
+    "pl": { title: "Generator Kart", subtitle: "Wylosuj kartę", btn_generate: "Wylosuj Kartę", qty_label: "Ilość:" },
+    "ru": { title: "Генератор карт", subtitle: "Вытянуть карту", btn_generate: "Вытянуть", qty_label: "Кол-во:" },
+    "hi": { title: "रैंडम कार्ड जनरेटर", subtitle: "कार्ड चुनें", btn_generate: "कार्ड चुनें", qty_label: "मात्रा:" }
+};
+
+const Tool = {
+    currentLang: 'en',
+    currentTheme: 'dark',
+
+    init() {
+        this.setTheme(localStorage.getItem('theme_pref') || 'dark');
+        const urlParams = new URLSearchParams(window.location.search);
+        this.currentLang = urlParams.get('lang') || localStorage.getItem('tool_lang') || 'en';
+        if (!i18n[this.currentLang]) this.currentLang = 'en';
+
+        document.getElementById('lang-select').value = this.currentLang;
+        document.getElementById('current-year-display').textContent = `${currentYear}`;
+        
+        this.updateTexts();
+        this.generate();
+    },
+
+    generate() {
+        const count = parseInt(document.getElementById('qty-select').value) || 1;
+        const container = document.getElementById('display-container');
+        
+        // Build Deck
+        const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
+        const suitSymbols = {'Hearts': '♥', 'Diamonds': '♦', 'Clubs': '♣', 'Spades': '♠'};
+        const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        
+        let deck = [];
+        suits.forEach(s => ranks.forEach(r => deck.push({suit: s, rank: r})));
+        
+        // Shuffle
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        
+        // Draw
+        const drawn = deck.slice(0, count);
+        
+        container.innerHTML = '';
+        if(count > 4) container.classList.add('many-items');
+        else container.classList.remove('many-items');
+
+        drawn.forEach((card, index) => {
+            const el = document.createElement('div');
+            const isRed = (card.suit === 'Hearts' || card.suit === 'Diamonds');
+            el.className = `poker-card ${isRed ? 'red' : 'black'} animate-flip`;
+            el.style.animationDelay = `${index * 0.1}s`;
+            
+            const sym = suitSymbols[card.suit];
+            el.innerHTML = `
+                <div class="card-corner top"><span class="val">${card.rank}</span><span class="suit">${sym}</span></div>
+                <div class="card-center suit">${sym}</div>
+                <div class="card-corner bottom"><span class="val">${card.rank}</span><span class="suit">${sym}</span></div>
+            `;
+            container.appendChild(el);
+        });
+    },
+
+    toggleTheme() { this.setTheme(this.currentTheme === 'dark' ? 'light' : 'dark'); },
+    setTheme(theme) {
+        this.currentTheme = theme;
+        document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : '');
+        document.getElementById('theme-icon').textContent = theme === 'light' ? '☀️' : '🌙';
+        localStorage.setItem('theme_pref', theme);
+    },
+    changeLang() {
+        this.currentLang = document.getElementById('lang-select').value;
+        localStorage.setItem('tool_lang', this.currentLang);
+        
+        if (window.location.protocol !== 'blob:' && window.location.protocol !== 'data:') {
+            try {
+                const url = new URL(window.location);
+                url.searchParams.set('lang', this.currentLang);
+                window.history.pushState({}, '', url);
+            } catch (e) {}
+        }
+        
+        this.updateTexts();
+    },
+    updateTexts() {
+        const texts = i18n[this.currentLang];
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            if(texts[el.getAttribute('data-i18n')]) el.textContent = texts[el.getAttribute('data-i18n')];
+        });
+        document.title = texts.title;
+        document.querySelectorAll('[data-lang-group]').forEach(el => el.classList.remove('active'));
+        (document.querySelector(`[data-lang-group="${this.currentLang}"]`) || document.querySelector(`[data-lang-group="en"]`)).classList.add('active');
+    }
+};
+window.onload = () => Tool.init();
+</script>
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>
