@@ -372,7 +372,6 @@
                 
                 document.getElementById('search-input').addEventListener('input', (e) => App.filterTools(e.target.value));
             },
-
             loadToolsData: async () => {
                 const loader = document.getElementById('loading-indicator');
                 const container = document.getElementById('cards-container');
@@ -381,7 +380,19 @@
                     const res = await fetch('/tools.json?v=' + Date.now());
                     if (!res.ok) throw new Error("Failed to load tools.json");
                     
-                    toolsData = await res.json();
+                    let rawData = await res.json();
+
+                    // --- 🔥 前端强制清洗开始 🔥 ---
+                    // 无论 JSON 里写什么，这里强制把所有类似时间的标签都改成 date-time
+                    toolsData = rawData.map(tool => {
+                        let cat = (tool.category || 'others').toLowerCase();
+                        // 只要分类名里包含 date 或 time，就强行改名
+                        if (cat.includes('date') || cat.includes('time')) {
+                            tool.category = 'date-time';
+                        }
+                        return tool;
+                    });
+                    // --- 🔥 前端强制清洗结束 🔥 ---
                     
                     document.getElementById('tool-count').innerText = toolsData.length;
                     
