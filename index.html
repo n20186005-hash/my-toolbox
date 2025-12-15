@@ -132,6 +132,7 @@
     </div>
 
     <script>
+        // 确保所有键名都是小写连字符格式 (kebab-case)
         const categoryIcons = {
             "date-time": "📅", "math": "📐", "finance": "💰", 
             "development-tools": "💻", "e-commerce-operations": "🛒", 
@@ -151,9 +152,9 @@
                 welcome_title_seo: "Free Online Utility Tools & Calculators",
                 welcome_desc: "Simple, private, and free tools for everyone.",
                 close: "Close",
-                // Categories
+                // Categories (全部统一使用小写连字符作为键名)
                 "category_all": "All", 
-                "category_date-time": "date-time", // 强制显示 date-time
+                "category_date-time": "Date & Time", 
                 "category_math": "Math", 
                 "category_finance": "Finance",
                 "category_development-tools": "Dev Tools",
@@ -194,7 +195,7 @@
                 welcome_title_seo: "免费在线实用工具和计算器", welcome_desc: "简单、安全、免费的在线工具集。",
                 close: "关闭",
                 "category_all": "全部", 
-                "category_date-time": "date-time", // 强制显示 date-time
+                "category_date-time": "时间日期",
                 "category_math": "数学计算", 
                 "category_finance": "金融理财",
                 "category_development-tools": "开发工具",
@@ -234,7 +235,7 @@
                 welcome_title_seo: "免費線上實用工具與計算機", welcome_desc: "簡單、安全、免費的線上工具集。",
                 close: "關閉",
                 "category_all": "全部", 
-                "category_date-time": "date-time", // 强制显示 date-time
+                "category_date-time": "時間日期", 
                 "category_math": "數學計算", 
                 "category_finance": "金融理財",
                 "category_development-tools": "開發工具",
@@ -274,7 +275,7 @@
                 welcome_title_seo: "無料オンライン便利ツール・計算機", welcome_desc: "シンプルでプライベート、そして無料。",
                 close: "閉じる",
                 "category_all": "すべて", 
-                "category_date-time": "date-time", // 强制显示 date-time
+                "category_date-time": "日時・時間", 
                 "category_math": "数学・計算", 
                 "category_finance": "金融・投資",
                 "category_development-tools": "開発ツール",
@@ -314,7 +315,7 @@
                 welcome_title_seo: "Бесплатные онлайн инструменты", welcome_desc: "Просто, приватно и бесплатно.",
                 close: "Закрыть",
                 "category_all": "Все", 
-                "category_date-time": "date-time", // 强制显示 date-time
+                "category_date-time": "Дата и время", 
                 "category_math": "Математика", 
                 "category_finance": "Финансы",
                 "category_development-tools": "Разработка",
@@ -383,13 +384,27 @@
                     let rawData = await res.json();
 
                     // --- 🔥 前端强制清洗开始 🔥 ---
-                    // 无论 JSON 里写什么，这里强制把所有类似时间的标签都改成 date-time
+                    // 无论 JSON 里写什么，这里强制把所有标签转换为小写连字符格式 (text-tools)
                     toolsData = rawData.map(tool => {
-                        let cat = (tool.category || 'others').toLowerCase();
-                        // 只要分类名里包含 date 或 time，就强行改名
+                        // 1. 获取分类，如果不存在则设为 'others'
+                        let cat = (tool.category || 'others');
+                        
+                        // 2. 转换为小写并去除首尾空格
+                        cat = cat.toLowerCase().trim();
+
+                        // 3. 特殊规则：只要包含 date 和 time，统一为 date-time
                         if (cat.includes('date') || cat.includes('time')) {
-                            tool.category = 'date-time';
+                            cat = 'date-time';
+                        } else {
+                            // 4. 一般规则：将空格、下划线、& 替换为连字符
+                            cat = cat.replace(/\s+/g, '-').replace(/&/g, '-').replace(/_+/g, '-');
+                            // 5. 去除连续的连字符
+                            cat = cat.replace(/-+/g, '-');
+                            // 6. 去除首尾连字符
+                            cat = cat.replace(/^-+|-+$/g, '');
                         }
+
+                        tool.category = cat;
                         return tool;
                     });
                     // --- 🔥 前端强制清洗结束 🔥 ---
@@ -415,8 +430,9 @@
                 categories = ['all', ...categories];
 
                 const renderBtn = (c) => {
-                    // 优先从翻译包取，没有则格式化原字符串
+                    // 优先从翻译包取，翻译包的 key 现在是 "category_text-tools" 格式
                     let label = t[`category_${c}`];
+                    // 如果翻译包里没有，则格式化原字符串 (e.g. text-tools -> Text Tools)
                     if (!label) {
                         label = c.split(/[ _/-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                     }
@@ -604,4 +620,3 @@
 
 </body>
 </html>
-

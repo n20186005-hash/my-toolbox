@@ -339,7 +339,6 @@ def main():
                 
                 # --- 核心：这里是避免重复标签的关键 ---
                 # 如果分类里包含 date、time 等字眼，一律强制转为 date-time
-                # 这样可以防止 "Date & Time", "Date_Time", "date and time" 等变种出现
                 cat_lower = final_category.lower()
                 if 'date' in cat_lower or 'time' in cat_lower:
                     final_category = 'date-time'
@@ -354,19 +353,34 @@ def main():
                     "icon": get_icon(tool_id, file, existing_icon_map)
                 })
     
-    # 3. 终极清洗：确保没有漏网之鱼
+    # 3. 终极清洗：确保所有标签都是英文小写和连字符
     # 遍历所有数据，最后再检查一遍 category
     for item in tools_data:
-        c = item['category'].lower()
-        if 'date' in c or 'time' in c:
-            item['category'] = 'date-time'
+        # 获取原始分类并进行基础清洗：转小写，去除首尾空格
+        raw_cat = item['category'].lower().strip()
+        
+        # 替换空格、下划线、& 符号为连字符
+        clean_cat = raw_cat.replace(' ', '-').replace('_', '-').replace('&', '-')
+        
+        # 处理连续的连字符（例如 "date---time" -> "date-time"）
+        clean_cat = re.sub(r'-+', '-', clean_cat)
+        
+        # 去除开头和结尾的连字符
+        clean_cat = clean_cat.strip('-')
+
+        # 特殊规则：date-time 强制合并
+        if 'date' in clean_cat or 'time' in clean_cat:
+            clean_cat = 'date-time'
+            
+        # 赋值回去
+        item['category'] = clean_cat
 
     tools_data.sort(key=lambda x: (x['category'], x['id']))
     
     with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(tools_data, f, indent=2, ensure_ascii=False)
 
-    print(f"✅ 完成！所有重复的时间标签已被强制合并为 date-time。")
+    print(f"✅ 完成！所有分类已强制转换为小写连字符格式 (kebab-case)。")
 
 if __name__ == '__main__':
     main()
