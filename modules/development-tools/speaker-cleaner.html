@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Updated Category Meta Tag -->
+    <meta name="category" content="electronics">
+    <meta name="description" content="Fix My Speakers - Eject water from your phone speakers using sound. 声波排水清洁器，利用声波震动排出手机扬声器积水。">
+    <title>Speaker Cleaner | 声波排水清洁器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#0ea5e9', hover: '#0284c7' }, /* Sky Blue for Water theme */
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f0f9ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'ripple': 'ripple 1.5s linear infinite',
+                    },
+                    keyframes: {
+                        ripple: {
+                            '0%': { transform: 'scale(1)', opacity: '0.5' },
+                            '100%': { transform: 'scale(2.5)', opacity: '0' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            .glass {
+                @apply bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            
+            .btn-base {
+                @apply px-4 py-2.5 rounded-lg font-medium transition-all active:scale-[0.98] flex items-center justify-center gap-2;
+            }
+
+            .content-section {
+                @apply prose dark:prose-invert max-w-none;
+            }
+
+            /* Speaker Animation */
+            .speaker-membrane {
+                @apply w-32 h-32 rounded-full bg-slate-800 dark:bg-slate-200 relative flex items-center justify-center transition-transform duration-75;
+            }
+            .speaker-active .speaker-membrane {
+                animation: vibrate 0.05s infinite alternate;
+            }
+            @keyframes vibrate {
+                0% { transform: scale(1); }
+                100% { transform: scale(1.05); }
+            }
+        }
+
+        #app-loader { transition: opacity 0.5s ease; }
+        .loaded #app-loader { opacity: 0; pointer-events: none; }
+        
+        /* Range Input Styling */
+        input[type=range] {
+            @apply w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            @apply appearance-none w-6 h-6 rounded-full bg-primary shadow-lg cursor-pointer transition-transform hover:scale-110;
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Loader -->
+    <div id="app-loader" class="fixed inset-0 z-[9999] bg-white dark:bg-slate-900 flex items-center justify-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Background Elements (Water Themed) -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-sky-300 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-400 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-5xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-sky-500/20">
+                    <i class="fa fa-volume-up"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Speaker Cleaner</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">声波排水 & 扬声器修复工具</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <!-- Expanded Language Selector -->
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文 (简体)</option>
+                    <option value="zh-TW">🇨🇳 中文 (繁體)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col relative border-t-4 border-t-sky-500">
+                    
+                    <!-- Tabs -->
+                    <div class="bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                        <div class="flex px-4 py-3 gap-2 overflow-x-auto" id="tab-container">
+                            <!-- Tabs injected via JS -->
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-10 flex-grow flex flex-col items-center justify-center text-center">
+                        
+                        <!-- CLEANER Tab (Main) -->
+                        <div id="content-cleaner" class="tab-content w-full animate-fade-in flex flex-col items-center">
+                            
+                            <div class="mb-8 relative group">
+                                <!-- Animation Rings -->
+                                <div id="ripple-1" class="absolute inset-0 rounded-full border-4 border-sky-400 opacity-0 group-[.active]:animate-ripple"></div>
+                                <div id="ripple-2" class="absolute inset-0 rounded-full border-4 border-sky-400 opacity-0 group-[.active]:animate-ripple" style="animation-delay: 0.5s"></div>
+                                
+                                <!-- Main Button -->
+                                <button onclick="AudioEngine.toggleClean()" id="btn-clean" class="w-48 h-48 rounded-full bg-white dark:bg-slate-800 border-8 border-slate-100 dark:border-slate-700 shadow-2xl flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95 z-10 relative overflow-hidden group">
+                                    <div class="absolute inset-0 bg-sky-50 dark:bg-sky-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                    <i class="fa fa-tint text-6xl text-sky-500 mb-4 transition-transform group-hover:-translate-y-1"></i>
+                                    <span class="font-bold text-lg text-slate-700 dark:text-slate-200 relative" id="clean-status-text" data-i18n="btn_start_clean">点击排水</span>
+                                    <span class="text-xs text-slate-400 mt-1 relative" id="clean-sub-text">165Hz 声波</span>
+                                </button>
+                            </div>
+
+                            <div class="max-w-md space-y-4">
+                                <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-xl p-4 flex items-start gap-3 text-left">
+                                    <i class="fa fa-exclamation-triangle text-yellow-600 dark:text-yellow-500 mt-1"></i>
+                                    <p class="text-sm text-yellow-800 dark:text-yellow-200" data-i18n="cleaner_warning">
+                                        为了获得最佳效果，请将手机<strong>音量调至最大</strong>，并将扬声器口<strong>朝下</strong>放置。
+                                    </p>
+                                </div>
+                                <p class="text-slate-500 dark:text-slate-400 text-sm" data-i18n="cleaner_desc">
+                                    此模式播放特定的超低频声音，利用空气振动将附着在扬声器防尘网上的水珠震落。
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- TONE GENERATOR Tab -->
+                        <div id="content-tone" class="tab-content hidden w-full animate-fade-in max-w-xl mx-auto space-y-8">
+                            <h2 class="text-2xl font-bold flex items-center justify-center gap-3">
+                                <span class="w-2 h-8 bg-purple-500 rounded-full"></span>
+                                <span data-i18n="h2_tone">频率发生器</span>
+                            </h2>
+
+                            <div class="bg-slate-100 dark:bg-slate-800/50 rounded-2xl p-8 border border-slate-200 dark:border-slate-700">
+                                <div class="text-5xl font-mono font-bold text-primary mb-2 text-center" id="freq-display">440 <span class="text-xl text-slate-400">Hz</span></div>
+                                <p class="text-center text-xs text-slate-400 uppercase tracking-widest mb-8">Frequency</p>
+                                
+                                <input type="range" id="freq-slider" min="20" max="2000" value="440" step="1" oninput="AudioEngine.updateFreq(this.value)">
+                                
+                                <div class="flex justify-between text-xs text-slate-400 mt-2 font-mono">
+                                    <span>20Hz</span>
+                                    <span>1000Hz</span>
+                                    <span>2000Hz</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-4">
+                                <button onclick="AudioEngine.setFreq(165)" class="py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm font-mono">165Hz</button>
+                                <button onclick="AudioEngine.setFreq(440)" class="py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm font-mono">440Hz</button>
+                                <button onclick="AudioEngine.setFreq(1000)" class="py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm font-mono">1000Hz</button>
+                            </div>
+
+                            <button id="btn-tone" onclick="AudioEngine.toggleTone()" class="w-full btn-base bg-primary text-white shadow-lg shadow-blue-500/30 hover:bg-primary-hover py-4 text-lg">
+                                <i class="fa fa-play"></i> <span data-i18n="btn_play_tone">播放频率</span>
+                            </button>
+                        </div>
+
+                        <!-- STEREO TEST Tab -->
+                        <div id="content-stereo" class="tab-content hidden w-full animate-fade-in max-w-xl mx-auto space-y-8">
+                             <h2 class="text-2xl font-bold flex items-center justify-center gap-3">
+                                <span class="w-2 h-8 bg-green-500 rounded-full"></span>
+                                <span data-i18n="h2_stereo">立体声测试</span>
+                            </h2>
+                            
+                            <div class="grid grid-cols-2 gap-6">
+                                <button onclick="AudioEngine.playStereo('left')" class="group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-8 hover:border-primary transition-colors">
+                                    <div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <i class="fa fa-chevron-left text-4xl text-slate-300 group-hover:text-primary mb-4 block"></i>
+                                    <span class="font-bold text-lg" data-i18n="stereo_left">左声道</span>
+                                </button>
+                                <button onclick="AudioEngine.playStereo('right')" class="group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-8 hover:border-primary transition-colors">
+                                    <div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <i class="fa fa-chevron-right text-4xl text-slate-300 group-hover:text-primary mb-4 block"></i>
+                                    <span class="font-bold text-lg" data-i18n="stereo_right">右声道</span>
+                                </button>
+                            </div>
+                            
+                            <p class="text-center text-slate-500 text-sm" data-i18n="stereo_desc">点击上方按钮，确认您的耳机或扬声器左右声道是否工作正常。</p>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+
+            <!-- Sidebar -->
+            <aside class="lg:col-span-4 space-y-6">
+                <!-- Status Card -->
+                <div class="glass rounded-2xl p-6 shadow-md border-l-4 border-l-green-500">
+                    <h3 class="font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                        <i class="fa fa-check-circle text-green-500"></i> <span data-i18n="h3_tips">成功秘诀</span>
+                    </h3>
+                    <ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                        <li class="flex items-start gap-2">
+                            <span class="bg-slate-200 dark:bg-slate-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                            <span data-i18n="tip_1">断开耳机连接，确声音从扬声器发出。</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="bg-slate-200 dark:bg-slate-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                            <span data-i18n="tip_2">将音量调节至最大。</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="bg-slate-200 dark:bg-slate-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                            <span data-i18n="tip_3">保持运行 2-3 分钟，可以多次重复。</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Info Card -->
+                <div class="glass rounded-2xl p-6 shadow-md">
+                    <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <i class="fa fa-info-circle text-slate-400"></i> <span data-i18n="h3_quick_info">原理说明</span>
+                    </h3>
+                    <div class="text-sm text-slate-600 dark:text-slate-400 space-y-3">
+                        <p data-i18n="info_principle">
+                            当手机进水时，水会因表面张力卡在扬声器防尘网中。
+                            <br><br>
+                            本工具播放特定频率（通常为 <strong>165Hz</strong>）的声波，引起扬声器膜片大幅度振动，产生的气流足以将水珠“喷”出。
+                        </p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Comprehensive Guide Section (Fully Replicated) -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Feature Introduction -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-life-ring text-primary"></i> <span data-i18n="guide_title">详细修复指南</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_how">它是如何工作的？</h3>
+                                <p data-i18n="guide_p_how">类似于 Apple Watch 的排水功能，该工具利用声波产生强烈的气流振动。通过播放超低频的正弦波或锯齿波，扬声器内部空气被快速压缩和推动，从而将附着在内部组件上的液体排出。</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_steps">如果扬声器仍然闷响怎么办？</h3>
+                                <p data-i18n="guide_p_steps">
+                                    1. <strong>重复清洁：</strong> 顽固的水滴可能需要运行清洁程序 5 次以上。<br>
+                                    2. <strong>重力辅助：</strong> 播放声音时，轻轻甩动手机（请务必握紧！），利用离心力辅助排水。<br>
+                                    3. <strong>干燥剂：</strong> 如果情况严重，请将手机放入装有干燥剂（硅胶包）的密封袋中过夜。
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_more">还有什么用处？</h3>
+                                <p data-i18n="guide_p_more">
+                                    除了排水，本工具的“频率发生器”功能还可以用来测试耳机的低音响应（使用低频）和高音响应（使用高频），或者用来在安静的环境中制造背景白噪音。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-question-circle text-primary"></i> <span data-i18n="faq_title">常见问题 (FAQ)</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q1">这会损坏我的扬声器吗？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a1">不会。该工具只是播放声音，属于扬声器的正常工作范围。我们使用的频率经过安全测试。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q2">这不仅适用于手机吗？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a2">是的！它适用于任何带有扬声器的设备：智能手机（iPhone/Android）、平板电脑、智能手表、甚至进水的蓝牙耳机。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q3">我听不到声音？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a3">请检查是否连接了蓝牙耳机（请断开），并确保静音开关已关闭，音量已调大。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q4">需要多久才能修好？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a4">通常运行 2-3 分钟即可看到效果。如果进水较多，可能需要多次运行并配合干燥处理。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-slate-400 py-6">
+            <p>&copy; <span id="year"></span> Speaker Cleaner. <span data-i18n="footer_text">Use responsibly. Not a replacement for professional repair.</span></p>
+        </footer>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-all duration-300 opacity-0">
+        <div class="bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <i class="fa fa-volume-up text-sky-400"></i>
+            <span class="text-sm font-medium" id="toast-msg">Playing Sound...</span>
+        </div>
+    </div>
+
+    <!-- Required Footer Code -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "Speaker Cleaner", subtitle: "声波排水 & 扬声器修复工具",
+                tab_cleaner: "声波排水", tab_tone: "频率发生器", tab_stereo: "声道测试",
+                btn_start_clean: "点击排水", btn_stop_clean: "停止播放",
+                cleaner_warning: "为了获得最佳效果，请将手机<strong>音量调至最大</strong>，并将扬声器口<strong>朝下</strong>放置。",
+                cleaner_desc: "此模式播放特定的超低频声音(165Hz)，利用空气振动将附着在扬声器防尘网上的水珠震落。",
+                h2_tone: "频率发生器", btn_play_tone: "播放频率", btn_stop_tone: "停止播放",
+                h2_stereo: "立体声测试", stereo_left: "左声道", stereo_right: "右声道",
+                stereo_desc: "点击上方按钮，确认您的耳机或扬声器左右声道是否工作正常。",
+                h3_tips: "成功秘诀",
+                tip_1: "断开耳机连接，确保声音从扬声器发出。", tip_2: "将音量调节至最大。", tip_3: "保持运行 2-3 分钟，可以多次重复。",
+                h3_quick_info: "原理说明",
+                info_principle: "当手机进水时，水会因表面张力卡在扬声器防尘网中。<br><br>本工具播放特定频率（通常为 <strong>165Hz</strong>）的声波，引起扬声器膜片大幅度振动，产生的气流足以将水珠“喷”出。",
+                guide_title: "详细修复指南",
+                guide_h_how: "它是如何工作的？",
+                guide_p_how: "类似于 Apple Watch 的排水功能，该工具利用声波产生强烈的气流振动。通过播放超低频的正弦波或锯齿波，扬声器内部空气被快速压缩和推动，从而将附着在内部组件上的液体排出。",
+                guide_h_steps: "如果扬声器仍然闷响怎么办？",
+                guide_p_steps: "1. <strong>重复清洁：</strong> 顽固的水滴可能需要运行清洁程序 5 次以上。<br>2. <strong>重力辅助：</strong> 播放声音时，轻轻甩动手机（请务必握紧！），利用离心力辅助排水。<br>3. <strong>干燥剂：</strong> 如果情况严重，请将手机放入装有干燥剂的密封袋中过夜。",
+                guide_h_more: "还有什么用处？",
+                guide_p_more: "除了排水，本工具的“频率发生器”功能还可以用来测试耳机的低音响应（使用低频）和高音响应（使用高频）。",
+                faq_title: "常见问题 (FAQ)",
+                faq_q1: "这会损坏我的扬声器吗？", faq_a1: "不会。该工具只是播放声音，属于扬声器的正常工作范围。我们使用的频率经过安全测试。",
+                faq_q2: "这不仅适用于手机吗？", faq_a2: "是的！它适用于任何带有扬声器的设备：智能手机、平板电脑、智能手表、甚至进水的蓝牙耳机。",
+                faq_q3: "我听不到声音？", faq_a3: "请检查是否连接了蓝牙耳机（请断开），并确保静音开关已关闭，音量已调大。",
+                faq_q4: "需要多久才能修好？", faq_a4: "通常运行 2-3 分钟即可看到效果。如果进水较多，可能需要多次运行并配合干燥处理。",
+                footer_text: "toolboxpro.top 请负责任地使用。不能替代专业维修。",
+                msg_playing: "正在播放..."
+            },
+            'zh-TW': {
+                title: "Speaker Cleaner", subtitle: "聲波排水 & 揚聲器修復工具",
+                tab_cleaner: "聲波排水", tab_tone: "頻率產生器", tab_stereo: "聲道測試",
+                btn_start_clean: "點擊排水", btn_stop_clean: "停止播放",
+                cleaner_warning: "為了獲得最佳效果，請將手機<strong>音量調至最大</strong>，並將揚聲器口<strong>朝下</strong>放置。",
+                cleaner_desc: "此模式播放特定的超低頻聲音(165Hz)，利用空氣振動將附著在揚聲器防塵網上的水珠震落。",
+                h2_tone: "頻率產生器", btn_play_tone: "播放頻率", btn_stop_tone: "停止播放",
+                h2_stereo: "立體聲測試", stereo_left: "左聲道", stereo_right: "右聲道",
+                stereo_desc: "點擊上方按鈕，確認您的耳機或揚聲器左右聲道是否工作正常。",
+                h3_tips: "成功秘訣",
+                tip_1: "斷開藍牙連接，確保聲音從揚聲器發出。", tip_2: "將音量調節至最大。", tip_3: "保持運行 2-3 分鐘，可以多次重複。",
+                h3_quick_info: "原理說明",
+                info_principle: "當手機進水時，水會因表面張力卡在揚聲器防塵網中。<br><br>本工具播放特定頻率（通常為 <strong>165Hz</strong>）的聲波，引起揚聲器膜片大幅度振動，產生的氣流足以將水珠「噴」出。",
+                guide_title: "詳細修復指南",
+                guide_h_how: "它是如何工作的？",
+                guide_p_how: "類似於 Apple Watch 的排水功能，該工具利用聲波產生強烈的氣流振動。通過播放超低頻的正弦波或鋸齒波，揚聲器內部空氣被快速壓縮和推動，從而將附著在內部組件上的液體排出。",
+                guide_h_steps: "如果揚聲器仍然悶響怎麼辦？",
+                guide_p_steps: "1. <strong>重複清潔：</strong> 頑固的水滴可能需要運行清潔程序 5 次以上。<br>2. <strong>重力輔助：</strong> 播放聲音時，輕輕甩動手機（請務必握緊！），利用離心力輔助排水。<br>3. <strong>乾燥劑：</strong> 如果情況嚴重，請將手機放入裝有乾燥劑的密封袋中過夜。",
+                guide_h_more: "還有什麼用處？",
+                guide_p_more: "除了排水，本工具的“頻率產生器”功能還可以可以用來測試耳機的低音響應（使用低頻）和高音響應（使用高頻）。",
+                faq_title: "常見問題 (FAQ)",
+                faq_q1: "這會損壞我的揚聲器嗎？", faq_a1: "不會。該工具只是播放聲音，屬於揚聲器的正常工作範圍。我們使用的頻率經過安全測試。",
+                faq_q2: "這不僅適用於手機嗎？", faq_a2: "是的！它適用於任何帶有揚聲器的設備：智能手機、平板電腦、智能手錶、甚至進水的藍牙耳機。",
+                faq_q3: "我聽不到聲音？", faq_a3: "請檢查是否連接了藍牙耳機（請斷開），並確保靜音開關已關閉，音量已調大。",
+                faq_q4: "需要多久才能修好？", faq_a4: "通常運行 2-3 分鐘即可看到效果。如果進水較多，可能需要多次運行並配合乾燥處理。",
+                footer_text: "toolboxpro.top 請負責任地使用。不能替代專業維修。",
+                msg_playing: "正在播放..."
+            },
+            'en': {
+                title: "Speaker Cleaner", subtitle: "Remove water from phone speakers",
+                tab_cleaner: "Water Eject", tab_tone: "Tone Gen", tab_stereo: "Stereo Test",
+                btn_start_clean: "Eject Water", btn_stop_clean: "Stop",
+                cleaner_warning: "For best results, turn volume to <strong>MAX</strong> and face speaker <strong>DOWN</strong>.",
+                cleaner_desc: "This mode plays a specific ultra-low frequency (165Hz) sound to vibrate water droplets out of your speaker mesh.",
+                h2_tone: "Frequency Generator", btn_play_tone: "Play Tone", btn_stop_tone: "Stop Tone",
+                h2_stereo: "Stereo Test", stereo_left: "Left Channel", stereo_right: "Right Channel",
+                stereo_desc: "Check if your left and right speakers/earbuds are working correctly.",
+                h3_tips: "Tips for Success",
+                tip_1: "Disconnect Bluetooth headphones.", tip_2: "Turn volume to 100%.", tip_3: "Run for 2-3 minutes. Repeat if needed.",
+                h3_quick_info: "How it works",
+                info_principle: "Water gets stuck in speaker grills due to surface tension.<br><br>This tool plays a specific sound (usually <strong>165Hz</strong>) that vibrates the speaker diaphragm enough to push the water out.",
+                guide_title: "Repair Guide",
+                guide_h_how: "How does it work?",
+                guide_p_how: "Similar to the Apple Watch water eject feature, this tool uses sound waves to create air vibration. By playing a specific wave pattern, it compresses air inside the speaker to push liquid out.",
+                guide_h_steps: "Still muffled?",
+                guide_p_steps: "1. <strong>Repeat:</strong> Stubborn water may need 5+ runs.<br>2. <strong>Gravity:</strong> Shake your phone gently while playing sound.<br>3. <strong>Desiccant:</strong> Use silica gel packets overnight for severe cases.",
+                guide_h_more: "What else is it for?",
+                guide_p_more: "Besides water ejection, the 'Tone Generator' can be used to test headphone bass response (low freq) and treble (high freq).",
+                faq_title: "FAQ",
+                faq_q1: "Will this damage my speaker?", faq_a1: "No. It just plays sound within normal operating ranges. The frequencies used are safe.",
+                faq_q2: "Does this work on any device?", faq_a2: "Yes! Phones, tablets, smartwatches, and even headphones.",
+                faq_q3: "No sound?", faq_a3: "Check if Bluetooth is connected (disconnect it), check mute switch, and ensure volume is up.",
+                faq_q4: "How long does it take?", faq_a4: "Usually 2-3 minutes. Severe cases may require multiple runs and drying.",
+                footer_text: "toolboxpro.top Use responsibly. Not a replacement for professional repair.",
+                msg_playing: "Playing Sound..."
+            },
+            'es': {
+                title: "Limpiador de Altavoces", subtitle: "Expulsar agua y arreglar sonido",
+                tab_cleaner: "Expulsar Agua", tab_tone: "Generador Tono", tab_stereo: "Test Estéreo",
+                btn_start_clean: "Limpiar", btn_stop_clean: "Detener",
+                cleaner_warning: "Para mejores resultados, suba el volumen al <strong>MÁXIMO</strong> y coloque el altavoz hacia <strong>ABAJO</strong>.",
+                cleaner_desc: "Este modo reproduce un sonido de frecuencia ultra baja (165Hz) para vibrar y expulsar las gotas de agua.",
+                h2_tone: "Generador de Frecuencia", btn_play_tone: "Reproducir", btn_stop_tone: "Detener",
+                h2_stereo: "Test Estéreo", stereo_left: "Canal Izquierdo", stereo_right: "Canal Derecho",
+                stereo_desc: "Compruebe si sus altavoces o auriculares funcionan correctamente.",
+                h3_tips: "Consejos de Éxito",
+                tip_1: "Desconecte el Bluetooth.", tip_2: "Volumen al 100%.", tip_3: "Ejecutar 2-3 minutos. Repetir si es necesario.",
+                h3_quick_info: "Cómo funciona",
+                info_principle: "El agua queda atrapada en la rejilla del altavoz por tensión superficial.<br><br>Esta herramienta usa ondas sonoras (<strong>165Hz</strong>) para empujar el agua hacia fuera.",
+                guide_title: "Guía de Reparación",
+                guide_h_how: "¿Cómo funciona?",
+                guide_p_how: "Similar a la función del Apple Watch, usa ondas sonoras para crear vibración de aire. Al reproducir un patrón específico, comprime el aire para expulsar el líquido.",
+                guide_h_steps: "¿Sigue sonando mal?",
+                guide_p_steps: "1. <strong>Repetir:</strong> El agua persistente puede necesitar más de 5 intentos.<br>2. <strong>Gravedad:</strong> Agite el teléfono suavemente mientras suena.<br>3. <strong>Desecante:</strong> Use gel de sílice durante la noche.",
+                guide_h_more: "¿Para qué más sirve?",
+                guide_p_more: "El generador de tonos sirve para probar la respuesta de graves y agudos de sus auriculares.",
+                faq_title: "Preguntas Frecuentes",
+                faq_q1: "¿Dañará mi altavoz?", faq_a1: "No. Solo reproduce sonido en rangos seguros.",
+                faq_q2: "¿Funciona en cualquier dispositivo?", faq_a2: "¡Sí! Teléfonos, tabletas, relojes inteligentes y auriculares.",
+                faq_q3: "¿No hay sonido?", faq_a3: "Desconecte Bluetooth, quite el silencio y suba el volumen.",
+                faq_q4: "¿Cuánto tarda?", faq_a4: "Normalmente 2-3 minutos.",
+                footer_text: "toolboxpro.top Úselo responsablemente.",
+                msg_playing: "Reproduciendo..."
+            },
+            'ru': {
+                title: "Очистка Динамика", subtitle: "Удаление воды звуком",
+                tab_cleaner: "Удалить Воду", tab_tone: "Генератор", tab_stereo: "Стерео Тест",
+                btn_start_clean: "Очистить", btn_stop_clean: "Стоп",
+                cleaner_warning: "Для лучшего результата включите громкость на <strong>МАКСИМУМ</strong> и направьте динамик <strong>ВНИЗ</strong>.",
+                cleaner_desc: "Этот режим воспроизводит звук частотой 165 Гц, чтобы вытряхнуть капли воды из динамика.",
+                h2_tone: "Генератор Частот", btn_play_tone: "Играть", btn_stop_tone: "Стоп",
+                h2_stereo: "Стерео Тест", stereo_left: "Левый", stereo_right: "Правый",
+                stereo_desc: "Проверьте работу левого и правого канала.",
+                h3_tips: "Советы",
+                tip_1: "Отключите Bluetooth.", tip_2: "Громкость 100%.", tip_3: "Включите на 2-3 мин. Повторите.",
+                h3_quick_info: "Принцип работы",
+                info_principle: "Вода застревает в сетке динамика.<br><br>Инструмент использует звук (<strong>165 Гц</strong>) для вибрации мембраны и выталкивания воды.",
+                guide_title: "Руководство",
+                guide_h_how: "Как это работает?",
+                guide_p_how: "Подобно функции Apple Watch, инструмент использует звуковые волны для создания вибрации воздуха, выталкивая жидкость наружу.",
+                guide_h_steps: "Звук все еще глухой?",
+                guide_p_steps: "1. <strong>Повторите:</strong> Может потребоваться 5+ запусков.<br>2. <strong>Гравитация:</strong> Осторожно встряхните телефон.<br>3. <strong>Силикагель:</strong> Оставьте телефон в силикагеле на ночь.",
+                guide_h_more: "Для чего еще?",
+                guide_p_more: "Генератор тона можно использовать для проверки басов наушников.",
+                faq_title: "Частые вопросы",
+                faq_q1: "Это безопасно?", faq_a1: "Да. Используются безопасные частоты.",
+                faq_q2: "Для любых устройств?", faq_a2: "Да! Телефоны, планшеты, часы.",
+                faq_q3: "Нет звука?", faq_a3: "Отключите Bluetooth и проверьте громкость.",
+                faq_q4: "Как долго?", faq_a4: "Обычно 2-3 минуты.",
+                footer_text: "toolboxpro.top Используйте ответственно.",
+                msg_playing: "Воспроизведение..."
+            },
+            'ja': {
+                title: "Speaker Cleaner", subtitle: "スピーカー排水ツール",
+                tab_cleaner: "水抜き", tab_tone: "周波数発生", tab_stereo: "ステレオ",
+                btn_start_clean: "排水開始", btn_stop_clean: "停止",
+                cleaner_warning: "効果を最大にするには、音量を<strong>最大</strong>にして、スピーカーを<strong>下</strong>に向けてください。",
+                cleaner_desc: "特定の超低周波数（165Hz）の音を再生し、スピーカーメッシュから水滴を振動させて排出します。",
+                h2_tone: "周波数ジェネレーター", btn_play_tone: "再生", btn_stop_tone: "停止",
+                h2_stereo: "ステレオテスト", stereo_left: "左チャンネル", stereo_right: "右チャンネル",
+                stereo_desc: "左右のスピーカーが正常に動作しているか確認してください。",
+                h3_tips: "成功のコツ",
+                tip_1: "Bluetoothイヤホンを切断してください。", tip_2: "音量を100%にしてください。", tip_3: "2〜3分間実行してください。必要に応じて繰り返します。",
+                h3_quick_info: "仕組み",
+                info_principle: "表面張力により、水がスピーカーグリルに詰まることがあります。<br><br>このツールは特定の音（通常<strong>165Hz</strong>）を再生し、スピーカーの振動板を振動させて水を押し出します。",
+                guide_title: "修復ガイド",
+                guide_h_how: "どのような仕組みですか？",
+                guide_p_how: "Apple Watchの水排出機能と同様に、音波を使用して空気振動を作り出します。特定の波形パターンを再生することで、スピーカー内部の空気を圧縮し、液体を排出します。",
+                guide_h_steps: "まだ音がこもっていますか？",
+                guide_p_steps: "1. <strong>繰り返す:</strong> 頑固な水滴は5回以上の実行が必要な場合があります。<br>2. <strong>重力:</strong> 音を再生しながら携帯電話を優しく振ってください。<br>3. <strong>乾燥剤:</strong> 重症の場合は、シリカゲルと一緒に密封して一晩置いてください。",
+                guide_h_more: "他には？",
+                guide_p_more: "周波数ジェネレーターは、ヘッドフォンの低音や高音のテストにも使用できます。",
+                faq_title: "よくある質問",
+                faq_q1: "スピーカーが壊れませんか？", faq_a1: "いいえ。通常の動作範囲内で音を再生するだけです。",
+                faq_q2: "どのデバイスでも使えますか？", faq_a2: "はい！スマートフォン、タブレット、スマートウォッチ、ヘッドフォンで使用できます。",
+                faq_q3: "音が聞こえませんか？", faq_a3: "Bluetoothが接続されていないか確認し、マナーモードを解除して音量を上げてください。",
+                faq_q4: "時間はどれくらい？", faq_a4: "通常2〜3分です。",
+                footer_text: "toolboxpro.top 自己責任で使用してください。",
+                msg_playing: "再生中..."
+            },
+            'hi': {
+                title: "स्पीकर क्लीनर", subtitle: "फ़ोन स्पीकर से पानी निकालें",
+                tab_cleaner: "पानी निकालें", tab_tone: "टोन जनरेटर", tab_stereo: "स्टीरियो टेस्ट",
+                btn_start_clean: "क्लीन करें", btn_stop_clean: "रोकें",
+                cleaner_warning: "सर्वोत्तम परिणामों के लिए, वॉल्यूम <strong>अधिकतम</strong> करें और स्पीकर को <strong>नीचे</strong> रखें।",
+                cleaner_desc: "यह मोड पानी की बूंदों को बाहर निकालने के लिए 165Hz ध्वनि बजाता है।",
+                h2_tone: "फ्रीक्वेंसी जनरेटर", btn_play_tone: "प्ले करें", btn_stop_tone: "रोकें",
+                h2_stereo: "स्टीरियो टेस्ट", stereo_left: "बायां चैनल", stereo_right: "दायां चैनल",
+                stereo_desc: "जांचें कि आपके बाएं और दाएं स्पीकर सही काम कर रहे हैं या नहीं।",
+                h3_tips: "सफलता के टिप्स",
+                tip_1: "ब्लूटूथ डिस्कनेक्ट करें।", tip_2: "वॉल्यूम 100% करें।", tip_3: "2-3 मिनट चलाएं।",
+                h3_quick_info: "यह कैसे काम करता है",
+                info_principle: "सतह तनाव के कारण पानी फंस जाता है।<br><br>यह टूल पानी को बाहर धकेलने के लिए ध्वनि (<strong>165Hz</strong>) का उपयोग करता है।",
+                guide_title: "मरम्मत गाइड",
+                guide_h_how: "यह कैसे काम करता है?",
+                guide_p_how: "Apple Watch की तरह, यह टूल हवा के कंपन को बनाने के लिए ध्वनि तरंगों का उपयोग करता है।",
+                guide_h_steps: "आवाज अभी भी दबी हुई है?",
+                guide_p_steps: "1. <strong>दोहराएं:</strong> 5 से अधिक बार चलाएं।<br>2. <strong>गुरुत्वाकर्षण:</strong> फोन को धीरे से हिलाएं।<br>3. <strong>देसीकेंट:</strong> सिलिका जेल का उपयोग करें।",
+                guide_h_more: "और क्या उपयोग है?",
+                guide_p_more: "टोन जनरेटर का उपयोग हेडफोन बास की जांच के लिए किया जा सकता है।",
+                faq_title: "सामान्य प्रश्न",
+                faq_q1: "क्या यह स्पीकर को नुकसान पहुंचाएगा?", faq_a1: "नहीं। यह सुरक्षित है।",
+                faq_q2: "क्या यह किसी भी डिवाइस पर काम करता है?", faq_a2: "हां! फोन, टैबलेट, घड़ियां।",
+                faq_q3: "आवाज नहीं आ रही?", faq_a3: "ब्लूटूथ बंद करें और वॉल्यूम बढ़ाएं।",
+                faq_q4: "कितना समय लगता है?", faq_a4: "आमतौर पर 2-3 मिनट।",
+                footer_text: "toolboxpro.top जिम्मेदारी से प्रयोग करें।",
+                msg_playing: "बजा रहा है..."
+            },
+            'pl': {
+                title: "Czyszczenie Głośników", subtitle: "Usuń wodę z głośników",
+                tab_cleaner: "Usuń Wodę", tab_tone: "Generator", tab_stereo: "Test Stereo",
+                btn_start_clean: "Czyść", btn_stop_clean: "Stop",
+                cleaner_warning: "Dla najlepszych efektów ustaw głośność na <strong>MAX</strong> i skieruj głośnik w <strong>DÓŁ</strong>.",
+                cleaner_desc: "Ten tryb odtwarza dźwięk 165Hz, aby wytrząsnąć krople wody.",
+                h2_tone: "Generator Częstotliwości", btn_play_tone: "Graj", btn_stop_tone: "Stop",
+                h2_stereo: "Test Stereo", stereo_left: "Lewy", stereo_right: "Prawy",
+                stereo_desc: "Sprawdź, czy lewy i prawy kanał działają poprawnie.",
+                h3_tips: "Wskazówki",
+                tip_1: "Rozłącz Bluetooth.", tip_2: "Głośność 100%.", tip_3: "Uruchom na 2-3 minuty.",
+                h3_quick_info: "Jak to działa",
+                info_principle: "Woda utyka w siatce głośnika.<br><br>Narzędzie używa dźwięku (<strong>165Hz</strong>) do wypchnięcia wody.",
+                guide_title: "Przewodnik",
+                guide_h_how: "Jak to działa?",
+                guide_p_how: "Podobnie jak w Apple Watch, narzędzie używa fal dźwiękowych do wibracji powietrza, wypychając ciecz.",
+                guide_h_steps: "Dźwięk nadal stłumiony?",
+                guide_p_steps: "1. <strong>Powtórz:</strong> Może wymagać 5+ prób.<br>2. <strong>Grawitacja:</strong> Delikatnie potrząśnij telefonem.<br>3. <strong>Osuszacz:</strong> Użyj żelu krzemionkowego.",
+                guide_h_more: "Do czego jeszcze?",
+                guide_p_more: "Generatora można użyć do testowania basów w słuchawkach.",
+                faq_title: "FAQ",
+                faq_q1: "Czy to bezpieczne?", faq_a1: "Tak. Używane częstotliwości są bezpieczne.",
+                faq_q2: "Działa na każdym urządzeniu?", faq_a2: "Tak! Telefony, tablety, zegarki.",
+                faq_q3: "Brak dźwięku?", faq_a3: "Rozłącz Bluetooth i zwiększ głośność.",
+                faq_q4: "Jak długo?", faq_a4: "Zwykle 2-3 minuty.",
+                footer_text: "toolboxpro.top Używaj odpowiedzialnie.",
+                msg_playing: "Odtwarzanie..."
+            }
+        };
+
+        // --- Audio Engine ---
+        const AudioEngine = {
+            ctx: null,
+            osc: null,
+            gain: null,
+            isCleaning: false,
+            isTonePlaying: false,
+            currentFreq: 440,
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            },
+
+            // Main "Fix My Speakers" logic (165Hz Sawtooth wave)
+            toggleClean() {
+                this.init();
+                
+                if (this.isCleaning) {
+                    this.stop();
+                    this.isCleaning = false;
+                    this.updateCleanUI(false);
+                } else {
+                    // Resume context if suspended (browser policy)
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    
+                    this.stop(); // Stop any other sounds
+
+                    this.osc = this.ctx.createOscillator();
+                    this.gain = this.ctx.createGain();
+
+                    // 165Hz Sawtooth is effective for water ejection
+                    this.osc.type = 'sawtooth';
+                    this.osc.frequency.setValueAtTime(165, this.ctx.currentTime);
+
+                    // Add a slight modulation to make it "pulse"
+                    const lfo = this.ctx.createOscillator();
+                    lfo.type = 'sine';
+                    lfo.frequency.value = 4; // 4 pulses per second
+                    const lfoGain = this.ctx.createGain();
+                    lfoGain.gain.value = 0.1; // Subtle modulation depth
+                    
+                    this.osc.connect(this.gain);
+                    this.gain.connect(this.ctx.destination);
+                    
+                    this.osc.start();
+                    this.isCleaning = true;
+                    this.updateCleanUI(true);
+                    App.showToast(i18nData[App.currentLang].msg_playing);
+                }
+            },
+
+            // Tone Generator Logic
+            toggleTone() {
+                this.init();
+                const btn = document.getElementById('btn-tone');
+                const data = i18nData[App.currentLang];
+
+                if (this.isTonePlaying) {
+                    this.stop();
+                    this.isTonePlaying = false;
+                    btn.innerHTML = `<i class="fa fa-play"></i> ${data.btn_play_tone}`;
+                    btn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                    btn.classList.add('bg-primary', 'hover:bg-primary-hover');
+                } else {
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    this.stop();
+
+                    this.osc = this.ctx.createOscillator();
+                    this.gain = this.ctx.createGain();
+                    
+                    this.osc.type = 'sine';
+                    this.osc.frequency.setValueAtTime(this.currentFreq, this.ctx.currentTime);
+                    
+                    this.osc.connect(this.gain);
+                    this.gain.connect(this.ctx.destination);
+                    
+                    this.osc.start();
+                    this.isTonePlaying = true;
+                    
+                    btn.innerHTML = `<i class="fa fa-stop"></i> ${data.btn_stop_tone}`;
+                    btn.classList.remove('bg-primary', 'hover:bg-primary-hover');
+                    btn.classList.add('bg-red-500', 'hover:bg-red-600');
+                }
+            },
+
+            updateFreq(val) {
+                this.currentFreq = val;
+                document.getElementById('freq-display').innerHTML = `${val} <span class="text-xl text-slate-400">Hz</span>`;
+                if(this.isTonePlaying && this.osc) {
+                    this.osc.frequency.setValueAtTime(val, this.ctx.currentTime);
+                }
+            },
+
+            setFreq(val) {
+                document.getElementById('freq-slider').value = val;
+                this.updateFreq(val);
+                if(!this.isTonePlaying) this.toggleTone();
+            },
+
+            // Stereo Test Logic
+            playStereo(side) {
+                this.init();
+                this.stop();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+
+                const osc = this.ctx.createOscillator();
+                const panNode = this.ctx.createStereoPanner();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+                
+                // Pan: -1 (Left), 1 (Right)
+                panNode.pan.setValueAtTime(side === 'left' ? -1 : 1, this.ctx.currentTime);
+
+                osc.connect(panNode);
+                panNode.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                
+                // Play for short duration then stop
+                gain.gain.setValueAtTime(1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
+                osc.stop(this.ctx.currentTime + 0.5);
+            },
+
+            stop() {
+                if(this.osc) {
+                    try { this.osc.stop(); } catch(e){}
+                    this.osc.disconnect();
+                    this.osc = null;
+                }
+                // Reset states
+                this.isCleaning = false;
+                this.isTonePlaying = false;
+                this.updateCleanUI(false);
+                
+                // Reset Tone Button UI
+                const btnTone = document.getElementById('btn-tone');
+                if(btnTone) {
+                    const data = i18nData[App.currentLang];
+                    btnTone.innerHTML = `<i class="fa fa-play"></i> ${data.btn_play_tone}`;
+                    btnTone.classList.remove('bg-red-500', 'hover:bg-red-600');
+                    btnTone.classList.add('bg-primary', 'hover:bg-primary-hover');
+                }
+            },
+
+            updateCleanUI(isActive) {
+                const btn = document.getElementById('btn-clean');
+                const icon = btn.querySelector('i');
+                const text = document.getElementById('clean-status-text');
+                const sub = document.getElementById('clean-sub-text');
+                const container = btn.parentElement;
+                const data = i18nData[App.currentLang];
+
+                if(isActive) {
+                    text.textContent = data.btn_stop_clean;
+                    sub.textContent = "Running...";
+                    icon.classList.add('animate-bounce');
+                    container.classList.add('active'); // Triggers ripple
+                } else {
+                    text.textContent = data.btn_start_clean;
+                    sub.textContent = "165Hz Sound";
+                    icon.classList.remove('animate-bounce');
+                    container.classList.remove('active');
+                }
+            }
+        };
+
+        // --- App Logic ---
+        const App = {
+            tabs: [
+                { id: 'cleaner', key: 'tab_cleaner', icon: 'fa-tint' },
+                { id: 'tone', key: 'tab_tone', icon: 'fa-music' },
+                { id: 'stereo', key: 'tab_stereo', icon: 'fa-headphones' }
+            ],
+
+            currentLang: 'zh-CN',
+
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                const savedLang = localStorage.getItem('app_lang');
+                
+                // Priority: URL > LocalStorage > Default (zh-CN)
+                this.currentLang = (langParam && i18nData[langParam]) ? langParam : (savedLang || 'zh-CN');
+                
+                // If URL param was missing but we have a lang (from storage or default), set URL
+                if (!langParam) {
+                    this.updateUrl(this.currentLang);
+                }
+
+                document.getElementById('lang-selector').value = this.currentLang;
+
+                this.renderTabs();
+                this.handleTheme();
+                this.setupLanguage();
+                this.updateYear();
+                this.translateUI(this.currentLang);
+                
+                setTimeout(() => document.body.classList.add('loaded'), 100);
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {
+                    console.log("URL update skipped (preview mode)");
+                }
+            },
+
+            setupLanguage() {
+                const selector = document.getElementById('lang-selector');
+                selector.addEventListener('change', (e) => {
+                    const lang = e.target.value;
+                    this.currentLang = lang;
+                    localStorage.setItem('app_lang', lang);
+                    
+                    // Update URL when language changes
+                    this.updateUrl(lang);
+
+                    this.translateUI(lang);
+                    this.renderTabs(); 
+                    
+                    // Stop audio when switching language just in case
+                    AudioEngine.stop();
+                });
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) {
+                        el.innerHTML = data[key];
+                    }
+                });
+                
+                // Update dynamic button text state
+                if(AudioEngine.isCleaning) AudioEngine.updateCleanUI(true);
+            },
+
+            renderTabs() {
+                const container = document.getElementById('tab-container');
+                container.innerHTML = '';
+                const data = i18nData[this.currentLang] || i18nData['en'];
+
+                this.tabs.forEach((tab) => {
+                    const btn = document.createElement('button');
+                    const content = document.getElementById(`content-${tab.id}`);
+                    const isActive = !content.classList.contains('hidden');
+                    
+                    btn.className = `px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap flex items-center gap-2 transition-all shadow-sm border border-transparent ${isActive ? 'bg-white dark:bg-slate-800 text-primary border-slate-100 dark:border-slate-700' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'}`;
+                    btn.innerHTML = `<i class="fa ${tab.icon}"></i> ${data[tab.key]}`;
+                    btn.onclick = () => this.switchTab(tab.id, btn);
+                    container.appendChild(btn);
+                });
+            },
+
+            switchTab(tabId, btnElement) {
+                // Stop audio when switching tabs
+                AudioEngine.stop();
+
+                // UI Toggle
+                const buttons = document.getElementById('tab-container').children;
+                for(let btn of buttons) {
+                    btn.className = 'px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap flex items-center gap-2 transition-all border border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-800/50';
+                }
+                btnElement.className = 'px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap flex items-center gap-2 transition-all shadow-sm border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary';
+
+                // Content Toggle
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+
+            showToast(msg) {
+                const t = document.getElementById('toast');
+                document.getElementById('toast-msg').textContent = msg;
+                t.classList.remove('translate-x-full', 'opacity-0');
+                setTimeout(() => t.classList.add('translate-x-full', 'opacity-0'), 2500);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>

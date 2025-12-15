@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="tool-id" content="brazilian-cpf-generator">
+    <meta name="category" content="development-tools">
+    <meta name="description" content="全能巴西税号工具：生成和验证 CPF (个人) 和 CNPJ (企业) 号码。支持批量生成 JSON/CSV 格式，支持 CPF 地区反查。Complete Brazilian Tax ID tool: Generate and validate CPF & CNPJ.">
+    <meta name="icon" content="🇧🇷">
+    <title>巴西 CPF/CNPJ 生成器与验证器 | Brazilian Tax ID Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#16a34a', // Brazil Green
+                        secondary: '#facc15', // Brazil Yellow
+                        accent: '#002776', // Brazil Blue
+                        dark: {
+                            primary: '#15803d',
+                            secondary: '#ca8a04',
+                            background: '#0f172a',
+                            surface: '#1e293b'
+                        }
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .tab-btn {
+                @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base cursor-pointer select-none;
+            }
+            .tab-btn.active {
+                @apply bg-primary text-white shadow-lg transform scale-105;
+            }
+            .tab-btn.inactive {
+                @apply bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600;
+            }
+            .type-toggle-btn {
+                @apply flex-1 py-2 text-center text-sm font-medium rounded-md transition-all cursor-pointer;
+            }
+            .type-toggle-btn.active {
+                @apply bg-white dark:bg-gray-600 text-primary dark:text-green-400 shadow-sm border border-gray-200 dark:border-gray-500 font-bold;
+            }
+            .type-toggle-btn.inactive {
+                @apply text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50;
+            }
+            .input-field {
+                @apply w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
+            }
+            .btn-action {
+                @apply w-full py-3 rounded-lg font-bold text-white transition-all transform active:scale-95 shadow-md flex items-center justify-center;
+            }
+            .result-box {
+                @apply font-mono text-xl sm:text-2xl text-center py-6 bg-gray-100 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 select-all cursor-pointer hover:border-primary/50 transition-colors relative;
+            }
+            .badge {
+                @apply px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wider;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-gradient-to-br from-green-50 to-blue-50 dark:from-dark-background dark:to-dark-surface min-h-screen font-inter transition-colors duration-300">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- Header -->
+        <header class="mb-10 text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-primary to-yellow-400 mb-6 shadow-lg transform hover:rotate-12 transition-transform duration-500">
+                <span class="text-4xl">🇧🇷</span>
+            </div>
+            <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-gray-800 dark:text-white mb-3 leading-tight">
+                <span data-i18n="title">巴西 CPF/CNPJ 生成器</span>
+            </h1>
+            <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto px-4 text-sm sm:text-base" data-i18n="subtitle">
+                专业开发工具：在线生成和验证巴西个人税号 (CPF) 与企业税号 (CNPJ)，支持批量导出与地区反查。
+            </p>
+        </header>
+
+        <!-- Main Tool Area -->
+        <main class="bg-white dark:bg-dark-surface rounded-2xl shadow-xl overflow-hidden transition-all duration-300 border border-gray-100 dark:border-gray-700">
+            <!-- Toolbar -->
+            <div class="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <!-- Language Selector -->
+                <div class="flex items-center w-full sm:w-auto">
+                    <label for="lang-selector" class="mr-2 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap"><i class="fa fa-globe mr-1"></i><span data-i18n="language">语言</span></label>
+                    <select id="lang-selector" class="flex-1 sm:flex-none bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-gray-700 dark:text-gray-200">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="pt">Português</option>
+                        <option value="ru">Русский</option>
+                        <option value="hi">हिंदी</option>
+                        <option value="pl">Polski</option>
+                    </select>
+                </div>
+                
+                <!-- Dark Mode Toggle -->
+                <button id="mode-toggle" class="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-yellow-400">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex flex-wrap gap-2 p-4 sm:p-6 bg-gray-50/50 dark:bg-gray-800/30">
+                <button class="tab-btn active flex-1 sm:flex-none" onclick="Tool.switchTab('generator')" data-tab="generator" data-i18n="tab_generator">生成器</button>
+                <button class="tab-btn inactive flex-1 sm:flex-none" onclick="Tool.switchTab('batch')" data-tab="batch" data-i18n="tab_batch">批量工具</button>
+                <button class="tab-btn inactive flex-1 sm:flex-none" onclick="Tool.switchTab('validator')" data-tab="validator" data-i18n="tab_validator">验证器</button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="p-6 sm:p-10 min-h-[450px]">
+                
+                <!-- 1. Single Generator -->
+                <div id="content-generator" class="tab-content max-w-2xl mx-auto space-y-8 animate-fade-in">
+                    <!-- Type Switcher -->
+                    <div class="bg-gray-100 dark:bg-gray-700/50 p-1.5 rounded-lg flex shadow-inner">
+                        <button class="type-toggle-btn active" onclick="Tool.setGenType('cpf')" id="btn-gen-cpf">CPF (个人)</button>
+                        <button class="type-toggle-btn inactive" onclick="Tool.setGenType('cnpj')" id="btn-gen-cnpj">CNPJ (企业)</button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                            <label class="flex items-center space-x-3 cursor-pointer select-none bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 w-full sm:w-auto justify-center sm:justify-start">
+                                <input type="checkbox" id="gen-format" checked class="w-5 h-5 text-primary rounded focus:ring-primary border-gray-300">
+                                <span class="text-gray-700 dark:text-gray-200" data-i18n="label_format">包含标点符号</span>
+                            </label>
+                            
+                            <!-- State Selector (Only visible for CPF) -->
+                            <div id="cpf-state-container" class="w-full sm:w-auto">
+                                <select id="gen-state" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700 dark:text-gray-200">
+                                    <option value="" data-i18n="state_random">随机来源地 (State)</option>
+                                    <option value="1">DF, GO, MS, MT, TO (1)</option>
+                                    <option value="2">AC, AM, AP, PA, RO, RR (2)</option>
+                                    <option value="3">CE, MA, PI (3)</option>
+                                    <option value="4">AL, PB, PE, RN (4)</option>
+                                    <option value="5">BA, SE (5)</option>
+                                    <option value="6">MG (6)</option>
+                                    <option value="7">ES, RJ (7)</option>
+                                    <option value="8">SP (8)</option>
+                                    <option value="9">PR, SC (9)</option>
+                                    <option value="0">RS (0)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Result Box -->
+                        <div class="relative group">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 px-2 text-xs text-gray-400 font-medium tracking-widest uppercase" id="result-label">CPF</div>
+                            <div id="generated-result" class="result-box text-gray-800 dark:text-white tracking-widest break-all" onclick="Tool.copyText('generated-result')">
+                                点击生成
+                            </div>
+                            <div class="text-center mt-2 text-xs text-gray-400 dark:text-gray-500 hidden sm:block">
+                                <i class="fa fa-mouse-pointer mr-1"></i> <span data-i18n="click_to_copy">点击框内数字复制</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="Tool.generate()" class="btn-action bg-gradient-to-r from-primary to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg shadow-green-500/30">
+                        <i class="fa fa-refresh mr-2"></i> <span data-i18n="btn_generate">立即生成</span>
+                    </button>
+                </div>
+
+                <!-- 2. Batch Generator -->
+                <div id="content-batch" class="tab-content hidden max-w-3xl mx-auto space-y-6 animate-fade-in">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-i18n="label_type">类型</label>
+                            <select id="batch-type" class="input-field" onchange="Tool.toggleBatchStateVisibility()">
+                                <option value="cpf">CPF (个人)</option>
+                                <option value="cnpj">CNPJ (企业)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-i18n="label_quantity">生成数量</label>
+                            <input type="number" id="batch-qty" value="20" min="1" max="1000" class="input-field">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-i18n="label_export_format">导出格式</label>
+                            <select id="batch-format-type" class="input-field">
+                                <option value="text">纯文本 (List)</option>
+                                <option value="json">JSON Array</option>
+                                <option value="csv">CSV / Excel</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-4 items-center bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="batch-punctuation" checked class="w-4 h-4 text-primary rounded focus:ring-primary border-gray-300">
+                            <span class="text-sm text-gray-700 dark:text-gray-200" data-i18n="label_format">标点符号</span>
+                        </label>
+                        
+                        <div id="batch-state-wrapper" class="flex items-center space-x-2 flex-1">
+                            <span class="text-gray-300">|</span>
+                            <select id="batch-state" class="bg-transparent text-sm text-gray-700 dark:text-gray-200 focus:outline-none border-none cursor-pointer hover:text-primary">
+                                <option value="">随机来源地</option>
+                                <option value="8">SP (圣保罗)</option>
+                                <option value="7">RJ (里约)</option>
+                                <option value="6">MG (米纳斯)</option>
+                                <option value="0">RS (南大河)</option>
+                                <!-- More can be added -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="Tool.generateBatch()" class="btn-action bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/30">
+                        <i class="fa fa-download mr-2"></i> <span data-i18n="btn_batch">批量生成</span>
+                    </button>
+
+                    <div class="relative">
+                        <textarea id="batch-result" rows="8" readonly class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 font-mono text-gray-700 dark:text-gray-300 focus:outline-none resize-y text-sm" placeholder="结果将显示在这里..."></textarea>
+                        <button onclick="Tool.copyText('batch-result', true)" class="absolute right-4 top-4 bg-white dark:bg-gray-800 p-2 rounded shadow-sm hover:text-primary transition-colors border border-gray-200 dark:border-gray-700 z-10">
+                            <i class="fa fa-clone"></i> <span class="text-xs ml-1" data-i18n="btn_copy">复制</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Validator -->
+                <div id="content-validator" class="tab-content hidden max-w-xl mx-auto space-y-8 animate-fade-in">
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-center" data-i18n="label_validate_input">输入 CPF 或 CNPJ 号码 (自动识别)</label>
+                        <div class="relative">
+                            <input type="text" id="validate-input" class="input-field text-xl text-center font-mono tracking-widest py-4" placeholder="000.000.000-00" maxlength="18">
+                            <button onclick="document.getElementById('validate-input').value = ''; Tool.resetValidation();" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 p-2" title="Clear">
+                                <i class="fa fa-times-circle"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-center text-gray-500 dark:text-gray-400">
+                            支持格式: 纯数字, 或者带 . / - 的标准格式
+                        </p>
+                    </div>
+
+                    <button onclick="Tool.validate()" class="btn-action bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30">
+                        <i class="fa fa-check-circle-o mr-2"></i> <span data-i18n="btn_validate">验证有效性</span>
+                    </button>
+
+                    <div id="validation-result" class="hidden transform transition-all duration-300">
+                        <!-- Content injected via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Region Table & Info -->
+        <section class="mt-10 grid lg:grid-cols-3 gap-8">
+            <!-- CPF Region Table -->
+            <div class="lg:col-span-1 bg-white dark:bg-dark-surface rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+                <h3 class="font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <i class="fa fa-map-marker text-secondary mr-2"></i>
+                    <span data-i18n="region_table_title">CPF 地区代码对照表</span>
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500 dark:text-gray-400">
+                            <tr>
+                                <th class="px-3 py-2 rounded-l-md">Code</th>
+                                <th class="px-3 py-2 rounded-r-md">States (UFs)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-gray-600 dark:text-gray-300">
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">1</td><td class="px-3 py-2">DF, GO, MS, MT, TO</td></tr>
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">2</td><td class="px-3 py-2">AC, AM, AP, PA, RO, RR</td></tr>
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">3</td><td class="px-3 py-2">CE, MA, PI</td></tr>
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">4</td><td class="px-3 py-2">AL, PB, PE, RN</td></tr>
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">5</td><td class="px-3 py-2">BA, SE</td></tr>
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">6</td><td class="px-3 py-2">MG (Minas Gerais)</td></tr>
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">7</td><td class="px-3 py-2">ES, RJ (Rio de Janeiro)</td></tr>
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">8</td><td class="px-3 py-2">SP (São Paulo)</td></tr>
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">9</td><td class="px-3 py-2">PR, SC</td></tr>
+                            <tr><td class="px-3 py-2 font-mono font-bold text-primary">0</td><td class="px-3 py-2">RS (Rio Grande do Sul)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FAQ & Info -->
+            <div class="lg:col-span-2 space-y-8">
+                <div class="bg-white dark:bg-dark-surface rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-100 dark:border-gray-700">
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                        <i class="fa fa-info-circle text-primary mr-2"></i>
+                        <span data-i18n="about_title">关于工具</span>
+                    </h2>
+                    <div class="prose dark:prose-invert max-w-none text-sm text-gray-600 dark:text-gray-300 space-y-3">
+                        <p data-i18n="about_text_1">本工具提供巴西 **CPF (个人纳税人登记)** 和 **CNPJ (国家法人登记)** 的生成与验证服务。这是巴西所有金融交易、合同签署和身份识别的基础。</p>
+                        <p data-i18n="about_text_2">CNPJ 格式为 XX.XXX.XXX/0001-XX，其中 `/0001` 通常代表总公司 (Matriz)。我们的算法完全遵循巴西联邦税务局 (Receita Federal) 的 Modulus 11 标准。</p>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-3 mt-4">
+                            <p class="text-xs text-blue-800 dark:text-blue-200" data-i18n="disclaimer">免责声明：生成的号码在数学逻辑上是完全有效的，仅供软件开发测试（如电商支付流程测试）使用，切勿用于任何非法欺诈行为。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-dark-surface rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-100 dark:border-gray-700">
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                        <i class="fa fa-question-circle text-primary mr-2"></i>
+                        <span data-i18n="faq_title">常见问题</span>
+                    </h2>
+                    <div class="space-y-4">
+                        <details class="group bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 text-gray-800 dark:text-gray-200">
+                                <span data-i18n="faq_q1">CPF 和 CNPJ 有什么区别？</span>
+                                <span class="transition group-open:rotate-180"><i class="fa fa-chevron-down text-xs"></i></span>
+                            </summary>
+                            <div class="text-gray-600 dark:text-gray-300 mt-0 px-4 pb-4 text-sm" data-i18n="faq_a1">
+                                CPF (11位) 是发给个人的，类似于美国的 SSN 或中国的身份证号。CNPJ (14位) 是发给企业的，类似于营业执照号。
+                            </div>
+                        </details>
+                        <details class="group bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 text-gray-800 dark:text-gray-200">
+                                <span data-i18n="faq_q2">为什么验证器能知道我的 CPF 是哪里的？</span>
+                                <span class="transition group-open:rotate-180"><i class="fa fa-chevron-down text-xs"></i></span>
+                            </summary>
+                            <div class="text-gray-600 dark:text-gray-300 mt-0 px-4 pb-4 text-sm" data-i18n="faq_a2">
+                                CPF 的第 9 位数字代表了注册时的财政区域。例如，如果第 9 位是 8，则该号码起源于圣保罗 (SP)。验证器通过反查此代码来显示地区。CNPJ 不具备这种通过数字直接判断地区的特性。
+                            </div>
+                        </details>
+                        <details class="group bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 text-gray-800 dark:text-gray-200">
+                                <span data-i18n="faq_q3">JSON 和 CSV 导出有什么用？</span>
+                                <span class="transition group-open:rotate-180"><i class="fa fa-chevron-down text-xs"></i></span>
+                            </summary>
+                            <div class="text-gray-600 dark:text-gray-300 mt-0 px-4 pb-4 text-sm" data-i18n="faq_a3">
+                                开发者在进行数据库压力测试或填充测试数据时，通常需要大量有效的号码。JSON 格式可以直接复制进 API Payload，CSV 可以直接导入 Excel 或 SQL 数据库。
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center border-t border-gray-200 dark:border-gray-700 pt-8 pb-4">
+            <p class="text-gray-500 dark:text-gray-400 text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                <span>© <span id="current-year"></span> Brazilian CPF/CNPJ Tool.</span>
+                <span class="hidden sm:inline">|</span>
+                <a href="https://toolboxpro.top" target="_blank" class="hover:text-primary transition-colors font-medium">toolboxpro.top</a>
+                <span class="hidden sm:inline">|</span>
+                <span>All rights reserved.</span>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-6 right-6 bg-gray-800 dark:bg-white text-white dark:text-gray-900 px-6 py-3 rounded-lg shadow-xl transform translate-x-full opacity-0 transition-all duration-300 z-50 flex items-center gap-3 border border-gray-700 dark:border-gray-200">
+        <i class="fa fa-check-circle text-green-400 dark:text-green-600"></i>
+        <span id="toast-msg">Copied!</span>
+    </div>
+
+    <!-- Required Footer Scripts -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        const Tool = {
+            state: {
+                currentTab: 'generator',
+                lang: 'zh-CN',
+                genType: 'cpf' // cpf or cnpj
+            },
+
+            // Region Map for CPF
+            regions: {
+                '1': 'DF, GO, MS, MT, TO',
+                '2': 'AC, AM, AP, PA, RO, RR',
+                '3': 'CE, MA, PI',
+                '4': 'AL, PB, PE, RN',
+                '5': 'BA, SE',
+                '6': 'MG',
+                '7': 'ES, RJ',
+                '8': 'SP',
+                '9': 'PR, SC',
+                '0': 'RS'
+            },
+
+            i18n: {
+                'zh-CN': {
+                    title: '巴西 CPF/CNPJ 生成器',
+                    subtitle: '专业开发工具：在线生成和验证巴西个人税号 (CPF) 与企业税号 (CNPJ)，支持批量导出与地区反查。',
+                    language: '语言',
+                    tab_generator: '生成器',
+                    tab_batch: '批量工具',
+                    tab_validator: '验证器',
+                    label_format: '包含标点符号',
+                    state_random: '随机来源地 (State)',
+                    btn_generate: '立即生成',
+                    label_type: '类型',
+                    label_quantity: '生成数量',
+                    label_export_format: '导出格式',
+                    btn_batch: '批量生成',
+                    btn_copy: '复制',
+                    label_validate_input: '输入 CPF 或 CNPJ 号码 (自动识别)',
+                    btn_validate: '验证有效性',
+                    about_title: '关于工具',
+                    about_text_1: '本工具提供巴西 **CPF (个人)** 和 **CNPJ (企业)** 的生成与验证服务。',
+                    about_text_2: '我们的算法完全遵循巴西联邦税务局 (Receita Federal) 的 Modulus 11 标准。',
+                    disclaimer: '免责声明：生成的号码仅供测试使用，切勿用于非法用途。',
+                    region_table_title: 'CPF 地区代码对照表',
+                    msg_valid_cpf: '有效的 CPF',
+                    msg_valid_cnpj: '有效的 CNPJ',
+                    msg_invalid: '无效的号码',
+                    msg_valid_desc: '校验码匹配官方算法。',
+                    msg_valid_region: '注册来源地: ',
+                    msg_invalid_desc: '格式错误或校验位不匹配。',
+                    msg_copied: '已复制到剪贴板！',
+                    click_to_copy: '点击框内数字复制',
+                    faq_title: '常见问题',
+                    faq_q1: 'CPF 和 CNPJ 有什么区别？',
+                    faq_a1: 'CPF 是个人税号，CNPJ 是企业税号。',
+                    faq_q2: '验证器如何知道地区？',
+                    faq_a2: '通过 CPF 第9位数字判断注册区域。',
+                    faq_q3: 'JSON/CSV 有什么用？',
+                    faq_a3: '方便开发者导入数据库或进行 API 测试。'
+                },
+                'en': {
+                    title: 'Brazilian CPF/CNPJ Generator',
+                    subtitle: 'Generate and validate Brazilian Tax IDs (CPF for individuals, CNPJ for companies). Batch export to JSON/CSV.',
+                    language: 'Language',
+                    tab_generator: 'Generator',
+                    tab_batch: 'Batch Tool',
+                    tab_validator: 'Validator',
+                    label_format: 'Include Punctuation',
+                    state_random: 'Random State',
+                    btn_generate: 'Generate Now',
+                    label_type: 'Type',
+                    label_quantity: 'Quantity',
+                    label_export_format: 'Export Format',
+                    btn_batch: 'Batch Generate',
+                    btn_copy: 'Copy',
+                    label_validate_input: 'Enter CPF or CNPJ (Auto-detect)',
+                    btn_validate: 'Validate',
+                    about_title: 'About',
+                    about_text_1: 'This tool provides generation and validation for Brazilian **CPF** (Individual) and **CNPJ** (Company) numbers.',
+                    about_text_2: 'Our algorithms strictly follow the Federal Revenue Modulus 11 standard.',
+                    disclaimer: 'Disclaimer: Generated numbers are for testing purposes only.',
+                    region_table_title: 'CPF Region Code Table',
+                    msg_valid_cpf: 'Valid CPF',
+                    msg_valid_cnpj: 'Valid CNPJ',
+                    msg_invalid: 'Invalid Number',
+                    msg_valid_desc: 'Checksum matches official algorithm.',
+                    msg_valid_region: 'Origin Region: ',
+                    msg_invalid_desc: 'Incorrect format or checksum.',
+                    msg_copied: 'Copied!',
+                    click_to_copy: 'Click to copy',
+                    faq_title: 'FAQ',
+                    faq_q1: 'Difference between CPF and CNPJ?',
+                    faq_a1: 'CPF is for individuals, CNPJ is for companies.',
+                    faq_q2: 'How is region detected?',
+                    faq_a2: 'The 9th digit of a CPF indicates the fiscal region.',
+                    faq_q3: 'Why JSON/CSV?',
+                    faq_a3: 'Useful for developers to seed databases or test APIs.'
+                },
+                'pt': {
+                    title: 'Gerador de CPF/CNPJ',
+                    subtitle: 'Gerar e validar CPF e CNPJ. Exportação em lote para JSON/CSV e verificação de região fiscal.',
+                    language: 'Idioma',
+                    tab_generator: 'Gerador',
+                    tab_batch: 'Ferramenta em Lote',
+                    tab_validator: 'Validador',
+                    label_format: 'Incluir Pontuação',
+                    state_random: 'Estado Aleatório',
+                    btn_generate: 'Gerar Agora',
+                    label_type: 'Tipo',
+                    label_quantity: 'Quantidade',
+                    label_export_format: 'Formato de Exportação',
+                    btn_batch: 'Gerar em Lote',
+                    btn_copy: 'Copiar',
+                    label_validate_input: 'Digite CPF ou CNPJ',
+                    btn_validate: 'Validar',
+                    about_title: 'Sobre',
+                    about_text_1: 'Ferramenta completa para **CPF** e **CNPJ**.',
+                    about_text_2: 'Algoritmos seguem o padrão Módulo 11 da Receita Federal.',
+                    disclaimer: 'Aviso: Números gerados apenas para testes (fakes).',
+                    region_table_title: 'Tabela de Regiões Fiscais (CPF)',
+                    msg_valid_cpf: 'CPF Válido',
+                    msg_valid_cnpj: 'CNPJ Válido',
+                    msg_invalid: 'Número Inválido',
+                    msg_valid_desc: 'Dígitos verificadores corretos.',
+                    msg_valid_region: 'Região de Origem: ',
+                    msg_invalid_desc: 'Formato ou dígitos incorretos.',
+                    msg_copied: 'Copiado!',
+                    click_to_copy: 'Clique para copiar',
+                    faq_title: 'Perguntas Frequentes',
+                    faq_q1: 'Diferença entre CPF e CNPJ?',
+                    faq_a1: 'CPF para pessoas físicas, CNPJ para jurídicas.',
+                    faq_q2: 'Como descobre a região?',
+                    faq_a2: 'O 9º dígito do CPF indica a região fiscal.',
+                    faq_q3: 'Por que JSON/CSV?',
+                    faq_a3: 'Útil para desenvolvedores popularem bancos de dados.'
+                }
+                // Add other languages similarly if needed for full coverage, falling back to English logic in code
+            },
+
+            init: function() {
+                // Year
+                document.getElementById('current-year').textContent = new Date().getFullYear();
+
+                // Language
+                let lang = 'zh-CN';
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    lang = urlParams.get('lang') || localStorage.getItem('cpf-tool-lang') || 'zh-CN';
+                } catch(e) {}
+                
+                // Fallback for languages not fully defined in this snippet to avoid errors
+                if (!this.i18n[lang]) lang = 'en';
+
+                const selector = document.getElementById('lang-selector');
+                selector.value = lang;
+                this.state.lang = lang;
+                
+                selector.addEventListener('change', (e) => this.changeLang(e.target.value));
+
+                // Input formatter for validator
+                const valInput = document.getElementById('validate-input');
+                valInput.addEventListener('input', (e) => this.handleValidationInput(e));
+
+                // Dark mode
+                if (localStorage.getItem('theme') === 'dark' || 
+                   (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                }
+                document.getElementById('mode-toggle').addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+                });
+
+                this.updateUI();
+                this.generate();
+            },
+
+            changeLang: function(lang) {
+                this.state.lang = lang;
+                localStorage.setItem('cpf-tool-lang', lang);
+                try {
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', lang);
+                    window.history.replaceState({}, '', url);
+                } catch(e) {}
+                this.updateUI();
+            },
+
+            updateUI: function() {
+                // Ensure fallback to English if translation missing
+                const t = this.i18n[this.state.lang] || this.i18n['en'];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (t[key]) el.textContent = t[key];
+                });
+                document.title = t.title;
+            },
+
+            switchTab: function(tabName) {
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tab === tabName);
+                    btn.classList.toggle('inactive', btn.dataset.tab !== tabName);
+                });
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            },
+
+            setGenType: function(type) {
+                this.state.genType = type;
+                document.getElementById('btn-gen-cpf').className = type === 'cpf' ? 'type-toggle-btn active' : 'type-toggle-btn inactive';
+                document.getElementById('btn-gen-cnpj').className = type === 'cnpj' ? 'type-toggle-btn active' : 'type-toggle-btn inactive';
+                
+                // Show/Hide state selector (Only relevant for CPF)
+                const stateContainer = document.getElementById('cpf-state-container');
+                if (type === 'cpf') {
+                    stateContainer.classList.remove('hidden');
+                } else {
+                    stateContainer.classList.add('hidden');
+                }
+
+                document.getElementById('result-label').textContent = type.toUpperCase();
+                this.generate();
+            },
+
+            toggleBatchStateVisibility: function() {
+                const type = document.getElementById('batch-type').value;
+                const wrapper = document.getElementById('batch-state-wrapper');
+                if (type === 'cpf') wrapper.classList.remove('hidden');
+                else wrapper.classList.add('hidden');
+            },
+
+            // --- CORE LOGIC ---
+
+            createCPF: function(stateCode) {
+                const rnd = (n) => Math.round(Math.random() * n);
+                let n = Array.from({length: 9}, () => rnd(9));
+                if (stateCode) n[8] = parseInt(stateCode);
+
+                let d1 = n.reduce((acc, val, idx) => acc + val * (10 - idx), 0);
+                d1 = 11 - (d1 % 11);
+                if (d1 >= 10) d1 = 0;
+                n.push(d1);
+
+                let d2 = n.reduce((acc, val, idx) => acc + val * (11 - idx), 0);
+                d2 = 11 - (d2 % 11);
+                if (d2 >= 10) d2 = 0;
+                n.push(d2);
+
+                return n.join('');
+            },
+
+            createCNPJ: function() {
+                const rnd = (n) => Math.round(Math.random() * n);
+                // 8 random + 0001 (standard branch)
+                let n = Array.from({length: 8}, () => rnd(9));
+                n = n.concat([0, 0, 0, 1]); 
+
+                // Validator 1 weights: 5,4,3,2,9,8,7,6,5,4,3,2
+                const w1 = [5,4,3,2,9,8,7,6,5,4,3,2];
+                let d1 = n.reduce((acc, val, idx) => acc + val * w1[idx], 0);
+                d1 = 11 - (d1 % 11);
+                if (d1 >= 10) d1 = 0;
+                n.push(d1);
+
+                // Validator 2 weights: 6,5,4,3,2,9,8,7,6,5,4,3,2
+                const w2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+                let d2 = n.reduce((acc, val, idx) => acc + val * w2[idx], 0);
+                d2 = 11 - (d2 % 11);
+                if (d2 >= 10) d2 = 0;
+                n.push(d2);
+
+                return n.join('');
+            },
+
+            formatCPF: function(v) { return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"); },
+            formatCNPJ: function(v) { return v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5"); },
+
+            validateLogic: function(val) {
+                val = val.replace(/[^\d]+/g, '');
+                
+                // CPF
+                if (val.length === 11) {
+                    if (/^(\d)\1{10}$/.test(val)) return { valid: false, type: 'cpf' };
+                    let sum = 0, rem;
+                    for (let i=1; i<=9; i++) sum += parseInt(val.substring(i-1, i)) * (11 - i);
+                    rem = (sum * 10) % 11;
+                    if ((rem === 10) || (rem === 11)) rem = 0;
+                    if (rem !== parseInt(val.substring(9, 10))) return { valid: false, type: 'cpf' };
+
+                    sum = 0;
+                    for (let i=1; i<=10; i++) sum += parseInt(val.substring(i-1, i)) * (12 - i);
+                    rem = (sum * 10) % 11;
+                    if ((rem === 10) || (rem === 11)) rem = 0;
+                    if (rem !== parseInt(val.substring(10, 11))) return { valid: false, type: 'cpf' };
+                    
+                    return { valid: true, type: 'cpf', region: val.charAt(8) };
+                }
+                
+                // CNPJ
+                if (val.length === 14) {
+                    // Blacklist common patterns
+                    if (/^(\d)\1{13}$/.test(val)) return { valid: false, type: 'cnpj' };
+                    
+                    let size = val.length - 2;
+                    let numbers = val.substring(0, size);
+                    let digits = val.substring(size);
+                    let sum = 0;
+                    let pos = size - 7;
+                    
+                    for (let i = size; i >= 1; i--) {
+                        sum += numbers.charAt(size - i) * pos--;
+                        if (pos < 2) pos = 9;
+                    }
+                    let res = sum % 11 < 2 ? 0 : 11 - sum % 11;
+                    if (res != digits.charAt(0)) return { valid: false, type: 'cnpj' };
+
+                    size = size + 1;
+                    numbers = val.substring(0, size);
+                    sum = 0;
+                    pos = size - 7;
+                    for (let i = size; i >= 1; i--) {
+                        sum += numbers.charAt(size - i) * pos--;
+                        if (pos < 2) pos = 9;
+                    }
+                    res = sum % 11 < 2 ? 0 : 11 - sum % 11;
+                    if (res != digits.charAt(1)) return { valid: false, type: 'cnpj' };
+                    
+                    return { valid: true, type: 'cnpj' };
+                }
+
+                return { valid: false, type: 'unknown' };
+            },
+
+            handleValidationInput: function(e) {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 14) v = v.slice(0, 14);
+                
+                // Simple auto-mask
+                if (v.length > 11) { // CNPJ Mask
+                    v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+                    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                    v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+                    v = v.replace(/(\d{4})(\d)/, '$1-$2');
+                } else { // CPF Mask
+                    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                }
+                e.target.value = v;
+            },
+
+            // --- ACTIONS ---
+
+            generate: function() {
+                const format = document.getElementById('gen-format').checked;
+                let val;
+                if (this.state.genType === 'cpf') {
+                    const state = document.getElementById('gen-state').value;
+                    val = this.createCPF(state);
+                    if (format) val = this.formatCPF(val);
+                } else {
+                    val = this.createCNPJ();
+                    if (format) val = this.formatCNPJ(val);
+                }
+                document.getElementById('generated-result').textContent = val;
+            },
+
+            generateBatch: function() {
+                const type = document.getElementById('batch-type').value;
+                const qty = Math.min(Math.max(parseInt(document.getElementById('batch-qty').value) || 10, 1), 1000);
+                const format = document.getElementById('batch-punctuation').checked;
+                const outFormat = document.getElementById('batch-format-type').value;
+                const state = document.getElementById('batch-state').value;
+                
+                let list = [];
+                for(let i=0; i<qty; i++) {
+                    let val = type === 'cpf' ? this.createCPF(state) : this.createCNPJ();
+                    let formatted = type === 'cpf' ? this.formatCPF(val) : this.formatCNPJ(val);
+                    list.push(format ? formatted : val);
+                }
+
+                let output = '';
+                if (outFormat === 'json') {
+                    output = JSON.stringify(list, null, 2);
+                } else if (outFormat === 'csv') {
+                    output = `${type.toUpperCase()}\n` + list.join('\n');
+                } else {
+                    output = list.join('\n');
+                }
+
+                document.getElementById('batch-result').value = output;
+            },
+
+            validate: function() {
+                const input = document.getElementById('validate-input').value;
+                const res = this.validateLogic(input);
+                const container = document.getElementById('validation-result');
+                const t = this.i18n[this.state.lang] || this.i18n['en']; // fallback
+
+                container.classList.remove('hidden');
+                
+                if (res.valid) {
+                    let regionText = '';
+                    if (res.type === 'cpf' && res.region) {
+                        regionText = `<div class="mt-1 text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-800/50 px-2 py-1 rounded inline-block">
+                            <i class="fa fa-map-marker mr-1"></i>${t.msg_valid_region} <b>${this.regions[res.region]}</b>
+                        </div>`;
+                    }
+
+                    const title = res.type === 'cpf' ? t.msg_valid_cpf : t.msg_valid_cnpj;
+
+                    container.innerHTML = `
+                        <div class="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4 flex items-start animate-pulse-once">
+                            <div class="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0 mt-1">
+                                <i class="fa fa-check text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-green-800 dark:text-green-200 text-lg">${title}</h3>
+                                <p class="text-green-700 dark:text-green-300 text-sm">${t.msg_valid_desc}</p>
+                                ${regionText}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-center animate-shake">
+                            <div class="bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
+                                <i class="fa fa-times text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-red-800 dark:text-red-200 text-lg">${t.msg_invalid}</h3>
+                                <p class="text-red-700 dark:text-red-300 text-sm">${t.msg_invalid_desc}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+
+            resetValidation: function() {
+                document.getElementById('validation-result').classList.add('hidden');
+            },
+
+            copyText: function(id, isVal = false) {
+                const txt = isVal ? document.getElementById(id).value : document.getElementById(id).textContent.trim();
+                if (!txt || txt === '点击生成') return;
+                
+                navigator.clipboard.writeText(txt).then(() => {
+                    const toast = document.getElementById('toast');
+                    const t = this.i18n[this.state.lang] || this.i18n['en'];
+                    document.getElementById('toast-msg').textContent = t.msg_copied;
+                    toast.classList.remove('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.classList.add('translate-x-full', 'opacity-0'), 2000);
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => Tool.init());
+    </script>
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>

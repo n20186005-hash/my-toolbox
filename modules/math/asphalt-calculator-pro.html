@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="construction">
+    <meta name="description" content="Free Asphalt Calculator - Calculate hot mix asphalt tonnage, cost, and bags for your driveway or paving project. 免费沥青计算器，计算铺路所需的沥青吨数、成本及体积。">
+    <title>Asphalt Calculator Pro | 沥青计算器专业版</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#374151', hover: '#1f2937' }, /* Asphalt Gray */
+                        accent: { DEFAULT: '#f59e0b', hover: '#d97706' }, /* Construction Yellow */
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f3f4f6', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all text-sm;
+            }
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+            .result-row {
+                @apply flex justify-between items-center py-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0;
+            }
+        }
+        
+        /* Unit suffix styling */
+        .input-wrapper { position: relative; }
+        .input-suffix {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.75rem;
+            pointer-events: none;
+        }
+        .input-wrapper input { padding-right: 40px; }
+        
+        .currency-prefix {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+        .input-wrapper.currency input { padding-left: 24px; padding-right: 12px; }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-30 dark:opacity-10">
+        <!-- Construction/Road themed blobs -->
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-slate-400 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-200 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-black text-white flex items-center justify-center text-2xl shadow-lg shadow-slate-500/20 border-2 border-amber-400">
+                    <i class="fa fa-road"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Asphalt Calculator Pro</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">沥青用量 & 成本估算工具</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文 (简体)</option>
+                    <option value="zh-TW">🇨🇳 中文 (繁體)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-accent hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-5 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-slate-700 p-6 space-y-5">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                        <i class="fa fa-sliders text-accent"></i> <span data-i18n="h2_project">项目参数</span>
+                    </h2>
+
+                    <!-- Unit System -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_units">单位体系 (Units)</label>
+                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg">
+                            <button id="btn-imperial" onclick="App.setUnit('imperial')" class="py-2 rounded-md text-sm font-bold transition-all shadow-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white">Imperial (英制)</button>
+                            <button id="btn-metric" onclick="App.setUnit('metric')" class="py-2 rounded-md text-sm font-bold transition-all text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800">Metric (公制)</button>
+                        </div>
+                    </div>
+
+                    <!-- Dimensions -->
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="label-text" data-i18n="lbl_length">长度 (Length)</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="input-length" class="input-field" value="20" placeholder="0" oninput="Calculator.calculate()">
+                                    <span class="input-suffix unit-len">ft</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="label-text" data-i18n="lbl_width">宽度 (Width)</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="input-width" class="input-field" value="10" placeholder="0" oninput="Calculator.calculate()">
+                                    <span class="input-suffix unit-len">ft</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="label-text" data-i18n="lbl_thickness">厚度 (Thickness)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="input-thick" class="input-field" value="4" placeholder="4" oninput="Calculator.calculate()">
+                                <span class="input-suffix unit-thick">in</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1" data-i18n="hint_thick">推荐：车道 3-4 英寸 (7-10cm)</p>
+                        </div>
+                    </div>
+
+                    <!-- Density & Price -->
+                    <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="label-text" data-i18n="lbl_density">密度 (Density)</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="input-density" class="input-field" value="145" placeholder="145" oninput="Calculator.calculate()">
+                                    <span class="input-suffix unit-density">lbs/ft³</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="label-text" data-i18n="lbl_price">单价 (Price/Ton)</label>
+                                <div class="input-wrapper currency">
+                                    <span class="currency-prefix">$</span>
+                                    <input type="number" id="input-price" class="input-field" value="100" placeholder="0" oninput="Calculator.calculate()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-100 dark:border-amber-800/30 text-sm text-amber-800 dark:text-amber-200 flex gap-3">
+                    <i class="fa fa-lightbulb-o mt-0.5"></i>
+                    <span data-i18n="tip_waste">提示：通常建议增加 5-10% 的废料冗余，以应对不规则边缘或压实损耗。</span>
+                </div>
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-7 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <div class="bg-slate-100 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-6 flex justify-between items-center">
+                        <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg" data-i18n="h2_results">计算结果</h2>
+                        <div class="flex items-center gap-2">
+                             <label class="text-xs font-bold text-slate-500 uppercase cursor-pointer" for="waste-toggle" data-i18n="lbl_add_waste">增加 5% 冗余</label>
+                             <input type="checkbox" id="waste-toggle" class="w-5 h-5 rounded accent-accent cursor-pointer" onchange="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-10 flex-grow flex flex-col gap-8 animate-fade-in relative">
+                        
+                        <!-- Main Big Result -->
+                        <div class="text-center space-y-2 py-4">
+                            <span class="text-sm font-bold text-slate-400 uppercase tracking-widest" data-i18n="res_total_weight">所需沥青总量</span>
+                            <div class="flex items-baseline justify-center gap-2">
+                                <span id="res-weight" class="text-6xl font-black text-slate-800 dark:text-white font-mono tracking-tight">0.00</span>
+                                <span class="text-xl font-bold text-accent" data-i18n="unit_tons">Tons</span>
+                            </div>
+                            <p class="text-sm text-slate-500" id="res-cost-line">预计成本: <span class="font-bold text-slate-700 dark:text-slate-300">$0.00</span></p>
+                        </div>
+
+                        <!-- Detailed Stats Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Volume Card -->
+                            <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 relative overflow-hidden group hover:border-slate-300 transition-colors">
+                                <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <i class="fa fa-cube text-6xl text-slate-900 dark:text-white"></i>
+                                </div>
+                                <h4 class="text-xs font-bold text-slate-500 uppercase mb-2" data-i18n="res_volume">体积 (Volume)</h4>
+                                <div class="text-2xl font-bold font-mono text-slate-800 dark:text-white" id="res-volume">0.00</div>
+                                <div class="text-xs text-slate-400 mt-1 unit-vol">Cubic Yards</div>
+                            </div>
+
+                            <!-- Bags Card -->
+                            <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 relative overflow-hidden group hover:border-slate-300 transition-colors">
+                                <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <i class="fa fa-shopping-bag text-6xl text-slate-900 dark:text-white"></i>
+                                </div>
+                                <h4 class="text-xs font-bold text-slate-500 uppercase mb-2" data-i18n="res_bags">袋装数量 (50lb Bags)</h4>
+                                <div class="text-2xl font-bold font-mono text-slate-800 dark:text-white" id="res-bags">0</div>
+                                <div class="text-xs text-slate-400 mt-1" data-i18n="hint_bags">用于小规模修补 (Standard 50lb/22kg)</div>
+                            </div>
+                        </div>
+
+                        <!-- Area Summary -->
+                        <div class="border-t border-slate-100 dark:border-slate-700/50 pt-6">
+                            <div class="result-row">
+                                <span class="text-sm text-slate-600 dark:text-slate-400" data-i18n="res_area">覆盖面积</span>
+                                <span class="font-mono font-bold text-slate-700 dark:text-slate-300" id="res-area">0 sq ft</span>
+                            </div>
+                            <div class="result-row">
+                                <span class="text-sm text-slate-600 dark:text-slate-400" data-i18n="res_density_used">计算使用密度</span>
+                                <span class="font-mono font-bold text-slate-700 dark:text-slate-300" id="res-density-display">145 lbs/ft³</span>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- Progress Bar Decor -->
+                    <div class="h-2 bg-slate-100 dark:bg-slate-900 w-full mt-auto">
+                        <div class="h-full bg-stripe-pattern w-full opacity-30"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Comprehensive Guide Section -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Guide Content -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-accent"></i> <span data-i18n="guide_title">沥青计算指南</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                            <div>
+                                <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_what">沥青计算公式</h3>
+                                <p class="font-mono bg-slate-100 dark:bg-slate-900 p-3 rounded-lg text-xs mb-2">
+                                    重量 = 长 × 宽 × 厚度 × 密度
+                                </p>
+                                <p data-i18n="guide_p_what">
+                                    要确定项目所需的沥青量，首先需要计算需要覆盖的体积（长x宽x深），然后乘以沥青的密度。标准的“热拌沥青”密度约为 145 磅/立方英尺（或 2322 千克/立方米）。
+                                </p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_types">沥青类型</h3>
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li><strong data-i18n="type_hot">热拌沥青 (Hot Mix):</strong> 适用于大型车道、道路，需要专业设备。</li>
+                                    <li><strong data-i18n="type_cold">冷补沥青 (Cold Patch):</strong> 适用于填补坑洼和裂缝，通常袋装出售。</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_tips">施工小贴士</h3>
+                                <p data-i18n="guide_p_tips">
+                                    总是购买比计算结果多 5-10% 的材料。对于车道，建议厚度至少为 2-3 英寸（面层）或 4-6 英寸（全深度）。确保基层（砾石）压实平整。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-question-circle text-accent"></i> <span data-i18n="faq_title">常见问题 (FAQ)</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q1">一吨沥青能铺多大面积？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a1">在 2 英寸（约 5 厘米）的厚度下，一吨沥青大约可以覆盖 80 平方英尺（约 7.4 平方米）。厚度越厚，覆盖面积越小。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q2">车道应该铺多厚？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a2">对于重铺（Overlay），通常 1.5 到 2 英寸就足够了。如果是新建车道，通常需要 3 到 4 英寸的压实沥青。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q3">冷补沥青和热拌沥青有什么区别？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a3">热拌沥青需要在高温下铺设，耐久性最好，适合大面积。冷补沥青可在常温下使用，主要用于临时修补坑洼。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-slate-400 py-6">
+            <p>&copy; <span id="year"></span> Asphalt Calculator Pro. <span data-i18n="footer_text">Estimates only. Consult a professional contractor.</span></p>
+        </footer>
+
+    </div>
+
+    <!-- Required Footer Code -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "沥青计算器 Pro", subtitle: "沥青用量 & 成本估算工具",
+                h2_project: "项目参数",
+                lbl_units: "单位体系 (Units)", lbl_length: "长度 (Length)", lbl_width: "宽度 (Width)",
+                lbl_thickness: "厚度 (Thickness)", lbl_density: "密度 (Density)", lbl_price: "单价 (Price/Ton)",
+                hint_thick: "推荐：车道 3-4 英寸 (7-10cm)",
+                tip_waste: "提示：通常建议增加 5-10% 的废料冗余，以应对不规则边缘或压实损耗。",
+                h2_results: "计算结果", lbl_add_waste: "增加 5% 冗余",
+                res_total_weight: "所需沥青总量", unit_tons: "吨 (Tons)",
+                res_volume: "体积 (Volume)", res_bags: "袋装数量 (50lb/20kg)", hint_bags: "用于小规模修补 (Standard Bags)",
+                res_area: "覆盖面积", res_density_used: "计算使用密度",
+                guide_title: "沥青计算指南",
+                guide_h_what: "沥青计算公式", guide_p_what: "要确定项目所需的沥青量，首先需要计算需要覆盖的体积（长x宽x深），然后乘以沥青的密度。",
+                guide_h_types: "沥青类型", type_hot: "热拌沥青 (Hot Mix):", type_cold: "冷补沥青 (Cold Patch):",
+                guide_h_tips: "施工小贴士", guide_p_tips: "总是购买比计算结果多 5-10% 的材料。确保基层（砾石）压实平整。",
+                faq_title: "常见问题 (FAQ)",
+                faq_q1: "一吨沥青能铺多大面积？", faq_a1: "在 2 英寸（约 5 厘米）的厚度下，一吨沥青大约可以覆盖 80 平方英尺（约 7.4 平方米）。",
+                faq_q2: "车道应该铺多厚？", faq_a2: "重铺通常 1.5-2 英寸。新建车道通常需要 3-4 英寸。",
+                faq_q3: "冷补和热拌的区别？", faq_a3: "热拌耐久性好适合大面积；冷补用于临时修补坑洼。",
+                footer_text: "计算结果仅供参考，请咨询专业承包商。"
+            },
+            'zh-TW': {
+                title: "瀝青計算器 Pro", subtitle: "瀝青用量 & 成本估算工具",
+                h2_project: "項目參數",
+                lbl_units: "單位體系 (Units)", lbl_length: "長度 (Length)", lbl_width: "寬度 (Width)",
+                lbl_thickness: "厚度 (Thickness)", lbl_density: "密度 (Density)", lbl_price: "單價 (Price/Ton)",
+                hint_thick: "推薦：車道 3-4 英寸 (7-10cm)",
+                tip_waste: "提示：通常建議增加 5-10% 的廢料冗餘，以應對不規則邊緣或壓實損耗。",
+                h2_results: "計算結果", lbl_add_waste: "增加 5% 冗餘",
+                res_total_weight: "所需瀝青總量", unit_tons: "噸 (Tons)",
+                res_volume: "體積 (Volume)", res_bags: "袋裝數量 (50lb/20kg)", hint_bags: "用於小規模修補 (Standard Bags)",
+                res_area: "覆蓋面積", res_density_used: "計算使用密度",
+                guide_title: "瀝青計算指南",
+                guide_h_what: "瀝青計算公式", guide_p_what: "要確定項目所需的瀝青量，首先需要計算需要覆蓋的體積（長x寬x深），然後乘以瀝青的密度。",
+                guide_h_types: "瀝青類型", type_hot: "熱拌瀝青 (Hot Mix):", type_cold: "冷補瀝青 (Cold Patch):",
+                guide_h_tips: "施工小貼士", guide_p_tips: "總是購買比計算結果多 5-10% 的材料。確保基層（礫石）壓實平整。",
+                faq_title: "常見問題 (FAQ)",
+                faq_q1: "一噸瀝青能鋪多大面積？", faq_a1: "在 2 英寸（約 5 厘米）的厚度下，一噸瀝青大約可以覆蓋 80 平方英尺（約 7.4 平方米）。",
+                faq_q2: "車道應該鋪多厚？", faq_a2: "重鋪通常 1.5-2 英寸。新建車道通常需要 3-4 英寸。",
+                faq_q3: "冷補和熱拌的區別？", faq_a3: "熱拌耐久性好適合大面積；冷補用於臨時修補坑窪。",
+                footer_text: "計算結果僅供參考，請諮詢專業承包商。"
+            },
+            'en': {
+                title: "Asphalt Calculator Pro", subtitle: "Tonnage & Cost Estimator",
+                h2_project: "Project Details",
+                lbl_units: "Unit System", lbl_length: "Length", lbl_width: "Width",
+                lbl_thickness: "Thickness", lbl_density: "Density", lbl_price: "Price per Ton",
+                hint_thick: "Recommended: 3-4 inches (7-10cm) for driveways",
+                tip_waste: "Tip: Adding 5-10% waste is recommended for irregular edges or compaction loss.",
+                h2_results: "Results", lbl_add_waste: "Add 5% Waste",
+                res_total_weight: "Total Asphalt Required", unit_tons: "Tons",
+                res_volume: "Volume", res_bags: "Bags Needed (50lb/22kg)", hint_bags: "For small repairs",
+                res_area: "Coverage Area", res_density_used: "Density Used",
+                guide_title: "Asphalt Guide",
+                guide_h_what: "Calculation Formula", guide_p_what: "To determine asphalt tonnage: Volume (L x W x Depth) x Density. Standard Hot Mix density is approx 145 lbs/cu ft.",
+                guide_h_types: "Types", type_hot: "Hot Mix:", type_cold: "Cold Patch:",
+                guide_h_tips: "Paving Tips", guide_p_tips: "Always order 5-10% more material than calculated. Ensure the sub-base is compacted and level.",
+                faq_title: "FAQ",
+                faq_q1: "How much does 1 ton cover?", faq_a1: "One ton of asphalt covers approx 80 sq ft at 2 inches thick.",
+                faq_q2: "How thick should a driveway be?", faq_a2: "1.5-2 inches for resurfacing. 3-4 inches for new driveways (compacted).",
+                faq_q3: "Hot Mix vs Cold Patch?", faq_a3: "Hot Mix is durable for large areas. Cold Patch is for fixing potholes.",
+                footer_text: "Estimates only. Consult a professional."
+            },
+            'es': {
+                title: "Calculadora de Asfalto", subtitle: "Estimador de Tonelaje y Costo",
+                h2_project: "Detalles del Proyecto",
+                lbl_units: "Sistema de Unidades", lbl_length: "Longitud", lbl_width: "Ancho",
+                lbl_thickness: "Espesor", lbl_density: "Densidad", lbl_price: "Precio por Tonelada",
+                hint_thick: "Recomendado: 3-4 pulgadas (7-10cm) para entradas",
+                tip_waste: "Consejo: Se recomienda agregar 5-10% de desperdicio.",
+                h2_results: "Resultados", lbl_add_waste: "Añadir 5% Desperdicio",
+                res_total_weight: "Asfalto Total Requerido", unit_tons: "Toneladas",
+                res_volume: "Volumen", res_bags: "Bolsas (50lb/22kg)", hint_bags: "Para reparaciones pequeñas",
+                res_area: "Área Cubierta", res_density_used: "Densidad Usada",
+                guide_title: "Guía de Asfalto",
+                guide_h_what: "Fórmula", guide_p_what: "Volumen x Densidad. La densidad estándar es aprox. 145 lbs/pie cúbico.",
+                guide_h_types: "Tipos", type_hot: "Mezcla Caliente:", type_cold: "Parche Frío:",
+                guide_h_tips: "Consejos", guide_p_tips: "Pide siempre 5-10% más de material. Asegura una base compactada.",
+                faq_title: "FAQ",
+                faq_q1: "¿Cuánto cubre 1 tonelada?", faq_a1: "Aprox. 80 pies cuadrados a 2 pulgadas de espesor.",
+                faq_q2: "¿Espesor recomendado?", faq_a2: "1.5-2 pulgadas para repavimentar. 3-4 para nuevas.",
+                faq_q3: "¿Mezcla caliente vs fría?", faq_a3: "Caliente para áreas grandes. Fría para baches.",
+                footer_text: "Solo estimaciones. Consulte a un profesional."
+            },
+            'ru': {
+                title: "Калькулятор Асфальта", subtitle: "Расчет тоннажа и стоимости",
+                h2_project: "Параметры проекта",
+                lbl_units: "Система мер", lbl_length: "Длина", lbl_width: "Ширина",
+                lbl_thickness: "Толщина", lbl_density: "Плотность", lbl_price: "Цена за тонну",
+                hint_thick: "Рекомендуется: 7-10 см для подъездных путей",
+                tip_waste: "Совет: добавьте 5-10% на отходы и уплотнение.",
+                h2_results: "Результаты", lbl_add_waste: "Добавить 5% запаса",
+                res_total_weight: "Требуется асфальта", unit_tons: "Тонн",
+                res_volume: "Объем", res_bags: "Мешков (20-25кг)", hint_bags: "Для мелкого ремонта",
+                res_area: "Площадь", res_density_used: "Исп. плотность",
+                guide_title: "Справка",
+                guide_h_what: "Формула", guide_p_what: "Объем (Д x Ш x Г) x Плотность. Стандартная плотность ~2322 кг/м³.",
+                guide_h_types: "Типы", type_hot: "Горячий асфальт:", type_cold: "Холодный асфальт:",
+                guide_h_tips: "Советы", guide_p_tips: "Заказывайте на 5-10% больше. Подготовьте основание.",
+                faq_title: "Частые вопросы",
+                faq_q1: "На сколько хватит 1 тонны?", faq_a1: "Примерно на 7.5 м² при толщине 5 см.",
+                faq_q2: "Какая толщина нужна?", faq_a2: "4-5 см для обновления, 7-10 см для нового покрытия.",
+                faq_q3: "Горячий или холодный?", faq_a3: "Горячий для больших площадей, холодный для ям.",
+                footer_text: "Оценки приблизительны."
+            },
+            'hi': {
+                title: "डामर कैलकुलेटर (Asphalt)", subtitle: "टन भार और लागत अनुमानक",
+                h2_project: "परियोजना विवरण",
+                lbl_units: "इकाई प्रणाली", lbl_length: "लंबाई", lbl_width: "चौड़ाई",
+                lbl_thickness: "मोटाई", lbl_density: "घनत्व", lbl_price: "कीमत प्रति टन",
+                hint_thick: "अनुशंसित: 3-4 इंच (7-10 सेमी)",
+                tip_waste: "सुझाव: 5-10% अतिरिक्त सामग्री जोड़ें।",
+                h2_results: "परिणाम", lbl_add_waste: "5% अपशिष्ट जोड़ें",
+                res_total_weight: "कुल डामर की आवश्यकता", unit_tons: "टन",
+                res_volume: "आयतन", res_bags: "बैग (50lb/22kg)", hint_bags: "छोटी मरम्मत के लिए",
+                res_area: "क्षेत्रफल", res_density_used: "प्रयुक्त घनत्व",
+                guide_title: "डामर गाइड",
+                guide_h_what: "सूत्र", guide_p_what: "आयतन x घनत्व। मानक घनत्व लगभग 145 lbs/cu ft है।",
+                guide_h_types: "प्रकार", type_hot: "हॉट मिक्स:", type_cold: "कोल्ड पैच:",
+                guide_h_tips: "टिप्स", guide_p_tips: "हमेशा 5-10% अधिक सामग्री ऑर्डर करें।",
+                faq_title: "सामान्य प्रश्न",
+                faq_q1: "1 टन कितना कवर करता है?", faq_a1: "2 इंच मोटाई पर लगभग 80 वर्ग फुट।",
+                faq_q2: "कितनी मोटाई होनी चाहिए?", faq_a2: "नई ड्राइववे के लिए 3-4 इंच।",
+                faq_q3: "हॉट बनाम कोल्ड?", faq_a3: "हॉट बड़े क्षेत्रों के लिए टिकाऊ है। कोल्ड गड्ढों के लिए है।",
+                footer_text: "केवल अनुमान। पेशेवर से सलाह लें।"
+            },
+            'pl': {
+                title: "Kalkulator Asfaltu", subtitle: "Szacowanie tonażu i kosztów",
+                h2_project: "Szczegóły Projektu",
+                lbl_units: "Jednostki", lbl_length: "Długość", lbl_width: "Szerokość",
+                lbl_thickness: "Grubość", lbl_density: "Gęstość", lbl_price: "Cena za tonę",
+                hint_thick: "Zalecane: 7-10 cm dla podjazdów",
+                tip_waste: "Wskazówka: Dodaj 5-10% zapasu.",
+                h2_results: "Wyniki", lbl_add_waste: "Dodaj 5% zapasu",
+                res_total_weight: "Wymagany Asfalt", unit_tons: "Tony",
+                res_volume: "Objętość", res_bags: "Worki (22kg)", hint_bags: "Do małych napraw",
+                res_area: "Powierzchnia", res_density_used: "Użyta gęstość",
+                guide_title: "Poradnik",
+                guide_h_what: "Formuła", guide_p_what: "Objętość x Gęstość. Standardowa gęstość ~2322 kg/m³.",
+                guide_h_types: "Rodzaje", type_hot: "Mieszanka gorąca:", type_cold: "Mieszanka zimna:",
+                guide_h_tips: "Porady", guide_p_tips: "Zamów 5-10% więcej materiału. Utwardź podłoże.",
+                faq_title: "FAQ",
+                faq_q1: "Ile pokryje 1 tona?", faq_a1: "Ok. 7.5 m² przy grubości 5 cm.",
+                faq_q2: "Jaka grubość?", faq_a2: "4-5 cm na nakładkę, 7-10 cm na nowy podjazd.",
+                faq_q3: "Gorący czy zimny?", faq_a3: "Gorący na duże powierzchnie, zimny na dziury.",
+                footer_text: "Tylko szacunki. Skonsultuj się z fachowcem."
+            }
+        };
+
+        // --- Core Calculator Engine ---
+        const Calculator = {
+            // Default Densities
+            DENSITY_IMPERIAL: 145, // lbs per cu ft
+            DENSITY_METRIC: 2322,  // kg per cubic meter
+            
+            // State
+            unitSystem: 'imperial', // 'imperial' or 'metric'
+
+            calculate() {
+                // Inputs
+                let len = parseFloat(document.getElementById('input-length').value) || 0;
+                let wid = parseFloat(document.getElementById('input-width').value) || 0;
+                let thick = parseFloat(document.getElementById('input-thick').value) || 0;
+                let density = parseFloat(document.getElementById('input-density').value) || 0;
+                let price = parseFloat(document.getElementById('input-price').value) || 0;
+                const addWaste = document.getElementById('waste-toggle').checked;
+
+                // 1. Calculate Volume & Area
+                let volume = 0; // in cubic feet or cubic meters
+                let area = len * wid;
+
+                if (this.unitSystem === 'imperial') {
+                    // Length/Width in Feet, Thick in Inches
+                    // Volume in Cubic Feet = L(ft) * W(ft) * (Thick(in) / 12)
+                    volume = area * (thick / 12);
+                } else {
+                    // Length/Width in Meters, Thick in cm
+                    // Volume in Cubic Meters = L(m) * W(m) * (Thick(cm) / 100)
+                    volume = area * (thick / 100);
+                }
+
+                // 2. Calculate Weight
+                // Imperial: Volume(ft3) * Density(lbs/ft3) = lbs
+                // Metric: Volume(m3) * Density(kg/m3) = kg
+                let weightTotal = volume * density;
+
+                // 3. Add Waste
+                if (addWaste) {
+                    weightTotal *= 1.05;
+                }
+
+                // 4. Convert to Tons/Tonnes and Bags
+                let weightTons = 0;
+                let bags = 0;
+
+                if (this.unitSystem === 'imperial') {
+                    // lbs to Short Tons (2000 lbs)
+                    weightTons = weightTotal / 2000;
+                    // Bags (Standard 50lb bag)
+                    bags = Math.ceil(weightTotal / 50);
+                } else {
+                    // kg to Metric Tonnes (1000 kg)
+                    weightTons = weightTotal / 1000;
+                    // Bags (Standard 22kg/25kg bag approx) - let's say 25kg
+                    bags = Math.ceil(weightTotal / 25);
+                }
+
+                // 5. Cost
+                const totalCost = weightTons * price;
+
+                // 6. Display Volume Unit Conversion
+                // Imperial -> Cubic Yards (Standard for US) -> ft3 / 27
+                // Metric -> Cubic Meters
+                let displayVolume = 0;
+                if (this.unitSystem === 'imperial') {
+                    displayVolume = volume / 27;
+                } else {
+                    displayVolume = volume;
+                }
+
+                // Update UI
+                this.updateUI(weightTons, totalCost, displayVolume, bags, area, density);
+            },
+
+            updateUI(weight, cost, vol, bags, area, density) {
+                // Main Weight
+                document.getElementById('res-weight').textContent = weight.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                
+                // Cost
+                const currency = (i18nData[App.currentLang] || i18nData['en']).currencySym || "$"; // Defaults usually included in locale string but simplified here
+                document.querySelector('#res-cost-line span').textContent = cost.toLocaleString(undefined, {style: 'currency', currency: 'USD'}).replace('US', ''); // Simple formatter
+
+                // Volume
+                document.getElementById('res-volume').textContent = vol.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                
+                // Bags
+                document.getElementById('res-bags').textContent = bags.toLocaleString();
+
+                // Footer details
+                const unitArea = this.unitSystem === 'imperial' ? 'sq ft' : 'm²';
+                const unitDens = this.unitSystem === 'imperial' ? 'lbs/ft³' : 'kg/m³';
+                document.getElementById('res-area').textContent = `${area.toLocaleString()} ${unitArea}`;
+                document.getElementById('res-density-display').textContent = `${density} ${unitDens}`;
+            }
+        };
+
+        // --- App Logic ---
+        const App = {
+            currentLang: 'zh-CN',
+
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                const savedLang = localStorage.getItem('app_lang_asphalt');
+                
+                this.currentLang = (langParam && i18nData[langParam]) ? langParam : (savedLang || 'zh-CN');
+                
+                if (!langParam) this.updateUrl(this.currentLang);
+
+                document.getElementById('lang-selector').value = this.currentLang;
+
+                this.handleTheme();
+                this.setupLanguage();
+                this.updateYear();
+                this.setUnit('imperial'); // Default to imperial, triggers calc
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {}
+            },
+
+            setupLanguage() {
+                const selector = document.getElementById('lang-selector');
+                selector.addEventListener('change', (e) => {
+                    const lang = e.target.value;
+                    this.currentLang = lang;
+                    localStorage.setItem('app_lang_asphalt', lang);
+                    this.updateUrl(lang);
+                    this.translateUI(lang);
+                    // Re-update units to refresh labels
+                    this.setUnit(Calculator.unitSystem);
+                });
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) {
+                        el.innerHTML = data[key];
+                    }
+                });
+            },
+
+            setUnit(system) {
+                Calculator.unitSystem = system;
+                
+                // Update Buttons
+                const btnImp = document.getElementById('btn-imperial');
+                const btnMet = document.getElementById('btn-metric');
+                
+                if (system === 'imperial') {
+                    btnImp.className = "py-2 rounded-md text-sm font-bold transition-all shadow-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white";
+                    btnMet.className = "py-2 rounded-md text-sm font-bold transition-all text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800";
+                    
+                    // Update Labels/Placeholders
+                    this.setSuffix('.unit-len', 'ft');
+                    this.setSuffix('.unit-thick', 'in');
+                    this.setSuffix('.unit-density', 'lbs/ft³');
+                    document.querySelector('.unit-vol').textContent = 'Cubic Yards';
+                    document.getElementById('input-density').value = Calculator.DENSITY_IMPERIAL;
+                    
+                    // Convert current values? No, standard practice is just switch inputs context or reset. 
+                    // Let's reset defaults for sanity.
+                    document.getElementById('input-length').value = 20;
+                    document.getElementById('input-width').value = 10;
+                    document.getElementById('input-thick').value = 4;
+
+                } else {
+                    btnMet.className = "py-2 rounded-md text-sm font-bold transition-all shadow-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white";
+                    btnImp.className = "py-2 rounded-md text-sm font-bold transition-all text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800";
+                    
+                    this.setSuffix('.unit-len', 'm');
+                    this.setSuffix('.unit-thick', 'cm');
+                    this.setSuffix('.unit-density', 'kg/m³');
+                    document.querySelector('.unit-vol').textContent = 'Cubic Meters';
+                    document.getElementById('input-density').value = Calculator.DENSITY_METRIC;
+
+                    // Metric Defaults
+                    document.getElementById('input-length').value = 6;
+                    document.getElementById('input-width').value = 3;
+                    document.getElementById('input-thick').value = 10;
+                }
+
+                Calculator.calculate();
+            },
+
+            setSuffix(selector, text) {
+                document.querySelectorAll(selector).forEach(el => el.textContent = text);
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+    
+    <style>
+        .bg-stripe-pattern {
+            background-image: repeating-linear-gradient(
+                45deg,
+                #000,
+                #000 10px,
+                #f59e0b 10px,
+                #f59e0b 20px
+            );
+        }
+        .dark .bg-stripe-pattern {
+            background-image: repeating-linear-gradient(
+                45deg,
+                #1e293b,
+                #1e293b 10px,
+                #b45309 10px,
+                #b45309 20px
+            );
+        }
+    </style>
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>
