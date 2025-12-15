@@ -47,7 +47,9 @@ SPECIFIC_FIXES = {
     'canadian-mortgage': 'finance',
     'percentage-calculator': 'math',
     'language-switcher': 'development-tools',
-    'world-clock-meeting-planner': 'date-time'
+    'world-clock-meeting-planner': 'date-time',
+    # 🌟 您的修改：确保 TDEE 计算器被归类到 health
+    'tdee-calculator': 'health'
 }
 
 # --- 3. 图标备份库 ---
@@ -69,7 +71,8 @@ BACKUP_ICONS = {
     'marriage': '💍', 'usa': '🗺️', 'id-query': '🔧', 'zodiac': '🎂', 'capitals': '🌍',
     'hash': '🔒', 'sphere': '🔧', 'deposit': '🔧', 'vocabulary': '💻', 'selector': '🔍',
     'conception': '🔧', 'sql': '🔧', 'shopping': '🔧', 'qr': '📱', 'compound': '🔧',
-    'energy': '🔧', 'gpa': '🎓', 'speed': '🚀', 'tdee': '🔧', 'mime': '📄',
+    'energy': '🔧', 'gpa': '🎓', 'speed': '🚀', 'tdee': '🍽️', # 🍴 将 tdee 相关的图标改为更有针对性的🍽️
+    'mime': '📄',
     'prism': '🔧', 'absolute': '🔧', 'subnet': '🔗', 'retirement': '🔧', 'torus': '🔧',
     'power': '⚡', 'fat': '🔧', 'temperature': '🔧', 'salary': '🔧', 'chinese': '🔧',
     'ua': '🔍', 'bac': '🔧', 'autoprefixer': '🎨', 'currency': '💱', 'sudoku': '🔧',
@@ -119,6 +122,7 @@ BACKUP_ICONS = {
 }
 
 def to_kebab_case(name):
+    """将文件名转换为 kebab-case 格式，并确保以 .html 结尾。"""
     name_no_ext = os.path.splitext(name)[0]
     s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1-\2', name_no_ext)
     s1 = re.sub(r'([a-z0-9])([A-Z])', r'\1-\2', s1)
@@ -127,6 +131,7 @@ def to_kebab_case(name):
     return clean_name + '.html'
 
 def get_icon(tool_id, filename, existing_icon_map):
+    """根据工具ID和文件名获取图标，优先使用旧图标和BACKUP_ICONS。"""
     if tool_id in existing_icon_map and existing_icon_map[tool_id] != '🔧':
         return existing_icon_map[tool_id]
     for key, icon in BACKUP_ICONS.items():
@@ -153,8 +158,12 @@ def inject_ads_to_file(file_path):
         print(f"⚠️ 广告植入失败: {file_path} - {e}")
 
 def get_category_from_content(file_path, filename):
+    """从文件名、SPECIFIC_FIXES 或文件内容中确定工具的分类。"""
     tool_id = filename.replace('.html', '')
+    # 优先使用强力纠错名单
     if tool_id in SPECIFIC_FIXES: return SPECIFIC_FIXES[tool_id]
+    
+    # 尝试从文件内容中读取 category meta 标签
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
@@ -166,10 +175,13 @@ def get_category_from_content(file_path, filename):
                 raw_cat = raw_cat.replace('&', '').replace(' ', '-')
                 return re.sub(r'-+', '-', raw_cat)
     except Exception: pass
+    
+    # 最后使用关键词匹配
     lower_name = filename.lower()
     for cat_folder, keywords in KEYWORD_CATEGORIES.items():
         for kw in keywords:
             if kw in lower_name: return cat_folder
+            
     return 'others'
 
 def main():
@@ -216,10 +228,18 @@ def main():
                 tool_id = file.replace('.html', '')
                 current_folder = os.path.basename(root)
                 category = current_folder
-                if tool_id in SPECIFIC_FIXES: category = SPECIFIC_FIXES[tool_id]
-                elif current_folder == MODULES_DIR: category = 'others'
-                if category == 'Date & Time' or ('date' in category and 'time' in category): category = 'date-time'
-                if category == 'Math': category = 'math'
+                
+                # 再次检查 SPECIFIC_FIXES 确保最终分类正确
+                if tool_id in SPECIFIC_FIXES: 
+                    category = SPECIFIC_FIXES[tool_id]
+                elif current_folder == MODULES_DIR: 
+                    category = 'others'
+                
+                # 标准化分类名称 (虽然 get_category_from_content 已经处理了一部分)
+                if category == 'Date & Time' or ('date' in category and 'time' in category): 
+                    category = 'date-time'
+                if category == 'Math': 
+                    category = 'math'
                 
                 display_title = tool_id.replace('-', ' ').title()
                 restored_icon = get_icon(tool_id, file, existing_icon_map)

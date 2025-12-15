@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Calculator - Calculate Percentage & Missed Classes</title>
+    
+    <!-- Meta Info -->
+    <meta name="tool-id" content="attendance_calculator">
+    <meta name="category" content="education">
+    <meta name="icon" content="📊">
+    <meta name="title" content="Attendance Calculator">
+    <meta name="description" content="Calculate attendance percentage for classes, employees, or voting turnout. Includes planning tools and formula explanations.">
+
+    <!-- Multilingual Meta -->
+    <meta name="lang-title-zh-CN" content="出勤率计算器 - 考勤与投票率统计">
+    <meta name="lang-description-zh-CN" content="在线计算班级出勤率、员工考勤或投票率。包含缺勤规划、计算公式及Excel对比分析。">
+    <meta name="lang-title-zh-TW" content="出勤率計算器 - 考勤與投票率統計">
+    <meta name="lang-title-pl" content="Kalkulator Frekwencji">
+    <meta name="lang-title-es" content="Calculadora de Asistencia">
+    <meta name="lang-title-ru" content="Калькулятор посещаемости">
+    <meta name="lang-title-hi" content="उपस्थिति कैलकुलेटर">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            /* Dark Mode (Default) */
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
+            --accent: #38bdf8; /* Sky Blue */
+            --accent-hover: #0ea5e9;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        /* Light Mode */
+        :root[data-theme="light"] {
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-input: #f8fafc;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --accent: #0284c7; 
+            --accent-hover: #0369a1;
+            --border: #e2e8f0;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+        }
+
+        body { 
+            background: var(--bg-body); 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .tool-container {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 900px;
+            margin: 0 auto;
+            border: 1px solid var(--border);
+            min-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Calculator Styles */
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: var(--text-sub);
+            font-size: 0.9rem;
+        }
+
+        .input-field {
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            color: var(--text-main);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+
+        /* Results Area */
+        .result-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .percentage-display {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1;
+            margin-bottom: 10px;
+            transition: color 0.3s;
+        }
+
+        .progress-container {
+            height: 12px;
+            background: var(--border);
+            border-radius: 6px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
+            border-radius: 6px;
+        }
+
+        /* Planning Section */
+        .planning-section {
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        select, .icon-btn {
+            background-color: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: 42px;
+        }
+        .icon-btn:hover, select:hover {
+            border-color: var(--accent);
+        }
+
+        /* Article & Content Section */
+        .article-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
+            color: var(--text-sub);
+        }
+        .article-section h2, .article-section h3 {
+            color: var(--text-main);
+            font-weight: 700;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        .article-section h2 { font-size: 1.5rem; }
+        .article-section h3 { font-size: 1.25rem; }
+        .article-section p { margin-bottom: 1rem; line-height: 1.7; }
+        .article-section ul { list-style: disc; padding-left: 20px; margin-bottom: 1rem; }
+        .article-section li { margin-bottom: 0.5rem; }
+        .article-section table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .article-section th, .article-section td { border: 1px solid var(--border); padding: 12px; text-align: left; }
+        .article-section th { background: var(--bg-input); color: var(--text-main); }
+        
+        [data-lang-group] { display: none; }
+        [data-lang-group].active { display: block; }
+
+        @media (max-width: 640px) {
+            .calc-grid { grid-template-columns: 1fr; }
+            .tool-container { padding: 16px; }
+            .percentage-display { font-size: 2.5rem; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+<div class="tool-container">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold flex items-center gap-3" style="color: var(--text-main)">
+                <span class="text-3xl filter drop-shadow-lg">📊</span>
+                <span data-i18n="title">Attendance Calculator</span>
+            </h2>
+            <p class="text-sm mt-2 font-mono" style="color: var(--text-sub)">
+                <span data-i18n="subtitle">Track attendance & turnouts</span>
+                <span id="current-year-display" class="ml-1 px-2 py-0.5 rounded bg-[rgba(56,189,248,0.1)] text-[var(--accent)] text-xs"></span>
+            </p>
+        </div>
+        
+        <div class="flex items-center gap-2 self-end md:self-auto">
+            <!-- Theme Toggle -->
+            <button onclick="AttCalc.toggleTheme()" class="icon-btn flex items-center justify-center w-[42px]" title="Toggle Theme">
+                <span id="theme-icon" style="font-size: 1.2rem;">🌙</span>
+            </button>
+
+            <!-- Language Selector -->
+            <select id="lang-select" onchange="AttCalc.changeLang()" class="focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="pl">Polski</option>
+                <option value="es">Español</option>
+                <option value="ru">Русский</option>
+                <option value="hi">हिन्दी</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Calculator Interface -->
+    <div class="calculator-body">
+        
+        <!-- Optional Class Name -->
+        <div class="input-group mb-4">
+            <label for="class-name" data-i18n="label_classname">Class Name / Subject (Optional)</label>
+            <input type="text" id="class-name" class="input-field" placeholder="...">
+        </div>
+
+        <!-- Inputs -->
+        <div class="calc-grid">
+            <div class="input-group">
+                <label for="total-count" data-i18n="label_total">Total (Students / Classes)</label>
+                <input type="number" id="total-count" class="input-field" placeholder="100" min="1" oninput="AttCalc.calculate()">
+            </div>
+            <div class="input-group">
+                <label for="present-count" data-i18n="label_present">Present / Attended</label>
+                <input type="number" id="present-count" class="input-field" placeholder="85" min="0" oninput="AttCalc.calculate()">
+            </div>
+        </div>
+
+        <!-- Result Display -->
+        <div class="result-card">
+            <div class="text-sm uppercase tracking-wider mb-2" data-i18n="result_title" style="color:var(--text-sub)">Result Percentage</div>
+            <div id="percentage-value" class="percentage-display">0%</div>
+            
+            <div class="progress-container">
+                <div id="progress-fill" class="progress-bar"></div>
+            </div>
+        </div>
+
+        <!-- Planning / Target -->
+        <div class="planning-section">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2" style="color: var(--text-main)">
+                <span style="color: var(--accent)">🎯</span> 
+                <span data-i18n="plan_title">Planning & Goals</span>
+            </h3>
+            
+            <div class="calc-grid" style="margin-bottom: 15px;">
+                <div class="input-group">
+                    <label for="target-percent" data-i18n="label_target">Target Percentage (%)</label>
+                    <input type="number" id="target-percent" class="input-field" placeholder="75" value="75" min="1" max="100" oninput="AttCalc.calculate()">
+                </div>
+                <div class="input-group flex justify-end">
+                    <!-- Placeholder for alignment -->
+                </div>
+            </div>
+            
+            <div id="plan-alert" class="hidden p-4 rounded-lg bg-[rgba(56,189,248,0.05)] border border-[var(--border)] text-[var(--text-main)]"></div>
+        </div>
+    </div>
+
+    <!-- Long Form Content (SEO & Info) -->
+    <div class="article-section">
+        
+        <!-- English Content -->
+        <div data-lang-group="en">
+            <h2>About the Attendance Calculator</h2>
+            <p>Our Attendance Calculator is a versatile tool designed for students, teachers, HR professionals, and event organizers. It simplifies the process of tracking presence percentages and helps in planning future attendance to meet specific goals.</p>
+            
+            <h3>What is a Turnout Calculator?</h3>
+            <p>A turnout calculator is essentially an attendance calculator used in the context of elections or events. It measures the percentage of eligible voters or invited guests who actually participated. The mathematical formula remains the same: (Participants / Total Eligible) × 100.</p>
+
+            <h3>Practical Scope & Usage</h3>
+            <ul>
+                <li><strong>Education:</strong> Students tracking their own attendance to avoid debarment; Teachers calculating class attendance rates.</li>
+                <li><strong>Corporate (HR):</strong> Tracking employee monthly attendance, calculating leave balances, and workforce planning.</li>
+                <li><strong>Events:</strong> Measuring the success of seminars, webinars, or parties based on invitee turnout.</li>
+                <li><strong>Elections:</strong> Calculating voter turnout percentages for municipal or general elections.</li>
+            </ul>
+
+            <h3>How to Calculate Attendance: Formula & Examples</h3>
+            <p>The core formula is simple:</p>
+            <p><code>(Number of Present Days ÷ Total Working Days) × 100 = Attendance %</code></p>
+            <p><strong>Example:</strong> If a student has attended 45 classes out of a total of 50 classes:<br>
+            (45 ÷ 50) = 0.9<br>
+            0.9 × 100 = <strong>90%</strong></p>
+
+            <h3>Attendance Calculator (Monthly & Overall)</h3>
+            <p>This tool can be used for both monthly reports and overall semester/year tracking. For monthly tracking, enter the total working days in that specific month (e.g., 22 days) and your days present.</p>
+
+            <h3>Employee Attendance Register (HR Tool)</h3>
+            <p>HR departments use attendance data to process payroll. Accurate calculation of attendance percentage ensures fair compensation and helps identify trends in employee absenteeism.</p>
+
+            <h3>Voter Turnout: Tool for Analysts</h3>
+            <p>Political analysts use this calculation to gauge public engagement. A high turnout percentage usually indicates a competitive election or strong public interest.</p>
+
+            <h3>Excel vs. Online Attendance Calculator</h3>
+            <table>
+                <tr><th>Feature</th><th>Excel / Manual</th><th>Online Calculator</th></tr>
+                <tr><td>Speed</td><td>Slow (requires formula setup)</td><td>Instant</td></tr>
+                <tr><td>Planning</td><td>Manual calculation needed</td><td>Auto-calculates missed/needed classes</td></tr>
+                <tr><td>Accessibility</td><td>Requires software</td><td>Accessible on any browser/phone</td></tr>
+            </table>
+
+            <h3>FAQ: Frequently Asked Questions</h3>
+            <p><strong>Q: Does this tool save my data?</strong><br>A: No, all calculations happen in your browser for privacy.</p>
+            <p><strong>Q: Can I use this for university criteria?</strong><br>A: Yes, set your university's requirement (e.g., 75%) in the "Target Percentage" field to see if you are safe.</p>
+        </div>
+
+        <!-- Chinese Simplified Content -->
+        <div data-lang-group="zh-CN">
+            <h2>考勤计算器介绍</h2>
+            <p>我们的出勤率计算器是一款通用工具，专为学生、教师、人力资源专员和活动组织者设计。它不仅能简化出勤百分比的计算过程，还能帮助规划未来的出勤情况以达到特定目标。</p>
+            
+            <h3>什么是投票率计算器？</h3>
+            <p>投票率计算器本质上就是用于选举或活动场景的出勤计算器。它衡量的是符合资格的选民或受邀嘉宾中实际参与的百分比。其数学公式保持不变：(参与人数 ÷ 符合资格总数) × 100。</p>
+
+            <h3>实用范围</h3>
+            <ul>
+                <li><strong>教育：</strong>学生追踪个人出勤以避免挂科；教师统计班级整体出勤率。</li>
+                <li><strong>企业（HR）：</strong>追踪员工月度考勤、计算休假余额及人力规划。</li>
+                <li><strong>活动：</strong>根据受邀者的到场率衡量研讨会、网络会议或派对的成功程度。</li>
+                <li><strong>选举：</strong>计算市政或大选的选民投票率。</li>
+            </ul>
+
+            <h3>如何计算出勤率——公式和示例</h3>
+            <p>核心公式非常简单：</p>
+            <p><code>(出勤天数 ÷ 总工作日/总课时) × 100 = 出勤率 %</code></p>
+            <p><strong>示例：</strong>如果一名学生在总共 50 节课中出席了 45 节：<br>
+            (45 ÷ 50) = 0.9<br>
+            0.9 × 100 = <strong>90%</strong></p>
+
+            <h3>出勤率计算器（月度与总体）</h3>
+            <p>此工具既可用于月度报告，也可用于学期或年度的总体追踪。对于月度追踪，只需输入该特定月份的总工作日（例如 22 天）及您的实际出勤天数即可。</p>
+
+            <h3>员工考勤登记表（人力资源和人事部门）</h3>
+            <p>人力资源部门使用考勤数据来处理工资单。准确计算出勤百分比可确保薪酬公平，并有助于识别员工缺勤的趋势。</p>
+
+            <h3>选民投票率——分析人士和市政当局的工具</h3>
+            <p>政治分析人士使用此计算来衡量公众参与度。高投票率通常表明选举竞争激烈或公众利益相关度高。</p>
+
+            <h3>Excel 和在线考勤计算器对比</h3>
+            <table>
+                <tr><th>功能</th><th>Excel / 手动计算</th><th>在线计算器</th></tr>
+                <tr><td>速度</td><td>较慢（需要设置公式）</td><td>即时</td></tr>
+                <tr><td>规划功能</td><td>需要手动推算</td><td>自动计算还能缺勤次数或需补课次数</td></tr>
+                <tr><td>易用性</td><td>需要软件</td><td>任何浏览器/手机均可访问</td></tr>
+            </table>
+
+            <h3>谷歌搜索：考勤计算器 常见问题解答</h3>
+            <p><strong>问：此工具会保存我的数据吗？</strong><br>答：不会，所有计算都在您的浏览器中进行，确保隐私。</p>
+            <p><strong>问：我可以将其用于大学考勤标准吗？</strong><br>答：可以，在“目标出勤率”字段中设置学校的要求（例如 75%），即可查看您是否处于安全区。</p>
+        </div>
+
+        <!-- Chinese Traditional Content -->
+        <div data-lang-group="zh-TW">
+            <h2>考勤計算器介紹</h2>
+            <p>我們的出勤率計算器是一款通用工具，專為學生、教師、人力資源專員和活動組織者設計。它不僅能簡化出勤百分比的計算過程，還能幫助規劃未來的出勤情況以達到特定目標。</p>
+            
+            <h3>什麼是投票率計算器？</h3>
+            <p>投票率計算器本質上就是用於選舉或活動場景的出勤計算器。它衡量的是符合資格的選民或受邀嘉賓中實際參與的百分比。其數學公式保持不變：(參與人數 ÷ 符合資格總數) × 100。</p>
+
+            <h3>實用範圍</h3>
+            <ul>
+                <li><strong>教育：</strong>學生追蹤個人出勤以避免被當；教師統計班級整體出勤率。</li>
+                <li><strong>企業（HR）：</strong>追蹤員工月度考勤、計算休假餘額及人力規劃。</li>
+                <li><strong>活動：</strong>根據受邀者的到場率衡量研討會、網絡會議或派對的成功程度。</li>
+                <li><strong>選舉：</strong>計算市政或大選的選民投票率。</li>
+            </ul>
+
+            <h3>如何計算出勤率——公式和示例</h3>
+            <p>核心公式非常簡單：</p>
+            <p><code>(出勤天數 ÷ 總工作日/總課時) × 100 = 出勤率 %</code></p>
+            <p><strong>示例：</strong>如果一名學生在總共 50 節課中出席了 45 節：<br>
+            (45 ÷ 50) = 0.9<br>
+            0.9 × 100 = <strong>90%</strong></p>
+
+            <h3>Excel 和在線考勤計算器對比</h3>
+            <table>
+                <tr><th>功能</th><th>Excel / 手動計算</th><th>在線計算器</th></tr>
+                <tr><td>速度</td><td>較慢（需要設置公式）</td><td>即時</td></tr>
+                <tr><td>規劃功能</td><td>需要手動推算</td><td>自動計算還能缺勤次數或需補課次數</td></tr>
+            </table>
+        </div>
+
+        <!-- Polish Content -->
+        <div data-lang-group="pl">
+            <h2>O Kalkulatorze Frekwencji</h2>
+            <p>Nasz kalkulator frekwencji to wszechstronne narzędzie przeznaczone dla studentów, nauczycieli, działów HR i organizatorów wydarzeń. Upraszcza proces śledzenia procentowej obecności i pomaga w planowaniu przyszłej frekwencji.</p>
+            
+            <h3>Co to jest kalkulator frekwencji wyborczej?</h3>
+            <p>Kalkulator frekwencji wyborczej to w zasadzie kalkulator obecności używany w kontekście wyborów. Mierzy on odsetek uprawnionych wyborców, którzy oddali głos. Wzór matematyczny pozostaje taki sam: (Uczestnicy / Uprawnieni) × 100.</p>
+
+            <h3>Zastosowanie praktyczne</h3>
+            <ul>
+                <li><strong>Edukacja:</strong> Uczniowie śledzący własną frekwencję; Nauczyciele obliczający frekwencję klasy.</li>
+                <li><strong>HR:</strong> Śledzenie miesięcznej obecności pracowników.</li>
+                <li><strong>Wydarzenia:</strong> Mierzenie sukcesu seminariów na podstawie liczby uczestników.</li>
+            </ul>
+
+            <h3>Jak obliczyć frekwencję: Wzór i przykłady</h3>
+            <p>Podstawowy wzór jest prosty:</p>
+            <p><code>(Liczba dni obecności ÷ Całkowita liczba dni) × 100 = Frekwencja %</code></p>
+
+            <h3>Excel vs. Kalkulator Online</h3>
+            <table>
+                <tr><th>Cecha</th><th>Excel</th><th>Kalkulator Online</th></tr>
+                <tr><td>Szybkość</td><td>Wolno (wymaga formuł)</td><td>Natychmiast</td></tr>
+                <tr><td>Planowanie</td><td>Ręczne obliczenia</td><td>Automatyczne</td></tr>
+            </table>
+        </div>
+
+        <!-- Spanish Content -->
+        <div data-lang-group="es">
+            <h2>Sobre la Calculadora de Asistencia</h2>
+            <p>Nuestra Calculadora de Asistencia es una herramienta versátil diseñada para estudiantes, profesores, RRHH y organizadores de eventos.</p>
+            
+            <h3>¿Qué es una calculadora de participación?</h3>
+            <p>Es esencialmente una calculadora de asistencia utilizada en el contexto de elecciones o eventos. Mide el porcentaje de votantes elegibles que participaron. La fórmula es: (Participantes / Total Elegible) × 100.</p>
+
+            <h3>Ámbito Práctico</h3>
+            <ul>
+                <li><strong>Educación:</strong> Estudiantes y profesores.</li>
+                <li><strong>Corporativo (RRHH):</strong> Seguimiento de asistencia mensual de empleados.</li>
+                <li><strong>Eventos:</strong> Medición del éxito de seminarios.</li>
+            </ul>
+
+            <h3>Cómo calcular la asistencia: Fórmula</h3>
+            <p><code>(Días Presentes ÷ Días Totales) × 100 = % de Asistencia</code></p>
+
+            <h3>Excel vs. Calculadora Online</h3>
+            <table>
+                <tr><th>Característica</th><th>Excel</th><th>Calculadora Online</th></tr>
+                <tr><td>Velocidad</td><td>Lento</td><td>Instantáneo</td></tr>
+                <tr><td>Planificación</td><td>Manual</td><td>Automática</td></tr>
+            </table>
+        </div>
+
+        <!-- Russian Content -->
+        <div data-lang-group="ru">
+            <h2>О калькуляторе посещаемости</h2>
+            <p>Наш калькулятор посещаемости — это универсальный инструмент для студентов, учителей, HR-специалистов и организаторов мероприятий.</p>
+            
+            <h3>Что такое калькулятор явки?</h3>
+            <p>Это инструмент для измерения процента участников на выборах или мероприятиях. Формула: (Участники / Всего) × 100.</p>
+
+            <h3>Практическое использование</h3>
+            <ul>
+                <li><strong>Образование:</strong> Студенты и учителя.</li>
+                <li><strong>HR:</strong> Учет рабочего времени сотрудников.</li>
+                <li><strong>Выборы:</strong> Подсчет явки избирателей.</li>
+            </ul>
+
+            <h3>Как рассчитать посещаемость: Формула</h3>
+            <p><code>(Посещенные дни ÷ Всего дней) × 100 = % Посещаемости</code></p>
+        </div>
+
+        <!-- Hindi Content -->
+        <div data-lang-group="hi">
+            <h2>उपस्थिति कैलकुलेटर के बारे में</h2>
+            <p>हमारा उपस्थिति कैलकुलेटर छात्रों, शिक्षकों, मानव संसाधन पेशेवरों और कार्यक्रम आयोजकों के लिए डिज़ाइन किया गया एक बहुमुखी उपकरण है।</p>
+            
+            <h3>मतदान प्रतिशत कैलकुलेटर क्या है?</h3>
+            <p>यह चुनावों या कार्यक्रमों के संदर्भ में उपयोग किया जाने वाला एक उपस्थिति कैलकुलेटर है। सूत्र वही रहता है: (प्रतिभागी / कुल पात्र) × 100।</p>
+
+            <h3>उपस्थिति की गणना कैसे करें: सूत्र</h3>
+            <p><code>(उपस्थित दिन ÷ कुल कार्य दिवस) × 100 = उपस्थिति %</code></p>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+const currentYear = new Date().getFullYear();
+
+// Translations for UI Labels
+const i18n = {
+    "en": {
+        title: "Attendance Calculator",
+        subtitle: "Track & Plan Your Attendance",
+        label_classname: "Class Name / Subject (Optional)",
+        label_total: "Total Count (Students/Classes)",
+        label_present: "Present Count (Attended)",
+        result_title: "Result Percentage",
+        plan_title: "Planning & Goals",
+        label_target: "Target Percentage (%)",
+        plan_miss: "You can miss/lose <strong>{n}</strong> more, staying above {t}%.",
+        plan_attend: "You need <strong>{n}</strong> more (consecutive attendance) to reach {t}%.",
+        plan_impossible: "Mathematically impossible to reach {t}% currently."
+    },
+    "zh-CN": {
+        title: "出勤率计算器",
+        subtitle: "缺勤统计与补课规划",
+        label_classname: "类名 / 学科名称（可选）",
+        label_total: "总数（班级人数 / 总课时）",
+        label_present: "到场数（实到人数 / 已出席）",
+        result_title: "计算结果",
+        plan_title: "目标规划",
+        label_target: "目标百分比 (%)",
+        plan_miss: "您还可以缺席/减少 <strong>{n}</strong> 个单位，仍保持在 {t}% 以上。",
+        plan_attend: "您需要连续增加 <strong>{n}</strong> 个单位（出席/到场），才能达到 {t}%。",
+        plan_impossible: "当前基数下无法通过增加数量达到 {t}%。"
+    },
+    "zh-TW": {
+        title: "出勤率計算器",
+        subtitle: "缺勤統計與補課規劃",
+        label_classname: "類名 / 學科名稱（可選）",
+        label_total: "總數（班級人數 / 總課時）",
+        label_present: "到場數（實到人數 / 已出席）",
+        result_title: "計算結果",
+        plan_title: "目標規劃",
+        label_target: "目標百分比 (%)",
+        plan_miss: "您還可以缺席/減少 <strong>{n}</strong> 個單位，仍保持在 {t}% 以上。",
+        plan_attend: "您需要連續增加 <strong>{n}</strong> 個單位（出席/到場），才能達到 {t}%。",
+        plan_impossible: "當前基數下無法透過增加數量達到 {t}%。"
+    },
+    "pl": {
+        title: "Kalkulator Frekwencji",
+        subtitle: "Oblicz procent obecności",
+        label_classname: "Nazwa klasy / Przedmiot (Opcjonalnie)",
+        label_total: "Suma (Uczniowie/Zajęcia)",
+        label_present: "Obecni (Uczestnicy)",
+        result_title: "Wynik Procentowy",
+        plan_title: "Planowanie",
+        label_target: "Cel (%)",
+        plan_miss: "Możesz opuścić <strong>{n}</strong>, aby utrzymać {t}%.",
+        plan_attend: "Potrzebujesz <strong>{n}</strong> więcej, aby osiągnąć {t}%.",
+        plan_impossible: "Niemożliwe do osiągnięcia {t}%."
+    },
+    "es": {
+        title: "Calculadora de Asistencia",
+        subtitle: "Calcula tu porcentaje",
+        label_classname: "Nombre de la Clase (Opcional)",
+        label_total: "Total (Estudiantes/Clases)",
+        label_present: "Presentes (Asistencias)",
+        result_title: "Porcentaje Resultante",
+        plan_title: "Planificación",
+        label_target: "Meta (%)",
+        plan_miss: "Puedes faltar <strong>{n}</strong> más para mantenerte sobre {t}%.",
+        plan_attend: "Necesitas <strong>{n}</strong> más para llegar al {t}%.",
+        plan_impossible: "Imposible llegar al {t}%."
+    },
+    "ru": {
+        title: "Калькулятор посещаемости",
+        subtitle: "Расчет процентов",
+        label_classname: "Название класса (необязательно)",
+        label_total: "Всего (Студенты/Занятия)",
+        label_present: "Присутствуют",
+        result_title: "Результат",
+        plan_title: "Планирование",
+        label_target: "Цель (%)",
+        plan_miss: "Можно пропустить <strong>{n}</strong>, оставаясь выше {t}%.",
+        plan_attend: "Нужно посетить еще <strong>{n}</strong>, чтобы достичь {t}%.",
+        plan_impossible: "Невозможно достичь {t}%."
+    },
+    "hi": {
+        title: "उपस्थिति कैलकुलेटर",
+        subtitle: "उपस्थिति ट्रैक करें",
+        label_classname: "कक्षा का नाम (वैकल्पिक)",
+        label_total: "कुल (छात्र/कक्षाएं)",
+        label_present: "उपस्थित संख्या",
+        result_title: "परिणाम",
+        plan_title: "योजना",
+        label_target: "लक्ष्य (%)",
+        plan_miss: "आप {t}% से ऊपर रहने के लिए <strong>{n}</strong> छोड़ सकते हैं।",
+        plan_attend: "आपको {t}% तक पहुंचने के लिए <strong>{n}</strong> और चाहिए।",
+        plan_impossible: "{t}% तक पहुंचना संभव नहीं है।"
+    }
+};
+
+const AttCalc = {
+    currentLang: 'en',
+    currentTheme: 'dark',
+
+    init() {
+        const savedTheme = localStorage.getItem('att_theme') || 'dark';
+        this.setTheme(savedTheme);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlLang = urlParams.get('lang');
+        const savedLang = localStorage.getItem('att_lang');
+        
+        if (urlLang && i18n[urlLang]) {
+            this.currentLang = urlLang;
+        } else if (savedLang && i18n[savedLang]) {
+            this.currentLang = savedLang;
+        } else {
+            this.currentLang = 'en';
+        }
+
+        document.getElementById('lang-select').value = this.currentLang;
+        document.getElementById('current-year-display').textContent = `${currentYear}`;
+
+        this.updateTexts();
+    },
+
+    calculate() {
+        const total = parseFloat(document.getElementById('total-count').value);
+        const present = parseFloat(document.getElementById('present-count').value);
+        const target = parseFloat(document.getElementById('target-percent').value) || 75;
+
+        const displayEl = document.getElementById('percentage-value');
+        const barEl = document.getElementById('progress-fill');
+        const planAlert = document.getElementById('plan-alert');
+
+        if (isNaN(total) || isNaN(present) || total <= 0) {
+            displayEl.textContent = '0%';
+            barEl.style.width = '0%';
+            planAlert.classList.add('hidden');
+            return;
+        }
+
+        // Percentage Logic
+        let percent = (present / total) * 100;
+        if (percent > 100) percent = 100;
+        if (percent < 0) percent = 0;
+
+        const formattedPercent = Number.isInteger(percent) ? percent : percent.toFixed(1);
+        displayEl.textContent = `${formattedPercent}%`;
+        barEl.style.width = `${percent}%`;
+
+        const texts = i18n[this.currentLang];
+        
+        // Color coding
+        if (percent >= target) {
+            barEl.style.backgroundColor = 'var(--success)';
+            displayEl.style.color = 'var(--success)';
+        } else {
+            barEl.style.backgroundColor = 'var(--danger)';
+            displayEl.style.color = 'var(--danger)';
+        }
+
+        // Planning Logic
+        let msg = "";
+        let alertClass = "";
+
+        if (percent >= target) {
+            // How many can I miss? (Assuming student context: Total increases, Present stays same)
+            // Or (Teacher context: Total Students stays same, Present Students drops) 
+            // The formula provided in prompt implies "Student Bunking" logic usually.
+            // Let's stick to the standard "Bunking" logic (Total increases) as it's the most common use case for "Planning".
+            // Logic: Attended / (Total + X) >= Target%
+            const maxTotal = (present * 100) / target;
+            const missable = Math.floor(maxTotal - total);
+            
+            if (missable > 0) {
+                msg = texts.plan_miss.replace('{n}', missable).replace('{t}', target);
+                alertClass = "text-[var(--success)]";
+            }
+        } else {
+            // Need to attend more
+            if (target >= 100) {
+                 msg = texts.plan_impossible.replace('{t}', target);
+            } else {
+                const numerator = (target * total) - (100 * present);
+                const denominator = 100 - target;
+                const needed = Math.ceil(numerator / denominator);
+                
+                if (needed > 0) {
+                    msg = texts.plan_attend.replace('{n}', needed).replace('{t}', target);
+                    alertClass = "text-[var(--warning)]";
+                }
+            }
+        }
+
+        if(msg) {
+            planAlert.innerHTML = msg;
+            planAlert.className = `p-4 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] mt-4 ${alertClass}`;
+            planAlert.classList.remove('hidden');
+        } else {
+            planAlert.classList.add('hidden');
+        }
+    },
+
+    toggleTheme() {
+        const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+        this.setTheme(newTheme);
+    },
+
+    setTheme(theme) {
+        this.currentTheme = theme;
+        const icon = document.getElementById('theme-icon');
+        if (theme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+            icon.textContent = '☀️';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            icon.textContent = '🌙';
+        }
+        localStorage.setItem('att_theme', theme);
+    },
+
+    changeLang() {
+        this.currentLang = document.getElementById('lang-select').value;
+        localStorage.setItem('att_lang', this.currentLang);
+        try {
+            const url = new URL(window.location);
+            url.searchParams.set('lang', this.currentLang);
+            window.history.pushState({}, '', url);
+        } catch (e) {}
+        this.updateTexts();
+        this.calculate(); 
+    },
+
+    updateTexts() {
+        const texts = i18n[this.currentLang];
+        // 1. Update simple UI labels
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (texts[key]) el.textContent = texts[key];
+        });
+        document.title = texts.title;
+
+        // 2. Update Long Content Sections (Show/Hide divs)
+        document.querySelectorAll('[data-lang-group]').forEach(el => {
+            el.classList.remove('active');
+            if(el.getAttribute('data-lang-group') === this.currentLang) {
+                el.classList.add('active');
+            }
+        });
+        
+        // Fallback to English for content if specific lang not found in HTML blocks
+        const activeContent = document.querySelector(`[data-lang-group="${this.currentLang}"]`);
+        if(!activeContent) {
+            const enContent = document.querySelector(`[data-lang-group="en"]`);
+            if(enContent) enContent.classList.add('active');
+        }
+
+        if(document.getElementById('total-count').value) {
+            this.calculate();
+        }
+    }
+};
+
+window.onload = () => AttCalc.init();
+</script>
+
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>
