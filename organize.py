@@ -124,7 +124,7 @@ SPECIFIC_FIXES = {
     'text-case-converter': 'text-tools',
 }
 
-# --- 3. 图标备份库 (完整展开版) ---
+# --- 3. 图标备份库 (完整恢复) ---
 BACKUP_ICONS = {
     # 特定工具图标
     'sudoku': '🧩',
@@ -241,17 +241,33 @@ BACKUP_ICONS = {
     'colors': '🎨'
 }
 
-def to_kebab_case(name):
-    name_no_ext = os.path.splitext(name)[0]
-    s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1-\2', name_no_ext)
-    s1 = re.sub(r'([a-z0-9])([A-Z])', r'\1-\2', s1)
-    clean_name = s1.lower().replace(' ', '-').replace('_', '-')
-    clean_name = re.sub(r'-+', '-', clean_name)
+# --- 4. 关键修复：正确的文件名清洗函数 ---
+def to_kebab_case(filename):
+    # 1. 先把文件名转小写
+    name = filename.lower()
+    
+    # 2. 暴力移除所有 .html 后缀 (防止 .html.html)
+    while name.endswith('.html'):
+        name = name[:-5]
+    
+    # 3. 处理 CamelCase (如果文件名还是驼峰命名)
+    s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1-\2', name)
+    name = re.sub(r'([a-z0-9])([A-Z])', r'\1-\2', s1)
+    
+    # 4. 将点号、下划线、空格全部替换为连字符
+    clean_name = re.sub(r'[\s_.]+', '-', name)
+    
+    # 5. 去除多余的连字符
+    clean_name = re.sub(r'-+', '-', clean_name).strip('-')
+    
     return clean_name + '.html'
 
 def get_icon(tool_id, filename, existing_icon_map):
+    # 优先使用 JSON 中已有的图标
     if tool_id in existing_icon_map and existing_icon_map[tool_id] != '🔧':
         return existing_icon_map[tool_id]
+    
+    # 如果没有，尝试从 BACKUP_ICONS 中模糊匹配
     for key, icon in BACKUP_ICONS.items():
         if key in filename.lower():
             return icon
@@ -269,13 +285,15 @@ def inject_ads_to_file(file_path):
     except: pass
 
 def get_category_from_content(file_path, filename):
-    tool_id = filename.replace('.html', '')
+    tool_id = filename.lower().replace('.html', '')
+    # 移除多重后缀
+    while tool_id.endswith('.html'): tool_id = tool_id[:-5]
+    
     if tool_id in SPECIFIC_FIXES: return SPECIFIC_FIXES[tool_id]
     
-    lower_name = filename.lower()
     for cat_folder, keywords in KEYWORD_CATEGORIES.items():
         for kw in keywords:
-            if kw in lower_name: return cat_folder
+            if kw in tool_id: return cat_folder
             
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -290,8 +308,10 @@ def get_category_from_content(file_path, filename):
     return 'others'
 
 def main():
+    print(">>> 🛠️ 开始修复文件名后缀并整理分类...")
+    
     if not os.path.exists(MODULES_DIR):
-        print(f"错误：找不到 {MODULES_DIR} 文件夹。")
+        print(f"❌ 错误：找不到 {MODULES_DIR} 文件夹。")
         return
 
     existing_icon_map = {}
@@ -303,84 +323,72 @@ def main():
                     if 'icon' in item: existing_icon_map[item['id']] = item['icon']
         except: pass
 
-    # 1. 整理文件
-    print(">>> 开始文件整理...")
+    # --- 第一步：遍历并移动/重命名文件 ---
     for root, dirs, files in os.walk(MODULES_DIR):
         for filename in files:
             if filename.endswith('.html'):
                 original_path = os.path.join(root, filename)
-                category = get_category_from_content(original_path, filename)
                 
-                if 'date' in category or 'time' in category:
-                    category = 'date-time'
+                # 确定分类
+                category = get_category_from_content(original_path, filename)
+                if 'date' in category or 'time' in category: category = 'date-time'
 
+                # 生成修复后的文件名
                 new_filename = to_kebab_case(filename)
+                
                 target_dir = os.path.join(MODULES_DIR, category)
                 target_path = os.path.join(target_dir, new_filename)
                 
                 if os.path.abspath(original_path) != os.path.abspath(target_path):
                     if not os.path.exists(target_dir): os.makedirs(target_dir)
-                    try: shutil.move(original_path, target_path)
-                    except: pass
+                    try:
+                        shutil.move(original_path, target_path)
+                        print(f"✅ 修复: {filename} -> {category}/{new_filename}")
+                    except Exception as e:
+                        print(f"⚠️ 移动失败 {filename}: {e}")
                 
                 if os.path.exists(target_path):
                     inject_ads_to_file(target_path)
 
-    # 2. 生成 JSON
+    # --- 第二步：清理空文件夹 ---
+    for root, dirs, files in os.walk(MODULES_DIR, topdown=False):
+        for name in dirs:
+            try:
+                os.rmdir(os.path.join(root, name))
+            except: pass
+
+    # --- 第三步：生成 JSON ---
     print(">>> 正在生成 tools.json...")
     tools_data = []
     
     for root, dirs, files in os.walk(MODULES_DIR):
         for file in files:
             if file.endswith('.html'):
-                tool_id = file.replace('.html', '')
+                tool_id = file[:-5] # 移除 .html
                 current_folder = os.path.basename(root)
                 final_category = current_folder
                 
-                # --- 核心：这里是避免重复标签的关键 ---
-                # 如果分类里包含 date、time 等字眼，一律强制转为 date-time
-                cat_lower = final_category.lower()
-                if 'date' in cat_lower or 'time' in cat_lower:
+                if 'date' in final_category or 'time' in final_category:
                     final_category = 'date-time'
 
                 display_title = tool_id.replace('-', ' ').title()
+                web_path = f"modules/{current_folder}/{file}".replace('\\', '/')
+                
                 tools_data.append({
                     "id": tool_id,
                     "title": display_title,
                     "category": final_category, 
-                    "path": f"modules/{current_folder}/{file}".replace('\\', '/'),
+                    "path": web_path,
                     "description": f"Free online {display_title} tool.",
                     "icon": get_icon(tool_id, file, existing_icon_map)
                 })
     
-    # 3. 终极清洗：确保所有标签都是英文小写和连字符
-    # 遍历所有数据，最后再检查一遍 category
-    for item in tools_data:
-        # 获取原始分类并进行基础清洗：转小写，去除首尾空格
-        raw_cat = item['category'].lower().strip()
-        
-        # 替换空格、下划线、& 符号为连字符
-        clean_cat = raw_cat.replace(' ', '-').replace('_', '-').replace('&', '-')
-        
-        # 处理连续的连字符（例如 "date---time" -> "date-time"）
-        clean_cat = re.sub(r'-+', '-', clean_cat)
-        
-        # 去除开头和结尾的连字符
-        clean_cat = clean_cat.strip('-')
-
-        # 特殊规则：date-time 强制合并
-        if 'date' in clean_cat or 'time' in clean_cat:
-            clean_cat = 'date-time'
-            
-        # 赋值回去
-        item['category'] = clean_cat
-
     tools_data.sort(key=lambda x: (x['category'], x['id']))
     
     with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(tools_data, f, indent=2, ensure_ascii=False)
 
-    print(f"✅ 完成！所有分类已强制转换为小写连字符格式 (kebab-case)。")
+    print(f"🎉 完成！共 {len(tools_data)} 个工具。所有 .html.html 已修复。")
 
 if __name__ == '__main__':
     main()
