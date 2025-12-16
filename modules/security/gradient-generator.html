@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="color-tool">
+    <meta name="description" content="Ultimate CSS Gradient Generator - Create linear and radial gradients, browse presets, and export CSS code. 终极CSS渐变生成器，提供热门预设、径向位置控制及性能优化建议。">
+    <meta name="keywords" content="css gradient, background generator, web design tools, linear-gradient, radial-gradient, 渐变色生成器, 网页设计工具">
+    <title>Ultimate Gradient Generator | 终极渐变生成器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#8b5cf6', hover: '#7c3aed' }, /* Violet */
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#fdf4ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-field {
+                @apply w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary outline-none transition-all text-sm;
+            }
+            .label-text {
+                @apply text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+        }
+        .check-bg {
+            background-color: #ffffff;
+            background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        .dark .check-bg {
+            background-color: #1e293b;
+            background-image: linear-gradient(45deg, #334155 25%, transparent 25%), linear-gradient(-45deg, #334155 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #334155 75%), linear-gradient(-45deg, transparent 75%, #334155 75%);
+        }
+        /* Custom Scrollbar for preset list */
+        .preset-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .preset-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .preset-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        .dark .preset-scroll::-webkit-scrollbar-thumb {
+            background-color: #475569;
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-violet-500/20">
+                    <i class="fa fa-paint-brush"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Gradient Generator</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">CSS 渐变背景生成器</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                    <option value="zh-CN">🇨🇳 中文</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Controls Column -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <!-- Main Editor -->
+                <div class="glass rounded-3xl shadow-lg border-t-4 border-t-violet-500 p-6 space-y-5">
+                    
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <i class="fa fa-sliders text-violet-500"></i> <span data-i18n="h2_config">配置</span>
+                        </h2>
+                        <button onclick="App.randomize()" class="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 rounded-lg font-bold transition-colors text-slate-600 dark:text-slate-300" data-i18n="btn_random">
+                            <i class="fa fa-random mr-1"></i> 随机
+                        </button>
+                    </div>
+
+                    <!-- Type Selection -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_type">类型 (Type)</label>
+                        <select id="grad-type" class="input-field" onchange="App.handleTypeChange()">
+                            <option value="linear">Linear (线性)</option>
+                            <option value="radial">Radial (径向)</option>
+                        </select>
+                    </div>
+
+                    <!-- Dynamic Controls: Angle OR Position/Shape -->
+                    <div id="control-linear" class="space-y-4">
+                        <div>
+                            <label class="label-text flex justify-between">
+                                <span data-i18n="lbl_angle">角度 (Angle)</span>
+                                <span id="angle-val" class="text-violet-500">90deg</span>
+                            </label>
+                            <input type="range" id="grad-angle-range" min="0" max="360" value="90" class="w-full accent-violet-500 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" oninput="App.syncAngle(this.value, 'range')">
+                            <input type="number" id="grad-angle-num" class="input-field mt-2 hidden" value="90" min="0" max="360" oninput="App.syncAngle(this.value, 'num')">
+                        </div>
+                    </div>
+
+                    <div id="control-radial" class="space-y-3 hidden">
+                         <div>
+                            <label class="label-text" data-i18n="lbl_shape">形状 (Shape)</label>
+                            <select id="grad-shape" class="input-field" onchange="App.update()">
+                                <option value="circle">Circle (圆形)</option>
+                                <option value="ellipse">Ellipse (椭圆)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label-text" data-i18n="lbl_position">位置 (Position)</label>
+                            <select id="grad-pos" class="input-field" onchange="App.update()">
+                                <option value="center">Center (居中)</option>
+                                <option value="top">Top (顶部)</option>
+                                <option value="bottom">Bottom (底部)</option>
+                                <option value="left">Left (左侧)</option>
+                                <option value="right">Right (右侧)</option>
+                                <option value="top left">Top Left (左上)</option>
+                                <option value="bottom right">Bottom Right (右下)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Color Stops -->
+                    <div>
+                        <label class="label-text flex justify-between items-center mb-2">
+                            <span data-i18n="lbl_colors">颜色节点</span>
+                            <button onclick="App.addColor()" class="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 px-2 py-1 rounded hover:bg-violet-200 transition-colors">
+                                <i class="fa fa-plus"></i> <span data-i18n="btn_add">添加</span>
+                            </button>
+                        </label>
+                        <div id="color-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                            <!-- JS Generated -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Presets Section -->
+                <div class="glass rounded-3xl shadow-lg p-6">
+                    <h2 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <i class="fa fa-star text-amber-500"></i> <span data-i18n="h2_presets">热门预设</span>
+                    </h2>
+                    <div class="grid grid-cols-4 gap-2" id="preset-grid">
+                        <!-- JS Generated -->
+                    </div>
+                </div>
+            </main>
+
+            <!-- Preview Column -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden flex flex-col h-full min-h-[500px] relative">
+                    <!-- Preview Area -->
+                    <div id="preview-box" class="flex-grow w-full check-bg relative transition-all duration-300 group">
+                        <div id="gradient-layer" class="absolute inset-0 w-full h-full z-10"></div>
+                        
+                        <!-- Overlay Text for Context -->
+                        <div class="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                            <div class="bg-black/30 backdrop-blur-md text-white px-6 py-3 rounded-full font-bold shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
+                                Preview
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Code Output Area -->
+                    <div class="p-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">CSS Code</span>
+                            <button onclick="App.copy()" class="text-xs bg-slate-800 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-lg font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-slate-500/20" data-i18n="btn_copy">
+                                <i class="fa fa-copy mr-1"></i> Copy CSS
+                            </button>
+                        </div>
+                        <div class="relative group">
+                            <code id="css-output" class="block w-full bg-slate-200 dark:bg-slate-800 p-4 rounded-xl text-sm font-mono break-all text-slate-700 dark:text-slate-300 border border-transparent focus:border-violet-500 transition-colors cursor-text" contenteditable="true" spellcheck="false">
+                                background: linear-gradient(...);
+                            </code>
+                            <div class="absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-slate-200 dark:from-slate-800 to-transparent pointer-events-none"></div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2 text-right" data-i18n="hint_compat">Compatible with all modern browsers.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Enhanced Info Section -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                     <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">关于 CSS 渐变</span>
+                        </h2>
+                        <div class="prose dark:prose-invert text-slate-600 dark:text-slate-300 text-sm leading-relaxed space-y-4">
+                            <p data-i18n="guide_intro">CSS 渐变 (Gradients) 是一种在两个或多个颜色之间创建平滑过渡的 CSS3 特性。相比传统的背景图片，它具有极大的性能优势。</p>
+                            
+                            <ul class="list-disc pl-5 space-y-2 marker:text-violet-500">
+                                <li data-i18n="guide_li1"><strong>性能更优：</strong> 渐变由浏览器渲染引擎直接绘制，无需 HTTP 请求，加载速度极快。</li>
+                                <li data-i18n="guide_li2"><strong>无限缩放：</strong> 作为矢量图形，无论屏幕分辨率如何（如 Retina 屏幕），渐变永远保持清晰，不会模糊。</li>
+                                <li data-i18n="guide_li3"><strong>灵活易改：</strong> 修改颜色只需改一行代码，无需重新设计和导出图片。</li>
+                            </ul>
+                        </div>
+                     </div>
+
+                     <div class="space-y-6">
+                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" data-i18n="faq_title">使用技巧 & 常见问题</h3>
+                         
+                         <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
+                             <h4 class="font-bold text-indigo-700 dark:text-indigo-300 mb-1 text-sm"><i class="fa fa-lightbulb-o mr-1"></i> <span data-i18n="tip_ui_title">UI 设计建议</span></h4>
+                             <p class="text-xs text-indigo-600 dark:text-indigo-400" data-i18n="tip_ui_desc">避免使用对比度过高或饱和度差异极大的颜色直接过渡，这容易产生"脏色"。尝试使用邻近色系（如蓝色到紫色）或在中间添加过渡色。</p>
+                         </div>
+
+                         <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl">
+                                <h4 class="font-bold text-slate-700 dark:text-slate-300 mb-1 text-sm">Linear (线性)</h4>
+                                <p class="text-xs text-slate-500" data-i18n="faq_linear">沿直线变化。常用于按钮、导航栏或页面整体背景。</p>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl">
+                                <h4 class="font-bold text-slate-700 dark:text-slate-300 mb-1 text-sm">Radial (径向)</h4>
+                                <p class="text-xs text-slate-500" data-i18n="faq_radial">从中心扩散。适合用来聚焦视线或模拟光源效果。</p>
+                            </div>
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </section>
+        
+        <footer class="text-center text-xs text-slate-400 py-6 border-t border-slate-200 dark:border-slate-800 mt-auto">
+            <p>&copy; <span id="year"></span> Gradient Generator. Designed for Developers & Designers.</p>
+        </footer>
+    </div>
+
+    <!-- Required Footer Code -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        // --- PRESET DATA ---
+        const PRESETS = [
+            { name: "Sunset", colors: ["#ff7e5f", "#feb47b"] },
+            { name: "Ocean", colors: ["#2193b0", "#6dd5ed"] },
+            { name: "Purple Love", colors: ["#cc2b5e", "#753a88"] },
+            { name: "Morning", colors: ["#FF5F6D", "#FFC371"] },
+            { name: "Lush", colors: ["#56ab2f", "#a8e063"] },
+            { name: "Frost", colors: ["#00416A", "#E4E5E6"] },
+            { name: "Royal", colors: ["#141E30", "#243B55"] },
+            { name: "Cherry", colors: ["#EB3349", "#F45C43"] },
+            { name: "Mauve", colors: ["#42275a", "#734b6d"] },
+            { name: "Steel", colors: ["#1F1C2C", "#928DAB"] },
+            { name: "Sunshine", colors: ["#f2994a", "#f2c94c"] },
+            { name: "Instagram", colors: ["#833ab4", "#fd1d1d", "#fcb045"] }
+        ];
+
+        const i18n = {
+            'zh-CN': {
+                title: "终极渐变生成器", subtitle: "专业级 CSS 渐变背景设计工具",
+                h2_config: "配置参数", h2_presets: "热门预设",
+                lbl_type: "渐变类型", lbl_angle: "角度 (Angle)", lbl_shape: "形状 (Shape)", lbl_position: "起始位置 (Position)",
+                lbl_colors: "颜色节点控制",
+                btn_random: "随机生成", btn_copy: "复制 CSS 代码", btn_add: "添加节点",
+                guide_title: "关于 CSS 渐变",
+                guide_intro: "CSS 渐变 (Gradients) 是一种在两个或多个颜色之间创建平滑过渡的 CSS3 特性。相比背景图片，它是现代网页设计的首选。",
+                guide_li1: "<strong>极致性能：</strong> 由浏览器直接渲染，零网络请求，秒开加载。",
+                guide_li2: "<strong>完美适配：</strong> 矢量特性确保在 4K/Retina 屏幕上依然清晰锐利。",
+                guide_li3: "<strong>灵活维护：</strong> 修改代码即可调整配色，无需设计软件介入。",
+                faq_title: "设计指南",
+                tip_ui_title: "UI 配色建议",
+                tip_ui_desc: "优秀的渐变通常是微妙的。避免使用色相环上距离太远的颜色直接过渡（如红配绿），这会产生灰暗的中间色。建议使用同色系深浅变化或邻近色。",
+                faq_linear: "最常用的类型。适用于按钮悬停效果、卡片背景或通栏Banner。",
+                faq_radial: "模拟光照效果的最佳选择。常用于突出中心主体或营造暗角氛围。",
+                hint_compat: "完美兼容 Chrome, Firefox, Safari, Edge 等现代浏览器。"
+            },
+            'en': {
+                title: "Gradient Generator", subtitle: "Professional CSS Background Tool",
+                h2_config: "Configuration", h2_presets: "Popular Presets",
+                lbl_type: "Type", lbl_angle: "Angle", lbl_shape: "Shape", lbl_position: "Position",
+                lbl_colors: "Color Stops",
+                btn_random: "Randomize", btn_copy: "Copy CSS", btn_add: "Add",
+                guide_title: "About CSS Gradients",
+                guide_intro: "CSS Gradients let you display smooth transitions between two or more specified colors. They are superior to images for backgrounds.",
+                guide_li1: "<strong>Performance:</strong> Rendered by the browser, no HTTP requests needed.",
+                guide_li2: "<strong>Scalability:</strong> Vector-based, looking crisp on any resolution or zoom level.",
+                guide_li3: "<strong>Maintainability:</strong> Easy to change via code without image editing software.",
+                faq_title: "Design Tips",
+                tip_ui_title: "Color Theory Tip",
+                tip_ui_desc: "Great gradients are often subtle. Avoid mixing complementary colors directly (like red and green) as they create muddy gray transitions. Stick to analogous colors.",
+                faq_linear: "Standard transition along a line. Great for headers and buttons.",
+                faq_radial: "Radiates from a center point. Good for spotlights or vignettes.",
+                hint_compat: "Compatible with all modern browsers."
+            },
+            // ... (Other languages kept simple for brevity, defaulting to EN structure if needed) ...
+            'es': { title: "Generador de Degradados", subtitle: "Herramienta CSS Profesional", h2_config: "Configuración", h2_presets: "Preajustes", lbl_type: "Tipo", lbl_angle: "Ángulo", lbl_colors: "Colores", btn_random: "Aleatorio", btn_copy: "Copiar CSS" },
+            'ru': { title: "Генератор Градиентов", subtitle: "CSS Инструмент", h2_config: "Конфигурация", h2_presets: "Пресеты", lbl_type: "Тип", lbl_angle: "Угол", lbl_colors: "Цвета", btn_random: "Случайно", btn_copy: "Копировать" },
+            'pl': { title: "Generator Gradientów", subtitle: "Narzędzie CSS", h2_config: "Konfiguracja", h2_presets: "Presety", lbl_type: "Typ", lbl_angle: "Kąt", lbl_colors: "Kolory", btn_random: "Losuj", btn_copy: "Kopiuj" }
+        };
+
+        const App = {
+            colors: ['#8b5cf6', '#c026d3'],
+            type: 'linear',
+            angle: 90,
+            radialShape: 'circle',
+            radialPos: 'center',
+            currentLang: 'zh-CN',
+            
+            init() {
+                this.updateYear();
+                this.handleTheme();
+                this.setupLang();
+                this.renderPresets();
+                this.renderColorInputs();
+                this.update();
+            },
+
+            updateYear() { document.getElementById('year').textContent = new Date().getFullYear(); },
+            
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+
+            setupLang() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                // Simple fallback logic
+                this.currentLang = (langParam && i18n[langParam]) ? langParam : 'zh-CN';
+                document.getElementById('lang-selector').value = this.currentLang;
+                
+                this.applyLang(this.currentLang);
+                
+                document.getElementById('lang-selector').addEventListener('change', (e) => {
+                    const l = e.target.value;
+                    this.currentLang = l;
+                    this.updateUrl(l);
+                    this.applyLang(l);
+                });
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) { console.log("URL update skipped"); }
+            },
+
+            applyLang(lang) {
+                const text = i18n[lang] || i18n['en'];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(text[key]) el.innerHTML = text[key];
+                });
+            },
+
+            renderPresets() {
+                const container = document.getElementById('preset-grid');
+                container.innerHTML = '';
+                PRESETS.forEach(p => {
+                    const btn = document.createElement('button');
+                    btn.className = "aspect-square rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:scale-105 transition-transform cursor-pointer relative group overflow-hidden";
+                    btn.style.background = `linear-gradient(135deg, ${p.colors.join(', ')})`;
+                    btn.title = p.name;
+                    btn.onclick = () => this.loadPreset(p.colors);
+                    
+                    // Tooltip
+                    const tip = document.createElement('div');
+                    tip.className = "absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] py-1 opacity-0 group-hover:opacity-100 transition-opacity truncate px-1";
+                    tip.innerText = p.name;
+                    
+                    btn.appendChild(tip);
+                    container.appendChild(btn);
+                });
+            },
+
+            loadPreset(colors) {
+                this.colors = [...colors];
+                this.renderColorInputs();
+                this.update();
+            },
+
+            handleTypeChange() {
+                this.type = document.getElementById('grad-type').value;
+                const linearCtrls = document.getElementById('control-linear');
+                const radialCtrls = document.getElementById('control-radial');
+                
+                if(this.type === 'linear') {
+                    linearCtrls.classList.remove('hidden');
+                    radialCtrls.classList.add('hidden');
+                } else {
+                    linearCtrls.classList.add('hidden');
+                    radialCtrls.classList.remove('hidden');
+                }
+                this.update();
+            },
+
+            syncAngle(val, source) {
+                this.angle = val;
+                if(source === 'range') document.getElementById('angle-val').textContent = val + 'deg';
+                // Only update number input if needed (currently hidden for simplicity)
+                this.update();
+            },
+
+            addColor() {
+                // Add a white color, or clone the last one
+                const lastColor = this.colors[this.colors.length-1] || '#ffffff';
+                this.colors.push(lastColor);
+                this.renderColorInputs();
+                this.update();
+            },
+
+            removeColor(idx) {
+                if(this.colors.length <= 2) return;
+                this.colors.splice(idx, 1);
+                this.renderColorInputs();
+                this.update();
+            },
+
+            updateColor(idx, val) {
+                this.colors[idx] = val;
+                this.update();
+            },
+
+            randomize() {
+                const count = Math.floor(Math.random() * 2) + 2; // 2 or 3 colors
+                this.colors = [];
+                for(let i=0; i<count; i++) {
+                    this.colors.push('#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'));
+                }
+                this.angle = Math.floor(Math.random() * 360);
+                document.getElementById('grad-angle-range').value = this.angle;
+                document.getElementById('angle-val').textContent = this.angle + 'deg';
+                
+                this.renderColorInputs();
+                this.update();
+            },
+
+            renderColorInputs() {
+                const container = document.getElementById('color-list');
+                container.innerHTML = '';
+                this.colors.forEach((c, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex gap-2 items-center bg-slate-50 dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-700 mb-2';
+                    div.innerHTML = `
+                        <div class="relative w-8 h-8 rounded-full overflow-hidden shadow-sm border border-slate-200 dark:border-slate-600 flex-shrink-0">
+                            <input type="color" value="${c}" class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] cursor-pointer p-0 m-0 border-0" oninput="App.updateColor(${idx}, this.value)">
+                        </div>
+                        <input type="text" value="${c}" class="flex-grow bg-transparent font-mono text-xs uppercase text-slate-600 dark:text-slate-300 focus:outline-none" onchange="App.updateColor(${idx}, this.value)">
+                        ${this.colors.length > 2 ? `<button onclick="App.removeColor(${idx})" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded transition-colors"><i class="fa fa-times"></i></button>` : ''}
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            update() {
+                this.radialShape = document.getElementById('grad-shape').value;
+                this.radialPos = document.getElementById('grad-pos').value;
+                
+                let css = '';
+                if(this.type === 'linear') {
+                    css = `linear-gradient(${this.angle}deg, ${this.colors.join(', ')})`;
+                } else {
+                    css = `radial-gradient(${this.radialShape} at ${this.radialPos}, ${this.colors.join(', ')})`;
+                }
+
+                document.getElementById('gradient-layer').style.background = css;
+                document.getElementById('css-output').textContent = `background: ${css};`;
+            },
+
+            copy() {
+                const txt = document.getElementById('css-output').textContent;
+                // Use a temporary textarea for better compatibility if clipboard API fails
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(txt);
+                } else {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = txt;
+                    textArea.style.position = "fixed";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try { document.execCommand('copy'); } catch (err) {}
+                    document.body.removeChild(textArea);
+                }
+
+                const btn = document.querySelector('button[onclick="App.copy()"]');
+                const icon = btn.querySelector('i');
+                const originalText = btn.innerHTML;
+                
+                btn.innerHTML = `<i class="fa fa-check mr-1"></i> Copied!`;
+                btn.classList.add('bg-green-600', 'text-white');
+                btn.classList.remove('bg-slate-800', 'dark:bg-white', 'text-slate-900');
+                
+                setTimeout(() => {
+                    btn.innerHTML = `<i class="fa fa-copy mr-1"></i> Copy CSS`;
+                    btn.classList.remove('bg-green-600', 'text-white');
+                    btn.classList.add('bg-slate-800', 'dark:bg-white', 'text-white', 'dark:text-slate-900');
+                }, 1500);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>

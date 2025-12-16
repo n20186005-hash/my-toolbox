@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="finance">
+    <meta name="description" content="Free Online Global Currency Code (ISO 4217) Lookup Tool - Find currency codes, symbols, and number codes for 160+ countries. 免费在线全球各国货币代码查询表，ISO 4217标准，支持多语言搜索。">
+    <meta name="keywords" content="currency codes, ISO 4217, money symbols, currency list, 货币代码, 汇率代码, 各国货币符号, ISO code search, world currencies">
+    <title>Global Currency Code Lookup | 全球货币代码表</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#10b981', hover: '#059669' }, /* Emerald Green for Finance */
+                        secondary: { DEFAULT: '#3b82f6', hover: '#2563eb' },
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f0fdf4', dark: '#022c22' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-field {
+                @apply w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary outline-none transition-all text-base;
+            }
+            .table-header {
+                @apply px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-700/50 sticky top-0 backdrop-blur-sm z-10;
+            }
+            .table-cell {
+                @apply px-4 py-3 whitespace-nowrap text-sm text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/50;
+            }
+            .copy-btn {
+                @apply cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600 rounded px-1.5 py-0.5 transition-colors select-none active:scale-95 inline-block;
+            }
+        }
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        .dark .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #334155;
+        }
+        
+        .currency-flag {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+        
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px; 
+            background-color: #333; 
+            color: #fff; 
+            text-align: center; 
+            border-radius: 8px; 
+            padding: 12px; 
+            position: fixed; 
+            z-index: 50; 
+            left: 50%; 
+            bottom: 30px; 
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <div class="container mx-auto px-4 py-6 max-w-5xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa fa-money"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Global Currency Codes</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">ISO 4217 Standards & Symbols</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors max-w-[140px]">
+                    <option value="zh-CN">🇨🇳 中文 (简)</option>
+                    <option value="zh-TW">🇨🇳 中文 (繁)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="glass rounded-3xl shadow-lg border-t-4 border-t-emerald-500 p-6 mb-12 min-h-[600px] flex flex-col">
+            
+            <!-- Search Bar -->
+            <div class="relative mb-6">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fa fa-search text-slate-400"></i>
+                </div>
+                <input type="text" id="search-input" class="input-field pl-10" placeholder="Search country, currency or code..." oninput="App.filterTable()">
+                <div class="absolute inset-y-0 right-3 flex items-center gap-2">
+                   <span class="text-xs text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded hidden sm:inline-block" id="row-count">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="flex-1 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 flex flex-col">
+                <div class="overflow-x-auto overflow-y-auto custom-scroll h-[650px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="table-header w-[35%]" data-i18n="th_country">Country / Region</th>
+                                <th class="table-header w-[30%]" data-i18n="th_currency">Currency Name</th>
+                                <th class="table-header w-[15%] text-center" data-i18n="th_code">Code</th>
+                                <th class="table-header w-[10%] text-center" data-i18n="th_num">Num</th>
+                                <th class="table-header w-[10%] text-center" data-i18n="th_symbol">Symbol</th>
+                            </tr>
+                        </thead>
+                        <tbody id="currency-table-body" class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                            <!-- JS Generated Rows -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden p-12 text-center text-slate-400">
+                    <i class="fa fa-globe text-4xl mb-3 opacity-50"></i>
+                    <p data-i18n="msg_no_results">No currency found</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Info Section -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                     <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">关于货币代码体系</span>
+                        </h2>
+                        <div class="prose dark:prose-invert text-slate-600 dark:text-slate-300 text-sm leading-relaxed space-y-4">
+                            <p data-i18n="guide_intro">货币代码（Currency Code）是国际标准化组织（ISO）发布的 ISO 4217 标准的一部分。本工具收录了全球 160+ 个国家和地区的最新货币数据。</p>
+                            
+                            <ul class="list-disc pl-5 space-y-2 marker:text-emerald-500">
+                                <li data-i18n="guide_li1"><strong>三位字母代码 (Alpha-3)：</strong> 前两位通常代表国家（如 CN 代表中国），第三位代表货币名（如 Y 代表 Yuan）。</li>
+                                <li data-i18n="guide_li2"><strong>三位数字代码 (Numeric-3)：</strong> 即使货币改变名称，数字代码也可能改变。它主要用于非拉丁语系的系统处理。</li>
+                                <li data-i18n="guide_li3"><strong>全球通用：</strong> 无论是外汇交易 (Forex)、跨境电商还是国际汇款，ISO 4217 都是唯一的通用语言。</li>
+                            </ul>
+                        </div>
+                     </div>
+
+                     <div class="space-y-6">
+                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" data-i18n="faq_title">常见问题 (FAQ)</h3>
+                         
+                         <div class="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
+                             <h4 class="font-bold text-emerald-700 dark:text-emerald-300 mb-1 text-sm"><i class="fa fa-lightbulb-o mr-1"></i> <span data-i18n="tip_copy">使用技巧</span></h4>
+                             <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-1" data-i18n="tip_copy_desc">点击列表中的货币代码或数字代码，可以快速复制到剪贴板。</p>
+                         </div>
+
+                         <div class="space-y-3">
+                            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">
+                                <h4 class="font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs" data-i18n="faq_q1">最新的货币变动有哪些？</h4>
+                                <p class="text-xs text-slate-500" data-i18n="faq_a1">克罗地亚已于2023年加入欧元区（EUR）；津巴布韦于2024年启用了新货币 ZiG (ZWG)；塞拉利昂启用了新利昂 (SLE)。</p>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">
+                                <h4 class="font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs" data-i18n="faq_q2">有些国家为什么没有自己的货币？</h4>
+                                <p class="text-xs text-slate-500" data-i18n="faq_a2">许多国家使用通用货币。例如，欧元区 20 国使用欧元 (EUR)，东加勒比国家使用东加勒比元 (XCD)，还有一些国家直接使用美元 (USD)。</p>
+                            </div>
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </section>
+        
+        <footer class="text-center text-xs text-slate-400 py-6 border-t border-slate-200 dark:border-slate-800 mt-auto">
+            <p>&copy; <span id="year"></span> Global Currency Code Lookup. ISO 4217 Standard.</p>
+        </footer>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast">Copied to clipboard!</div>
+
+    <!-- Required Footer Code -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        // --- COMPREHENSIVE DATA (160+ Entries) ---
+        // Default Country and Currency are in English. 
+        // Localized names are mapped in contentI18n via 'id' (ISO Alpha-2 or custom).
+        const currencyData = [
+            // Major / Popular
+            { id: "US", code: "USD", num: "840", symbol: "$", country: "United States", flag: "🇺🇸" },
+            { id: "EU", code: "EUR", num: "978", symbol: "€", country: "Eurozone", flag: "🇪🇺" },
+            { id: "CN", code: "CNY", num: "156", symbol: "¥", country: "China", flag: "🇨🇳" },
+            { id: "GB", code: "GBP", num: "826", symbol: "£", country: "United Kingdom", flag: "🇬🇧" },
+            { id: "JP", code: "JPY", num: "392", symbol: "¥", country: "Japan", flag: "🇯🇵" },
+            { id: "HK", code: "HKD", num: "344", symbol: "$", country: "Hong Kong", flag: "🇭🇰" },
+            { id: "TW", code: "TWD", num: "901", symbol: "NT$", country: "Taiwan", flag: "🇹🇼" },
+            { id: "CA", code: "CAD", num: "124", symbol: "$", country: "Canada", flag: "🇨🇦" },
+            { id: "AU", code: "AUD", num: "036", symbol: "$", country: "Australia", flag: "🇦🇺" },
+            { id: "KR", code: "KRW", num: "410", symbol: "₩", country: "South Korea", flag: "🇰🇷" },
+            { id: "IN", code: "INR", num: "356", symbol: "₹", country: "India", flag: "🇮🇳" },
+            { id: "RU", code: "RUB", num: "643", symbol: "₽", country: "Russia", flag: "🇷🇺" },
+            { id: "CH", code: "CHF", num: "756", symbol: "Fr", country: "Switzerland", flag: "🇨🇭" },
+            { id: "SG", code: "SGD", num: "702", symbol: "$", country: "Singapore", flag: "🇸🇬" },
+            
+            // Asia & Oceania
+            { id: "AE", code: "AED", num: "784", symbol: "د.إ", country: "United Arab Emirates", flag: "🇦🇪" },
+            { id: "AF", code: "AFN", num: "971", symbol: "؋", country: "Afghanistan", flag: "🇦🇫" },
+            { id: "BD", code: "BDT", num: "050", symbol: "৳", country: "Bangladesh", flag: "🇧🇩" },
+            { id: "BH", code: "BHD", num: "048", symbol: ".د.ب", country: "Bahrain", flag: "🇧🇭" },
+            { id: "BN", code: "BND", num: "096", symbol: "$", country: "Brunei", flag: "🇧🇳" },
+            { id: "BT", code: "BTN", num: "064", symbol: "Nu.", country: "Bhutan", flag: "🇧🇹" },
+            { id: "ID", code: "IDR", num: "360", symbol: "Rp", country: "Indonesia", flag: "🇮🇩" },
+            { id: "IL", code: "ILS", num: "376", symbol: "₪", country: "Israel", flag: "🇮🇱" },
+            { id: "IQ", code: "IQD", num: "368", symbol: "ع.د", country: "Iraq", flag: "🇮🇶" },
+            { id: "IR", code: "IRR", num: "364", symbol: "﷼", country: "Iran", flag: "🇮🇷" },
+            { id: "JO", code: "JOD", num: "400", symbol: "د.ا", country: "Jordan", flag: "🇯🇴" },
+            { id: "KH", code: "KHR", num: "116", symbol: "៛", country: "Cambodia", flag: "🇰🇭" },
+            { id: "KW", code: "KWD", num: "414", symbol: "د.ك", country: "Kuwait", flag: "🇰🇼" },
+            { id: "KZ", code: "KZT", num: "398", symbol: "₸", country: "Kazakhstan", flag: "🇰🇿" },
+            { id: "LA", code: "LAK", num: "418", symbol: "₭", country: "Laos", flag: "🇱🇦" },
+            { id: "LB", code: "LBP", num: "422", symbol: "ل.ل", country: "Lebanon", flag: "🇱🇧" },
+            { id: "LK", code: "LKR", num: "144", symbol: "Rs", country: "Sri Lanka", flag: "🇱🇰" },
+            { id: "MM", code: "MMK", num: "104", symbol: "K", country: "Myanmar", flag: "🇲🇲" },
+            { id: "MN", code: "MNT", num: "496", symbol: "₮", country: "Mongolia", flag: "🇲🇳" },
+            { id: "MO", code: "MOP", num: "446", symbol: "P", country: "Macau", flag: "🇲🇴" },
+            { id: "MV", code: "MVR", num: "462", symbol: "Rf", country: "Maldives", flag: "🇲🇻" },
+            { id: "MY", code: "MYR", num: "458", symbol: "RM", country: "Malaysia", flag: "🇲🇾" },
+            { id: "NP", code: "NPR", num: "524", symbol: "Rs", country: "Nepal", flag: "🇳🇵" },
+            { id: "NZ", code: "NZD", num: "554", symbol: "$", country: "New Zealand", flag: "🇳🇿" },
+            { id: "OM", code: "OMR", num: "512", symbol: "ر.ع.", country: "Oman", flag: "🇴🇲" },
+            { id: "PH", code: "PHP", num: "608", symbol: "₱", country: "Philippines", flag: "🇵🇭" },
+            { id: "PK", code: "PKR", num: "586", symbol: "Rs", country: "Pakistan", flag: "🇵🇰" },
+            { id: "QA", code: "QAR", num: "634", symbol: "ر.ق", country: "Qatar", flag: "🇶🇦" },
+            { id: "SA", code: "SAR", num: "682", symbol: "﷼", country: "Saudi Arabia", flag: "🇸🇦" },
+            { id: "TH", code: "THB", num: "764", symbol: "฿", country: "Thailand", flag: "🇹🇭" },
+            { id: "TR", code: "TRY", num: "949", symbol: "₺", country: "Turkey", flag: "🇹🇷" },
+            { id: "VN", code: "VND", num: "704", symbol: "₫", country: "Vietnam", flag: "🇻🇳" },
+            { id: "YE", code: "YER", num: "886", symbol: "﷼", country: "Yemen", flag: "🇾🇪" },
+
+            // Americas
+            { id: "AR", code: "ARS", num: "032", symbol: "$", country: "Argentina", flag: "🇦🇷" },
+            { id: "BO", code: "BOB", num: "068", symbol: "Bs.", country: "Bolivia", flag: "🇧🇴" },
+            { id: "BR", code: "BRL", num: "986", symbol: "R$", country: "Brazil", flag: "🇧🇷" },
+            { id: "BS", code: "BSD", num: "044", symbol: "$", country: "Bahamas", flag: "🇧🇸" },
+            { id: "BZ", code: "BZD", num: "084", symbol: "$", country: "Belize", flag: "🇧🇿" },
+            { id: "CL", code: "CLP", num: "152", symbol: "$", country: "Chile", flag: "🇨🇱" },
+            { id: "CO", code: "COP", num: "170", symbol: "$", country: "Colombia", flag: "🇨🇴" },
+            { id: "CR", code: "CRC", num: "188", symbol: "₡", country: "Costa Rica", flag: "🇨🇷" },
+            { id: "CU", code: "CUP", num: "192", symbol: "$", country: "Cuba", flag: "🇨🇺" },
+            { id: "DO", code: "DOP", num: "214", symbol: "RD$", country: "Dominican Republic", flag: "🇩🇴" },
+            { id: "GT", code: "GTQ", num: "320", symbol: "Q", country: "Guatemala", flag: "🇬🇹" },
+            { id: "GY", code: "GYD", num: "328", symbol: "$", country: "Guyana", flag: "🇬🇾" },
+            { id: "HN", code: "HNL", num: "340", symbol: "L", country: "Honduras", flag: "🇭🇳" },
+            { id: "HT", code: "HTG", num: "332", symbol: "G", country: "Haiti", flag: "🇭🇹" },
+            { id: "JM", code: "JMD", num: "388", symbol: "$", country: "Jamaica", flag: "🇯🇲" },
+            { id: "MX", code: "MXN", num: "484", symbol: "$", country: "Mexico", flag: "🇲🇽" },
+            { id: "NI", code: "NIO", num: "558", symbol: "C$", country: "Nicaragua", flag: "🇳🇮" },
+            { id: "PA", code: "PAB", num: "590", symbol: "B/.", country: "Panama", flag: "🇵🇦" },
+            { id: "PE", code: "PEN", num: "604", symbol: "S/.", country: "Peru", flag: "🇵🇪" },
+            { id: "PY", code: "PYG", num: "600", symbol: "₲", country: "Paraguay", flag: "🇵🇾" },
+            { id: "SR", code: "SRD", num: "968", symbol: "$", country: "Suriname", flag: "🇸🇷" },
+            { id: "UY", code: "UYU", num: "858", symbol: "$U", country: "Uruguay", flag: "🇺🇾" },
+            { id: "VE", code: "VES", num: "928", symbol: "Bs.S", country: "Venezuela", flag: "🇻🇪" },
+            { id: "XCD", code: "XCD", num: "951", symbol: "$", country: "East Caribbean", flag: "🏳️" },
+
+            // Europe
+            { id: "AL", code: "ALL", num: "008", symbol: "L", country: "Albania", flag: "🇦🇱" },
+            { id: "AM", code: "AMD", num: "051", symbol: "֏", country: "Armenia", flag: "🇦🇲" },
+            { id: "AZ", code: "AZN", num: "944", symbol: "₼", country: "Azerbaijan", flag: "🇦🇿" },
+            { id: "BA", code: "BAM", num: "977", symbol: "KM", country: "Bosnia & Herzegovina", flag: "🇧🇦" },
+            { id: "BG", code: "BGN", num: "975", symbol: "лв", country: "Bulgaria", flag: "🇧🇬" },
+            { id: "BY", code: "BYN", num: "933", symbol: "Br", country: "Belarus", flag: "🇧🇾" },
+            { id: "CZ", code: "CZK", num: "203", symbol: "Kč", country: "Czech Republic", flag: "🇨🇿" },
+            { id: "DK", code: "DKK", num: "208", symbol: "kr", country: "Denmark", flag: "🇩🇰" },
+            { id: "GE", code: "GEL", num: "981", symbol: "₾", country: "Georgia", flag: "🇬🇪" },
+            { id: "HU", code: "HUF", num: "348", symbol: "Ft", country: "Hungary", flag: "🇭🇺" },
+            { id: "IS", code: "ISK", num: "352", symbol: "kr", country: "Iceland", flag: "🇮🇸" },
+            { id: "MD", code: "MDL", num: "498", symbol: "L", country: "Moldova", flag: "🇲🇩" },
+            { id: "MK", code: "MKD", num: "807", symbol: "ден", country: "North Macedonia", flag: "🇲🇰" },
+            { id: "NO", code: "NOK", num: "578", symbol: "kr", country: "Norway", flag: "🇳🇴" },
+            { id: "PL", code: "PLN", num: "985", symbol: "zł", country: "Poland", flag: "🇵🇱" },
+            { id: "RO", code: "RON", num: "946", symbol: "lei", country: "Romania", flag: "🇷🇴" },
+            { id: "RS", code: "RSD", num: "941", symbol: "дин.", country: "Serbia", flag: "🇷🇸" },
+            { id: "SE", code: "SEK", num: "752", symbol: "kr", country: "Sweden", flag: "🇸🇪" },
+            { id: "UA", code: "UAH", num: "980", symbol: "₴", country: "Ukraine", flag: "🇺🇦" },
+
+            // Africa
+            { id: "AO", code: "AOA", num: "973", symbol: "Kz", country: "Angola", flag: "🇦🇴" },
+            { id: "BF", code: "XOF", num: "952", symbol: "CFA", country: "West Africa (CFA)", flag: "🇧🇯" }, // Benin/Burkina/Ivory
+            { id: "BI", code: "BIF", num: "108", symbol: "FBu", country: "Burundi", flag: "🇧🇮" },
+            { id: "BW", code: "BWP", num: "072", symbol: "P", country: "Botswana", flag: "🇧🇼" },
+            { id: "CD", code: "CDF", num: "976", symbol: "FC", country: "DR Congo", flag: "🇨🇩" },
+            { id: "CM", code: "XAF", num: "950", symbol: "FCFA", country: "Central Africa (CFA)", flag: "🇨🇲" }, // Cameroon/Chad
+            { id: "CV", code: "CVE", num: "132", symbol: "$", country: "Cabo Verde", flag: "🇨🇻" },
+            { id: "DJ", code: "DJF", num: "262", symbol: "Fdj", country: "Djibouti", flag: "🇩🇯" },
+            { id: "DZ", code: "DZD", num: "012", symbol: "د.ج", country: "Algeria", flag: "🇩🇿" },
+            { id: "EG", code: "EGP", num: "818", symbol: "£", country: "Egypt", flag: "🇪🇬" },
+            { id: "ET", code: "ETB", num: "230", symbol: "Br", country: "Ethiopia", flag: "🇪🇹" },
+            { id: "GH", code: "GHS", num: "936", symbol: "₵", country: "Ghana", flag: "🇬🇭" },
+            { id: "GM", code: "GMD", num: "270", symbol: "D", country: "Gambia", flag: "🇬🇲" },
+            { id: "GN", code: "GNF", num: "324", symbol: "FG", country: "Guinea", flag: "🇬🇳" },
+            { id: "KE", code: "KES", num: "404", symbol: "KSh", country: "Kenya", flag: "🇰🇪" },
+            { id: "LR", code: "LRD", num: "430", symbol: "$", country: "Liberia", flag: "🇱🇷" },
+            { id: "LY", code: "LYD", num: "434", symbol: "ل.د", country: "Libya", flag: "🇱🇾" },
+            { id: "MA", code: "MAD", num: "504", symbol: "د.م.", country: "Morocco", flag: "🇲🇦" },
+            { id: "MG", code: "MGA", num: "969", symbol: "Ar", country: "Madagascar", flag: "🇲🇬" },
+            { id: "MU", code: "MUR", num: "480", symbol: "Rs", country: "Mauritius", flag: "🇲🇺" },
+            { id: "MW", code: "MWK", num: "454", symbol: "MK", country: "Malawi", flag: "🇲🇼" },
+            { id: "MZ", code: "MZN", num: "943", symbol: "MT", country: "Mozambique", flag: "🇲🇿" },
+            { id: "NA", code: "NAD", num: "516", symbol: "$", country: "Namibia", flag: "🇳🇦" },
+            { id: "NG", code: "NGN", num: "566", symbol: "₦", country: "Nigeria", flag: "🇳🇬" },
+            { id: "RW", code: "RWF", num: "646", symbol: "FRw", country: "Rwanda", flag: "🇷🇼" },
+            { id: "SD", code: "SDG", num: "938", symbol: "ج.س.", country: "Sudan", flag: "🇸🇩" },
+            { id: "SL", code: "SLE", num: "925", symbol: "Le", country: "Sierra Leone", flag: "🇸🇱" },
+            { id: "SO", code: "SOS", num: "706", symbol: "S", country: "Somalia", flag: "🇸🇴" },
+            { id: "SS", code: "SSP", num: "728", symbol: "£", country: "South Sudan", flag: "🇸🇸" },
+            { id: "TN", code: "TND", num: "788", symbol: "د.ت", country: "Tunisia", flag: "🇹🇳" },
+            { id: "TZ", code: "TZS", num: "834", symbol: "TSh", country: "Tanzania", flag: "🇹🇿" },
+            { id: "UG", code: "UGX", num: "800", symbol: "USh", country: "Uganda", flag: "🇺🇬" },
+            { id: "ZA", code: "ZAR", num: "710", symbol: "R", country: "South Africa", flag: "🇿🇦" },
+            { id: "ZM", code: "ZMW", num: "967", symbol: "ZK", country: "Zambia", flag: "🇿🇲" },
+            { id: "ZW", code: "ZWG", num: "924", symbol: "ZiG", country: "Zimbabwe", flag: "🇿🇼" }
+        ];
+
+        // Translation Map: [Country Name, Currency Name]
+        const contentI18n = {
+            'US': { 'zh-CN': ['美国', '美元'], 'zh-TW': ['美國', '美元'], es: ['Estados Unidos', 'Dólar'], ru: ['США', 'Доллар'], hi: ['अमेरिका', 'डॉलर'], pl: ['USA', 'Dolar'] },
+            'EU': { 'zh-CN': ['欧元区', '欧元'], 'zh-TW': ['歐元區', '歐元'], es: ['Eurozona', 'Euro'], ru: ['Еврозона', 'Евро'], hi: ['यूरोज़ोन', 'यूरो'], pl: ['Strefa Euro', 'Euro'] },
+            'CN': { 'zh-CN': ['中国', '人民币'], 'zh-TW': ['中國', '人民幣'], es: ['China', 'Yuan'], ru: ['Китай', 'Юань'], hi: ['चीन', 'युआन'], pl: ['Chiny', 'Yuan'] },
+            'GB': { 'zh-CN': ['英国', '英镑'], 'zh-TW': ['英國', '英鎊'], es: ['Reino Unido', 'Libra'], ru: ['Великобритания', 'Фунт'], hi: ['ब्रिटेन', 'पाउंड'], pl: ['Wielka Brytania', 'Funt'] },
+            'JP': { 'zh-CN': ['日本', '日元'], 'zh-TW': ['日本', '日圓'], es: ['Japón', 'Yen'], ru: ['Япония', 'Иена'], hi: ['जापान', 'येन'], pl: ['Japonia', 'Jen'] },
+            'HK': { 'zh-CN': ['中国香港', '港币'], 'zh-TW': ['香港', '港幣'] },
+            'TW': { 'zh-CN': ['中国台湾', '新台币'], 'zh-TW': ['台灣', '新台幣'] },
+            'CA': { 'zh-CN': ['加拿大', '加元'], 'zh-TW': ['加拿大', '加元'], es: ['Canadá', 'Dólar'], ru: ['Канада', 'Доллар'], pl: ['Kanada', 'Dolar'] },
+            'AU': { 'zh-CN': ['澳大利亚', '澳元'], 'zh-TW': ['澳洲', '澳元'], es: ['Australia', 'Dólar'], ru: ['Австралия', 'Доллар'] },
+            'KR': { 'zh-CN': ['韩国', '韩元'], 'zh-TW': ['韓國', '韓元'], es: ['Corea del Sur', 'Won'] },
+            'IN': { 'zh-CN': ['印度', '卢比'], 'zh-TW': ['印度', '盧比'], es: ['India', 'Rupia'], hi: ['भारत', 'रुपया'] },
+            'RU': { 'zh-CN': ['俄罗斯', '卢布'], 'zh-TW': ['俄羅斯', '盧布'], es: ['Rusia', 'Rublo'], ru: ['Россия', 'Рубль'] },
+            'CH': { 'zh-CN': ['瑞士', '法郎'], 'zh-TW': ['瑞士', '法郎'] },
+            'SG': { 'zh-CN': ['新加坡', '新币'], 'zh-TW': ['新加坡', '新幣'] },
+            'AE': { 'zh-CN': ['阿联酋', '迪拉姆'], 'zh-TW': ['阿聯酋', '迪拉姆'] },
+            'AF': { 'zh-CN': ['阿富汗', '阿富汗尼'], 'zh-TW': ['阿富汗', '阿富汗尼'] },
+            'BD': { 'zh-CN': ['孟加拉国', '塔卡'], 'zh-TW': ['孟加拉', '塔卡'] },
+            'BH': { 'zh-CN': ['巴林', '第纳尔'], 'zh-TW': ['巴林', '第納爾'] },
+            'BN': { 'zh-CN': ['文莱', '文莱元'], 'zh-TW': ['汶萊', '汶萊元'] },
+            'BT': { 'zh-CN': ['不丹', '努尔特鲁姆'], 'zh-TW': ['不丹', '努爾特魯姆'] },
+            'ID': { 'zh-CN': ['印度尼西亚', '印尼盾'], 'zh-TW': ['印尼', '印尼盾'] },
+            'IL': { 'zh-CN': ['以色列', '新谢克尔'], 'zh-TW': ['以色列', '新謝克爾'] },
+            'IQ': { 'zh-CN': ['伊拉克', '第纳尔'], 'zh-TW': ['伊拉克', '第納爾'] },
+            'IR': { 'zh-CN': ['伊朗', '里亚尔'], 'zh-TW': ['伊朗', '里亞爾'] },
+            'JO': { 'zh-CN': ['约旦', '第纳尔'], 'zh-TW': ['約旦', '第納爾'] },
+            'KH': { 'zh-CN': ['柬埔寨', '瑞尔'], 'zh-TW': ['柬埔寨', '瑞爾'] },
+            'KW': { 'zh-CN': ['科威特', '第纳尔'], 'zh-TW': ['科威特', '第納爾'] },
+            'KZ': { 'zh-CN': ['哈萨克斯坦', '坚戈'], 'zh-TW': ['哈薩克', '堅戈'] },
+            'LA': { 'zh-CN': ['老挝', '基普'], 'zh-TW': ['寮國', '基普'] },
+            'LB': { 'zh-CN': ['黎巴嫩', '黎巴嫩镑'], 'zh-TW': ['黎巴嫩', '黎巴嫩鎊'] },
+            'LK': { 'zh-CN': ['斯里兰卡', '卢比'], 'zh-TW': ['斯里蘭卡', '盧比'] },
+            'MM': { 'zh-CN': ['缅甸', '缅元'], 'zh-TW': ['緬甸', '緬元'] },
+            'MN': { 'zh-CN': ['蒙古', '图格里克'], 'zh-TW': ['蒙古', '圖格里克'] },
+            'MO': { 'zh-CN': ['中国澳门', '澳门元'], 'zh-TW': ['澳門', '澳門元'] },
+            'MV': { 'zh-CN': ['马尔代夫', '拉菲亚'], 'zh-TW': ['馬爾地夫', '拉菲亞'] },
+            'MY': { 'zh-CN': ['马来西亚', '林吉特'], 'zh-TW': ['馬來西亞', '令吉'] },
+            'NP': { 'zh-CN': ['尼泊尔', '卢比'], 'zh-TW': ['尼泊爾', '盧比'] },
+            'NZ': { 'zh-CN': ['新西兰', '纽元'], 'zh-TW': ['紐西蘭', '紐元'] },
+            'OM': { 'zh-CN': ['阿曼', '里亚尔'], 'zh-TW': ['阿曼', '里亞爾'] },
+            'PH': { 'zh-CN': ['菲律宾', '比索'], 'zh-TW': ['菲律賓', '披索'] },
+            'PK': { 'zh-CN': ['巴基斯坦', '卢比'], 'zh-TW': ['巴基斯坦', '盧比'] },
+            'QA': { 'zh-CN': ['卡塔尔', '里亚尔'], 'zh-TW': ['卡達', '里亞爾'] },
+            'SA': { 'zh-CN': ['沙特阿拉伯', '里亚尔'], 'zh-TW': ['沙烏地阿拉伯', '里亞爾'] },
+            'TH': { 'zh-CN': ['泰国', '泰铢'], 'zh-TW': ['泰國', '泰銖'] },
+            'TR': { 'zh-CN': ['土耳其', '里拉'], 'zh-TW': ['土耳其', '里拉'] },
+            'VN': { 'zh-CN': ['越南', '越南盾'], 'zh-TW': ['越南', '越南盾'] },
+            'YE': { 'zh-CN': ['也门', '里亚尔'], 'zh-TW': ['葉門', '里亞爾'] },
+            'AR': { 'zh-CN': ['阿根廷', '比索'], 'zh-TW': ['阿根廷', '披索'] },
+            'BO': { 'zh-CN': ['玻利维亚', '诺'], 'zh-TW': ['玻利維亞', '諾'] },
+            'BR': { 'zh-CN': ['巴西', '雷亚尔'], 'zh-TW': ['巴西', '雷亞爾'], es: ['Brasil', 'Real'], pl: ['Brazylia', 'Real'] },
+            'BS': { 'zh-CN': ['巴哈马', '元'], 'zh-TW': ['巴哈馬', '元'] },
+            'BZ': { 'zh-CN': ['伯利兹', '元'], 'zh-TW': ['貝里斯', '元'] },
+            'CL': { 'zh-CN': ['智利', '比索'], 'zh-TW': ['智利', '披索'] },
+            'CO': { 'zh-CN': ['哥伦比亚', '比索'], 'zh-TW': ['哥倫比亞', '披索'] },
+            'CR': { 'zh-CN': ['哥斯达黎加', '科朗'], 'zh-TW': ['哥斯大黎加', '科朗'] },
+            'CU': { 'zh-CN': ['古巴', '比索'], 'zh-TW': ['古巴', '披索'] },
+            'DO': { 'zh-CN': ['多米尼加', '比索'], 'zh-TW': ['多明尼加', '披索'] },
+            'GT': { 'zh-CN': ['危地马拉', '格查尔'], 'zh-TW': ['瓜地馬拉', '格查爾'] },
+            'GY': { 'zh-CN': ['圭亚那', '元'], 'zh-TW': ['蓋亞那', '元'] },
+            'HN': { 'zh-CN': ['洪都拉斯', '伦皮拉'], 'zh-TW': ['宏都拉斯', '倫皮拉'] },
+            'HT': { 'zh-CN': ['海地', '古德'], 'zh-TW': ['海地', '古德'] },
+            'JM': { 'zh-CN': ['牙买加', '元'], 'zh-TW': ['牙買加', '元'] },
+            'MX': { 'zh-CN': ['墨西哥', '比索'], 'zh-TW': ['墨西哥', '披索'] },
+            'NI': { 'zh-CN': ['尼加拉瓜', '科多巴'], 'zh-TW': ['尼加拉瓜', '科多巴'] },
+            'PA': { 'zh-CN': ['巴拿马', '巴波亚'], 'zh-TW': ['巴拿馬', '巴波亞'] },
+            'PE': { 'zh-CN': ['秘鲁', '索尔'], 'zh-TW': ['秘魯', '索爾'] },
+            'PY': { 'zh-CN': ['巴拉圭', '瓜拉尼'], 'zh-TW': ['巴拉圭', '瓜拉尼'] },
+            'SR': { 'zh-CN': ['苏里南', '元'], 'zh-TW': ['蘇利南', '元'] },
+            'UY': { 'zh-CN': ['乌拉圭', '比索'], 'zh-TW': ['烏拉圭', '披索'] },
+            'VE': { 'zh-CN': ['委内瑞拉', '玻利瓦尔'], 'zh-TW': ['委內瑞拉', '玻利瓦爾'] },
+            'XCD': { 'zh-CN': ['东加勒比', '元'], 'zh-TW': ['東加勒比', '元'] },
+            'AL': { 'zh-CN': ['阿尔巴尼亚', '列克'], 'zh-TW': ['阿爾巴尼亞', '列克'] },
+            'AM': { 'zh-CN': ['亚美尼亚', '德拉姆'], 'zh-TW': ['亞美尼亞', '德拉姆'] },
+            'AZ': { 'zh-CN': ['阿塞拜疆', '马纳特'], 'zh-TW': ['亞塞拜然', '馬納特'] },
+            'BA': { 'zh-CN': ['波黑', '马克'], 'zh-TW': ['波赫', '馬克'] },
+            'BG': { 'zh-CN': ['保加利亚', '列弗'], 'zh-TW': ['保加利亞', '列弗'] },
+            'BY': { 'zh-CN': ['白俄罗斯', '卢布'], 'zh-TW': ['白俄羅斯', '盧布'] },
+            'CZ': { 'zh-CN': ['捷克', '克朗'], 'zh-TW': ['捷克', '克朗'] },
+            'DK': { 'zh-CN': ['丹麦', '克朗'], 'zh-TW': ['丹麥', '克朗'] },
+            'GE': { 'zh-CN': ['格鲁吉亚', '拉里'], 'zh-TW': ['喬治亞', '拉里'] },
+            'HU': { 'zh-CN': ['匈牙利', '福林'], 'zh-TW': ['匈牙利', '福林'] },
+            'IS': { 'zh-CN': ['冰岛', '克朗'], 'zh-TW': ['冰島', '克朗'] },
+            'MD': { 'zh-CN': ['摩尔多瓦', '列伊'], 'zh-TW': ['摩爾多瓦', '列伊'] },
+            'MK': { 'zh-CN': ['北马其顿', '第纳尔'], 'zh-TW': ['北馬其頓', '第納爾'] },
+            'NO': { 'zh-CN': ['挪威', '克朗'], 'zh-TW': ['挪威', '克朗'] },
+            'PL': { 'zh-CN': ['波兰', '兹罗提'], 'zh-TW': ['波蘭', '茲羅提'] },
+            'RO': { 'zh-CN': ['罗马尼亚', '列伊'], 'zh-TW': ['羅馬尼亞', '列伊'] },
+            'RS': { 'zh-CN': ['塞尔维亚', '第纳尔'], 'zh-TW': ['塞爾維亞', '第納爾'] },
+            'SE': { 'zh-CN': ['瑞典', '克朗'], 'zh-TW': ['瑞典', '克朗'] },
+            'UA': { 'zh-CN': ['乌克兰', '格里夫纳'], 'zh-TW': ['烏克蘭', '格里夫納'] },
+            'AO': { 'zh-CN': ['安哥拉', '宽扎'], 'zh-TW': ['安哥拉', '寬扎'] },
+            'BF': { 'zh-CN': ['西非 (CFA)', '法郎'], 'zh-TW': ['西非 (CFA)', '法郎'] },
+            'BI': { 'zh-CN': ['布隆迪', '法郎'], 'zh-TW': ['蒲隆地', '法郎'] },
+            'BW': { 'zh-CN': ['博茨瓦纳', '普拉'], 'zh-TW': ['波札那', '普拉'] },
+            'CD': { 'zh-CN': ['刚果(金)', '法郎'], 'zh-TW': ['剛果(金)', '法郎'] },
+            'CM': { 'zh-CN': ['中非 (CFA)', '法郎'], 'zh-TW': ['中非 (CFA)', '法郎'] },
+            'CV': { 'zh-CN': ['佛得角', '埃斯库多'], 'zh-TW': ['維德角', '埃斯庫多'] },
+            'DJ': { 'zh-CN': ['吉布提', '法郎'], 'zh-TW': ['吉布地', '法郎'] },
+            'DZ': { 'zh-CN': ['阿尔及利亚', '第纳尔'], 'zh-TW': ['阿爾及利亞', '第納爾'] },
+            'EG': { 'zh-CN': ['埃及', '镑'], 'zh-TW': ['埃及', '鎊'] },
+            'ET': { 'zh-CN': ['埃塞俄比亚', '比尔'], 'zh-TW': ['衣索比亞', '比爾'] },
+            'GH': { 'zh-CN': ['加纳', '塞地'], 'zh-TW': ['迦納', '塞地'] },
+            'GM': { 'zh-CN': ['冈比亚', '达拉西'], 'zh-TW': ['甘比亞', '達拉西'] },
+            'GN': { 'zh-CN': ['几内亚', '法郎'], 'zh-TW': ['幾內亞', '法郎'] },
+            'KE': { 'zh-CN': ['肯尼亚', '先令'], 'zh-TW': ['肯亞', '先令'] },
+            'LR': { 'zh-CN': ['利比里亚', '元'], 'zh-TW': ['賴比瑞亞', '元'] },
+            'LY': { 'zh-CN': ['利比亚', '第纳尔'], 'zh-TW': ['利比亞', '第納爾'] },
+            'MA': { 'zh-CN': ['摩洛哥', '迪拉姆'], 'zh-TW': ['摩洛哥', '迪拉姆'] },
+            'MG': { 'zh-CN': ['马达加斯加', '阿里亚里'], 'zh-TW': ['馬達加斯加', '阿里亞里'] },
+            'MU': { 'zh-CN': ['毛里求斯', '卢比'], 'zh-TW': ['模里西斯', '盧比'] },
+            'MW': { 'zh-CN': ['马拉维', '克瓦查'], 'zh-TW': ['馬拉威', '克瓦查'] },
+            'MZ': { 'zh-CN': ['莫桑比克', '梅蒂卡尔'], 'zh-TW': ['莫三比克', '梅蒂卡爾'] },
+            'NA': { 'zh-CN': ['纳米比亚', '元'], 'zh-TW': ['納米比亞', '元'] },
+            'NG': { 'zh-CN': ['尼日利亚', '奈拉'], 'zh-TW': ['奈及利亞', '奈拉'] },
+            'RW': { 'zh-CN': ['卢旺达', '法郎'], 'zh-TW': ['盧安達', '法郎'] },
+            'SD': { 'zh-CN': ['苏丹', '镑'], 'zh-TW': ['蘇丹', '鎊'] },
+            'SL': { 'zh-CN': ['塞拉利昂', '新利昂'], 'zh-TW': ['獅子山', '新利昂'] },
+            'SO': { 'zh-CN': ['索马里', '先令'], 'zh-TW': ['索馬利亞', '先令'] },
+            'SS': { 'zh-CN': ['南苏丹', '镑'], 'zh-TW': ['南蘇丹', '鎊'] },
+            'TN': { 'zh-CN': ['突尼斯', '第纳尔'], 'zh-TW': ['突尼西亞', '第納爾'] },
+            'TZ': { 'zh-CN': ['坦桑尼亚', '先令'], 'zh-TW': ['坦尚尼亞', '先令'] },
+            'UG': { 'zh-CN': ['乌干达', '先令'], 'zh-TW': ['烏干達', '先令'] },
+            'ZA': { 'zh-CN': ['南非', '兰特'], 'zh-TW': ['南非', '蘭特'] },
+            'ZM': { 'zh-CN': ['赞比亚', '克瓦查'], 'zh-TW': ['尚比亞', '克瓦查'] },
+            'ZW': { 'zh-CN': ['津巴布韦', 'ZiG (金)'], 'zh-TW': ['辛巴威', 'ZiG (金)'] }
+        };
+
+        const i18n = {
+            'zh-CN': {
+                title: "全球货币代码表", subtitle: "ISO 4217 标准与符号查询",
+                th_country: "国家/地区", th_currency: "货币名称", th_code: "代码", th_num: "数字", th_symbol: "符号",
+                msg_no_results: "未找到相关货币",
+                guide_title: "关于货币代码",
+                guide_intro: "货币代码（Currency Code）是国际标准化组织（ISO）发布的 ISO 4217 标准的一部分。本工具收录了全球 160+ 个国家和地区的最新货币数据。",
+                guide_li1: "<strong>三位字母代码 (Alpha-3)：</strong> 前两位通常代表国家（如 CN 代表中国），第三位代表货币名（如 Y 代表 Yuan）。",
+                guide_li2: "<strong>三位数字代码 (Numeric-3)：</strong> 即使货币改变名称，数字代码也可能改变。它主要用于非拉丁语系的系统处理。",
+                guide_li3: "<strong>全球通用：</strong> 无论是外汇交易 (Forex)、跨境电商还是国际汇款，ISO 4217 都是唯一的通用语言。",
+                faq_title: "常见问题 (FAQ)",
+                tip_copy: "使用技巧",
+                tip_copy_desc: "点击列表中的货币代码或数字代码，可以快速复制到剪贴板。",
+                faq_q1: "最新的货币变动有哪些？",
+                faq_a1: "克罗地亚已于2023年加入欧元区（EUR）；津巴布韦于2024年启用了新货币 ZiG (ZWG)；塞拉利昂启用了新利昂 (SLE)。",
+                faq_q2: "有些国家为什么没有自己的货币？",
+                faq_a2: "许多国家使用通用货币。例如，欧元区 20 国使用欧元 (EUR)，东加勒比国家使用东加勒比元 (XCD)，还有一些国家直接使用美元 (USD)。",
+                search_ph: "搜索国家、货币或代码...",
+                count_items: "个货币"
+            },
+            'zh-TW': {
+                title: "全球貨幣代碼表", subtitle: "ISO 4217 標準與符號查詢",
+                th_country: "國家/地區", th_currency: "貨幣名稱", th_code: "代碼", th_num: "數字", th_symbol: "符號",
+                msg_no_results: "未找到相關貨幣",
+                guide_title: "關於貨幣代碼",
+                guide_intro: "貨幣代碼（Currency Code）是國際標準化組織（ISO）發布的 ISO 4217 標準的一部分。本工具收錄了全球 160+ 個國家和地區的最新貨幣數據。",
+                guide_li1: "<strong>三位字母代碼 (Alpha-3)：</strong> 前兩位通常代表國家（如 CN 代表中國），第三位代表貨幣名（如 Y 代表 Yuan）。",
+                guide_li2: "<strong>三位數字代碼 (Numeric-3)：</strong> 即使貨幣改變名稱，數字代碼也可能改變。它主要用於非拉丁語系的系統處理。",
+                guide_li3: "<strong>全球通用：</strong> 無論是外匯交易 (Forex)、跨境電商還是國際匯款，ISO 4217 都是唯一的通用語言。",
+                faq_title: "常見問題 (FAQ)",
+                tip_copy: "使用技巧",
+                tip_copy_desc: "點擊列表中的貨幣代碼或數字代碼，可以快速複製到剪貼板。",
+                faq_q1: "最新的貨幣變動有哪些？",
+                faq_a1: "克羅埃西亞已於2023年加入歐元區（EUR）；辛巴威於2024年啟用了新貨幣 ZiG (ZWG)；獅子山啟用了新利昂 (SLE)。",
+                faq_q2: "有些國家為什麼沒有自己的貨幣？",
+                faq_a2: "許多國家使用通用貨幣。例如，歐元區 20 國使用歐元 (EUR)，東加勒比國家使用東加勒比元 (XCD)，還有一些國家直接使用美元 (USD)。",
+                search_ph: "搜尋國家、貨幣或代碼...",
+                count_items: "個貨幣"
+            },
+            'en': {
+                title: "Currency Code Lookup", subtitle: "ISO 4217 Codes & Symbols",
+                th_country: "Country / Region", th_currency: "Currency Name", th_code: "Code", th_num: "Num", th_symbol: "Symbol",
+                msg_no_results: "No currency found",
+                guide_title: "About Currency Codes",
+                guide_intro: "Currency codes are part of the ISO 4217 standard published by the ISO. This tool covers 160+ countries and regions globally.",
+                guide_li1: "<strong>Alpha-3 Code:</strong> First two letters usually represent the country (e.g., CN), and the third is the currency.",
+                guide_li2: "<strong>Numeric-3 Code:</strong> A 3-digit numeric code useful for non-Latin script systems.",
+                guide_li3: "<strong>Universal:</strong> Essential for Forex trading, e-commerce, and international banking.",
+                faq_title: "FAQ",
+                tip_copy: "Pro Tip",
+                tip_copy_desc: "Click on any currency code or number to copy it to your clipboard instantly.",
+                faq_q1: "Recent Currency Changes?",
+                faq_a1: "Croatia joined the Eurozone (EUR) in 2023. Zimbabwe introduced ZiG (ZWG) in 2024. Sierra Leone introduced the New Leone (SLE).",
+                faq_q2: "Shared Currencies?",
+                faq_a2: "Many countries share currencies. 20 Eurozone countries use the Euro (EUR), while others use the East Caribbean Dollar (XCD) or US Dollar (USD).",
+                search_ph: "Search country, currency or code...",
+                count_items: "currencies"
+            },
+            'es': {
+                title: "Códigos de Divisas", subtitle: "Lista Global ISO 4217",
+                th_country: "País / Región", th_currency: "Moneda", th_code: "Código", th_num: "Num", th_symbol: "Símbolo",
+                msg_no_results: "No se encontraron divisas",
+                guide_title: "Sobre Códigos",
+                guide_intro: "Los códigos de divisas son parte del estándar ISO 4217. Esta herramienta cubre más de 160 países.",
+                guide_li1: "<strong>Código Alpha-3:</strong> 3 letras para identificar la moneda sin ambigüedades.",
+                guide_li2: "<strong>Código Numérico:</strong> Código de 3 dígitos útil para sistemas informáticos.",
+                guide_li3: "<strong>Universal:</strong> Esencial para Forex y banca internacional.",
+                faq_title: "Preguntas Frecuentes",
+                tip_copy: "Consejo",
+                tip_copy_desc: "Haga clic en cualquier código para copiarlo.",
+                faq_q1: "¿Cambios recientes?",
+                faq_a1: "Croacia se unió a la Eurozona (2023). Zimbabue lanzó ZiG (2024).",
+                faq_q2: "¿Monedas compartidas?",
+                faq_a2: "La Eurozona usa Euro (EUR). El Caribe Oriental usa XCD.",
+                search_ph: "Buscar país, moneda o código...",
+                count_items: "divisas"
+            },
+            'ru': {
+                title: "Коды Валют Мира", subtitle: "Справочник ISO 4217",
+                th_country: "Страна / Регион", th_currency: "Валюта", th_code: "Код", th_num: "Числ.", th_symbol: "Символ",
+                msg_no_results: "Валюта не найдена",
+                guide_title: "О кодах валют",
+                guide_intro: "Коды валют являются частью стандарта ISO 4217. Этот инструмент охватывает 160+ стран.",
+                guide_li1: "<strong>Альфа-3:</strong> 3 буквы для идентификации валюты.",
+                guide_li2: "<strong>Цифровой код:</strong> 3-значный код для банковских систем.",
+                guide_li3: "<strong>Универсальность:</strong> Стандарт для Forex и международных переводов.",
+                faq_title: "ЧаВо (FAQ)",
+                tip_copy: "Совет",
+                tip_copy_desc: "Нажмите на код, чтобы скопировать его.",
+                faq_q1: "Последние изменения?",
+                faq_a1: "Хорватия перешла на Евро (2023). Зимбабве ввела ZiG (2024).",
+                faq_q2: "Общие валюты?",
+                faq_a2: "Еврозона использует Евро (EUR). Восточные Карибы используют XCD.",
+                search_ph: "Поиск страны, валюты или кода...",
+                count_items: "валют"
+            },
+            'hi': {
+                title: "वैश्विक मुद्रा कोड", subtitle: "ISO 4217 सूची",
+                th_country: "देश / क्षेत्र", th_currency: "मुद्रा", th_code: "कोड", th_num: "संख्या", th_symbol: "प्रतीक",
+                msg_no_results: "कोई मुद्रा नहीं मिली",
+                guide_title: "मुद्रा कोड के बारे में",
+                guide_intro: "मुद्रा कोड ISO 4217 मानक का हिस्सा हैं। यह टूल 160+ देशों को कवर करता है।",
+                guide_li1: "<strong>Alpha-3 कोड:</strong> मुद्रा की पहचान के लिए 3 अक्षर।",
+                guide_li2: "<strong>संख्यात्मक कोड:</strong> बैंकिंग सिस्टम के लिए 3 अंकों का कोड।",
+                guide_li3: "<strong>सार्वभौमिक:</strong> विदेशी मुद्रा और अंतरराष्ट्रीय बैंकिंग के लिए आवश्यक।",
+                faq_title: "सामान्य प्रश्न",
+                tip_copy: "सुझाव",
+                tip_copy_desc: "कॉपी करने के लिए किसी भी कोड पर क्लिक करें।",
+                faq_q1: "हाल के बदलाव?",
+                faq_a1: "क्रोएशिया 2023 में यूरो (EUR) में शामिल हुआ। ज़िम्बाब्वे ने 2024 में ZiG (ZWG) पेश किया।",
+                faq_q2: "साझा मुद्राएं?",
+                faq_a2: "यूरोज़ोन यूरो (EUR) का उपयोग करता है। पूर्वी कैरेबियन XCD का उपयोग करता है।",
+                search_ph: "देश, मुद्रा या कोड खोजें...",
+                count_items: "मुद्राएं"
+            },
+            'pl': {
+                title: "Kody Walut", subtitle: "Lista światowa ISO 4217",
+                th_country: "Kraj / Region", th_currency: "Waluta", th_code: "Kod", th_num: "Num", th_symbol: "Symbol",
+                msg_no_results: "Nie znaleziono waluty",
+                guide_title: "O kodach walut",
+                guide_intro: "Kody walut są częścią standardu ISO 4217. Narzędzie obejmuje ponad 160 krajów.",
+                guide_li1: "<strong>Kod Alpha-3:</strong> 3 litery identyfikujące walutę.",
+                guide_li2: "<strong>Kod numeryczny:</strong> 3-cyfrowy kod dla systemów bankowych.",
+                guide_li3: "<strong>Uniwersalność:</strong> Niezbędne w handlu Forex i bankowości.",
+                faq_title: "FAQ",
+                tip_copy: "Wskazówka",
+                tip_copy_desc: "Kliknij kod, aby go skopiować.",
+                faq_q1: "Ostatnie zmiany?",
+                faq_a1: "Chorwacja przyjęła Euro (2023). Zimbabwe wprowadziło ZiG (2024).",
+                faq_q2: "Wspólne waluty?",
+                faq_a2: "Strefa Euro używa Euro (EUR). Karaiby Wschodnie używają XCD.",
+                search_ph: "Szukaj kraju, waluty lub kodu...",
+                count_items: "walut"
+            }
+        };
+
+        const App = {
+            currentLang: 'zh-CN',
+            
+            init() {
+                this.updateYear();
+                this.handleTheme();
+                this.setupLang();
+                this.renderTable();
+            },
+
+            updateYear() { document.getElementById('year').textContent = new Date().getFullYear(); },
+            
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+
+            setupLang() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                // Check if langParam is valid, else default to zh-CN
+                this.currentLang = (langParam && i18n[langParam]) ? langParam : 'zh-CN';
+                
+                document.getElementById('lang-selector').value = this.currentLang;
+                this.applyLang(this.currentLang);
+                
+                document.getElementById('lang-selector').addEventListener('change', (e) => {
+                    const l = e.target.value;
+                    this.currentLang = l;
+                    this.updateUrl(l);
+                    this.applyLang(l);
+                    this.renderTable();
+                });
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) { }
+            },
+
+            applyLang(lang) {
+                const text = i18n[lang] || i18n['en'];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(text[key]) el.innerHTML = text[key];
+                });
+                document.getElementById('search-input').placeholder = text['search_ph'];
+            },
+
+            getLocalizedData(item) {
+                const lang = this.currentLang;
+                
+                // 1. Try Specific Translation
+                if (contentI18n[item.id] && contentI18n[item.id][lang]) {
+                    return {
+                        country: contentI18n[item.id][lang][0],
+                        currency: contentI18n[item.id][lang][1]
+                    };
+                }
+                
+                // 2. Fallback for Major Languages (zh-CN/zh-TW should rely on 'en' if missing, but we covered all)
+                // If we are in ES/RU/HI/PL and translation is missing, fallback to English.
+                return { country: item.country, currency: item.code + " (" + item.country + ")" };
+            },
+
+            copyToClipboard(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); } catch(e){}
+                    document.body.removeChild(ta);
+                }
+                
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2000);
+            },
+
+            renderTable() {
+                const tbody = document.getElementById('currency-table-body');
+                const filter = document.getElementById('search-input').value.toLowerCase().trim();
+                tbody.innerHTML = '';
+                
+                let count = 0;
+
+                currencyData.forEach(item => {
+                    const localData = this.getLocalizedData(item);
+                    
+                    // Search Logic: Check Localized Name, English Name, Code, Number
+                    const searchStr = `${localData.country} ${localData.currency} ${item.code} ${item.num} ${item.country}`.toLowerCase();
+                    
+                    if (searchStr.includes(filter)) {
+                        count++;
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group';
+                        row.innerHTML = `
+                            <td class="table-cell">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl currency-flag drop-shadow-sm w-8 text-center">${item.flag}</span>
+                                    <span class="font-medium text-slate-900 dark:text-white">${localData.country}</span>
+                                </div>
+                            </td>
+                            <td class="table-cell">
+                                <div class="flex flex-col">
+                                    <span class="text-slate-700 dark:text-slate-200">${localData.currency}</span>
+                                </div>
+                            </td>
+                            <td class="table-cell text-center">
+                                <span onclick="App.copyToClipboard('${item.code}')" class="copy-btn bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-mono text-xs font-bold border border-emerald-100 dark:border-emerald-800/50" title="Copy Code">
+                                    ${item.code}
+                                </span>
+                            </td>
+                             <td class="table-cell text-center">
+                                <span onclick="App.copyToClipboard('${item.num}')" class="copy-btn text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-mono text-xs" title="Copy Number">
+                                    ${item.num}
+                                </span>
+                            </td>
+                            <td class="table-cell text-center">
+                                <span class="text-lg font-serif text-slate-800 dark:text-slate-200">${item.symbol}</span>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    }
+                });
+
+                // Empty State
+                const emptyState = document.getElementById('empty-state');
+                if (count === 0) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                }
+                
+                // Update Count
+                const countLabel = i18n[this.currentLang] ? i18n[this.currentLang].count_items : 'items';
+                document.getElementById('row-count').textContent = `${count} ${countLabel}`;
+            },
+
+            filterTable() {
+                this.renderTable();
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>

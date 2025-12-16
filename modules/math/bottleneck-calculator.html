@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="development-tools">
+    <meta name="description" content="PC Bottleneck Calculator - Check if your CPU or GPU is bottling necking your gaming performance. 电脑瓶颈计算器，检测CPU和显卡性能匹配度。">
+    <title>Bottleneck Calculator | 电脑性能瓶颈计算器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#3b82f6', hover: '#2563eb' }, /* Blue for Tech */
+                        secondary: { DEFAULT: '#f43f5e', hover: '#e11d48' }, /* Rose for Bottleneck Warning */
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#eff6ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+            .progress-bar-bg {
+                @apply w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden;
+            }
+            .progress-bar-fill {
+                @apply h-full rounded-full transition-all duration-1000 ease-out;
+            }
+        }
+        
+        .gauge-container {
+            position: relative;
+            width: 200px;
+            height: 100px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        .gauge-body {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            position: relative;
+            top: 0;
+        }
+        .dark .gauge-body { background: #334155; }
+        .gauge-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            /* Green (Good) -> Yellow (Moderate) -> Red (Bad) */
+            background: conic-gradient(from 270deg, #22c55e 0%, #eab308 30%, #f43f5e 60%, #ef4444 100%);
+            transform: rotate(-0.25turn);
+            clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+            opacity: 0.9;
+        }
+        .gauge-cover {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: white;
+            z-index: 10;
+        }
+        .dark .gauge-cover { background: #1e293b; }
+        .gauge-needle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            height: 90px;
+            background: #64748b;
+            transform-origin: bottom center;
+            transform: rotate(-90deg);
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 20;
+            border-radius: 4px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+        .gauge-needle::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: -3px;
+            width: 10px;
+            height: 10px;
+            background: #64748b;
+            border-radius: 50%;
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow"></div>
+        <div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-rose-300 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style="animation-delay: 1.5s;"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20 transform hover:scale-105 transition-transform duration-300">
+                    <i class="fa fa-microchip"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Bottleneck Calculator</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">2025 电脑性能瓶颈分析工具</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文 (简体)</option>
+                    <option value="zh-TW">🇨🇳 中文 (繁體)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-5 flex flex-col gap-6 animate-slide-up">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-blue-500 p-6 space-y-5 relative">
+                    <div class="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">UPDATED 2025</div>
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                        <i class="fa fa-sliders text-blue-500"></i> <span data-i18n="h2_config">硬件配置</span>
+                    </h2>
+
+                    <!-- 1. CPU -->
+                    <div class="group">
+                        <label class="label-text group-hover:text-primary transition-colors" data-i18n="lbl_cpu">处理器 (CPU)</label>
+                        <div class="relative">
+                            <i class="fa fa-microchip absolute left-3 top-3 text-slate-400"></i>
+                            <select id="input-cpu" class="input-field pl-10" onchange="Calculator.calculate()">
+                                <!-- Generated by JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 2. GPU -->
+                    <div class="group">
+                        <label class="label-text group-hover:text-primary transition-colors" data-i18n="lbl_gpu">显卡 (GPU)</label>
+                        <div class="relative">
+                            <i class="fa fa-gamepad absolute left-3 top-3 text-slate-400"></i>
+                            <select id="input-gpu" class="input-field pl-10" onchange="Calculator.calculate()">
+                                <!-- Generated by JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- 3. Resolution -->
+                        <div>
+                            <label class="label-text" data-i18n="lbl_res">分辨率</label>
+                            <select id="input-res" class="input-field" onchange="Calculator.calculate()">
+                                <option value="1080" selected>1080P (FHD)</option>
+                                <option value="1440">2K (1440P)</option>
+                                <option value="2160">4K (UHD)</option>
+                                <option value="4320">8K (FUHD)</option>
+                            </select>
+                        </div>
+
+                        <!-- 4. Purpose -->
+                        <div>
+                            <label class="label-text" data-i18n="lbl_purpose">用途</label>
+                            <select id="input-purpose" class="input-field" onchange="Calculator.calculate()">
+                                <option value="gaming" data-i18n="opt_gaming">大型游戏 (Gaming)</option>
+                                <option value="competitive" data-i18n="opt_comp">电竞网游 (Esports)</option>
+                                <option value="work" data-i18n="opt_work">生产力 (Work)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button onclick="Calculator.calculate(true)" class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center justify-center gap-2 mt-4">
+                        <i class="fa fa-calculator"></i> <span data-i18n="btn_calc">开始分析</span>
+                    </button>
+                </div>
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-7 flex flex-col gap-6 animate-slide-up" style="animation-delay: 0.1s;">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[440px] flex flex-col p-6 md:p-8 relative">
+                    
+                    <!-- Loading Overlay -->
+                    <div id="result-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-slate-900/80 z-20 backdrop-blur-md hidden transition-opacity duration-300">
+                        <div class="animate-spin text-4xl text-blue-500 mb-4"><i class="fa fa-circle-o-notch"></i></div>
+                        <p class="text-slate-600 dark:text-slate-300 font-medium animate-pulse">正在模拟性能表现...</p>
+                    </div>
+
+                    <!-- Gauge and Percentage -->
+                    <div class="flex flex-col items-center justify-center mb-8 relative">
+                        <div class="gauge-container mb-2">
+                            <div class="gauge-body">
+                                <div class="gauge-fill"></div>
+                            </div>
+                            <div class="gauge-cover"></div>
+                            <div class="gauge-needle" id="gauge-needle"></div>
+                        </div>
+                        <div class="text-center -mt-8 relative z-30">
+                            <h2 class="text-5xl font-bold font-mono text-slate-800 dark:text-white mb-1 tracking-tighter">
+                                <span id="res-percent">0</span><span class="text-2xl text-slate-400">%</span>
+                            </h2>
+                            <p class="text-xs font-bold uppercase tracking-widest text-slate-400" data-i18n="res_bottleneck">综合瓶颈系数</p>
+                        </div>
+                    </div>
+
+                    <!-- Main Result Status -->
+                    <div class="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-100 dark:border-slate-700 mb-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-bold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                                <i class="fa fa-stethoscope"></i> <span data-i18n="res_bottleneck_source">诊断结果:</span>
+                            </span>
+                            <span id="res-source" class="text-sm font-bold text-rose-500 bg-rose-100 dark:bg-rose-900/30 px-3 py-1 rounded-full border border-rose-200 dark:border-rose-800/30">...</span>
+                        </div>
+                        <p id="res-desc" class="text-sm text-slate-600 dark:text-slate-400 text-left leading-relaxed">
+                            请选择硬件并点击计算以查看详细分析结果。
+                        </p>
+                    </div>
+
+                    <!-- Detailed Bar Charts -->
+                    <div class="space-y-4 w-full mt-auto">
+                        <!-- CPU Bar -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                <span>CPU <span data-i18n="stat_power">处理能力</span></span>
+                                <span id="val-cpu-bar">50%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div id="bar-cpu" class="progress-bar-fill bg-blue-500" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <!-- GPU Bar -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                <span>GPU <span data-i18n="stat_power">处理能力</span></span>
+                                <span id="val-gpu-bar">50%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div id="bar-gpu" class="progress-bar-fill bg-indigo-500" style="width: 50%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+
+        <!-- Comprehensive Guide Section -->
+        <section class="mb-12 animate-slide-up" style="animation-delay: 0.2s;">
+            <div class="glass rounded-2xl p-8 shadow-xl border-l-4 border-l-primary">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Feature Introduction -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">了解电脑瓶颈</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                            <div>
+                                <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">1</span>
+                                    <span data-i18n="guide_h_what">什么是“瓶颈”？</span>
+                                </h3>
+                                <p data-i18n="guide_p_what">电脑就像一个团队，CPU 是“指挥官”，GPU 是“画师”。如果指挥官下令太慢，画师就要闲得发慌（CPU 瓶颈）；如果画师画得太慢，指挥官就要排队等待（GPU 瓶颈）。</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">2</span>
+                                    <span data-i18n="guide_h_calc">计算原理 (2025版)</span>
+                                </h3>
+                                <p data-i18n="guide_p_calc">
+                                    本工具不仅对比单纯的硬件跑分，还结合了<strong>分辨率权重</strong>。
+                                    例如在 4K 分辨率下，对显卡的要求会呈指数级上升，此时就算稍微弱一点的 CPU 也不会成为短板。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-question-circle text-primary"></i> <span data-i18n="faq_title">常见问题 (FAQ)</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <details class="group bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                                <summary class="flex items-center justify-between p-4 cursor-pointer font-bold text-slate-800 dark:text-slate-200 select-none">
+                                    <span data-i18n="faq_q1">瓶颈系数多少才算正常？</span>
+                                    <i class="fa fa-chevron-down text-slate-400 transition-transform group-open:rotate-180"></i>
+                                </summary>
+                                <div class="px-4 pb-4 pt-0 text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a1">
+                                    一般来说，<strong>低于 15%</strong> 的瓶颈是可以忽略不计的，这意味着硬件配合良好。如果在 15%~30% 之间，可能在某些大型游戏中会感受到性能损失。超过 30% 则强烈建议升级短板硬件。
+                                </div>
+                            </details>
+
+                            <details class="group bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                                <summary class="flex items-center justify-between p-4 cursor-pointer font-bold text-slate-800 dark:text-slate-200 select-none">
+                                    <span data-i18n="faq_q2">为什么玩网游时 CPU 更重要？</span>
+                                    <i class="fa fa-chevron-down text-slate-400 transition-transform group-open:rotate-180"></i>
+                                </summary>
+                                <div class="px-4 pb-4 pt-0 text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a2">
+                                    网游（如CS2、LOL、瓦罗兰特）通常画质要求不高，显卡渲染极快。此时帧数上限取决于 CPU 处理游戏逻辑和物理运算的速度。因此，玩高帧电竞游戏时，CPU 往往更容易成为瓶颈。
+                                </div>
+                            </details>
+                            
+                            <details class="group bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                                <summary class="flex items-center justify-between p-4 cursor-pointer font-bold text-slate-800 dark:text-slate-200 select-none">
+                                    <span data-i18n="faq_q3">我应该先升级显卡还是CPU？</span>
+                                    <i class="fa fa-chevron-down text-slate-400 transition-transform group-open:rotate-180"></i>
+                                </summary>
+                                <div class="px-4 pb-4 pt-0 text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a3">
+                                    看您的显示器：
+                                    <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li><strong>1080P/240Hz 显示器：</strong> 优先升级 CPU。</li>
+                                        <li><strong>4K/60Hz 显示器：</strong> 优先升级显卡。</li>
+                                    </ul>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-slate-400 py-6 border-t border-slate-200 dark:border-slate-800 mt-auto">
+            <p>&copy; <span id="year"></span> Bottleneck Calculator Pro. <span data-i18n="footer_text">Results are estimates based on synthetic benchmarks.</span></p>
+        </footer>
+
+    </div>
+
+    <!-- Required Footer Code -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        // --- Enhanced Hardware Database (2025 Refreshed) ---
+        // Scores are normalized roughly to 1080p gaming performance potential relative to current flagship (100)
+        const HARDWARE = {
+            cpu: [
+                // AMD Ryzen 9000 & 7000 Series
+                { name: "AMD Ryzen 9 9950X", score: 104, gen: "Zen 5" },
+                { name: "AMD Ryzen 9 7950X3D", score: 102, gen: "Zen 4" },
+                { name: "AMD Ryzen 7 9800X3D (Predicted)", score: 105, gen: "Zen 5" }, // Future proofing
+                { name: "AMD Ryzen 7 7800X3D", score: 100, gen: "Zen 4" }, // Current Gaming King baseline
+                { name: "AMD Ryzen 9 9900X", score: 98, gen: "Zen 5" },
+                { name: "AMD Ryzen 7 9700X", score: 95, gen: "Zen 5" },
+                { name: "AMD Ryzen 5 9600X", score: 88, gen: "Zen 5" },
+                { name: "AMD Ryzen 5 7600X", score: 82, gen: "Zen 4" },
+                
+                // Intel Core Ultra & 14th/13th Gen
+                { name: "Intel Core i9-14900KS", score: 101, gen: "14th Gen" },
+                { name: "Intel Core i9-14900K / 13900K", score: 98, gen: "14th Gen" },
+                { name: "Intel Core i7-14700K", score: 94, gen: "14th Gen" },
+                { name: "Intel Core i5-14600K", score: 86, gen: "14th Gen" },
+                { name: "Intel Core i5-13400F", score: 65, gen: "13th Gen" },
+                
+                // Older / Budget
+                { name: "Intel Core i9-12900K", score: 80, gen: "12th Gen" },
+                { name: "AMD Ryzen 7 5800X3D", score: 80, gen: "Zen 3" },
+                { name: "Intel Core i5-12600K", score: 72, gen: "12th Gen" },
+                { name: "AMD Ryzen 5 5600X", score: 58, gen: "Zen 3" },
+                { name: "Intel Core i5-12400F", score: 55, gen: "12th Gen" },
+                { name: "Intel Core i3-12100F", score: 45, gen: "12th Gen" },
+                { name: "Intel Core i7-8700K", score: 42, gen: "8th Gen" },
+                { name: "AMD Ryzen 5 3600", score: 38, gen: "Zen 2" },
+                { name: "Intel Core i5-9400F", score: 35, gen: "9th Gen" },
+                { name: "Intel Core i7-4790K", score: 25, gen: "Haswell" }
+            ],
+            gpu: [
+                // NVIDIA RTX 40 & 50 (Speculative placeholder logic avoided, sticking to released)
+                { name: "NVIDIA GeForce RTX 4090", score: 130, vram: "24GB" }, // Monster card, score > 100 because it scales past current CPUs at 4K
+                { name: "NVIDIA GeForce RTX 4080 Super", score: 105, vram: "16GB" },
+                { name: "NVIDIA GeForce RTX 4080", score: 100, vram: "16GB" },
+                { name: "NVIDIA GeForce RTX 4070 Ti Super", score: 92, vram: "16GB" },
+                { name: "NVIDIA GeForce RTX 4070 Ti", score: 85, vram: "12GB" },
+                { name: "NVIDIA GeForce RTX 4070 Super", score: 78, vram: "12GB" },
+                { name: "NVIDIA GeForce RTX 4070", score: 70, vram: "12GB" },
+                { name: "NVIDIA GeForce RTX 4060 Ti", score: 55, vram: "8GB" },
+                { name: "NVIDIA GeForce RTX 4060", score: 45, vram: "8GB" },
+                
+                // AMD Radeon RX 7000
+                { name: "AMD Radeon RX 7900 XTX", score: 102, vram: "24GB" },
+                { name: "AMD Radeon RX 7900 XT", score: 88, vram: "20GB" },
+                { name: "AMD Radeon RX 7900 GRE", score: 76, vram: "16GB" },
+                { name: "AMD Radeon RX 7800 XT", score: 72, vram: "16GB" },
+                { name: "AMD Radeon RX 7700 XT", score: 62, vram: "12GB" },
+                { name: "AMD Radeon RX 7600", score: 42, vram: "8GB" },
+
+                // Previous Gen High End
+                { name: "NVIDIA GeForce RTX 3090 Ti", score: 88, vram: "24GB" },
+                { name: "NVIDIA GeForce RTX 3080", score: 75, vram: "10GB" },
+                { name: "AMD Radeon RX 6950 XT", score: 82, vram: "16GB" },
+                { name: "AMD Radeon RX 6700 XT", score: 52, vram: "12GB" },
+                
+                // Mid/Low Range (Popular)
+                { name: "NVIDIA GeForce RTX 3060", score: 38, vram: "12GB" },
+                { name: "NVIDIA GeForce RTX 2060", score: 28, vram: "6GB" },
+                { name: "NVIDIA GTX 1660 Super", score: 22, vram: "6GB" },
+                { name: "NVIDIA GTX 1080 Ti", score: 45, vram: "11GB" }, // Still legendary
+                { name: "NVIDIA GTX 1060 6GB", score: 16, vram: "6GB" },
+                { name: "AMD Radeon RX 580", score: 15, vram: "8GB" }
+            ]
+        };
+
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "瓶颈计算器", subtitle: "2025 电脑硬件性能分析工具",
+                h2_config: "硬件配置",
+                lbl_cpu: "处理器 (CPU)", lbl_gpu: "显卡 (GPU)", lbl_res: "显示分辨率", lbl_purpose: "主要用途",
+                opt_gaming: "3A大作 (画质优先)", opt_comp: "电竞网游 (帧数优先)", opt_work: "生产力 (渲染/剪辑)",
+                btn_calc: "开始智能分析",
+                res_bottleneck: "综合瓶颈系数", res_bottleneck_source: "诊断结果:",
+                stat_power: "负载能力",
+                guide_title: "了解电脑瓶颈",
+                guide_h_what: "什么是“瓶颈”？", guide_p_what: "电脑就像一个团队，CPU 是“指挥官”，GPU 是“画师”。如果指挥官下令太慢，画师就要闲得发慌（CPU 瓶颈）；如果画师画得太慢，指挥官就要排队等待（GPU 瓶颈）。",
+                guide_h_calc: "计算原理 (2025版)", guide_p_calc: "本工具结合分辨率权重进行分析。分辨率越高（如4K），对显卡要求越高，CPU压力相对减小；分辨率越低（如1080P），CPU压力越大。",
+                faq_title: "常见问题",
+                faq_q1: "瓶颈系数多少才算正常？", faq_a1: "低于 15% 属于优秀匹配。15%-30% 为可接受范围。超过 30% 建议升级短板硬件。",
+                faq_q2: "为什么玩网游时 CPU 更重要？", faq_a2: "网游（如CS、LOL）画质压力小，显卡渲染极快，此时帧数上限完全取决于 CPU 处理逻辑的速度。",
+                faq_q3: "我应该先升级显卡还是CPU？", faq_a3: "1080P/240Hz 显示器优先升级 CPU；4K/60Hz 显示器优先升级显卡。",
+                footer_text: "计算结果基于合成基准测试估算。",
+                src_cpu: "处理器 (CPU) 严重拖后腿", src_gpu: "显卡 (GPU) 严重拖后腿", src_none: "✨ 黄金搭档 (配置完美)", src_minor_cpu: "CPU 略微偏弱", src_minor_gpu: "显卡 略微偏弱",
+                res_desc_good: "恭喜！这是一套非常均衡的配置，硬件之间配合默契，每一分性能都能得到释放。",
+                res_desc_bad_cpu: "警告：您的处理器太弱了！显卡经常需要等待处理器下达指令，导致显卡占用率低，帧数不稳定。建议：升级 CPU 或 开启 DSR 提高分辨率以转移压力。",
+                res_desc_bad_gpu: "警告：显卡是明显的短板！处理器虽然强大，但显卡画图太慢，限制了整体帧数。建议：降低游戏画质设置或升级显卡。",
+                res_desc_minor_cpu: "处理器稍微有点跟不上，但在大多数场景下影响不大。如果是追求极限帧数的电竞玩家，可以考虑超频或升级。",
+                res_desc_minor_gpu: "显卡满载运行，是系统的主要限制因素。这其实是玩3A大作时的理想状态（每一分钱都花在了刀刃上）。"
+            },
+            'en': {
+                title: "Bottleneck Calculator", subtitle: "2025 PC Performance Analysis",
+                h2_config: "Configuration",
+                lbl_cpu: "Processor (CPU)", lbl_gpu: "Graphics Card (GPU)", lbl_res: "Resolution", lbl_purpose: "Purpose",
+                opt_gaming: "AAA Gaming (Visuals)", opt_comp: "Esports (High FPS)", opt_work: "Workstation",
+                btn_calc: "Analyze Build",
+                res_bottleneck: "Bottleneck Score", res_bottleneck_source: "Diagnosis:",
+                stat_power: "Power",
+                guide_title: "Understanding Bottlenecks",
+                guide_h_what: "What is a Bottleneck?", guide_p_what: "Think of your PC as a team. The CPU commands, the GPU paints. If the commander is slow, the painter waits (CPU Bottleneck). If the painter is slow, the commander waits (GPU Bottleneck).",
+                guide_h_calc: "How it works", guide_p_calc: "We analyze based on resolution scaling. Higher resolution (4K) shifts load to the GPU. Lower resolution (1080p) shifts importance to the CPU.",
+                faq_title: "FAQ",
+                faq_q1: "What is a good score?", faq_a1: "Below 15% is excellent. 15-30% is acceptable. Above 30% suggests an upgrade is needed.",
+                faq_q2: "Why does CPU matter for Esports?", faq_a2: "In games like CS2 or Valorant, the GPU renders frames instantly. The FPS limit becomes how fast the CPU can process game logic.",
+                faq_q3: "Upgrade CPU or GPU?", faq_a3: "For 1080p High Refresh -> CPU. For 4K Visuals -> GPU.",
+                footer_text: "Estimates based on synthetic data.",
+                src_cpu: "Critical CPU Bottleneck", src_gpu: "Critical GPU Bottleneck", src_none: "✨ Perfect Match", src_minor_cpu: "Slight CPU Limit", src_minor_gpu: "Slight GPU Limit",
+                res_desc_good: "Excellent balance! Your components work together perfectly.",
+                res_desc_bad_cpu: "Your CPU is too weak for this GPU. You will experience stuttering or low GPU usage.",
+                res_desc_bad_gpu: "Your GPU is the limiting factor. Your CPU is waiting for the GPU to finish rendering.",
+                res_desc_minor_cpu: "The CPU is slightly weak, but it shouldn't be noticeable in most games.",
+                res_desc_minor_gpu: "The GPU is hitting 100% usage. This is actually ideal for AAA gaming (getting your money's worth)."
+            },
+            'zh-TW': {
+                title: "瓶頸計算器", subtitle: "2025 電腦硬體效能分析",
+                h2_config: "硬體配置",
+                lbl_cpu: "處理器 (CPU)", lbl_gpu: "顯示卡 (GPU)", lbl_res: "顯示解析度", lbl_purpose: "主要用途",
+                opt_gaming: "3A大作 (畫質優先)", opt_comp: "電競網遊 (幀數優先)", opt_work: "生產力 (渲染/剪輯)",
+                btn_calc: "開始智能分析",
+                res_bottleneck: "綜合瓶頸係數", res_bottleneck_source: "診斷結果:",
+                stat_power: "負載能力",
+                guide_title: "了解電腦瓶頸",
+                guide_h_what: "什麼是「瓶頸」？", guide_p_what: "電腦就像一個團隊，CPU 是「指揮官」，GPU 是「畫師」。如果指揮官下令太慢，畫師就要閒得發慌（CPU 瓶頸）；如果畫師畫得太慢，指揮官就要排隊等待（GPU 瓶頸）。",
+                guide_h_calc: "計算原理 (2025版)", guide_p_calc: "本工具結合解析度權重進行分析。解析度越高（如4K），對顯卡要求越高，CPU壓力相對減小；解析度越低（如1080P），CPU壓力越大。",
+                faq_title: "常見問題",
+                faq_q1: "瓶頸係數多少才算正常？", faq_a1: "低於 15% 屬於優秀匹配。15%-30% 為可接受範圍。超過 30% 建議升級短板硬體。",
+                faq_q2: "為什麼玩網遊時 CPU 更重要？", faq_a2: "網遊（如CS、LOL）畫質壓力小，顯卡渲染極快，此時幀數上限完全取決於 CPU 處理邏輯的速度。",
+                faq_q3: "我應該先升級顯卡還是CPU？", faq_a3: "1080P/240Hz 螢幕優先升級 CPU；4K/60Hz 螢幕優先升級顯卡。",
+                footer_text: "計算結果基於合成基準測試估算。",
+                src_cpu: "處理器 (CPU) 嚴重拖後腿", src_gpu: "顯示卡 (GPU) 嚴重拖後腿", src_none: "✨ 黃金搭檔 (配置完美)", src_minor_cpu: "CPU 略微偏弱", src_minor_gpu: "顯卡 略微偏弱",
+                res_desc_good: "恭喜！這是一套非常均衡的配置，硬體之間配合默契，每一分效能都能得到釋放。",
+                res_desc_bad_cpu: "警告：您的處理器太弱了！顯卡經常需要等待處理器下達指令，導致顯卡佔用率低，幀數不穩定。建議：升級 CPU 或 開啟 DSR 提高解析度以轉移壓力。",
+                res_desc_bad_gpu: "警告：顯卡是明顯的短板！處理器雖然強大，但顯卡畫圖太慢，限制了整體幀數。建議：降低遊戲畫質設定或升級顯卡。",
+                res_desc_minor_cpu: "處理器稍微有點跟不上，但在大多數場景下影響不大。如果是追求極限幀數的電競玩家，可以考慮超頻或升級。",
+                res_desc_minor_gpu: "顯卡滿載運行，是系統的主要限制因素。這其實是玩3A大作時的理想狀態（每一分錢都花在了刀口上）。"
+            }
+        };
+
+        const App = {
+            currentLang: 'zh-CN',
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                const savedLang = localStorage.getItem('app_lang_bottleneck');
+                // Default to Chinese if no other preference
+                this.currentLang = (langParam && i18nData[langParam]) ? langParam : (savedLang || 'zh-CN');
+                
+                if (!langParam && !savedLang) this.updateUrl(this.currentLang);
+
+                document.getElementById('lang-selector').value = this.currentLang;
+                this.populateSelects();
+                this.handleTheme();
+                this.setupLanguage();
+                this.updateYear();
+                this.translateUI(this.currentLang);
+                Calculator.calculate();
+            },
+            updateYear() { document.getElementById('year').textContent = new Date().getFullYear(); },
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {
+                    // Ignore
+                }
+            },
+            setupLanguage() {
+                document.getElementById('lang-selector').addEventListener('change', (e) => {
+                    const lang = e.target.value;
+                    this.currentLang = lang;
+                    localStorage.setItem('app_lang_bottleneck', lang);
+                    this.updateUrl(lang);
+                    this.translateUI(lang);
+                    Calculator.calculate();
+                });
+            },
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) el.innerHTML = data[key];
+                });
+                
+                // Re-calculate to update dynamic texts
+                Calculator.calculate();
+            },
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+            populateSelects() {
+                const cpuSel = document.getElementById('input-cpu');
+                HARDWARE.cpu.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.score;
+                    opt.text = c.name;
+                    if(c.score === 86) opt.selected = true; // Default i5-14600K range
+                    cpuSel.add(opt);
+                });
+                const gpuSel = document.getElementById('input-gpu');
+                HARDWARE.gpu.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.score;
+                    opt.text = g.name;
+                    if(g.score === 70) opt.selected = true; // Default 4070 range
+                    gpuSel.add(opt);
+                });
+            }
+        };
+
+        const Calculator = {
+            calculate(animate = false) {
+                if(animate) {
+                    const loader = document.getElementById('result-placeholder');
+                    loader.classList.remove('hidden');
+                    // Scroll to results on mobile
+                    if(window.innerWidth < 1024) {
+                        loader.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    setTimeout(() => {
+                        loader.classList.add('hidden');
+                        this.performCalc();
+                    }, 800);
+                } else {
+                    this.performCalc();
+                }
+            },
+            performCalc() {
+                const cpuRaw = parseInt(document.getElementById('input-cpu').value);
+                const gpuRaw = parseInt(document.getElementById('input-gpu').value);
+                const res = parseInt(document.getElementById('input-res').value);
+                const purpose = document.getElementById('input-purpose').value;
+                
+                // Advanced Scoring Logic 2.0
+                
+                // 1. Resolution Modifiers
+                // CPU load is relatively constant across resolutions (physics/logic don't change much with pixels)
+                // GPU load increases massively with resolution.
+                
+                // We normalize everything to "1080p Performance Potential"
+                // If we play at 4K, the GPU's effective frame output capability drops drastically.
+                // If GPU 1080p potential is 100fps, at 4K it might be 35fps.
+                // CPU 1080p potential is 100fps, at 4K it is still roughly 100fps (ignoring draw calls slightly).
+                
+                let gpuResolutionFactor = 1.0;
+                let cpuResolutionFactor = 1.0; // CPU works slightly less hard at higher res due to fewer draw calls from lower FPS, but let's keep it simple.
+                
+                if (res === 1080) {
+                    gpuResolutionFactor = 1.0;
+                } else if (res === 1440) {
+                    gpuResolutionFactor = 0.70; // GPU fps drops to ~70%
+                } else if (res === 2160) {
+                    gpuResolutionFactor = 0.40; // GPU fps drops to ~40%
+                } else if (res === 4320) {
+                    gpuResolutionFactor = 0.15; // 8K is brutal
+                }
+
+                // 2. Purpose Modifiers
+                if (purpose === 'competitive') {
+                    // In esports, we lower resolution/settings usually, so GPU load drops, making CPU the limit.
+                    // Effectively, GPU becomes "Stronger" relative to the task.
+                    gpuResolutionFactor *= 1.3; 
+                } else if (purpose === 'work') {
+                    // Workstation tasks vary, but often favor multi-core CPU. 
+                    // Let's treat it as neutral but maybe penalize weak CPUs more.
+                }
+
+                // 3. Effective Performance "Frames per arbitrary unit"
+                const cpuEffective = cpuRaw;
+                const gpuEffective = gpuRaw * gpuResolutionFactor;
+
+                // 4. Bottleneck Calculation
+                // Bottleneck is the percentage difference between the stronger and weaker component.
+                let bottleneck = 0;
+                let source = 'none';
+                let rawDiff = 0;
+
+                if (cpuEffective < gpuEffective) {
+                    // CPU is the limit (CPU < GPU)
+                    // Example: CPU=50, GPU=100. CPU is limiting 50% of GPU potential.
+                    // Formula: (Stronger - Weaker) / Stronger
+                    rawDiff = (gpuEffective - cpuEffective) / gpuEffective;
+                    bottleneck = rawDiff * 100;
+                    source = 'cpu';
+                } else {
+                    // GPU is the limit (GPU < CPU)
+                    // Example: CPU=100, GPU=50. GPU is limiting.
+                    rawDiff = (cpuEffective - gpuEffective) / cpuEffective;
+                    bottleneck = rawDiff * 100;
+                    source = 'gpu';
+                }
+
+                // Damping small differences
+                if (bottleneck < 10) bottleneck = 0; // Margin of error
+
+                // Cap at 100
+                bottleneck = Math.min(99, Math.round(bottleneck));
+
+                // --- UI Updates ---
+                
+                // Update Gauge
+                const needle = document.getElementById('gauge-needle');
+                // -90 to 90 degrees.
+                const deg = -90 + (bottleneck / 100 * 180);
+                needle.style.transform = `rotate(${deg}deg)`;
+
+                // Update Text
+                document.getElementById('res-percent').innerText = bottleneck;
+
+                const lang = App.currentLang;
+                const texts = i18nData[lang] || i18nData['en'];
+                const sourceEl = document.getElementById('res-source');
+                const descEl = document.getElementById('res-desc');
+
+                // Determine Severity and Text
+                if (bottleneck < 15) {
+                    sourceEl.innerText = texts.src_none;
+                    sourceEl.className = "text-sm font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/30";
+                    descEl.innerText = texts.res_desc_good;
+                } else if (bottleneck < 30) {
+                    // Minor Bottleneck
+                    if (source === 'cpu') {
+                        sourceEl.innerText = texts.src_minor_cpu;
+                        sourceEl.className = "text-sm font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800/30";
+                        descEl.innerText = texts.res_desc_minor_cpu;
+                    } else {
+                        sourceEl.innerText = texts.src_minor_gpu;
+                        sourceEl.className = "text-sm font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800/30";
+                        descEl.innerText = texts.res_desc_minor_gpu;
+                    }
+                } else {
+                    // Major Bottleneck
+                    sourceEl.className = "text-sm font-bold text-rose-600 bg-rose-100 dark:bg-rose-900/30 px-3 py-1 rounded-full border border-rose-200 dark:border-rose-800/30";
+                    if (source === 'cpu') {
+                        sourceEl.innerText = texts.src_cpu;
+                        descEl.innerText = texts.res_desc_bad_cpu;
+                    } else {
+                        sourceEl.innerText = texts.src_gpu;
+                        descEl.innerText = texts.res_desc_bad_gpu;
+                    }
+                }
+
+                // Update Progress Bars (Relative Utilization)
+                // If source is CPU, CPU is 100% utilized (struggling), GPU is waiting (<100%).
+                // Wait, utilization logic:
+                // If CPU is bottleneck (Weaker), it runs at 100%. GPU runs at (CPU/GPU)%.
+                // If GPU is bottleneck (Weaker), it runs at 100%. CPU runs at (GPU/CPU)%.
+                
+                let cpuUtil = 100;
+                let gpuUtil = 100;
+                
+                if (source === 'cpu') {
+                    // CPU limit
+                    cpuUtil = 100; // Capped out
+                    gpuUtil = Math.round((cpuEffective / gpuEffective) * 100);
+                } else if (source === 'gpu') {
+                    // GPU limit
+                    gpuUtil = 100; // Capped out
+                    cpuUtil = Math.round((gpuEffective / cpuEffective) * 100);
+                } else {
+                    // Balanced
+                    cpuUtil = 95 + Math.random() * 5;
+                    gpuUtil = 95 + Math.random() * 5;
+                }
+
+                // Clamp
+                cpuUtil = Math.min(100, Math.max(5, cpuUtil));
+                gpuUtil = Math.min(100, Math.max(5, gpuUtil));
+
+                // Visual Bars logic:
+                // Actually, users prefer to see "Capability Strength" rather than "Utilization".
+                // If CPU bar is short, it means it's weak.
+                // Let's visualize the "Effective Performance" instead.
+                
+                const maxVal = Math.max(cpuEffective, gpuEffective);
+                const cpuBarWidth = (cpuEffective / maxVal) * 100;
+                const gpuBarWidth = (gpuEffective / maxVal) * 100;
+
+                document.getElementById('bar-cpu').style.width = `${cpuBarWidth}%`;
+                document.getElementById('bar-gpu').style.width = `${gpuBarWidth}%`;
+                
+                // Color coding bars
+                document.getElementById('bar-cpu').className = `progress-bar-fill ${cpuBarWidth < 70 ? 'bg-rose-500' : 'bg-blue-500'}`;
+                document.getElementById('bar-gpu').className = `progress-bar-fill ${gpuBarWidth < 70 ? 'bg-rose-500' : 'bg-indigo-500'}`;
+
+                // Update text near bars
+                const cpuLabel = texts.stat_power || "Capability";
+                document.getElementById('val-cpu-bar').innerText = Math.round(cpuEffective);
+                document.getElementById('val-gpu-bar').innerText = Math.round(gpuEffective);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>
