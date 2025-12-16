@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="category" content="health">
+    <meta name="description" content="最佳蛋白質計算器 - 根據體重、活動水平和目標計算每日蛋白質攝入量。">
+    <title>最佳蛋白質計算器 | Daily Protein Intake Calculator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#2563eb', hover: '#1d4ed8' },
+                        secondary: { DEFAULT: '#f59e0b', hover: '#d97706' },
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#eff6ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+            .goal-btn {
+                @apply flex-1 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium transition-all hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer;
+            }
+            .goal-btn.active {
+                @apply bg-primary text-white border-primary hover:bg-primary;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-green-200 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500 to-teal-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-green-500/20">
+                    <i class="fa fa-cutlery"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">最佳蛋白质计算器</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">科学计算每日蛋白质摄入量</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex-wrap justify-center">
+                <select id="lang-selector" onchange="App.setLang(this.value)" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 max-w-[150px]">
+                    <option value="zh-CN">🇨🇳 中文 (简体)</option>
+                    <option value="zh-TW">🇹🇼 中文 (繁體)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" onclick="App.toggleTheme()" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-primary p-6 space-y-5">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                            <i class="fa fa-sliders text-primary"></i> <span data-i18n="h2_config">个人数据</span>
+                        </h2>
+                        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                            <button class="px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white transition-all" id="btn-metric" onclick="App.setUnit('metric')">kg</button>
+                            <button class="px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all" id="btn-imperial" onclick="App.setUnit('imperial')">lbs</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="label-text"><span data-i18n="lbl_weight">体重</span> <span id="unit-weight" class="text-xs text-slate-400">(kg)</span></label>
+                        <input type="number" id="input-weight" class="input-field font-mono" value="70" placeholder="70" oninput="Calculator.calculate()">
+                    </div>
+
+                    <div>
+                        <label class="label-text" data-i18n="lbl_activity">活动水平</label>
+                        <select id="input-activity" class="input-field cursor-pointer" onchange="Calculator.calculate()">
+                            <option value="sedentary" data-i18n="act_sedentary">久坐不动 (很少运动)</option>
+                            <option value="light" data-i18n="act_light">轻度活动 (每周1-3天)</option>
+                            <option value="moderate" data-i18n="act_moderate">中度活动 (每周3-5天)</option>
+                            <option value="active" data-i18n="act_active">高度活动 (每周6-7天)</option>
+                            <option value="extreme" data-i18n="act_extreme">极高活动 (每天训练2次)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="label-text" data-i18n="lbl_goal">您的目标</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="goal-btn" id="btn-loss" onclick="App.setGoal('loss')">
+                                <i class="fa fa-minus-circle mr-1"></i> <span data-i18n="goal_loss">减脂</span>
+                            </button>
+                            <button class="goal-btn active" id="btn-maintain" onclick="App.setGoal('maintain')">
+                                <i class="fa fa-balance-scale mr-1"></i> <span data-i18n="goal_maintain">维持</span>
+                            </button>
+                            <button class="goal-btn" id="btn-gain" onclick="App.setGoal('gain')">
+                                <i class="fa fa-plus-circle mr-1"></i> <span data-i18n="goal_gain">增肌</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="label-text"><span data-i18n="lbl_bodyfat">体脂率 % (选填)</span></label>
+                        <input type="number" id="input-bodyfat" class="input-field font-mono" placeholder="15" oninput="Calculator.calculate()">
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 border border-blue-100 dark:border-blue-800/30 text-sm text-blue-800 dark:text-blue-300">
+                    <i class="fa fa-info-circle mr-1"></i> <span data-i18n="hint_accuracy">蛋白质是肌肉修复和生长的关键。适当摄入有助于维持肌肉量，特别是在减脂期间。</span>
+                </div>
+            </main>
+
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg" data-i18n="h2_results">您的蛋白质需求</h2>
+                        <div class="text-xs font-mono text-slate-400 bg-white dark:bg-slate-800 px-3 py-1 rounded border border-slate-200 dark:border-slate-700">
+                            <span data-i18n="unit_daily">每日摄入量 (克)</span>
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-grow flex flex-col gap-8 animate-fade-in">
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="rounded-2xl border-2 border-primary/30 p-6 space-y-2 bg-blue-50/50 dark:bg-blue-900/10 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 bg-primary text-white text-[10px] px-3 py-1 rounded-bl-lg font-bold" data-i18n="recommended">推荐量</div>
+                                <h4 class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider text-center" data-i18n="lbl_daily">每日蛋白质摄入量</h4>
+                                <div class="text-center py-4">
+                                    <span class="text-4xl md:text-5xl font-bold font-mono text-slate-800 dark:text-white" id="res-protein">--</span>
+                                    <span class="text-sm text-slate-500 block mt-1"><span data-i18n="unit_g">克</span> / <span data-i18n="unit_day">天</span></span>
+                                </div>
+                                <p class="text-center text-xs text-slate-500 dark:text-slate-400" data-i18n="desc_protein">基于您的体重、活动水平和目标的最佳摄入量。</p>
+                            </div>
+
+                            <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 space-y-2 bg-slate-50/50 dark:bg-slate-800/30">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center" data-i18n="lbl_perkg">每公斤体重蛋白质</h4>
+                                <div class="text-center py-4">
+                                    <span class="text-3xl md:text-4xl font-bold font-mono text-slate-600 dark:text-slate-300" id="res-perkg">--</span>
+                                    <span class="text-sm text-slate-500 block mt-1"><span data-i18n="unit_g">克</span> / <span data-i18n="unit_kg">kg 体重</span></span>
+                                </div>
+                                <p class="text-center text-xs text-slate-400" data-i18n="desc_perkg">这是国际运动营养学会推荐的参考比例。</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4" data-i18n="h3_distribution">每日分配建议</h3>
+                            <div class="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                                <i class="fa fa-coffee"></i>
+                                            </div>
+                                            <span class="text-sm font-medium" data-i18n="meal_breakfast">早餐</span>
+                                        </div>
+                                        <span class="font-mono font-bold text-slate-800 dark:text-white" id="res-breakfast">--</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-green-600 dark:text-green-400">
+                                                <i class="fa fa-cutlery"></i>
+                                            </div>
+                                            <span class="text-sm font-medium" data-i18n="meal_lunch">午餐</span>
+                                        </div>
+                                        <span class="font-mono font-bold text-slate-800 dark:text-white" id="res-lunch">--</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                                                <i class="fa fa-apple"></i>
+                                            </div>
+                                            <span class="text-sm font-medium" data-i18n="meal_snack">训练后/加餐</span>
+                                        </div>
+                                        <span class="font-mono font-bold text-slate-800 dark:text-white" id="res-snack">--</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400">
+                                                <i class="fa fa-moon-o"></i>
+                                            </div>
+                                            <span class="text-sm font-medium" data-i18n="meal_dinner">晚餐</span>
+                                        </div>
+                                        <span class="font-mono font-bold text-slate-800 dark:text-white" id="res-dinner">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4" data-i18n="h3_sources">优质蛋白质来源 (每100g)</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div class="bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3 border border-slate-200 dark:border-slate-700 text-center">
+                                    <div class="text-xs text-slate-500 mb-1" data-i18n="food_chicken">鸡胸肉</div>
+                                    <div class="font-mono text-sm font-bold">24g</div>
+                                </div>
+                                <div class="bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3 border border-slate-200 dark:border-slate-700 text-center">
+                                    <div class="text-xs text-slate-500 mb-1" data-i18n="food_fish">三文鱼</div>
+                                    <div class="font-mono text-sm font-bold">22g</div>
+                                </div>
+                                <div class="bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3 border border-slate-200 dark:border-slate-700 text-center">
+                                    <div class="text-xs text-slate-500 mb-1" data-i18n="food_egg">鸡蛋</div>
+                                    <div class="font-mono text-sm font-bold">13g</div>
+                                </div>
+                                <div class="bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3 border border-slate-200 dark:border-slate-700 text-center">
+                                    <div class="text-xs text-slate-500 mb-1" data-i18n="food_beef">瘦牛肉</div>
+                                    <div class="font-mono text-sm font-bold">26g</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- NEW: Introduction and FAQ Section -->
+        <section class="glass rounded-3xl shadow-lg p-8 mb-12 border-t-4 border-t-secondary">
+            <div class="max-w-4xl mx-auto space-y-12">
+                
+                <!-- About -->
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <i class="fa fa-book text-secondary"></i> <span data-i18n="content_about_title">关于蛋白质计算器</span>
+                    </h2>
+                    <p class="text-slate-600 dark:text-slate-300 leading-relaxed mb-4" data-i18n="content_about_p1">
+                        本计算器旨在帮助用户科学估算每日所需的蛋白质摄入量。蛋白质是人体三大宏量营养素之一，对于肌肉修复、免疫系统功能以及维持饱腹感至关重要。
+                    </p>
+                    <p class="text-slate-600 dark:text-slate-300 leading-relaxed" data-i18n="content_about_p2">
+                        我们的算法基于用户的体重、日常活动水平以及特定的健身目标（增肌、减脂或维持）。计算逻辑参考了国际运动营养学会（ISSN）和美国运动医学会（ACSM）的通用建议范围（通常在 1.2g/kg 到 2.2g/kg 之间）。
+                    </p>
+                </div>
+
+                <!-- FAQ -->
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                        <i class="fa fa-question-circle text-secondary"></i> <span data-i18n="content_faq_title">常见问题 (FAQ)</span>
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <div class="border-b border-slate-200 dark:border-slate-700 pb-4">
+                            <h3 class="font-bold text-lg text-slate-800 dark:text-white mb-2" data-i18n="content_faq_q1">为什么要吃这么多蛋白质？</h3>
+                            <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed" data-i18n="content_faq_a1">
+                                蛋白质有很高的热效应，能增加代谢率并提供更长时间的饱腹感。在减脂期，高蛋白饮食能防止肌肉流失；在增肌期，它是构建肌肉组织的原材料。
+                            </p>
+                        </div>
+                        
+                        <div class="border-b border-slate-200 dark:border-slate-700 pb-4">
+                            <h3 class="font-bold text-lg text-slate-800 dark:text-white mb-2" data-i18n="content_faq_q2">我必须吃蛋白粉吗？</h3>
+                            <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed" data-i18n="content_faq_a2">
+                                不必。只要通过肉类、蛋奶、豆类等天然食物摄入足够蛋白质，就不需要蛋白粉。蛋白粉只是为了方便补充，并非必需品。
+                            </p>
+                        </div>
+
+                        <div class="pb-4">
+                            <h3 class="font-bold text-lg text-slate-800 dark:text-white mb-2" data-i18n="content_faq_q3">什么时候吃蛋白质最好？</h3>
+                            <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed" data-i18n="content_faq_a3">
+                                每日总摄入量比"时机"更重要。但为了最大化吸收，建议将蛋白质均匀分配到 3-5 餐中。训练后補充蛋白质有助于肌肉快速恢复。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // Translations
+        const i18n = {
+            'zh-CN': {
+                title: '最佳蛋白质计算器',
+                subtitle: '科学计算每日蛋白质摄入量',
+                h2_config: '个人数据',
+                lbl_weight: '体重',
+                lbl_activity: '活动水平',
+                act_sedentary: '久坐不动 (很少运动)',
+                act_light: '轻度活动 (每周1-3天)',
+                act_moderate: '中度活动 (每周3-5天)',
+                act_active: '高度活动 (每周6-7天)',
+                act_extreme: '极高活动 (每天训练2次)',
+                lbl_goal: '您的目标',
+                goal_loss: '减脂',
+                goal_maintain: '维持',
+                goal_gain: '增肌',
+                lbl_bodyfat: '体脂率 % (选填)',
+                hint_accuracy: '蛋白质是肌肉修复和生长的关键。适当摄入有助于维持肌肉量，特别是在减脂期间。',
+                h2_results: '您的蛋白质需求',
+                recommended: '推荐量',
+                lbl_daily: '每日蛋白质摄入量',
+                desc_protein: '基于您的体重、活动水平和目标的最佳摄入量。',
+                lbl_perkg: '每公斤体重蛋白质',
+                desc_perkg: '这是国际运动营养学会推荐的参考比例。',
+                h3_distribution: '每日分配建议',
+                meal_breakfast: '早餐',
+                meal_lunch: '午餐',
+                meal_snack: '训练后/加餐',
+                meal_dinner: '晚餐',
+                h3_sources: '优质蛋白质来源 (每100g)',
+                food_chicken: '鸡胸肉',
+                food_fish: '三文鱼',
+                food_egg: '鸡蛋',
+                food_beef: '瘦牛肉',
+                unit_daily: '每日摄入量 (克)',
+                unit_g: '克',
+                unit_day: '天',
+                unit_kg: 'kg 体重',
+                content_about_title: '关于蛋白质计算器',
+                content_about_p1: '本计算器旨在帮助用户科学估算每日所需的蛋白质摄入量。蛋白质是人体三大宏量营养素之一，对于肌肉修复、免疫系统功能以及维持饱腹感至关重要。',
+                content_about_p2: '我们的算法基于用户的体重、日常活动水平以及特定的健身目标（增肌、减脂或维持）。计算逻辑参考了国际运动营养学会（ISSN）和美国运动医学会（ACSM）的通用建议范围。',
+                content_faq_title: '常见问题 (FAQ)',
+                content_faq_q1: '为什么要吃这么多蛋白质？',
+                content_faq_a1: '蛋白质有很高的热效应，能增加代谢率并提供更长时间的饱腹感。在减脂期，高蛋白饮食能防止肌肉流失；在增肌期，它是构建肌肉组织的原材料。',
+                content_faq_q2: '我必须吃蛋白粉吗？',
+                content_faq_a2: '不必。只要通过肉类、蛋奶、豆类等天然食物摄入足够蛋白质，就不需要蛋白粉。蛋白粉只是为了方便补充，并非必需品。',
+                content_faq_q3: '什么时候吃蛋白质最好？',
+                content_faq_a3: '每日总摄入量比"时机"更重要。但为了最大化吸收，建议将蛋白质均匀分配到 3-5 餐中。训练后補充蛋白质有助于肌肉快速恢复。'
+            },
+            'zh-TW': {
+                title: '最佳蛋白質計算器',
+                subtitle: '科學計算每日蛋白質攝取量',
+                h2_config: '個人數據',
+                lbl_weight: '體重',
+                lbl_activity: '活動水平',
+                act_sedentary: '久坐不動 (很少運動)',
+                act_light: '輕度活動 (每週1-3天)',
+                act_moderate: '中度活動 (每週3-5天)',
+                act_active: '高度活動 (每週6-7天)',
+                act_extreme: '極高活動 (每天訓練2次)',
+                lbl_goal: '您的目標',
+                goal_loss: '減脂',
+                goal_maintain: '維持',
+                goal_gain: '增肌',
+                lbl_bodyfat: '體脂率 % (選填)',
+                hint_accuracy: '蛋白質是肌肉修復和生長的關鍵。適當攝取有助於維持肌肉量，特別是在減脂期間。',
+                h2_results: '您的蛋白質需求',
+                recommended: '推薦量',
+                lbl_daily: '每日蛋白質攝取量',
+                desc_protein: '基於您的體重、活動水平和目標的最佳攝取量。',
+                lbl_perkg: '每公斤體重蛋白質',
+                desc_perkg: '這是國際運動營養學會推薦的參考比例。',
+                h3_distribution: '每日分配建議',
+                meal_breakfast: '早餐',
+                meal_lunch: '午餐',
+                meal_snack: '訓練後/加餐',
+                meal_dinner: '晚餐',
+                h3_sources: '優質蛋白質來源 (每100g)',
+                food_chicken: '雞胸肉',
+                food_fish: '三文魚',
+                food_egg: '雞蛋',
+                food_beef: '瘦牛肉',
+                unit_daily: '每日攝取量 (克)',
+                unit_g: '克',
+                unit_day: '天',
+                unit_kg: 'kg 體重',
+                content_about_title: '關於蛋白質計算器',
+                content_about_p1: '本計算器旨在幫助用戶科學估算每日所需的蛋白質攝取量。蛋白質是人體三大宏量營養素之一，對於肌肉修復、免疫系統功能以及維持飽腹感至關重要。',
+                content_about_p2: '我們的演算法基於用戶的體重、日常活動水平以及特定的健身目標（增肌、減脂或維持）。計算邏輯參考了國際運動營養學會（ISSN）和美國運動醫學會（ACSM）的通用建議範圍。',
+                content_faq_title: '常見問題 (FAQ)',
+                content_faq_q1: '為什麼要吃這麼多蛋白質？',
+                content_faq_a1: '蛋白質有很高的熱效應，能增加代謝率並提供更長時間的飽腹感。在減脂期，高蛋白飲食能防止肌肉流失；在增肌期，它是構建肌肉組織的原材料。',
+                content_faq_q2: '我必須吃蛋白粉嗎？',
+                content_faq_a2: '不必。只要通過肉類、蛋奶、豆類等天然食物攝取足夠蛋白質，就不需要蛋白粉。蛋白粉只是為了方便補充，並非必需品。',
+                content_faq_q3: '什麼時候吃蛋白質最好？',
+                content_faq_a3: '每日總攝取量比"時機"更重要。但為了最大化吸收，建議將蛋白質均勻分配到 3-5 餐中。訓練後補充蛋白質有助於肌肉快速恢復。'
+            },
+            'en': {
+                title: 'Protein Calculator',
+                subtitle: 'Scientific daily protein intake calculator',
+                h2_config: 'Your Stats',
+                lbl_weight: 'Weight',
+                lbl_activity: 'Activity Level',
+                act_sedentary: 'Sedentary (Little/no exercise)',
+                act_light: 'Light (1-3 days/week)',
+                act_moderate: 'Moderate (3-5 days/week)',
+                act_active: 'Active (6-7 days/week)',
+                act_extreme: 'Extreme (2x training/day)',
+                lbl_goal: 'Your Goal',
+                goal_loss: 'Fat Loss',
+                goal_maintain: 'Maintain',
+                goal_gain: 'Muscle Gain',
+                lbl_bodyfat: 'Body Fat % (Optional)',
+                hint_accuracy: 'Protein is key for muscle repair. Proper intake helps maintain mass, especially during fat loss.',
+                h2_results: 'Your Protein Needs',
+                recommended: 'Recommended',
+                lbl_daily: 'Daily Protein Target',
+                desc_protein: 'Optimal intake based on your weight, activity, and goals.',
+                lbl_perkg: 'Protein Per Body Weight',
+                desc_perkg: 'Reference range recommended by ISSN.',
+                h3_distribution: 'Daily Distribution',
+                meal_breakfast: 'Breakfast',
+                meal_lunch: 'Lunch',
+                meal_snack: 'Post-Workout / Snack',
+                meal_dinner: 'Dinner',
+                h3_sources: 'Quality Sources (per 100g)',
+                food_chicken: 'Chicken Breast',
+                food_fish: 'Salmon',
+                food_egg: 'Eggs',
+                food_beef: 'Lean Beef',
+                unit_daily: 'Daily Intake (g)',
+                unit_g: 'g',
+                unit_day: 'day',
+                unit_kg: 'kg bodyweight',
+                content_about_title: 'About Protein Calculator',
+                content_about_p1: 'This calculator is designed to help you scientifically estimate your daily protein needs. Protein is a crucial macronutrient for muscle repair, immune function, and satiety.',
+                content_about_p2: 'Our algorithm considers your weight, activity level, and fitness goals. The logic is based on general recommendations from the ISSN and ACSM.',
+                content_faq_title: 'FAQ',
+                content_faq_q1: 'Why eat so much protein?',
+                content_faq_a1: 'Protein has a high thermic effect, boosting metabolism and satiety. It prevents muscle loss during fat loss and builds muscle during bulking.',
+                content_faq_q2: 'Do I need protein powder?',
+                content_faq_a2: 'No. If you get enough protein from whole foods like meat, eggs, and beans, supplements are not necessary. They are just for convenience.',
+                content_faq_q3: 'When is the best time to eat protein?',
+                content_faq_a3: 'Total daily intake matters more than timing. However, spreading protein across 3-5 meals improves absorption. Post-workout protein helps recovery.'
+            },
+            'es': {
+                title: 'Calculadora de Proteínas',
+                subtitle: 'Calcula tu ingesta diaria de proteínas',
+                h2_config: 'Tus Datos',
+                lbl_weight: 'Peso',
+                lbl_activity: 'Nivel de Actividad',
+                act_sedentary: 'Sedentario (Poco/sin ejercicio)',
+                act_light: 'Ligero (1-3 días/semana)',
+                act_moderate: 'Moderado (3-5 días/semana)',
+                act_active: 'Activo (6-7 días/semana)',
+                act_extreme: 'Extremo (2 entrenos/día)',
+                lbl_goal: 'Tu Objetivo',
+                goal_loss: 'Perder Grasa',
+                goal_maintain: 'Mantener',
+                goal_gain: 'Ganar Músculo',
+                lbl_bodyfat: '% Grasa Corporal (Opcional)',
+                hint_accuracy: 'La proteína es clave para la reparación muscular. Ayuda a mantener la masa, especialmente al perder grasa.',
+                h2_results: 'Tus Necesidades',
+                recommended: 'Recomendado',
+                lbl_daily: 'Proteína Diaria',
+                desc_protein: 'Ingesta óptima basada en tu peso, actividad y objetivos.',
+                lbl_perkg: 'Proteína por Peso Corporal',
+                desc_perkg: 'Rango de referencia recomendado por la ISSN.',
+                h3_distribution: 'Distribución Diaria',
+                meal_breakfast: 'Desayuno',
+                meal_lunch: 'Almuerzo',
+                meal_snack: 'Post-Entreno / Snack',
+                meal_dinner: 'Cena',
+                h3_sources: 'Fuentes de Calidad (por 100g)',
+                food_chicken: 'Pechuga de Pollo',
+                food_fish: 'Salmón',
+                food_egg: 'Huevos',
+                food_beef: 'Ternera Magra',
+                unit_daily: 'Ingesta Diaria (g)',
+                unit_g: 'g',
+                unit_day: 'día',
+                unit_kg: 'kg peso corporal',
+                content_about_title: 'Sobre la Calculadora',
+                content_about_p1: 'Esta herramienta te ayuda a estimar científicamente tus necesidades proteicas. La proteína es vital para la reparación muscular y la saciedad.',
+                content_about_p2: 'Nuestro algoritmo considera tu peso, actividad y objetivos, basándose en recomendaciones de la ISSN y el ACSM.',
+                content_faq_title: 'Preguntas Frecuentes',
+                content_faq_q1: '¿Por qué comer tanta proteína?',
+                content_faq_a1: 'La proteína tiene un alto efecto térmico y saciante. Previene la pérdida muscular al adelgazar y construye músculo al ganar peso.',
+                content_faq_q2: '¿Necesito proteína en polvo?',
+                content_faq_a2: 'No. Si obtienes suficiente de alimentos como carne y huevos, los suplementos no son necesarios. Son solo por conveniencia.',
+                content_faq_q3: '¿Cuándo es mejor comer proteína?',
+                content_faq_a3: 'El total diario importa más que el momento. Sin embargo, distribuirla en 3-5 comidas mejora la absorción.'
+            },
+            'ru': {
+                title: 'Калькулятор Белка',
+                subtitle: 'Научный расчет суточной нормы белка',
+                h2_config: 'Ваши Данные',
+                lbl_weight: 'Вес',
+                lbl_activity: 'Активность',
+                act_sedentary: 'Сидячий (мало/нет упражнений)',
+                act_light: 'Легкий (1-3 дня/неделю)',
+                act_moderate: 'Средний (3-5 дней/неделю)',
+                act_active: 'Активный (6-7 дней/неделю)',
+                act_extreme: 'Экстремальный (2 тренировки/день)',
+                lbl_goal: 'Ваша Цель',
+                goal_loss: 'Похудение',
+                goal_maintain: 'Поддержание',
+                goal_gain: 'Набор Массы',
+                lbl_bodyfat: '% Жира (Необязательно)',
+                hint_accuracy: 'Белок ключевой для мышц. Правильное потребление помогает сохранить массу, особенно при похудении.',
+                h2_results: 'Ваши Потребности',
+                recommended: 'Рекомендуется',
+                lbl_daily: 'Суточная Норма Белка',
+                desc_protein: 'Оптимально на основе веса, активности и целей.',
+                lbl_perkg: 'Белок на кг Веса',
+                desc_perkg: 'Рекомендуемый диапазон ISSN.',
+                h3_distribution: 'Распределение',
+                meal_breakfast: 'Завтрак',
+                meal_lunch: 'Обед',
+                meal_snack: 'Перекус / После тренировки',
+                meal_dinner: 'Ужин',
+                h3_sources: 'Источники (на 100г)',
+                food_chicken: 'Куриная грудка',
+                food_fish: 'Лосось',
+                food_egg: 'Яйца',
+                food_beef: 'Говядина',
+                unit_daily: 'Суточное потребление (г)',
+                unit_g: 'г',
+                unit_day: 'день',
+                unit_kg: 'кг веса',
+                content_about_title: 'О Калькуляторе',
+                content_about_p1: 'Этот инструмент помогает научно оценить потребность в белке. Белок важен для мышц, иммунитета и сытости.',
+                content_about_p2: 'Алгоритм учитывает вес, активность и цели, основываясь на рекомендациях ISSN и ACSM.',
+                content_faq_title: 'Частые Вопросы',
+                content_faq_q1: 'Зачем так много белка?',
+                content_faq_a1: 'Белок ускоряет метаболизм и дает сытость. Он предотвращает потерю мышц при диете и строит их при наборе массы.',
+                content_faq_q2: 'Нужен ли протеин в порошке?',
+                content_faq_a2: 'Нет. Если вы получаете белок из еды, добавки не нужны. Они лишь для удобства.',
+                content_faq_q3: 'Когда лучше есть белок?',
+                content_faq_a3: 'Общее количество важнее времени. Но распределение на 3-5 приемов пищи улучшает усвоение.'
+            },
+            'hi': {
+                title: 'प्रोटीन कैलकुलेटर',
+                subtitle: 'दैनिक प्रोटीन सेवन की वैज्ञानिक गणना',
+                h2_config: 'आपकी जानकारी',
+                lbl_weight: 'वजन',
+                lbl_activity: 'गतिविधि स्तर',
+                act_sedentary: 'निष्क्रिय (कम/कोई व्यायाम नहीं)',
+                act_light: 'हल्का (1-3 दिन/सप्ताह)',
+                act_moderate: 'मध्यम (3-5 दिन/सप्ताह)',
+                act_active: 'सक्रिय (6-7 दिन/सप्ताह)',
+                act_extreme: 'अत्यधिक (2x प्रशिक्षण/दिन)',
+                lbl_goal: 'आपका लक्ष्य',
+                goal_loss: 'वसा घटाना',
+                goal_maintain: 'बनाए रखना',
+                goal_gain: 'मांसपेशी बढ़ाना',
+                lbl_bodyfat: 'शरीर में वसा % (वैकल्पिक)',
+                hint_accuracy: 'मांसपेशियों की मरम्मत के लिए प्रोटीन महत्वपूर्ण है। सही मात्रा मांसपेशियों को बनाए रखने में मदद करती है।',
+                h2_results: 'आपकी प्रोटीन आवश्यकताएं',
+                recommended: 'अनुशंसित',
+                lbl_daily: 'दैनिक प्रोटीन लक्ष्य',
+                desc_protein: 'आपके वजन, गतिविधि और लक्ष्यों के आधार पर।',
+                lbl_perkg: 'प्रति किलो वजन प्रोटीन',
+                desc_perkg: 'ISSN द्वारा अनुशंसित संदर्भ सीमा।',
+                h3_distribution: 'दैनिक वितरण',
+                meal_breakfast: 'नाश्ता',
+                meal_lunch: 'दोपहर का भोजन',
+                meal_snack: 'स्नैक / वर्कआउट के बाद',
+                meal_dinner: 'रात का खाना',
+                h3_sources: 'स्रोत (प्रति 100g)',
+                food_chicken: 'चिकन ब्रेस्ट',
+                food_fish: 'सैलमन',
+                food_egg: 'अंडे',
+                food_beef: 'लीन बीफ',
+                unit_daily: 'दैनिक सेवन (g)',
+                unit_g: 'g',
+                unit_day: 'दिन',
+                unit_kg: 'kg वजन',
+                content_about_title: 'कैलकुलेटर के बारे में',
+                content_about_p1: 'यह टूल आपकी प्रोटीन आवश्यकताओं का वैज्ञानिक अनुमान लगाने में मदद करता है। प्रोटीन मांसपेशियों की मरम्मत और तृप्ति के लिए महत्वपूर्ण है।',
+                content_about_p2: 'हमारा एल्गोरिदम आपके वजन, गतिविधि और लक्ष्यों पर विचार करता है, जो ISSN और ACSM की सिफारिशों पर आधारित है।',
+                content_faq_title: 'सामान्य प्रश्न (FAQ)',
+                content_faq_q1: 'इतना प्रोटीन क्यों खाएं?',
+                content_faq_a1: 'प्रोटीन चयापचय और तृप्ति को बढ़ाता है। यह वजन घटाने के दौरान मांसपेशियों के नुकसान को रोकता है।',
+                content_faq_q2: 'क्या मुझे प्रोटीन पाउडर चाहिए?',
+                content_faq_a2: 'नहीं। यदि आप भोजन से पर्याप्त प्रोटीन लेते हैं, तो सप्लीमेंट्स आवश्यक नहीं हैं। वे केवल सुविधा के लिए हैं।',
+                content_faq_q3: 'प्रोटीन खाने का सबसे अच्छा समय?',
+                content_faq_a3: 'कुल दैनिक मात्रा समय से अधिक महत्वपूर्ण है। लेकिन इसे 3-5 भोजन में बांटने से अवशोषण बेहतर होता है।'
+            },
+            'pl': {
+                title: 'Kalkulator Białka',
+                subtitle: 'Oblicz dzienne zapotrzebowanie na białko',
+                h2_config: 'Twoje Dane',
+                lbl_weight: 'Waga',
+                lbl_activity: 'Aktywność',
+                act_sedentary: 'Siedzący (mało/brak ćwiczeń)',
+                act_light: 'Lekki (1-3 dni/tydzień)',
+                act_moderate: 'Umiarkowany (3-5 dni/tydzień)',
+                act_active: 'Aktywny (6-7 dni/tydzień)',
+                act_extreme: 'Ekstremalny (2 treningi/dzień)',
+                lbl_goal: 'Twój Cel',
+                goal_loss: 'Redukcja',
+                goal_maintain: 'Utrzymanie',
+                goal_gain: 'Masa',
+                lbl_bodyfat: '% Tłuszczu (Opcjonalnie)',
+                hint_accuracy: 'Białko jest kluczowe dla regeneracji mięśni. Odpowiednie spożycie pomaga utrzymać masę mięśniową.',
+                h2_results: 'Twoje Zapotrzebowanie',
+                recommended: 'Zalecane',
+                lbl_daily: 'Dzienne Białko',
+                desc_protein: 'Optymalne spożycie na podstawie wagi i celu.',
+                lbl_perkg: 'Białko na kg masy',
+                desc_perkg: 'Zakres referencyjny zalecany przez ISSN.',
+                h3_distribution: 'Rozkład Dnia',
+                meal_breakfast: 'Śniadanie',
+                meal_lunch: 'Obiad',
+                meal_snack: 'Przekąska / Po treningu',
+                meal_dinner: 'Kolacja',
+                h3_sources: 'Źródła (na 100g)',
+                food_chicken: 'Pierś z kurczaka',
+                food_fish: 'Łosoś',
+                food_egg: 'Jajka',
+                food_beef: 'Chuda wołowina',
+                unit_daily: 'Dzienne spożycie (g)',
+                unit_g: 'g',
+                unit_day: 'dzień',
+                unit_kg: 'kg masy ciała',
+                content_about_title: 'O Kalkulatorze',
+                content_about_p1: 'To narzędzie pomaga naukowo oszacować zapotrzebowanie na białko. Białko jest kluczowe dla mięśni i uczucia sytości.',
+                content_about_p2: 'Nasz algorytm uwzględnia wagę, aktywność i cele, opierając się na zaleceniach ISSN i ACSM.',
+                content_faq_title: 'FAQ',
+                content_faq_q1: 'Dlaczego tyle białka?',
+                content_faq_a1: 'Białko przyspiesza metabolizm i daje uczucie sytości. Zapobiega utracie mięśni podczas diety i buduje je podczas masy.',
+                content_faq_q2: 'Czy potrzebuję odżywki białkowej?',
+                content_faq_a2: 'Nie. Jeśli dostarczasz białko z jedzenia, suplementy nie są konieczne. Są tylko dla wygody.',
+                content_faq_q3: 'Kiedy najlepiej jeść białko?',
+                content_faq_a3: 'Całkowita ilość jest ważniejsza niż czas. Jednak rozłożenie go na 3-5 posiłków poprawia wchłanianie.'
+            }
+        };
+
+        // Application State
+        const App = {
+            unit: 'metric', // metric (kg) or imperial (lbs)
+            goal: 'maintain', // loss, maintain, gain
+            lang: 'zh-CN',
+
+            init: function() {
+                // 1. Check URL for lang parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlLang = urlParams.get('lang');
+                
+                // 2. Set lang from URL, or localStorage, or Default
+                if (urlLang && i18n[urlLang]) {
+                    this.lang = urlLang;
+                } else if (localStorage.getItem('preferred_lang') && i18n[localStorage.getItem('preferred_lang')]) {
+                    this.lang = localStorage.getItem('preferred_lang');
+                } else {
+                    // Detect browser language
+                    const browserLang = navigator.language.split('-')[0]; // 'en-US' -> 'en'
+                    if (browserLang === 'zh') {
+                         this.lang = navigator.language === 'zh-TW' ? 'zh-TW' : 'zh-CN';
+                    } else if (i18n[browserLang]) {
+                        this.lang = browserLang;
+                    }
+                }
+                
+                // Update Select Element
+                const langSelector = document.getElementById('lang-selector');
+                if(langSelector) langSelector.value = this.lang;
+
+                // Apply settings
+                this.setLang(this.lang, false); // false = don't push state on init to avoid replacing history unnecessarily if it matches
+                this.loadTheme();
+                Calculator.calculate();
+            },
+
+            setUnit: function(unit) {
+                this.unit = unit;
+                
+                // Update Buttons
+                document.getElementById('btn-metric').className = unit === 'metric' 
+                    ? "px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white transition-all"
+                    : "px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all";
+                
+                document.getElementById('btn-imperial').className = unit === 'imperial'
+                    ? "px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white transition-all"
+                    : "px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all";
+
+                // Update Label
+                document.getElementById('unit-weight').innerText = unit === 'metric' ? '(kg)' : '(lbs)';
+                
+                // Convert current input value roughly for UX
+                const input = document.getElementById('input-weight');
+                if(input.value) {
+                    if(unit === 'imperial') {
+                        input.value = Math.round(input.value * 2.20462);
+                    } else {
+                        input.value = Math.round(input.value / 2.20462);
+                    }
+                }
+
+                Calculator.calculate();
+            },
+
+            setGoal: function(goal) {
+                this.goal = goal;
+                
+                // Update UI classes
+                ['loss', 'maintain', 'gain'].forEach(g => {
+                    const btn = document.getElementById('btn-' + g);
+                    if(g === goal) {
+                        btn.classList.add('active');
+                        btn.classList.remove('text-slate-600');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                Calculator.calculate();
+            },
+
+            setLang: function(lang, pushState = true) {
+                this.lang = lang;
+                localStorage.setItem('preferred_lang', lang);
+
+                // Update URL parameter
+                if (pushState) {
+                    try {
+                        const url = new URL(window.location);
+                        url.searchParams.set('lang', lang);
+                        window.history.pushState({}, '', url);
+                    } catch (e) {
+                        console.warn('URL update skipped due to sandbox environment');
+                    }
+                }
+
+                const texts = i18n[lang] || i18n['zh-CN'];
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(texts[key]) el.innerText = texts[key];
+                });
+                
+                // Update HTML lang attribute
+                document.documentElement.lang = lang;
+            },
+
+            toggleTheme: function() {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.theme = 'light';
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.theme = 'dark';
+                }
+            },
+
+            loadTheme: function() {
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+        };
+
+        // Calculator Logic
+        const Calculator = {
+            factors: {
+                sedentary: 1.0,  // Base g/kg
+                light: 1.2,
+                moderate: 1.4,
+                active: 1.7,
+                extreme: 2.0
+            },
+            goalModifiers: {
+                loss: 0.3,    // Need more protein when cutting
+                maintain: 0.0,
+                gain: 0.4     // Need surplus for building
+            },
+
+            calculate: function() {
+                const weightInput = parseFloat(document.getElementById('input-weight').value);
+                const activityKey = document.getElementById('input-activity').value;
+                
+                if(!weightInput || weightInput <= 0) {
+                    this.resetResults();
+                    return;
+                }
+
+                // Convert to kg if imperial
+                let weightKg = weightInput;
+                if(App.unit === 'imperial') {
+                    weightKg = weightInput / 2.20462;
+                }
+
+                // Base calculation
+                let multiplier = this.factors[activityKey];
+                
+                // Goal adjustment
+                multiplier += this.goalModifiers[App.goal];
+
+                // Calculate Total
+                const totalProtein = Math.round(weightKg * multiplier);
+                
+                // Update UI
+                this.animateValue('res-protein', totalProtein);
+                document.getElementById('res-perkg').innerText = multiplier.toFixed(1);
+
+                // Update Meal Distribution (Approximate)
+                const b = Math.round(totalProtein * 0.25); // 25%
+                const l = Math.round(totalProtein * 0.35); // 35%
+                const s = Math.round(totalProtein * 0.10); // 10%
+                const d = totalProtein - (b + l + s);      // Remainder
+
+                document.getElementById('res-breakfast').innerText = `${b}g`;
+                document.getElementById('res-lunch').innerText = `${l}g`;
+                document.getElementById('res-snack').innerText = `${s}g`;
+                document.getElementById('res-dinner').innerText = `${d}g`;
+            },
+
+            animateValue: function(id, end) {
+                const obj = document.getElementById(id);
+                if(obj.innerText === '--') obj.innerText = 0;
+                const start = parseInt(obj.innerText);
+                if (start === end) return;
+                
+                // Simple update for now
+                obj.innerText = end;
+            },
+
+            resetResults: function() {
+                document.getElementById('res-protein').innerText = '--';
+                document.getElementById('res-perkg').innerText = '--';
+                ['breakfast', 'lunch', 'snack', 'dinner'].forEach(id => {
+                    document.getElementById('res-' + id).innerText = '--';
+                });
+            }
+        };
+
+        // Initialize on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            App.init();
+        });
+
+    </script>
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>

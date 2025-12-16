@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="category" content="health">
+    <meta name="description" content="Calculate calories burned during various physical activities including auto racing, reverse crunches, and side planks. 计算赛车、反向卷腹和侧平板支撑消耗的卡路里。">
+    <title>Calories Burned Calculator | 卡路里消耗计算器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#10b981', hover: '#059669' },
+                        secondary: { DEFAULT: '#6366f1', hover: '#4f46e5' },
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f0fdf4', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+
+            .result-row {
+                @apply flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0;
+            }
+            
+            .tab-btn {
+                @apply px-4 py-1.5 rounded-full text-xs font-bold transition-all border;
+            }
+            .tab-btn.active {
+                @apply bg-secondary text-white border-secondary;
+            }
+            .tab-btn.inactive {
+                @apply bg-transparent text-slate-500 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800;
+            }
+        }
+
+        .weight-input-wrapper { position: relative; }
+        .weight-input-wrapper::after {
+            content: 'kg';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .weight-input-wrapper input { padding-right: 32px; }
+
+        .time-input-wrapper { position: relative; }
+        .time-input-wrapper::after {
+            content: 'min';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .time-input-wrapper input { padding-right: 32px; }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-green-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-300 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa fa-fire"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Calories Burned Calculator</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">卡路里消耗计算器</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文 (简体)</option>
+                    <option value="zh-TW">🇨🇳 中文 (繁體)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-emerald-500 p-6 space-y-5">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                        <i class="fa fa-sliders text-emerald-500"></i> <span data-i18n="h2_config">计算参数</span>
+                    </h2>
+
+                    <!-- Activity Type -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_activity">活动类型</label>
+                        <select id="input-activity" class="input-field" onchange="Calculator.updateMETValue()">
+                            <option value="auto-racing" data-i18n="activity_auto_racing">赛车比赛</option>
+                            <option value="reverse-crunches" data-i18n="activity_reverse_crunches">反向卷腹</option>
+                            <option value="side-plank" data-i18n="activity_side_plank">侧平板支撑</option>
+                        </select>
+                    </div>
+
+                    <!-- Weight -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_weight">体重</label>
+                        <div class="weight-input-wrapper">
+                            <input type="number" id="input-weight" class="input-field font-mono" value="70" min="30" max="250" placeholder="70" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <!-- Duration -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_duration">持续时间</label>
+                        <div class="time-input-wrapper">
+                            <input type="number" id="input-duration" class="input-field font-mono" value="30" min="1" max="1440" placeholder="30" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <!-- Intensity -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_intensity">强度</label>
+                        <select id="input-intensity" class="input-field" onchange="Calculator.updateMETValue()">
+                            <option value="low" data-i18n="intensity_low">低</option>
+                            <option value="moderate" data-i18n="intensity_moderate" selected>中等</option>
+                            <option value="high" data-i18n="intensity_high">高</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Info Box based on Activity -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 border border-blue-100 dark:border-blue-800/30 text-sm text-blue-800 dark:text-blue-300">
+                    <i class="fa fa-info-circle mr-1"></i> <span id="activity-hint">...</span>
+                </div>
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <!-- Results Header -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center flex-wrap gap-4">
+                        <h2 class="font-bold text-slate-700 dark:text-slate-200" data-i18n="h2_results">消耗结果</h2>
+                        <div class="flex bg-slate-200 dark:bg-slate-800 rounded-full p-1" id="timeframe-selector">
+                            <button class="tab-btn active" onclick="App.setTimeframe('total')" data-i18n="tf_total">总计</button>
+                            <button class="tab-btn inactive" onclick="App.setTimeframe('per-minute')" data-i18n="tf_per_minute">每分钟</button>
+                            <button class="tab-btn inactive" onclick="App.setTimeframe('per-hour')" data-i18n="tf_per_hour">每小时</button>
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-grow flex flex-col gap-8 animate-fade-in">
+                        
+                        <!-- Main Result Card -->
+                        <div class="rounded-2xl border-2 border-emerald-500/30 p-6 md:p-8 text-center bg-emerald-50/30 dark:bg-emerald-900/10">
+                            <h3 class="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2" data-i18n="result_title">预估卡路里消耗</h3>
+                            <div class="text-5xl md:text-6xl font-bold font-mono text-emerald-700 dark:text-emerald-400 mb-2" id="main-result">0</div>
+                            <p class="text-sm text-slate-500 dark:text-slate-400" data-i18n="result_subtitle">基于您的体重、活动类型和持续时间</p>
+                        </div>
+
+                        <!-- Additional Metrics -->
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 text-center border border-slate-200 dark:border-slate-700">
+                                <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1" data-i18n="metric_met">代谢当量 (MET)</div>
+                                <div class="text-xl font-bold text-slate-700 dark:text-slate-200 font-mono" id="metric-met">0</div>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 text-center border border-slate-200 dark:border-slate-700">
+                                <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1" data-i18n="metric_equivalent">等效活动</div>
+                                <div class="text-sm md:text-base font-bold text-slate-700 dark:text-slate-200" id="metric-equivalent">-</div>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 text-center border border-slate-200 dark:border-slate-700">
+                                <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1" data-i18n="metric_weight_loss">脂肪消耗</div>
+                                <div class="text-xl font-bold text-slate-700 dark:text-slate-200 font-mono" id="metric-weight-loss">0g</div>
+                            </div>
+                        </div>
+
+                        <!-- Activity Comparison Chart -->
+                        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                            <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4" data-i18n="comparison_title">不同活动消耗对比 (30分钟/70kg)</h4>
+                            <div class="h-48">
+                                <canvas id="comparison-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Disclaimer -->
+                        <p class="text-center text-xs text-slate-400" data-i18n="disclaimer_calc">*计算结果基于代谢当量(MET)公式估算，实际消耗可能因个体差异而有所不同。</p>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Comprehensive Guide Section -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Feature Introduction -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">卡路里消耗指南</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_how">如何计算卡路里消耗？</h3>
+                                <p data-i18n="guide_p_how">卡路里消耗基于代谢当量（MET）计算，公式为：卡路里 = MET值 × 体重(kg) × 时间(小时)。MET值越高，活动强度越大，消耗的卡路里越多。</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_factors">影响消耗的因素</h3>
+                                <p data-i18n="guide_p_factors">
+                                    除了活动类型和强度外，体重、年龄、性别、健康状况和运动效率都会影响实际卡路里消耗。一般来说，体重越大、活动强度越高，消耗的卡路里就越多。
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_activities">不同活动的MET值</h3>
+                                <p data-i18n="guide_p_activities">静坐的MET值约为1.0，步行(3.5mph)约为3.5，跑步(6mph)约为8.3，而高强度间歇训练可达到10.0以上。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-question-circle text-primary"></i> <span data-i18n="faq_title">常见问题 (FAQ)</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q1">计算器的结果准确吗？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a1">这是基于标准化MET值的估算。实际消耗可能因个人代谢率、肌肉量和活动效率而有所不同，误差范围通常在10-20%之间。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q2">如何提高卡路里消耗？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a2">增加活动强度、延长活动时间、增加体重或选择更高强度的活动都能提高卡路里消耗。间歇训练是提高消耗效率的有效方法。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q3">赛车为什么会消耗卡路里？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a3">赛车需要高度集中注意力、持续的身体协调和应对G力，这些都会消耗能量。专业赛车手在一场比赛中可消耗500-1000卡路里。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-slate-400 py-6">
+            <p>&copy; <span id="year"></span> Calories Burned Calculator. <span data-i18n="footer_text">计算结果仅供参考，不构成医疗建议。</span></p>
+        </footer>
+
+    </div>
+
+    <!-- 结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "卡路里消耗计算器", subtitle: "运动与活动能量消耗估算",
+                h2_config: "计算参数",
+                lbl_activity: "活动类型",
+                activity_auto_racing: "赛车比赛",
+                activity_reverse_crunches: "反向卷腹",
+                activity_side_plank: "侧平板支撑",
+                lbl_weight: "体重 (公斤)",
+                lbl_duration: "持续时间 (分钟)",
+                lbl_intensity: "强度",
+                intensity_low: "低",
+                intensity_moderate: "中等",
+                intensity_high: "高",
+                h2_results: "消耗结果",
+                tf_total: "总计",
+                tf_per_minute: "每分钟",
+                tf_per_hour: "每小时",
+                result_title: "预估卡路里消耗",
+                result_subtitle: "基于您的体重、活动类型和持续时间",
+                metric_met: "代谢当量 (MET)",
+                metric_equivalent: "等效活动",
+                metric_weight_loss: "脂肪消耗",
+                comparison_title: "不同活动消耗对比 (30分钟/70kg)",
+                disclaimer_calc: "*计算结果基于代谢当量(MET)公式估算，实际消耗可能因个体差异而有所不同。",
+                guide_title: "卡路里消耗指南",
+                guide_h_how: "如何计算卡路里消耗？",
+                guide_p_how: "卡路里消耗基于代谢当量（MET）计算，公式为：卡路里 = MET值 × 体重(kg) × 时间(小时)。MET值越高，活动强度越大，消耗的卡路里越多。",
+                guide_h_factors: "影响消耗的因素",
+                guide_p_factors: "除了活动类型和强度外，体重、年龄、性别、健康状况和运动效率都会影响实际卡路里消耗。一般来说，体重越大、活动强度越高，消耗的卡路里就越多。",
+                guide_h_activities: "不同活动的MET值",
+                guide_p_activities: "静坐的MET值约为1.0，步行(3.5mph)约为3.5，跑步(6mph)约为8.3，而高强度间歇训练可达到10.0以上。",
+                faq_title: "常见问题 (FAQ)",
+                faq_q1: "计算器的结果准确吗？",
+                faq_a1: "这是基于标准化MET值的估算。实际消耗可能因个人代谢率、肌肉量和活动效率而有所不同，误差范围通常在10-20%之间。",
+                faq_q2: "如何提高卡路里消耗？",
+                faq_a2: "增加活动强度、延长活动时间、增加体重或选择更高强度的活动都能提高卡路里消耗。间歇训练是提高消耗效率的有效方法。",
+                faq_q3: "赛车为什么会消耗卡路里？",
+                faq_a3: "赛车需要高度集中注意力、持续的身体协调和应对G力，这些都会消耗能量。专业赛车手在一场比赛中可消耗500-1000卡路里。",
+                footer_text: "计算结果仅供参考，不构成医疗建议。",
+                hint_auto_racing: "赛车是一项高强度的体力和脑力活动，需要高度集中注意力和身体控制能力。职业车手在比赛中心率可达到160-180次/分钟。",
+                hint_reverse_crunches: "反向卷腹是一种有效的腹部训练动作，主要锻炼下腹部肌肉。保持正确姿势可以最大化效果并减少腰部压力。",
+                hint_side_plank: "侧平板支撑主要锻炼核心肌群，特别是腹斜肌。它有助于改善姿势和核心稳定性，对预防腰背疼痛有帮助。"
+            },
+            'zh-TW': {
+                title: "卡路里消耗計算器", subtitle: "運動與活動能量消耗估算",
+                h2_config: "計算參數",
+                lbl_activity: "活動類型",
+                activity_auto_racing: "賽車比賽",
+                activity_reverse_crunches: "反向卷腹",
+                activity_side_plank: "側平板支撐",
+                lbl_weight: "體重 (公斤)",
+                lbl_duration: "持續時間 (分鐘)",
+                lbl_intensity: "強度",
+                intensity_low: "低",
+                intensity_moderate: "中等",
+                intensity_high: "高",
+                h2_results: "消耗結果",
+                tf_total: "總計",
+                tf_per_minute: "每分鐘",
+                tf_per_hour: "每小時",
+                result_title: "預估卡路里消耗",
+                result_subtitle: "基於您的體重、活動類型和持續時間",
+                metric_met: "代謝當量 (MET)",
+                metric_equivalent: "等效活動",
+                metric_weight_loss: "脂肪消耗",
+                comparison_title: "不同活動消耗對比 (30分鐘/70kg)",
+                disclaimer_calc: "*計算結果基於代謝當量(MET)公式估算，實際消耗可能因個體差異而有所不同。",
+                guide_title: "卡路里消耗指南",
+                guide_h_how: "如何計算卡路里消耗？",
+                guide_p_how: "卡路里消耗基於代謝當量（MET）計算，公式為：卡路里 = MET值 × 體重(kg) × 時間(小時)。MET值越高，活動強度越大，消耗的卡路里越多。",
+                guide_h_factors: "影響消耗的因素",
+                guide_p_factors: "除了活動類型和強度外，體重、年齡、性別、健康狀況和運動效率都會影響實際卡路里消耗。一般來說，體重越大、活動強度越高，消耗的卡路里就越多。",
+                guide_h_activities: "不同活動的MET值",
+                guide_p_activities: "靜坐的MET值約為1.0，步行(3.5mph)約為3.5，跑步(6mph)約為8.3，而高強度間歇訓練可達到10.0以上。",
+                faq_title: "常見問題 (FAQ)",
+                faq_q1: "計算器的結果準確嗎？",
+                faq_a1: "這是基於標準化MET值的估算。實際消耗可能因個人代謝率、肌肉量和活動效率而有所不同，誤差範圍通常在10-20%之間。",
+                faq_q2: "如何提高卡路里消耗？",
+                faq_a2: "增加活動強度、延長活動時間、增加體重或選擇更高強度的活動都能提高卡路里消耗。間歇訓練是提高消耗效率的有效方法。",
+                faq_q3: "賽車為什麼會消耗卡路里？",
+                faq_a3: "賽車需要高度集中注意力、持續的身體協调和應對G力，這些都會消耗能量。專業賽車手在一場比賽中可消耗500-1000卡路里。",
+                footer_text: "計算結果僅供參考，不構成醫療建議。",
+                hint_auto_racing: "賽車是一項高強度的體力和腦力活動，需要高度集中注意力和身體控制能力。職業車手在比賽中心率可達到160-180次/分鐘。",
+                hint_reverse_crunches: "反向卷腹是一種有效的腹部訓練動作，主要鍛煉下腹肌肉。保持正確姿勢可以最大化效果並減少腰部壓力。",
+                hint_side_plank: "側平板支撐主要鍛煉核心肌群，特別是腹斜肌。它有助於改善姿勢和核心穩定性，對預防腰背疼痛有幫助。"
+            },
+            'en': {
+                title: "Calories Burned Calculator", subtitle: "Activity Energy Expenditure Estimator",
+                h2_config: "Calculation Parameters",
+                lbl_activity: "Activity Type",
+                activity_auto_racing: "Auto Racing",
+                activity_reverse_crunches: "Reverse Crunches",
+                activity_side_plank: "Side Plank",
+                lbl_weight: "Weight (kg)",
+                lbl_duration: "Duration (minutes)",
+                lbl_intensity: "Intensity",
+                intensity_low: "Low",
+                intensity_moderate: "Moderate",
+                intensity_high: "High",
+                h2_results: "Burn Results",
+                tf_total: "Total",
+                tf_per_minute: "Per Minute",
+                tf_per_hour: "Per Hour",
+                result_title: "Estimated Calories Burned",
+                result_subtitle: "Based on your weight, activity type and duration",
+                metric_met: "Metabolic Equivalent (MET)",
+                metric_equivalent: "Equivalent Activity",
+                metric_weight_loss: "Fat Burned",
+                comparison_title: "Activity Comparison (30 min/70kg)",
+                disclaimer_calc: "*Results are estimates based on MET formulas. Actual burn may vary by individual.",
+                guide_title: "Calorie Burning Guide",
+                guide_h_how: "How is calorie burn calculated?",
+                guide_p_how: "Calorie burn is calculated using Metabolic Equivalent of Task (MET) values: Calories = MET value × weight(kg) × time(hours). Higher MET values indicate more intense activities and greater calorie burn.",
+                guide_h_factors: "Factors affecting calorie burn",
+                guide_p_factors: "In addition to activity type and intensity, weight, age, gender, fitness level, and exercise efficiency all influence actual calorie burn. Generally, heavier individuals and higher intensity activities result in more calories burned.",
+                guide_h_activities: "MET values for different activities",
+                guide_p_activities: "Sitting has a MET value of about 1.0, walking (3.5mph) about 3.5, running (6mph) about 8.3, and high-intensity interval training can reach 10.0 or higher.",
+                faq_title: "Frequently Asked Questions",
+                faq_q1: "How accurate is this calculator?",
+                faq_a1: "This is an estimate based on standardized MET values. Actual burn can vary by individual metabolism, muscle mass, and activity efficiency, typically within a 10-20% range.",
+                faq_q2: "How can I increase calorie burn?",
+                faq_a2: "Increasing activity intensity, duration, body weight, or choosing higher intensity activities can all boost calorie burn. Interval training is an effective way to improve burn efficiency.",
+                faq_q3: "Why does auto racing burn calories?",
+                faq_a3: "Auto racing requires intense concentration, constant physical coordination, and coping with G-forces, all of which consume energy. Professional drivers can burn 500-1000 calories during a single race.",
+                footer_text: "Results are for informational purposes only and not medical advice.",
+                hint_auto_racing: "Auto racing is a high-intensity physical and mental activity requiring intense focus and physical control. Professional drivers can reach heart rates of 160-180 BPM during races.",
+                hint_reverse_crunches: "Reverse crunches are an effective abdominal exercise that primarily targets the lower abs. Maintaining proper form maximizes results and reduces lower back strain.",
+                hint_side_plank: "Side planks primarily work the core muscles, especially the obliques. They help improve posture and core stability, aiding in preventing lower back pain."
+            },
+            'es': {
+                title: "Calculadora de Calorías Quemadas", subtitle: "Estimador de Gasto Energético por Actividad",
+                h2_config: "Parámetros de Cálculo",
+                lbl_activity: "Tipo de Actividad",
+                activity_auto_racing: "Carreras de Automóviles",
+                activity_reverse_crunches: "Crunches Inversos",
+                activity_side_plank: "Plancha Lateral",
+                lbl_weight: "Peso (kg)",
+                lbl_duration: "Duración (minutos)",
+                lbl_intensity: "Intensidad",
+                intensity_low: "Baja",
+                intensity_moderate: "Moderada",
+                intensity_high: "Alta",
+                h2_results: "Resultados de Quema",
+                tf_total: "Total",
+                tf_per_minute: "Por Minuto",
+                tf_per_hour: "Por Hora",
+                result_title: "Calorías Quemadas Estimadas",
+                result_subtitle: "Basado en tu peso, tipo de actividad y duración",
+                metric_met: "Equivalente Metabólico (MET)",
+                metric_equivalent: "Actividad Equivalente",
+                metric_weight_loss: "Grasa Quemada",
+                comparison_title: "Comparación de Actividades (30 min/70kg)",
+                disclaimer_calc: "*Los resultados son estimaciones basadas en fórmulas MET. La quema real puede variar por individuo.",
+                guide_title: "Guía de Quema de Calorías",
+                guide_h_how: "¿Cómo se calcula la quema de calorías?",
+                guide_p_how: "La quema de calorías se calcula usando valores de Equivalente Metabólico de Tarea (MET): Calorías = valor MET × peso(kg) × tiempo(horas). Valores MET más altos indican actividades más intensas y mayor quema de calorías.",
+                guide_h_factors: "Factores que afectan la quema de calorías",
+                guide_p_factors: "Además del tipo de actividad e intensidad, el peso, edad, género, nivel de condición física y eficiencia en el ejercicio influyen en la quema real de calorías. Generalmente, personas más pesadas y actividades de mayor intensidad resultan en más calorías quemadas.",
+                guide_h_activities: "Valores MET para diferentes actividades",
+                guide_p_activities: "Sentarse tiene un valor MET de aproximadamente 1.0, caminar (5.6 km/h) alrededor de 3.5, correr (9.7 km/h) alrededor de 8.3, y el entrenamiento intervalado de alta intensidad puede alcanzar 10.0 o más.",
+                faq_title: "Preguntas Frecuentes",
+                faq_q1: "¿Qué tan preciso es esta calculadora?",
+                faq_a1: "Esta es una estimación basada en valores MET estandarizados. La quema real puede variar según el metabolismo individual, masa muscular y eficiencia en la actividad, generalmente dentro de un rango del 10-20%.",
+                faq_q2: "¿Cómo puedo aumentar la quema de calorías?",
+                faq_a2: "Aumentar la intensidad, duración, peso corporal o elegir actividades de mayor intensidad puede aumentar la quema de calorías. El entrenamiento intervalado es una forma efectiva de mejorar la eficiencia de la quema.",
+                faq_q3: "¿Por qué las carreras de automóviles queman calorías?",
+                faq_a3: "Las carreras de automóviles requieren concentración intensa, coordinación física constante y manejo de fuerzas G, lo que consume energía. Los pilotos profesionales pueden quemar 500-1000 calorías durante una sola carrera.",
+                footer_text: "Los resultados son solo para fines informativos y no constituyen asesoramiento médico.",
+                hint_auto_racing: "Las carreras de automóviles son una actividad física y mental de alta intensidad que requiere concentración extrema y control físico. Los pilotos profesionales pueden alcanzar ritmos cardíacos de 160-180 lpm durante las carreras.",
+                hint_reverse_crunches: "Los crunches inversos son un ejercicio abdominal efectivo que se enfoca principalmente en los abdominales inferiores. Mantener una forma adecuada maximiza los resultados y reduce la tensión en la espalda baja.",
+                hint_side_plank: "Las planchas laterales trabajan principalmente los músculos del core, especialmente los oblicuos. Ayudan a mejorar la postura y la estabilidad del core, contribuyendo a prevenir dolores en la espalda baja."
+            },
+            'ru': {
+                title: "Калькулятор сжигаемых калорий", subtitle: "Оценка энергопотребления при физической активности",
+                h2_config: "Параметры расчета",
+                lbl_activity: "Тип активности",
+                activity_auto_racing: "Автомобильные гонки",
+                activity_reverse_crunches: "Обратные жимы",
+                activity_side_plank: "Боковой планк",
+                lbl_weight: "Вес (кг)",
+                lbl_duration: "Длительность (минуты)",
+                lbl_intensity: "Интенсивность",
+                intensity_low: "Низкая",
+                intensity_moderate: "Средняя",
+                intensity_high: "Высокая",
+                h2_results: "Результаты сжигания",
+                tf_total: "Всего",
+                tf_per_minute: "За минуту",
+                tf_per_hour: "За час",
+                result_title: "Оценка сжигаемых калорий",
+                result_subtitle: "На основе вашего веса, типа активности и длительности",
+                metric_met: "Метаболическое эквивалент (MET)",
+                metric_equivalent: "Эквивалентная активность",
+                metric_weight_loss: "Сожженный жир",
+                comparison_title: "Сравнение активностей (30 мин/70кг)",
+                disclaimer_calc: "*Результаты являются оценками на основе формул MET. Фактическое сжигание может отличаться у разных людей.",
+                guide_title: "Руководство по сжиганию калорий",
+                guide_h_how: "Как рассчитывается сжигание калорий?",
+                guide_p_how: "Сжигание калорий рассчитывается с использованием метаболических эквивалентов (MET): Калории = значение MET × вес(кг) × время(часы). Более высокие значения MET указывают на более интенсивные активности и большее сжигание калорий.",
+                guide_h_factors: "Факторы, влияющие на сжигание калорий",
+                guide_p_factors: "Помимо типа и интенсивности активности, на фактическое сжигание калорий влияют вес, возраст, пол, уровень физической подготовки и эффективность выполнения упражнений. Как правило, более тяжелые люди и более интенсивные активности приводят к большему сжиганию калорий.",
+                guide_h_activities: "Значения MET для разных активностей",
+                guide_p_activities: "Сидение имеет MET значение около 1.0, ходьба (5.6 км/ч) около 3.5, бег (9.7 км/ч) около 8.3, а интенсивные интервальные тренировки могут достигать 10.0 и выше.",
+                faq_title: "Часто задаваемые вопросы",
+                faq_q1: "Насколько точен этот калькулятор?",
+                faq_a1: "Это оценка на основе стандартизированных значений MET. Фактическое сжигание может отличаться в зависимости от индивидуального метаболизма, мышечной массы и эффективности активности, обычно в диапазоне 10-20%.",
+                faq_q2: "Как можно увеличить сжигание калорий?",
+                faq_a2: "Повышение интенсивности, продолжительности, веса тела или выбор более интенсивных активностей может увеличить сжигание калорий. Интервальные тренировки являются эффективным способом улучшения эффективности сжигания.",
+                faq_q3: "Почему автомобильные гонки сжигают калории?",
+                faq_a3: "Автомобильные гонки требуют интенсивного концентрации, постоянной физической координации и противодействия силе G, что потребляет энергию. Профессиональные гонщики могут сжечь 500-1000 калорий за одну гонку.",
+                footer_text: "Результаты предназначены только для ознакомления и не являются медицинским советом.",
+                hint_auto_racing: "Автомобильные гонки — это интенсивная физическая и умственная деятельность, требующая максимальной концентрации и физического контроля. Сердечный ритм профессиональных гонщиков может достигать 160-180 ударов в минуту во время гонок.",
+                hint_reverse_crunches: "Обратные жимы — эффективное упражнение для пресса, главным образом воздействующее на нижнюю часть пресса. Сохранение правильной формы максимизирует результат и снижает нагрузку на нижнюю часть спины.",
+                hint_side_plank: "Боковой планк главным образом тренирует ядровые мышцы, особенно косые мышцы живота. Она помогает улучшить осанку и стабильность ядра, способствуя предотвращению боли внизу спины."
+            },
+            'hi': {
+                title: "कैलोरी जलन कैलकुलेटर", subtitle: "गतिविधि ऊर्जा व्यय अनुमानक",
+                h2_config: "गणना पैरामीटर",
+                lbl_activity: "गतिविधि का प्रकार",
+                activity_auto_racing: "ऑटो रेसिंग",
+                activity_reverse_crunches: "रिवर्स क्रंच",
+                activity_side_plank: "साइड प्लैंक",
+                lbl_weight: "वजन (किग्रा)",
+                lbl_duration: "अवधि (मिनट)",
+                lbl_intensity: "तीव्रता",
+                intensity_low: "कम",
+                intensity_moderate: "मध्यम",
+                intensity_high: "उच्च",
+                h2_results: "जलन के परिणाम",
+                tf_total: "कुल",
+                tf_per_minute: "प्रति मिनट",
+                tf_per_hour: "प्रति घंटे",
+                result_title: "अनुमानित कैलोरी जली",
+                result_subtitle: "आपके वजन, गतिविधि प्रकार और अवधि के आधार पर",
+                metric_met: "चयापचय समकक्ष (MET)",
+                metric_equivalent: "समकक्ष गतिविधि",
+                metric_weight_loss: "जला हुआ वसा",
+                comparison_title: "विभिन्न गतिविधियों की तुलना (30 मिनट/70किग्रा)",
+                disclaimer_calc: "*परिणाम MET सूत्रों के आधार पर अनुमानित हैं। वास्तविक जलन व्यक्तिगत रूप से भिन्न हो सकती है।",
+                guide_title: "कैलोरी जलन गाइड",
+                guide_h_how: "कैलोरी जलन कैसे गणना की जाती है?",
+                guide_p_how: "कैलोरी जलन की गणना कार्य के चयापचय समकक्ष (MET) मानों का उपयोग करके की जाती है: कैलोरी = MET मान × वजन(किग्रा) × समय(घंटे)। उच्च MET मान अधिक तीव्र गतिविधियों और अधिक कैलोरी जलन को इंगित करते हैं।",
+                guide_h_factors: "कैलोरी जलन को प्रभावित करने वाले कारक",
+                guide_p_factors: "गतिविधि के प्रकार और तीव्रता के अलावा, वजन, आयु, लिंग, फिटनेस स्तर और व्यायाम दक्षता सभी वास्तविक कैलोरी जलन को प्रभावित करते हैं। आमतौर पर, अधिक भारी व्यक्ति और उच्च तीव्रता वाली गतिविधियों से अधिक कैलोरी जलती हैं।",
+                guide_h_activities: "विभिन्न गतिविधियों के लिए MET मान",
+                guide_p_activities: "बैठे रहने का MET मान लगभग 1.0 होता है, चलने का (5.6 किमी/घंटा) लगभग 3.5, दौड़ने का (9.7 किमी/घंटा) लगभग 8.3, और उच्च तीव्रता वाले अंतराल प्रशिक्षण 10.0 या उससे अधिक तक पहुंचा सकता है।",
+                faq_title: "अक्सर पूछे जाने वाले प्रश्न",
+                faq_q1: "यह कैलकुलेटर कितना सटीक है?",
+                faq_a1: "यह मानकीकृत MET मानों के आधार पर एक अनुमान है। वास्तविक जलन व्यक्तिगत चयापचय, मांसपेशी द्रव्यमान और गतिविधि दक्षता के अनुसार भिन्न हो सकती है, आमतौर पर 10-20% की सीमा में।",
+                faq_q2: "मैं कैलोरी जलन कैसे बढ़ा सकता हूं?",
+                faq_a2: "गतिविधि की तीव्रता बढ़ाना, अवधि बढ़ाना, शारीरिक वजन बढ़ाना या उच्च तीव्रता वाली गतिविधियों का चयन करना सभी कैलोरी जलन को बढ़ा सकते हैं। अंतराल प्रशिक्षण जलन दक्षता को सुधारने का एक प्रभावी तरीका है।",
+                faq_q3: "ऑटो रेसिंग क्यों कैलोरी जलती है?",
+                faq_a3: "ऑटो रेसिंग में तीव्र एकाग्रता, लगातार शारीरिक समन्वय और G-बलों का सामना करने की आवश्यकता होती है, जो सभी ऊर्जा की खपत करते हैं। पेशेवर ड्राइवर एक ही रेस के दौरान 500-1000 कैलोरी जला सकते हैं।",
+                footer_text: "परिणाम केवल सूचनात्मक उद्देश्यों के लिए हैं और चिकित्सा सलाह का构成 नहीं करते हैं।",
+                hint_auto_racing: "ऑटो रेसिंग एक उच्च तीव्रता वाली शारीरिक और मानसिक गतिविधि है जिसमें अत्यधिक ध्यान और शारीरिक नियंत्रण की आवश्यकता होती है। रेस के दौरान पेशेवर ड्राइवरों का हृदय गति 160-180 बीपीएम तक पहुंचा सकता है।",
+                hint_reverse_crunches: "रिवर्स क्रंच एक प्रभावी पेट व्यायाम है जो मुख्य रूप से निचले पेट की मांसपेशियों को लक्षित करता है। उचित फॉर्म बनाए रखने से परिणाम अधिकतम होते हैं और निचली पीठ पर तनाव कम होता है।",
+                hint_side_plank: "साइड प्लैंक मुख्य रूप से कोर मांसपेशियों को काम करता है, विशेष रूप से ओब्लिक्स। यह मुद्रा और कोर स्थिरता को सुधारने में मदद करता है, जिससे निचली पीठ में दर्द को रोकने में मदद मिलती है।"
+            },
+            'pl': {
+                title: "Kalkulator Spalonych Kalorii", subtitle: "Estymator zużycia energii podczas aktywności",
+                h2_config: "Parametry Obliczeń",
+                lbl_activity: "Rodzaj Aktywności",
+                activity_auto_racing: "Wyścigi Samochodowe",
+                activity_reverse_crunches: "Przeciwne Skruchy",
+                activity_side_plank: "Pchana Boczna",
+                lbl_weight: "Waga (kg)",
+                lbl_duration: "Czas trwania (minuty)",
+                lbl_intensity: "Intensywność",
+                intensity_low: "Niska",
+                intensity_moderate: "Średnia",
+                intensity_high: "Wysoka",
+                h2_results: "Wyniki Spalania",
+                tf_total: "Razem",
+                tf_per_minute: "Na Minutę",
+                tf_per_hour: "Na Godzinę",
+                result_title: "Szacowane Spalone Kalorie",
+                result_subtitle: "Według Twojej wagi, rodzaju aktywności i czasu trwania",
+                metric_met: "Równoważnik Metaboliczny (MET)",
+                metric_equivalent: "Równoważna Aktywność",
+                metric_weight_loss: "Spalone Tłuszcz",
+                comparison_title: "Porównanie Aktywności (30 min/70kg)",
+                disclaimer_calc: "*Wyniki to szacunki oparte na formułach MET. Rzeczywiste spalanie może się różnić w zależności od osoby.",
+                guide_title: "Przewodnik po Spalaniu Kalorii",
+                guide_h_how: "Jak obliczyć spalanie kalorii?",
+                guide_p_how: "Spalanie kalorii oblicza się za pomocą wartości Metabolicznego Równoważnika Zadania (MET): Kalorie = wartość MET × waga(kg) × czas(godziny). Wyższe wartości MET wskazują na bardziej intensywne aktywności i większe spalanie kalorii.",
+                guide_h_factors: "Czynniki wpływające na spalanie kalorii",
+                guide_p_factors: "Oprócz rodzaju i intensywności aktywności, wpływ na rzeczywiste spalanie kalorii mają waga, wiek, płeć, poziom kondycji i efektywność ćwiczeń. Zazwyczaj osoby cięższe i bardziej intensywne aktywności powodują większe spalanie kalorii.",
+                guide_h_activities: "Wartości MET dla różnych aktywności",
+                guide_p_activities: "Siedzenie ma wartość MET około 1.0, chodzenie (5.6 km/h) około 3.5, bieganie (9.7 km/h) około 8.3, a intensywne treningi interwałowe mogą osiągnąć 10.0 lub więcej.",
+                faq_title: "Często Zadawane Pytania",
+                faq_q1: "Jak dokładny jest ten kalkulator?",
+                faq_a1: "Jest to szacunek oparty na standaryzowanych wartościach MET. Rzeczywiste spalanie może się różnić w zależności od indywidualnego metabolizmu, masy mięśniowej i efektywności aktywności, zwykle w zakresie 10-20%.",
+                faq_q2: "Jak zwiększyć spalanie kalorii?",
+                faq_a2: "Zwiększenie intensywności, czasu trwania, wagi ciała lub wybór bardziej intensywnych aktywności może zwiększyć spalanie kalorii. Treningi interwałowe to skuteczna metoda poprawy efektywności spalania.",
+                faq_q3: "Dlaczego wyścigi samochodowe spalają kalorie?",
+                faq_a3: "Wyścigi samochodowe wymagają intensywnego skupienia, stałej koordynacji fizycznej i radzenia sobie z siłami G, co zużywa energię. Zawodowi kierowcy mogą spalć 500-1000 kalorii podczas jednej wyścigi.",
+                footer_text: "Wyniki służą tylko do celów informacyjnych i nie stanowią porady medycznej.",
+                hint_auto_racing: "Wyścigi samochodowe to intensywna aktywność fizyczna i umysłowa wymagająca ekstremalnego skupienia i kontroli fizycznej. Tętno zawodowych kierowców może osiągnąć 160-180 uderzeń na minutę podczas wyścigów.",
+                hint_reverse_crunches: "Przeciwne skruchy to skuteczne ćwiczenie brzucha, głównie docelowe dla dolnych mięśni brzucha. Prawidłowa postawa maksymalizuje rezultaty i zmniejsza obciążenie dolnej części pleców.",
+                hint_side_plank: "Pchana boczna głównie trenuje mięśnie rdzenia, zwłaszcza mięśnie po bokach brzucha. Pomaga poprawić postawę i stabilność rdzenia, co sprzyja zapobieganiu bólu w dolnej części pleców."
+            }
+        };
+
+        // --- URL Parameter Handling ---
+        const URLHandler = {
+            getParameter(name) {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get(name);
+            },
+            
+            setParameter(name, value) {
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set(name, value);
+                window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
+            }
+        };
+
+        // --- Localization Functions ---
+        const Localization = {
+            init() {
+                // Check URL for language parameter
+                const langFromUrl = URLHandler.getParameter('lang');
+                if (langFromUrl && i18nData[langFromUrl]) {
+                    document.getElementById('lang-selector').value = langFromUrl;
+                } else {
+                    // Set default language based on browser settings
+                    const browserLang = navigator.language.split('-')[0];
+                    const supportedLangs = Object.keys(i18nData);
+                    const defaultLang = supportedLangs.includes(browserLang) ? browserLang : 'en';
+                    document.getElementById('lang-selector').value = defaultLang;
+                    URLHandler.setParameter('lang', defaultLang);
+                }
+                
+                this.updateTextContent();
+                this.setupListener();
+            },
+            
+            setupListener() {
+                document.getElementById('lang-selector').addEventListener('change', (e) => {
+                    const newLang = e.target.value;
+                    URLHandler.setParameter('lang', newLang);
+                    this.updateTextContent();
+                    Calculator.calculate(); // Recalculate to update any language-dependent results
+                });
+            },
+            
+            updateTextContent() {
+                const currentLang = document.getElementById('lang-selector').value;
+                const langData = i18nData[currentLang];
+                
+                if (!langData) return;
+                
+                // Update all elements with data-i18n attribute
+                document.querySelectorAll('[data-i18n]').forEach(element => {
+                    const key = element.getAttribute('data-i18n');
+                    if (langData[key]) {
+                        element.textContent = langData[key];
+                    }
+                });
+                
+                // Update activity hint
+                const activityType = document.getElementById('input-activity').value;
+                const hintKey = `hint_${activityType}`;
+                if (langData[hintKey]) {
+                    document.getElementById('activity-hint').textContent = langData[hintKey];
+                }
+            }
+        };
+
+        // --- Theme Toggle ---
+        const ThemeManager = {
+            init() {
+                // Check for saved theme preference or use system preference
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+                
+                // Setup toggle listener
+                document.getElementById('mode-toggle').addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        // --- Calculator Engine ---
+        const Calculator = {
+            // MET values for different activities and intensities
+            MET_VALUES: {
+                'auto-racing': { low: 4.5, moderate: 7.0, high: 9.5 },
+                'reverse-crunches': { low: 3.5, moderate: 5.0, high: 7.0 },
+                'side-plank': { low: 2.5, moderate: 3.8, high: 5.0 }
+            },
+            
+            // Equivalent activities for reference
+            EQUIVALENT_ACTIVITIES: {
+                'auto-racing': {
+                    low: 'Walking (3.5 mph)',
+                    moderate: 'Swimming (slow)',
+                    high: 'Jogging (5 mph)'
+                },
+                'reverse-crunches': {
+                    low: 'Yoga',
+                    moderate: 'Cycling (10 mph)',
+                    high: 'Aerobics'
+                },
+                'side-plank': {
+                    low: 'Stretching',
+                    moderate: 'Walking (2.5 mph)',
+                    high: 'Golf (walking)'
+                }
+            },
+            
+            // Initialize chart
+            chart: null,
+            
+            init() {
+                this.updateMETValue();
+                this.calculate();
+                this.initComparisonChart();
+            },
+            
+            updateMETValue() {
+                const activity = document.getElementById('input-activity').value;
+                const intensity = document.getElementById('input-intensity').value;
+                const metValue = this.MET_VALUES[activity][intensity];
+                
+                document.getElementById('metric-met').textContent = metValue.toFixed(1);
+                
+                // Update equivalent activity
+                const equivalent = this.EQUIVALENT_ACTIVITIES[activity][intensity];
+                document.getElementById('metric-equivalent').textContent = equivalent;
+                
+                // Update activity hint
+                const currentLang = document.getElementById('lang-selector').value;
+                const langData = i18nData[currentLang];
+                const hintKey = `hint_${activity}`;
+                if (langData && langData[hintKey]) {
+                    document.getElementById('activity-hint').textContent = langData[hintKey];
+                }
+                
+                this.calculate();
+            },
+            
+            calculate() {
+                const weight = parseFloat(document.getElementById('input-weight').value) || 0;
+                const duration = parseFloat(document.getElementById('input-duration').value) || 0;
+                const activity = document.getElementById('input-activity').value;
+                const intensity = document.getElementById('input-intensity').value;
+                
+                if (weight <= 0 || duration <= 0) return;
+                
+                // Get MET value
+                const metValue = this.MET_VALUES[activity][intensity];
+                
+                // Calculate calories burned (MET × weight kg × time hours)
+                const calories = metValue * weight * (duration / 60);
+                
+                // Calculate fat burned (1g fat = 9 calories)
+                const fatBurned = calories / 9;
+                
+                // Update results based on current timeframe
+                this.updateResults(calories, fatBurned, duration);
+            },
+            
+            updateResults(totalCalories, fatBurned, duration) {
+                const activeTimeframe = document.querySelector('#timeframe-selector .tab-btn.active').textContent;
+                
+                let displayValue;
+                switch(activeTimeframe) {
+                    case document.querySelector('[data-i18n="tf_per_minute"]').textContent:
+                        displayValue = totalCalories / duration;
+                        break;
+                    case document.querySelector('[data-i18n="tf_per_hour"]').textContent:
+                        displayValue = totalCalories / (duration / 60);
+                        break;
+                    default: // total
+                        displayValue = totalCalories;
+                }
+                
+                // Update main result
+                document.getElementById('main-result').textContent = Math.round(displayValue) + ' kcal';
+                
+                // Update fat burned metric
+                document.getElementById('metric-weight-loss').textContent = Math.round(fatBurned) + 'g';
+            },
+            
+            initComparisonChart() {
+                const ctx = document.getElementById('comparison-chart').getContext('2d');
+                
+                // Sample data for 30 minutes with 70kg weight
+                const data = {
+                    labels: [
+                        i18nData[Localization.currentLang()].activity_auto_racing || "Auto Racing",
+                        i18nData[Localization.currentLang()].activity_reverse_crunches || "Reverse Crunches",
+                        i18nData[Localization.currentLang()].activity_side_plank || "Side Plank",
+                        "Walking",
+                        "Jogging"
+                    ],
+                    datasets: [{
+                        label: i18nData[Localization.currentLang()].result_title || "Calories Burned",
+                        data: [245, 175, 133, 122, 290],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(99, 102, 241, 0.7)',
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(249, 115, 22, 0.7)',
+                            'rgba(239, 68, 68, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(16, 185, 129)',
+                            'rgb(99, 102, 241)',
+                            'rgb(59, 130, 246)',
+                            'rgb(249, 115, 22)',
+                            'rgb(239, 68, 68)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+                
+                const config = {
+                    type: 'bar',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                };
+                
+                this.chart = new Chart(ctx, config);
+                
+                // Update chart when theme changes
+                document.getElementById('mode-toggle').addEventListener('click', () => {
+                    this.updateChartTheme();
+                });
+            },
+            
+            updateChartTheme() {
+                if (!this.chart) return;
+                
+                const isDark = document.documentElement.classList.contains('dark');
+                const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                const textColor = isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+                
+                this.chart.options.scales.y.grid.color = gridColor;
+                this.chart.options.scales.y.ticks.color = textColor;
+                this.chart.options.scales.x.ticks.color = textColor;
+                this.chart.update();
+            }
+        };
+
+        // --- App Controller ---
+        const App = {
+            init() {
+                // Set current year in footer
+                document.getElementById('year').textContent = new Date().getFullYear();
+                
+                // Initialize components
+                ThemeManager.init();
+                Localization.init();
+                Calculator.init();
+                
+                // Setup timeframe selector
+                this.setupTimeframeSelector();
+            },
+            
+            setupTimeframeSelector() {
+                const buttons = document.querySelectorAll('#timeframe-selector .tab-btn');
+                buttons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        // Remove active class from all buttons
+                        buttons.forEach(btn => {
+                            btn.classList.remove('active');
+                            btn.classList.add('inactive');
+                        });
+                        
+                        // Add active class to clicked button
+                        button.classList.remove('inactive');
+                        button.classList.add('active');
+                        
+                        // Recalculate to update display based on new timeframe
+                        Calculator.calculate();
+                    });
+                });
+            },
+            
+            setTimeframe(timeframe) {
+                const buttons = document.querySelectorAll('#timeframe-selector .tab-btn');
+                buttons.forEach(button => {
+                    if (button.getAttribute('onclick').includes(timeframe)) {
+                        button.click();
+                    }
+                });
+            }
+        };
+
+        // --- Initialize App ---
+        document.addEventListener('DOMContentLoaded', () => {
+            App.init();
+        });
+    </script>
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

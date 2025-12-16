@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="category" content="health">
+    <meta name="description" content="肌酸剂量计算器 - 根据体重和性别计算最佳肌酸摄入量，支持多种语言和单位切换。">
+    <title>肌酸剂量计算器 | Creatine Dosage Calculator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#2563eb', hover: '#1d4ed8' },
+                        secondary: { DEFAULT: '#f59e0b', hover: '#d97706' },
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#eff6ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+
+            .result-row {
+                @apply flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0;
+            }
+            
+            .tab-btn {
+                @apply px-4 py-1.5 rounded-full text-xs font-bold transition-all border;
+            }
+            .tab-btn.active {
+                @apply bg-primary text-white border-primary;
+            }
+            .tab-btn.inactive {
+                @apply bg-transparent text-slate-500 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800;
+            }
+            
+            .gender-btn {
+                @apply flex-1 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium transition-all hover:bg-slate-50 dark:hover:bg-slate-700;
+            }
+            .gender-btn.active {
+                @apply bg-primary text-white border-primary hover:bg-primary;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-orange-200 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20">
+                    <i class="fa fa-flask"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">肌酸剂量计算器</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">科学计算每日肌酸摄入量</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文 (简体)</option>
+                    <option value="zh-TW">🇨🇳 中文 (繁體)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-primary p-6 space-y-5">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                            <i class="fa fa-sliders text-primary"></i> <span data-i18n="h2_config">个人数据</span>
+                        </h2>
+                        <!-- Unit Toggle -->
+                        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                            <button class="px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white" id="btn-metric" onclick="App.setUnit('metric')">kg</button>
+                            <button class="px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white" id="btn-imperial" onclick="App.setUnit('imperial')">lbs</button>
+                        </div>
+                    </div>
+
+                    <!-- 1. Gender -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_gender">性别</label>
+                        <div class="flex gap-2">
+                            <button class="gender-btn active" id="btn-male" onclick="App.setGender('male')">
+                                <i class="fa fa-male mr-1"></i> <span data-i18n="gender_male">男</span>
+                            </button>
+                            <button class="gender-btn" id="btn-female" onclick="App.setGender('female')">
+                                <i class="fa fa-female mr-1"></i> <span data-i18n="gender_female">女</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Weight -->
+                    <div>
+                        <label class="label-text"><span data-i18n="lbl_weight">体重</span> <span id="unit-weight" class="text-xs text-slate-400">(kg)</span></label>
+                        <input type="number" id="input-weight" class="input-field font-mono" value="70" placeholder="70" oninput="Calculator.calculate()">
+                    </div>
+
+                    <!-- 3. Usage Phase -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_phase">使用阶段</label>
+                        <select id="input-phase" class="input-field" onchange="Calculator.calculate()">
+                            <option value="loading" data-i18n="phase_loading">加载期 (Loading Phase)</option>
+                            <option value="maintenance" data-i18n="phase_maintenance">维持期 (Maintenance)</option>
+                        </select>
+                    </div>
+
+                    <!-- 4. Activity Level -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_activity">活动水平</label>
+                        <select id="input-activity" class="input-field" onchange="Calculator.calculate()">
+                            <option value="moderate" data-i18n="act_moderate">中等活动</option>
+                            <option value="high" data-i18n="act_high">高强度训练</option>
+                            <option value="elite" data-i18n="act_elite">精英运动员</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 border border-blue-100 dark:border-blue-800/30 text-sm text-blue-800 dark:text-blue-300">
+                    <i class="fa fa-info-circle mr-1"></i> <span data-i18n="hint_accuracy">肌酸是研究最充分的运动补剂之一，适当剂量有助于提高高强度运动表现。</span>
+                </div>
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <!-- Header -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg" data-i18n="h2_results">您的肌酸摄入建议</h2>
+                        <div class="text-xs font-mono text-slate-400 bg-white dark:bg-slate-800 px-3 py-1 rounded border border-slate-200 dark:border-slate-700">
+                            每日剂量 (克)
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-grow flex flex-col gap-8 animate-fade-in">
+                        
+                        <!-- Main Numbers -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Daily Dosage -->
+                            <div class="rounded-2xl border-2 border-primary/30 p-6 space-y-2 bg-blue-50/50 dark:bg-blue-900/10 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 bg-primary text-white text-[10px] px-3 py-1 rounded-bl-lg font-bold" data-i18n="daily_dosage">每日剂量</div>
+                                <h4 class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider text-center" data-i18n="lbl_recommended">推荐摄入量</h4>
+                                <div class="text-center py-4">
+                                    <span class="text-4xl md:text-5xl font-bold font-mono text-slate-800 dark:text-white" id="res-dosage">5</span>
+                                    <span class="text-sm text-slate-500 block mt-1">克 / 天</span>
+                                </div>
+                                <p class="text-center text-xs text-slate-500 dark:text-slate-400" data-i18n="desc_dosage">基于您的体重和活动水平的最佳剂量。</p>
+                            </div>
+
+                            <!-- Loading Dosage -->
+                            <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 space-y-2 bg-slate-50/50 dark:bg-slate-800/30">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center" data-i18n="lbl_loading">加载期剂量</h4>
+                                <div class="text-center py-4">
+                                    <span class="text-3xl md:text-4xl font-bold font-mono text-slate-600 dark:text-slate-300" id="res-loading">20</span>
+                                    <span class="text-sm text-slate-500 block mt-1">克 / 天</span>
+                                </div>
+                                <p class="text-center text-xs text-slate-400" data-i18n="desc_loading">分 4 次摄入，持续 5-7 天，快速饱和肌肉肌酸储备。</p>
+                            </div>
+                        </div>
+
+                        <!-- Dosage Schedule -->
+                        <div>
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4" data-i18n="h3_schedule">服用时间表</h3>
+                            <div class="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <div class="space-y-3">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center mt-0.5 flex-shrink-0">
+                                            <i class="fa fa-clock-o text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-sm" data-i18n="schedule_morning">早晨</div>
+                                            <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="schedule_morning_desc">训练日：早餐后服用 2.5g，训练前 30 分钟再服用 2.5g</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center mt-0.5 flex-shrink-0">
+                                            <i class="fa fa-clock-o text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-sm" data-i18n="schedule_post">训练后</div>
+                                            <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="schedule_post_desc">训练后立即服用，可与蛋白质或碳水化合物一起摄入以提高吸收</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center mt-0.5 flex-shrink-0">
+                                            <i class="fa fa-clock-o text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-sm" data-i18n="schedule_evening">晚上</div>
+                                            <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="schedule_evening_desc">非训练日：可在早餐和晚餐后各服用一次</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Comprehensive Guide Section -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Feature Introduction -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">肌酸指南</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_what">什么是肌酸？</h3>
+                                <p data-i18n="guide_p_what">肌酸是一种天然存在于肌肉中的物质，也可以通过膳食（如红肉和鱼类）摄入。它有助于在高强度运动中快速再生ATP（三磷酸腺苷），从而提高运动表现和肌肉力量。</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_benefits">肌酸的好处</h3>
+                                <p data-i18n="guide_p_benefits">
+                                    科学研究表明，肌酸补充可以：<br>
+                                    - 增加高强度运动表现<br>
+                                    - 促进肌肉力量和爆发力提升<br>
+                                    - 支持肌肉体积增长<br>
+                                    - 加速运动后恢复
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_types">肌酸类型</h3>
+                                <p data-i18n="guide_p_types">最常见且研究最多的是一水肌酸（Creatine Monohydrate），性价比最高且效果明确。其他形式如肌酸乙酯、盐酸肌酸等并没有被证明比一水肌酸更有效。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-question-circle text-primary"></i> <span data-i18n="faq_title">常见问题 (FAQ)</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q1">肌酸会导致脱水或肾脏问题吗？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a1">健康人群在适当剂量下使用肌酸是安全的。研究表明，肌酸不会对健康肾脏造成损害。建议每天饮用足够的水（至少2-3升）。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q2">需要进行加载期吗？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a2">加载期（每天20克，持续5-7天）可以快速提高肌肉肌酸储备，但并非必需。如果不进行加载期，只需每天服用3-5克，几周后也能达到相同的肌酸水平。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q3">女性可以服用肌酸吗？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a3">是的，肌酸对女性同样有效且安全。研究表明，女性服用肌酸可以提高运动表现并增加肌肉力量，而不会导致男性化特征。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q4">什么时候服用肌酸最好？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a4">研究表明，训练前后服用肌酸效果相似。关键是保持每日规律摄入，可与碳水化合物或蛋白质一起服用以提高吸收。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-slate-400 py-6">
+            <p>&copy; <span id="year"></span> 肌酸剂量计算器 | Creatine Dosage Calculator. <span data-i18n="footer_text">本工具仅供参考，不构成医疗建议。</span></p>
+        </footer>
+
+    </div>
+
+    <!-- 结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "肌酸剂量计算器", subtitle: "科学计算每日肌酸摄入量",
+                h2_config: "个人数据",
+                lbl_gender: "性别", gender_male: "男", gender_female: "女",
+                lbl_weight: "体重", lbl_phase: "使用阶段", lbl_activity: "活动水平",
+                phase_loading: "加载期 (Loading Phase)", phase_maintenance: "维持期 (Maintenance)",
+                act_moderate: "中等活动", act_high: "高强度训练", act_elite: "精英运动员",
+                hint_accuracy: "肌酸是研究最充分的运动补剂之一，适当剂量有助于提高高强度运动表现。",
+                h2_results: "您的肌酸摄入建议",
+                daily_dosage: "每日剂量", lbl_recommended: "推荐摄入量", desc_dosage: "基于您的体重和活动水平的最佳剂量。",
+                lbl_loading: "加载期剂量", desc_loading: "分 4 次摄入，持续 5-7 天，快速饱和肌肉肌酸储备。",
+                h3_schedule: "服用时间表",
+                schedule_morning: "早晨", schedule_morning_desc: "训练日：早餐后服用 2.5g，训练前 30 分钟再服用 2.5g",
+                schedule_post: "训练后", schedule_post_desc: "训练后立即服用，可与蛋白质或碳水化合物一起摄入以提高吸收",
+                schedule_evening: "晚上", schedule_evening_desc: "非训练日：可在早餐和晚餐后各服用一次",
+                guide_title: "肌酸指南",
+                guide_h_what: "什么是肌酸？", guide_p_what: "肌酸是一种天然存在于肌肉中的物质，也可以通过膳食（如红肉和鱼类）摄入。它有助于在高强度运动中快速再生ATP（三磷酸腺苷），从而提高运动表现和肌肉力量。",
+                guide_h_benefits: "肌酸的好处", guide_p_benefits: "科学研究表明，肌酸补充可以：<br>- 增加高强度运动表现<br>- 促进肌肉力量和爆发力提升<br>- 支持肌肉体积增长<br>- 加速运动后恢复",
+                guide_h_types: "肌酸类型", guide_p_types: "最常见且研究最多的是一水肌酸（Creatine Monohydrate），性价比最高且效果明确。其他形式如肌酸乙酯、盐酸肌酸等并没有被证明比一水肌酸更有效。",
+                faq_title: "常见问题 (FAQ)",
+                faq_q1: "肌酸会导致脱水或肾脏问题吗？", faq_a1: "健康人群在适当剂量下使用肌酸是安全的。研究表明，肌酸不会对健康肾脏造成损害。建议每天饮用足够的水（至少2-3升）。",
+                faq_q2: "需要进行加载期吗？", faq_a2: "加载期（每天20克，持续5-7天）可以快速提高肌肉肌酸储备，但并非必需。如果不进行加载期，只需每天服用3-5克，几周后也能达到相同的肌酸水平。",
+                faq_q3: "女性可以服用肌酸吗？", faq_a3: "是的，肌酸对女性同样有效且安全。研究表明，女性服用肌酸可以提高运动表现并增加肌肉力量，而不会导致男性化特征。",
+                faq_q4: "什么时候服用肌酸最好？", faq_a4: "研究表明，训练前后服用肌酸效果相似。关键是保持每日规律摄入，可与碳水化合物或蛋白质一起服用以提高吸收。",
+                footer_text: "本工具仅供参考，不构成医疗建议。"
+            },
+            'zh-TW': {
+                title: "肌酸劑量計算器", subtitle: "科學計算每日肌酸攝取量",
+                h2_config: "個人數據",
+                lbl_gender: "性別", gender_male: "男", gender_female: "女",
+                lbl_weight: "體重", lbl_phase: "使用階段", lbl_activity: "活動水平",
+                phase_loading: "加載期 (Loading Phase)", phase_maintenance: "維持期 (Maintenance)",
+                act_moderate: "中等活動", act_high: "高強度訓練", act_elite: "精英運動員",
+                hint_accuracy: "肌酸是研究最充分的運動補劑之一，適當劑量有助於提高高強度運動表現。",
+                h2_results: "您的肌酸攝取建議",
+                daily_dosage: "每日劑量", lbl_recommended: "推薦攝取量", desc_dosage: "基於您的體重和活動水平的最佳劑量。",
+                lbl_loading: "加載期劑量", desc_loading: "分 4 次攝取，持續 5-7 天，快速飽和肌肉肌酸儲備。",
+                h3_schedule: "服用時間表",
+                schedule_morning: "早晨", schedule_morning_desc: "訓練日：早餐後服用 2.5g，訓練前 30 分鐘再服用 2.5g",
+                schedule_post: "訓練後", schedule_post_desc: "訓練後立即服用，可與蛋白質或碳水化合物一起攝入以提高吸收",
+                schedule_evening: "晚上", schedule_evening_desc: "非訓練日：可在早餐和晚餐後各服用一次",
+                guide_title: "肌酸指南",
+                guide_h_what: "什麼是肌酸？", guide_p_what: "肌酸是一種天然存在於肌肉中的物質，也可以通過膳食（如紅肉和魚類）攝取。它有助於在高強度運動中快速再生ATP（三磷酸腺苷），從而提高運動表現和肌肉力量。",
+                guide_h_benefits: "肌酸的好處", guide_p_benefits: "科學研究表明，肌酸補充可以：<br>- 增加高強度運動表現<br>- 促進肌肉力量和爆發力提升<br>- 支持肌肉體積增長<br>- 加速運動後恢復",
+                guide_h_types: "肌酸類型", guide_p_types: "最常見且研究最多的是一水肌酸（Creatine Monohydrate），性價比最高且效果明確。其他形式如肌酸乙酯、鹽酸肌酸等並沒有被證明比一水肌酸更有效。",
+                faq_title: "常見問題 (FAQ)",
+                faq_q1: "肌酸會導致脫水或腎臟問題嗎？", faq_a1: "健康人群在適當劑量下使用肌酸是安全的。研究表明，肌酸不會對健康腎臟造成損害。建議每天飲用足夠的水（至少2-3升）。",
+                faq_q2: "需要進行加載期嗎？", faq_a2: "加載期（每天20克，持續5-7天）可以快速提高肌肉肌酸儲備，但並非必需。如果不進行加載期，只需每天服用3-5克，幾週後也能達到相同的肌酸水平。",
+                faq_q3: "女性可以服用肌酸嗎？", faq_a3: "是的，肌酸對女性同樣有效且安全。研究表明，女性服用肌酸可以提高運動表現並增加肌肉力量，而不會導致男性化特徵。",
+                faq_q4: "什麼時候服用肌酸最好？", faq_a4: "研究表明，訓練前後服用肌酸效果相似。關鍵是保持每日規律攝取，可與碳水化合物或蛋白質一起服用以提高吸收。",
+                footer_text: "本工具僅供參考，不構成醫療建議。"
+            },
+            'en': {
+                title: "Creatine Dosage Calculator", subtitle: "Scientific Daily Creatine Intake Calculator",
+                h2_config: "Your Information",
+                lbl_gender: "Gender", gender_male: "Male", gender_female: "Female",
+                lbl_weight: "Weight", lbl_phase: "Usage Phase", lbl_activity: "Activity Level",
+                phase_loading: "Loading Phase", phase_maintenance: "Maintenance Phase",
+                act_moderate: "Moderate Activity", act_high: "High Intensity Training", act_elite: "Elite Athlete",
+                hint_accuracy: "Creatine is one of the most researched supplements, with proper dosing enhancing high-intensity performance.",
+                h2_results: "Your Creatine Recommendations",
+                daily_dosage: "Daily Dosage", lbl_recommended: "Recommended Intake", desc_dosage: "Optimal dosage based on your weight and activity level.",
+                lbl_loading: "Loading Phase Dosage", desc_loading: "Divide into 4 doses, continue for 5-7 days to quickly saturate muscle creatine stores.",
+                h3_schedule: "Taking Schedule",
+                schedule_morning: "Morning", schedule_morning_desc: "Training days: 2.5g after breakfast, another 2.5g 30 minutes before training",
+                schedule_post: "Post-Workout", schedule_post_desc: "Take immediately after training, can be consumed with protein or carbohydrates to enhance absorption",
+                schedule_evening: "Evening", schedule_evening_desc: "Non-training days: can be taken after breakfast and dinner",
+                guide_title: "Creatine Guide",
+                guide_h_what: "What is Creatine?", guide_p_what: "Creatine is a naturally occurring substance in muscles, also obtained through diet (like red meat and fish). It helps rapidly regenerate ATP during high-intensity exercise, improving performance and muscle strength.",
+                guide_h_benefits: "Benefits of Creatine", guide_p_benefits: "Scientific research shows creatine supplementation can:<br>- Enhance high-intensity exercise performance<br>- Increase muscle strength and power<br>- Support muscle volume growth<br>- Accelerate post-workout recovery",
+                guide_h_types: "Creatine Types", guide_p_types: "The most common and researched form is Creatine Monohydrate, which offers the best value and proven effectiveness. Other forms like creatine ethyl ester or creatine HCl haven't been shown more effective than monohydrate.",
+                faq_title: "Frequently Asked Questions (FAQ)",
+                faq_q1: "Does creatine cause dehydration or kidney problems?", faq_a1: "Creatine is safe for healthy individuals at appropriate doses. Studies show it doesn't harm healthy kidneys. It's recommended to drink adequate water (at least 2-3 liters daily).",
+                faq_q2: "Is a loading phase necessary?", faq_a2: "A loading phase (20g daily for 5-7 days) rapidly increases muscle creatine stores but isn't essential. Without loading, simply taking 3-5g daily will achieve the same levels within a few weeks.",
+                faq_q3: "Can women take creatine?", faq_a3: "Yes, creatine is equally effective and safe for women. Research shows women can improve performance and increase muscle strength without developing masculine traits.",
+                faq_q4: "When is the best time to take creatine?", faq_a4: "Studies show similar benefits whether taken before or after training. The key is consistent daily intake, which can be consumed with carbohydrates or protein to enhance absorption.",
+                footer_text: "This tool is for informational purposes only and not medical advice."
+            },
+            'es': {
+                title: "Calculadora de Dosificación de Creatina", subtitle: "Calculadora científica de ingesta diaria de creatina",
+                h2_config: "Tu Información",
+                lbl_gender: "Género", gender_male: "Masculino", gender_female: "Femenino",
+                lbl_weight: "Peso", lbl_phase: "Fase de Uso", lbl_activity: "Nivel de Actividad",
+                phase_loading: "Fase de Carga", phase_maintenance: "Fase de Mantenimiento",
+                act_moderate: "Actividad Moderada", act_high: "Entrenamiento de Alta Intensidad", act_elite: "Atleta Élite",
+                hint_accuracy: "La creatina es uno de los suplementos más investigados, con dosificación adecuada mejora el rendimiento de alta intensidad.",
+                h2_results: "Tus Recomendaciones de Creatina",
+                daily_dosage: "Dosificación Diaria", lbl_recommended: "Ingesta Recomendada", desc_dosage: "Dosificación óptima según tu peso y nivel de actividad.",
+                lbl_loading: "Dosificación en Fase de Carga", desc_loading: "Dividir en 4 dosis, continuar durante 5-7 días para saturar rápidamente las reservas musculares de creatina.",
+                h3_schedule: "Horario de Toma",
+                schedule_morning: "Mañana", schedule_morning_desc: "Días de entrenamiento: 2.5g después del desayuno, otra 2.5g 30 minutos antes del entrenamiento",
+                schedule_post: "Después del Entrenamiento", schedule_post_desc: "Tomar inmediatamente después del entrenamiento, puede consumirse con proteínas o hidratos de carbono para mejorar la absorción",
+                schedule_evening: "Tarde", schedule_evening_desc: "Días sin entrenamiento: se puede tomar después del desayuno y la cena",
+                guide_title: "Guía de Creatina",
+                guide_h_what: "¿Qué es la creatina?", guide_p_what: "La creatina es una sustancia que se encuentra naturalmente en los músculos, también se obtiene a través de la dieta (como carne roja y pescado). Ayuda a regenerar rápidamente el ATP durante el ejercicio de alta intensidad, mejorando el rendimiento y la fuerza muscular.",
+                guide_h_benefits: "Beneficios de la creatina", guide_p_benefits: "La investigación científica muestra que la suplementación con creatina puede:<br>- Mejorar el rendimiento en ejercicios de alta intensidad<br>- Aumentar la fuerza y potencia muscular<br>- Apoyar el crecimiento del volumen muscular<br>- Acelerar la recuperación post-entrenamiento",
+                guide_h_types: "Tipos de creatina", guide_p_types: "La forma más común e investigada es la creatina monohidrato, que ofrece el mejor valor y efectividad probada. Otras formas como la creatina etil éster o creatina HCl no han demostrado ser más efectivas que el monohidrato.",
+                faq_title: "Preguntas Frecuentes (FAQ)",
+                faq_q1: "¿La creatina causa deshidratación o problemas renales?", faq_a1: "La creatina es segura para personas sanas en dosis apropiadas. Los estudios demuestran que no daña los riñones sanos. Se recomienda beber suficiente agua (al menos 2-3 litros al día).",
+                faq_q2: "¿Es necesaria una fase de carga?", faq_a2: "Una fase de carga (20g diarios durante 5-7 días) aumenta rápidamente las reservas musculares de creatina pero no es esencial. Sin carga, simplemente tomar 3-5g diarios alcanzará los mismos niveles en unas semanas.",
+                faq_q3: "¿Pueden las mujeres tomar creatina?", faq_a3: "Sí, la creatina es igualmente efectiva y segura para mujeres. Las investigaciones muestran que las mujeres pueden mejorar su rendimiento y aumentar la fuerza muscular sin desarrollar rasgos masculinos.",
+                faq_q4: "¿Cuándo es el mejor momento para tomar creatina?", faq_a4: "Los estudios muestran beneficios similares ya sea tomada antes o después del entrenamiento. La clave es la ingesta diaria constante, que puede consumirse con hidratos de carbono o proteínas para mejorar la absorción.",
+                footer_text: "Esta herramienta es solo para fines informativos y no constituye asesoramiento médico."
+            },
+            'ru': {
+                title: "Калькулятор дозировки креатина", subtitle: "Научный калькулятор суточного потребления креатина",
+                h2_config: "Ваши данные",
+                lbl_gender: "Пол", gender_male: "Мужской", gender_female: "Женский",
+                lbl_weight: "Вес", lbl_phase: "Фаза использования", lbl_activity: "Уровень активности",
+                phase_loading: "Загрузочная фаза", phase_maintenance: "Фаза поддержания",
+                act_moderate: "Умеренная активность", act_high: "Тренировки высокой интенсивности", act_elite: "Элита спортсменов",
+                hint_accuracy: "Креатин — один из самых изученных добавок, правильная дозировка улучшает показатели при высокоинтенсивных нагрузках.",
+                h2_results: "Рекомендации по креатину",
+                daily_dosage: "Суточная дозировка", lbl_recommended: "Рекомендуемое потребление", desc_dosage: "Оптимальная дозировка по вашему весу и уровню активности.",
+                lbl_loading: "Дозировка в загрузочной фазе", desc_loading: "Разделите на 4 дозы, продолжайте в течение 5-7 дней для быстрого насыщения мышц креатином.",
+                h3_schedule: "График приема",
+                schedule_morning: "Утро", schedule_morning_desc: "Дни тренировок: 2,5 г после завтрака, еще 2,5 г за 30 минут до тренировки",
+                schedule_post: "После тренировки", schedule_post_desc: "Принимать сразу после тренировки, можно с белком или углеводами для улучшения усвоения",
+                schedule_evening: "Вечер", schedule_evening_desc: "Дни без тренировок: можно принимать после завтрака и ужина",
+                guide_title: "Руководство по креатину",
+                guide_h_what: "Что такое креатин?", guide_p_what: "Креатин — это вещество, естественно присутствующее в мышцах, также поступает с едой (например, красное мясо и рыба). Он помогает быстро регенерировать АТФ при высокоинтенсивных нагрузках, улучшая показатели и мускульную силу.",
+                guide_h_benefits: "Польза креатина", guide_p_benefits: "Научные исследования показывают, что креатин может:<br>- Повышать результаты при высокоинтенсивных упражнениях<br>- Увеличивать мускульную силу и выносливость<br>- Содействовать росту мышечной массы<br>- Ускорять восстановление после тренировки",
+                guide_h_types: "Виды креатина", guide_p_types: "Самый распространенный и изученный вид — креатин моногидрат, он обладает наилучшим соотношением цена-эффективность и доказанной эффективностью. Другие формы, такие как креатин этил эфир или креатин ГХЛ, не показали большей эффективности, чем моногидрат.",
+                faq_title: "Часто задаваемые вопросы (FAQ)",
+                faq_q1: "Вызывает ли креатин обезвоживание или почечные проблемы?", faq_a1: "Креатин безопасен для здоровых людей при адекватных дозах. Исследования показывают, что он не повреждает здоровые почки. Рекомендуется пить достаточное количество воды (по крайней мере 2-3 литра в сутки).",
+                faq_q2: "Нужна ли загрузочная фаза?", faq_a2: "Загрузочная фаза (20 г в сутки в течение 5-7 дней) быстро увеличивает запасы креатина в мышцах, но не обязательна. Без загрузки достаточно принимать 3-5 г в сутки, и через несколько недель уровни достигнут тех же показателей.",
+                faq_q3: "Могут ли женщины принимать креатин?", faq_a3: "Да, креатин одинаково эффективен и безопасен для женщин. Исследования показывают, что женщины могут улучшить свои показатели и увеличить мускульную силу без развития мужских черт.",
+                faq_q4: "Когда лучше принимать креатин?", faq_a4: "Исследования показывают схожие преимущества, как при приеме до, так и после тренировки. Ключевым моментом является регулярное суточное потребление, которое можно сочетать с углеводами или белком для улучшения усвоения.",
+                footer_text: "Этот инструмент предназначен только для информационных целей и не является медицинским советом."
+            },
+            'hi': {
+                title: "क्रिएटिन डोसेज कैलकुलेटर", subtitle: "वैज्ञानिक रूप से दैनिक क्रिएटिन सेवन की गणना करें",
+                h2_config: "आपकी जानकारी",
+                lbl_gender: "लिंग", gender_male: "पुरुष", gender_female: "महिला",
+                lbl_weight: "वजन", lbl_phase: "उपयोग चरण", lbl_activity: "गतिविधि स्तर",
+                phase_loading: "लोडिंग चरण", phase_maintenance: "रखरखाव चरण",
+                act_moderate: "मध्यम गतिविधि", act_high: "उच्च तीव्रता वाला प्रशिक्षण", act_elite: "एलीट एथलीट",
+                hint_accuracy: "क्रिएटिन सबसे अधिक शोध किए गए पूरकों में से एक है, उचित खुराक उच्च तीव्रता वाले प्रदर्शन को बढ़ाती है।",
+                h2_results: "आपकी क्रिएटिन सिफारिशें",
+                daily_dosage: "दैनिक खुराक", lbl_recommended: "सिफारिशित सेवन", desc_dosage: "आपके वजन और गतिविधि स्तर के आधार पर इष्टतम खुराक।",
+                lbl_loading: "लोडिंग चरण की खुराक", desc_loading: "4 खुराकों में विभाजित करें, मांसपेशियों में क्रिएटिन भंडार को तेजी से भरने के लिए 5-7 दिनों तक जारी रखें।",
+                h3_schedule: "लेने का कार्यक्रम",
+                schedule_morning: "सुबह", schedule_morning_desc: "प्रशिक्षण दिन: नाश्ते के बाद 2.5g, प्रशिक्षण से 30 मिनट पहले फिर से 2.5g",
+                schedule_post: "व्यायाम के बाद", schedule_post_desc: "व्यायाम के तुरंत बाद लें, अवशोषण को बढ़ाने के लिए प्रोटीन या कार्बोहाइड्रेट के साथ ले सकते हैं",
+                schedule_evening: "शाम", schedule_evening_desc: "गैर-प्रशिक्षण दिन: नाश्ते और रात के खाने के बाद ले सकते हैं",
+                guide_title: "क्रिएटिन गाइड",
+                guide_h_what: "क्रिएटिन क्या है?", guide_p_what: "क्रिएटिन मांसपेशियों में प्राकृतिक रूप से मौजूद एक पदार्थ है, जो आहार (जैसे लाल मांस और मछली) के माध्यम से भी प्राप्त किया जा सकता है। यह उच्च तीव्रता वाले व्यायाम के दौरान एटीपी (ट्राइफॉस्फेट एडेनोसाइन) को तेजी से पुन: उत्पन्न करने में मदद करता है, जिससे प्रदर्शन और मांसपेशियों की शक्ति में सुधार होता है।",
+                guide_h_benefits: "क्रिएटिन के लाभ", guide_p_benefits: "वैज्ञानिक शोध से पता चला है कि क्रिएटिन सप्लीमेंटेशन कर सकता है:<br>- उच्च तीव्रता वाले व्यायाम प्रदर्शन को बढ़ाता है<br>- मांसपेशियों की शक्ति और शक्ति को बढ़ाता है<br>- मांसपेशी आयतन वृद्धि का समर्थन करता है<br>- व्यायाम के बाद पुनर्प्राप्ति को तेज करता है",
+                guide_h_types: "क्रिएटिन के प्रकार", guide_p_types: "सबसे सामान्य और सबसे अधिक शोध किया गया रूप क्रिएटिन मोनोहाइड्रेट है, जो सबसे अच्छा मूल्य और सिद्ध प्रभावशीलता प्रदान करता है। अन्य रूप जैसे क्रिएटिन एथिल एस्टर या क्रिएटिन एचसीएल को मोनोहाइड्रेट की तुलना में अधिक प्रभावी नहीं दिखाया गया है।",
+                faq_title: "अक्सर पूछे जाने वाले प्रश्न (FAQ)",
+                faq_q1: "क्या क्रिएटिन निर्जलीकरण या गुर्दे की समस्याओं का कारण बनता है?", faq_a1: "उचित खुराक में स्वस्थ व्यक्तियों के लिए क्रिएटिन सुरक्षित है। शोधों से पता चला है कि यह स्वस्थ गुर्दों को नुकसान नहीं पहुंचाता है। पर्याप्त पानी पीने की सलाह दी जाती है (प्रतिदिन कम से कम 2-3 लीटर)।",
+                faq_q2: "क्या लोडिंग चरण आवश्यक है?", faq_a2: "एक लोडिंग चरण (5-7 दिनों के लिए प्रतिदिन 20g) मांसपेशियों में क्रिएटिन भंडार को तेजी से बढ़ा सकता है लेकिन आवश्यक नहीं है। लोडिंग के बिना, केवल प्रतिदिन 3-5g लेने से कुछ हफ्तों के भीतर समान स्तर तक पहुंचा जा सकता है।",
+                faq_q3: "क्या महिलाएं क्रिएटिन ले सकती हैं?", faq_a3: "हां, क्रिएटिन महिलाओं के लिए भी उतना ही प्रभावी और सुरक्षित है। शोधों से पता चला है कि महिलाएं पुरुषों जैसे लक्षणों के बिना प्रदर्शन में सुधार और मांसपेशियों की शक्ति बढ़ा सकती हैं।",
+                faq_q4: "क्रिएटिन लेने का सबसे अच्छा समय कब है?", faq_a4: "शोधों से पता चला है कि प्रशिक्षण से पहले या बाद में लेने से समान लाभ होते हैं। कुंजी बिंदु नियमित दैनिक सेवन है, जिसे अवशोषण बढ़ाने के लिए कार्बोहाइड्रेट या प्रोटीन के साथ लिया जा सकता है।",
+                footer_text: "यह उपकरण केवल सूचनात्मक उद्देश्यों के लिए है और चिकित्सा सलाह का न होना चाहिए।"
+            },
+            'pl': {
+                title: "Kalkulator Dawki Kreatyny", subtitle: "Naukowy kalkulator dziennego spożycia kreatyny",
+                h2_config: "Twoje Dane",
+                lbl_gender: "Płeć", gender_male: "Mężczyzna", gender_female: "Kobieta",
+                lbl_weight: "Waga", lbl_phase: "Faza Użycia", lbl_activity: "Poziom Aktywności",
+                phase_loading: "Faza Ładowania", phase_maintenance: "Faza Utrzymania",
+                act_moderate: "Aktywność Umierna", act_high: "Treningi Wysokiej Intensywności", act_elite: "Athlete Elitarny",
+                hint_accuracy: "Kreatyna jest jednym z najbadanych suplementów, odpowiednia dawka poprawia wydajność w wysokointensywnych ćwiczeniach.",
+                h2_results: "Twoje Rekomendacje Kreatyny",
+                daily_dosage: "Dawkowanie Dzienne", lbl_recommended: "Rekomendowane Spożycie", desc_dosage: "Optymalna dawka według twojej wagi i poziomu aktywności.",
+                lbl_loading: "Dawka w Fazi Ładowania", desc_loading: "Podziel na 4 dawki, kontynuuj przez 5-7 dni, aby szybko nasycić magazyny kreatyny w mięśniach.",
+                h3_schedule: "Harmonogram Pobierania",
+                schedule_morning: "Rano", schedule_morning_desc: "Dni treningowe: 2,5g po śniadaniu, kolejne 2,5g 30 minut przed treningiem",
+                schedule_post: "Po Treningu", schedule_post_desc: "Bierz natychmiast po treningu, można brać z białkiem lub węglowodanami, aby poprawić wchłanianie",
+                schedule_evening: "Wieczorem", schedule_evening_desc: "Dni bez treningu: można brać po śniadaniu i kolacji",
+                guide_title: "Przewodnik po Kreatynie",
+                guide_h_what: "Co to jest kreatyna?", guide_p_what: "Kreatyna to substancja naturalnie występująca w mięśniach, otrzymywana również z pożywienia (np. mięso czerwone i ryba). Pomaga szybko regenerować ATP podczas wysokointensywnych ćwiczeń, poprawiając wydajność i siłę mięśniową.",
+                guide_h_benefits: "Korzyści z kreatyny", guide_p_benefits: "Badania naukowe pokazują, że suplementacja kreatyną może:<br>- Poprawić wydajność w wysokointensywnych ćwiczeniach<br>- Zwiększyć siłę i moc mięśniową<br>- Wspomóc wzrost objętości mięśni<br>- Przyspieszyć regenerację po treningu",
+                guide_h_types: "Rodzaje kreatyny", guide_p_types: "Najbardziej powszechny i najbadany rodzaj to kreatyna monohydrat, który oferuje najlepszą wartość i udowodnioną skuteczność. Inne formy, takie jak kreatyna etylu estr lub kreatyna HCl, nie okazały się bardziej skuteczne niż monohydrat.",
+                faq_title: "Często Zadawane Pytania (FAQ)",
+                faq_q1: "Czy kreatyna powoduje odwodnienie lub problemy z nerkami?", faq_a1: "Kreatyna jest bezpieczna dla zdrowych osób w odpowiednich dawkach. Badania pokazują, że nie szkodzi zdrowym nerkom. Poleca się picie odpowiedniej ilości wody (przynajmniej 2-3 litry dziennie).",
+                faq_q2: "Czy faza ładowania jest konieczna?", faq_a2: "Faza ładowania (20g dziennie przez 5-7 dni) szybko zwiększa zapasy kreatyny w mięśniach, ale nie jest konieczna. Bez ładowania wystarczy brać 3-5g dziennie, a po kilku tygodniach poziomy osiągną te same wartości.",
+                faq_q3: "Czy kobiety mogą brać kreatynę?", faq_a3: "Tak, kreatyna jest równie skuteczna i bezpieczna dla kobiet. Badania pokazują, że kobiety mogą poprawić swoje wyniki i zwiększyć siłę mięśniową bez rozwoju cech męskich.",
+                faq_q4: "Kiedy najlepiej brać kreatynę?", faq_a4: "Badania pokazują podobne korzyści zarówno podczas pobierania przed, jak i po treningu. Kluczowym elementem jest regularne dzienne spożycie, które można łączyć z węglowodanami lub białkiem, aby poprawić wchłanianie.",
+                footer_text: "Narzędzie to służy wyłącznie celom informacyjnym i nie stanowi porady medycznej."
+            }
+        };
+
+        // --- App State ---
+        const App = {
+            state: {
+                unit: 'metric',
+                gender: 'male',
+                lang: 'zh-CN'
+            },
+            
+            setUnit(unit) {
+                this.state.unit = unit;
+                document.getElementById('btn-metric').className = unit === 'metric' 
+                    ? 'px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' 
+                    : 'px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white';
+                
+                document.getElementById('btn-imperial').className = unit === 'imperial' 
+                    ? 'px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' 
+                    : 'px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white';
+                
+                document.getElementById('unit-weight').textContent = unit === 'metric' ? '(kg)' : '(lbs)';
+                Calculator.calculate();
+            },
+            
+            setGender(gender) {
+                this.state.gender = gender;
+                document.getElementById('btn-male').className = gender === 'male' ? 'gender-btn active' : 'gender-btn';
+                document.getElementById('btn-female').className = gender === 'female' ? 'gender-btn active' : 'gender-btn';
+                Calculator.calculate();
+            },
+            
+            setLang(lang) {
+                this.state.lang = lang;
+                document.getElementById('lang-selector').value = lang;
+                this.updateURL();
+                this.localize();
+            },
+            
+            updateURL() {
+                const url = new URL(window.location.href);
+                url.searchParams.set('lang', this.state.lang);
+                window.history.pushState({}, '', url);
+            },
+            
+            getLangFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                return lang && i18nData[lang] ? lang : 'zh-CN';
+            },
+            
+            localize() {
+                const langData = i18nData[this.state.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (langData[key]) {
+                        el.innerHTML = langData[key];
+                    }
+                });
+                document.documentElement.lang = this.state.lang;
+            },
+            
+            toggleDarkMode() {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('dark-mode', document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled');
+            },
+            
+            init() {
+                // Initialize language from URL or default
+                const lang = this.getLangFromURL();
+                this.setLang(lang);
+                
+                // Initialize dark mode
+                if (localStorage.getItem('dark-mode') === 'enabled' || 
+                    (!localStorage.getItem('dark-mode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                }
+                
+                // Set current year
+                document.getElementById('year').textContent = new Date().getFullYear();
+                
+                // Event listeners
+                document.getElementById('lang-selector').addEventListener('change', e => this.setLang(e.target.value));
+                document.getElementById('mode-toggle').addEventListener('click', () => this.toggleDarkMode());
+                
+                // Initial calculation
+                Calculator.calculate();
+            }
+        };
+
+        // --- Calculator Logic ---
+        const Calculator = {
+            calculate() {
+                // Get input values
+                const weight = parseFloat(document.getElementById('input-weight').value) || 0;
+                const phase = document.getElementById('input-phase').value;
+                const activity = document.getElementById('input-activity').value;
+                const unit = App.state.unit;
+                
+                // Convert weight to kg if in lbs
+                const weightKg = unit === 'imperial' ? weight * 0.453592 : weight;
+                
+                // Calculate dosage based on factors
+                let dosage;
+                if (phase === 'loading') {
+                    // Loading phase: 0.3g per kg of body weight
+                    dosage = Math.round(weightKg * 0.3);
+                } else {
+                    // Maintenance phase: base 3g + activity factor
+                    let activityFactor = 0;
+                    if (activity === 'high') activityFactor = 1;
+                    if (activity === 'elite') activityFactor = 2;
+                    dosage = 3 + activityFactor;
+                }
+                
+                // Set results
+                document.getElementById('res-dosage').textContent = dosage;
+                document.getElementById('res-loading').textContent = Math.round(weightKg * 0.3) || 20;
+            }
+        };
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

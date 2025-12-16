@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="category" content="health">
+    <meta name="description" content="Ultimate Health Calculator: Calories Burned & Weight Gain/TDEE Calculator. Support multi-language.">
+    <title>Ultimate Health Calculator | 全能健康计算器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#f97316', hover: '#ea580c', light: '#ffedd5' },
+                        gain: { DEFAULT: '#10b981', hover: '#059669', light: '#d1fae5' },
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#fff7ed', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(5px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+            .tab-btn {
+                @apply px-4 py-1.5 rounded-full text-xs font-bold transition-all border;
+            }
+            .tab-btn.active {
+                @apply bg-primary text-white border-primary;
+            }
+            .tab-btn.inactive {
+                @apply bg-transparent text-slate-500 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800;
+            }
+            .mode-switch {
+                @apply flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 border-2;
+            }
+            .mode-switch.active-burn {
+                @apply bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-500;
+            }
+            .mode-switch.active-gain {
+                @apply bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-500;
+            }
+            .mode-switch.inactive {
+                @apply bg-white dark:bg-slate-800 text-slate-400 border-transparent hover:bg-slate-50 dark:hover:bg-slate-700;
+            }
+            .info-card {
+                @apply p-5 rounded-xl border border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 hover:shadow-md transition-shadow;
+            }
+            .info-icon {
+                @apply w-10 h-10 rounded-full flex items-center justify-center text-lg mb-3;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div id="bg-blob-1" class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-orange-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen transition-colors duration-700"></div>
+        <div id="bg-blob-2" class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-200 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen transition-colors duration-700"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div id="logo-bg" class="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-orange-500/20 transition-all duration-500">
+                    <i id="logo-icon" class="fa fa-fire"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Ultimate Health Calc</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">全能健康计算器：消耗与增肌</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 max-w-[140px]">
+                    <option value="zh-CN">🇨🇳 简体中文</option>
+                    <option value="zh-TW">🇹🇼 繁體中文</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-primary p-6 space-y-5 transition-colors duration-500" id="input-card">
+                    
+                    <!-- Mode Switcher -->
+                    <div class="flex gap-2 mb-2">
+                        <button class="mode-switch active-burn" id="mode-btn-burn" onclick="App.setMode('burn')">
+                            <i class="fa fa-fire"></i> <span data-i18n="mode_burn">运动消耗</span>
+                        </button>
+                        <button class="mode-switch inactive" id="mode-btn-gain" onclick="App.setMode('gain')">
+                            <i class="fa fa-line-chart"></i> <span data-i18n="mode_gain">TDEE / 增重</span>
+                        </button>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                            <i class="fa fa-sliders"></i> <span data-i18n="h2_config">计算参数</span>
+                        </h2>
+                        <!-- Unit Toggle -->
+                        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                            <button class="px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white transition-all" id="btn-metric" onclick="App.setUnit('metric')">Metric</button>
+                            <button class="px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all" id="btn-imperial" onclick="App.setUnit('imperial')">Imperial</button>
+                        </div>
+                    </div>
+
+                    <!-- Common Input: Weight -->
+                    <div>
+                        <label class="label-text"><span data-i18n="lbl_weight">体重</span> <span id="unit-weight" class="text-xs text-slate-400">(kg)</span></label>
+                        <input type="number" id="input-weight" class="input-field font-mono" value="70" oninput="Calculator.calculate()">
+                    </div>
+
+                    <!-- ================= BURN MODE INPUTS ================= -->
+                    <div id="inputs-burn" class="space-y-5 animate-fade-in">
+                        <!-- Activity Selector -->
+                        <div>
+                            <label class="label-text" data-i18n="lbl_activity">选择活动类型</label>
+                            <select id="input-activity" class="input-field" onchange="App.handleActivityChange()">
+                                <optgroup label="Latest Additions">
+                                    <option value="skiing" data-i18n="act_skiing">滑雪 (Skiing)</option>
+                                    <option value="gardening" data-i18n="act_gardening">园艺 (Gardening)</option>
+                                    <option value="swimming" data-i18n="act_swimming">游泳 (Swimming)</option>
+                                    <option value="stairs" data-i18n="act_stairs">爬楼梯 (Stairs)</option>
+                                    <option value="skydiving" data-i18n="act_skydiving">跳伞 (Skydiving)</option>
+                                    <option value="dancing" data-i18n="act_dancing">跳舞 (Dancing)</option>
+                                    <option value="jogging" data-i18n="act_jogging">慢跑 (Jogging)</option>
+                                    <option value="jumping_rope" data-i18n="act_jumping_rope">跳绳 (Jumping Rope)</option>
+                                </optgroup>
+                                <optgroup label="Ball Sports">
+                                    <option value="basketball" data-i18n="act_basketball">打篮球 (Basketball)</option>
+                                    <option value="badminton" data-i18n="act_badminton">打羽毛球 (Badminton)</option>
+                                    <option value="billiards" data-i18n="act_billiards">打台球 (Billiards)</option>
+                                    <option value="bowling" data-i18n="act_bowling">打保龄球 (Bowling)</option>
+                                    <option value="racquetball" data-i18n="act_racquetball">美式壁球 (Racquetball)</option>
+                                    <option value="volleyball" data-i18n="act_volleyball">打排球 (Volleyball)</option>
+                                    <option value="soccer" data-i18n="act_soccer">踢足球 (Soccer)</option>
+                                    <option value="rugby" data-i18n="act_rugby">打橄榄球 (Rugby)</option>
+                                    <option value="squash" data-i18n="act_squash">打壁球 (Squash)</option>
+                                    <option value="table_tennis" data-i18n="act_table_tennis">乒乓球 (Table Tennis)</option>
+                                    <option value="ball_sports" data-i18n="act_ball_sports">球类运动 (General)</option>
+                                </optgroup>
+                                <optgroup label="Cardio & Outdoors">
+                                    <option value="hiking" data-i18n="act_hiking">徒步旅行 (Hiking)</option>
+                                    <option value="biking" data-i18n="act_biking">户外骑行 (Biking)</option>
+                                    <option value="scooter" data-i18n="act_scooter">骑滑板车 (Scooter)</option>
+                                    <option value="surfing" data-i18n="act_surfing">冲浪 (Surfing)</option>
+                                    <option value="kayaking" data-i18n="act_kayaking">皮划艇 (Kayaking)</option>
+                                    <option value="rock_climbing" data-i18n="act_rock_climbing">攀岩 (Rock Climbing)</option>
+                                    <option value="rowing" data-i18n="act_rowing">划船 (Rowing)</option>
+                                    <option value="rollerblading" data-i18n="act_rollerblading">轮滑 (Rollerblading)</option>
+                                    <option value="running" data-i18n="act_running">跑步 (Running)</option>
+                                    <option value="walking" data-i18n="act_walking">步行 (Walking)</option>
+                                    <option value="water_walking" data-i18n="act_water_walking">水中行走 (Water Walking)</option>
+                                    <option value="sailing" data-i18n="act_sailing">帆船/帆板 (Sailing)</option>
+                                    <option value="shopping" data-i18n="act_shopping">步行购物 (Shopping)</option>
+                                </optgroup>
+                                <optgroup label="Fitness & Combat">
+                                    <option value="bodycombat" data-i18n="act_bodycombat">搏击操 (BodyCombat)</option>
+                                    <option value="bodybalance" data-i18n="act_bodybalance">身心平衡 (BodyBalance)</option>
+                                    <option value="kickboxing" data-i18n="act_kickboxing">踢拳 (Kickboxing)</option>
+                                    <option value="hiit" data-i18n="act_hiit">高强度间歇 (HIIT)</option>
+                                    <option value="crossfit" data-i18n="act_crossfit">CrossFit</option>
+                                    <option value="spinning" data-i18n="act_spinning">动感单车 (Spinning)</option>
+                                </optgroup>
+                                <optgroup label="Bodyweight & Low Impact">
+                                    <option value="push_ups" data-i18n="act_push_ups">俯卧撑 (Push-ups)</option>
+                                    <option value="squats" data-i18n="act_squats">深蹲 (Squats)</option>
+                                    <option value="reverse-crunches" data-i18n="act_crunches">反向卷腹 (Crunches)</option>
+                                    <option value="side-plank" data-i18n="act_plank">侧平板支撑 (Plank)</option>
+                                </optgroup>
+                                <optgroup label="Other">
+                                    <option value="auto-racing" data-i18n="act_racing">赛车比赛 (Auto Racing)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Dynamic Input (Duration OR Reps) -->
+                        <div id="input-group-duration">
+                            <label class="label-text"><span data-i18n="lbl_duration">持续时间</span> <span class="text-xs text-slate-400">(min)</span></label>
+                            <input type="number" id="input-duration" class="input-field font-mono" value="30" oninput="Calculator.calculate()">
+                        </div>
+                        
+                        <div id="input-group-reps" class="hidden">
+                            <label class="label-text" data-i18n="lbl_reps">重复次数 (Reps)</label>
+                            <input type="number" id="input-reps" class="input-field font-mono" value="50" oninput="Calculator.calculate()">
+                        </div>
+
+                        <!-- Intensity -->
+                        <div>
+                            <label class="label-text" data-i18n="lbl_intensity">强度等级</label>
+                            <select id="input-intensity" class="input-field" onchange="Calculator.calculate()">
+                                <option value="low" data-i18n="int_low">低强度 (Low)</option>
+                                <option value="moderate" selected data-i18n="int_moderate">中等强度 (Moderate)</option>
+                                <option value="high" data-i18n="int_high">高强度 (High)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- ================= GAIN MODE INPUTS ================= -->
+                    <div id="inputs-gain" class="space-y-5 hidden animate-fade-in">
+                        <!-- Gender -->
+                        <div>
+                            <label class="label-text" data-i18n="lbl_gender">性别</label>
+                            <div class="flex gap-2">
+                                <button class="flex-1 py-2 rounded-lg border border-emerald-500 bg-emerald-500 text-white text-sm font-medium transition-all" id="btn-male" onclick="App.setGender('male')">
+                                    <i class="fa fa-male mr-1"></i> <span data-i18n="gender_male">男</span>
+                                </button>
+                                <button class="flex-1 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium transition-all hover:bg-slate-50 dark:hover:bg-slate-700" id="btn-female" onclick="App.setGender('female')">
+                                    <i class="fa fa-female mr-1"></i> <span data-i18n="gender_female">女</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Age & Height -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="label-text" data-i18n="lbl_age">年龄</label>
+                                <input type="number" id="input-age" class="input-field font-mono" value="25" oninput="Calculator.calculate()">
+                            </div>
+                            <div>
+                                <label class="label-text"><span data-i18n="lbl_height">身高</span> <span id="unit-height" class="text-xs text-slate-400">(cm)</span></label>
+                                <input type="number" id="input-height" class="input-field font-mono" value="175" oninput="Calculator.calculate()">
+                            </div>
+                        </div>
+
+                        <!-- Lifestyle -->
+                        <div>
+                            <label class="label-text" data-i18n="lbl_lifestyle">日常活动水平</label>
+                            <select id="input-lifestyle" class="input-field" onchange="Calculator.calculate()">
+                                <option value="1.2" data-i18n="style_sedentary">久坐</option>
+                                <option value="1.375" data-i18n="style_light">轻度活动</option>
+                                <option value="1.55" selected data-i18n="style_moderate">中度活动</option>
+                                <option value="1.725" data-i18n="style_active">活跃</option>
+                                <option value="1.9" data-i18n="style_extreme">极度活跃</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Dynamic Hint Box -->
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4 border border-orange-100 dark:border-orange-800/30 text-sm text-orange-800 dark:text-orange-300 transition-all" id="hint-box">
+                    <i class="fa fa-lightbulb-o mr-1"></i> <span id="activity-hint">...</span>
+                </div>
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <!-- Header -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-6 flex justify-between items-center">
+                        <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg" data-i18n="h2_results">分析结果</h2>
+                        <!-- Timeframe toggle only for Burn mode -->
+                        <div id="timeframe-selector" class="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+                            <button class="tab-btn active" data-tf="total" onclick="App.setTimeframe('total')" data-i18n="tf_total">总计</button>
+                            <button class="tab-btn inactive" data-tf="hour" onclick="App.setTimeframe('hour')" data-i18n="tf_hour">每小时</button>
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-grow flex flex-col gap-8 animate-fade-in">
+                        
+                        <!-- ================= BURN RESULTS ================= -->
+                        <div id="results-burn" class="space-y-8">
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="rounded-2xl border-2 border-orange-500/30 p-6 space-y-2 bg-orange-50/50 dark:bg-orange-900/10 relative overflow-hidden text-center flex flex-col justify-center">
+                                    <h4 class="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider" data-i18n="lbl_burned">消耗热量</h4>
+                                    <div class="py-2">
+                                        <span class="text-5xl md:text-6xl font-bold font-mono text-slate-800 dark:text-white" id="res-calories">0</span>
+                                        <span class="text-sm text-slate-500 block mt-1">kcal</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Based on your activity</p>
+                                </div>
+
+                                <div class="grid grid-rows-3 gap-3">
+                                    <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl px-4 py-3 flex justify-between items-center border border-slate-100 dark:border-slate-700">
+                                        <span class="text-xs font-bold text-slate-500 uppercase" data-i18n="metric_fat">预估燃脂</span>
+                                        <span class="font-mono font-bold text-slate-700 dark:text-slate-200"><span id="res-fat">0</span> g</span>
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl px-4 py-3 flex justify-between items-center border border-slate-100 dark:border-slate-700">
+                                        <span class="text-xs font-bold text-slate-500 uppercase" data-i18n="metric_food">等效食物</span>
+                                        <span class="font-medium text-slate-700 dark:text-slate-200 text-sm text-right" id="res-food">-</span>
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl px-4 py-3 flex justify-between items-center border border-slate-100 dark:border-slate-700">
+                                        <span class="text-xs font-bold text-slate-500 uppercase" id="lbl-efficiency">效率</span>
+                                        <span class="font-mono font-bold text-slate-700 dark:text-slate-200"><span id="res-rate">0</span> kcal/min</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Comparison Chart -->
+                            <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4" data-i18n="chart_title">活动效率对比 (30 min)</h4>
+                                <div class="h-48 w-full">
+                                    <canvas id="burn-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ================= GAIN RESULTS ================= -->
+                        <div id="results-gain" class="hidden space-y-8">
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="rounded-2xl border-2 border-emerald-500/30 p-6 space-y-2 bg-emerald-50/50 dark:bg-emerald-900/10 relative overflow-hidden text-center flex flex-col justify-center">
+                                    <h4 class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider" data-i18n="lbl_gain_target">增重/增肌 每日目标</h4>
+                                    <div class="py-2">
+                                        <span class="text-5xl md:text-6xl font-bold font-mono text-slate-800 dark:text-white" id="res-gain-cal">2,800</span>
+                                        <span class="text-sm text-slate-500 block mt-1">kcal / day</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="lbl_gain_subtitle">TDEE + 500 kcal Surplus</p>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                        <div class="flex justify-between mb-1">
+                                            <span class="text-xs font-bold text-slate-500 uppercase">TDEE (Maintenance)</span>
+                                            <span class="font-mono font-bold text-slate-700 dark:text-slate-200" id="res-tdee">2,300</span>
+                                        </div>
+                                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                                            <div class="bg-slate-400 h-1.5 rounded-full" style="width: 80%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                        <div class="flex justify-between mb-1">
+                                            <span class="text-xs font-bold text-slate-500 uppercase">BMR (Basal Rate)</span>
+                                            <span class="font-mono font-bold text-slate-700 dark:text-slate-200" id="res-bmr">1,600</span>
+                                        </div>
+                                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                                            <div class="bg-slate-300 h-1.5 rounded-full" style="width: 60%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Macros Chart -->
+                            <div class="grid md:grid-cols-2 gap-6 items-center">
+                                <div class="h-48 relative flex justify-center">
+                                    <canvas id="gain-chart"></canvas>
+                                </div>
+                                <div class="space-y-3 text-sm">
+                                    <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-2" data-i18n="lbl_macros">宏量营养素建议</h4>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                                        <span class="text-slate-600 dark:text-slate-400 w-20">Carbs</span>
+                                        <span class="font-mono font-bold" id="res-macro-c">350g</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                                        <span class="text-slate-600 dark:text-slate-400 w-20">Protein</span>
+                                        <span class="font-mono font-bold" id="res-macro-p">175g</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                                        <span class="text-slate-600 dark:text-slate-400 w-20">Fats</span>
+                                        <span class="font-mono font-bold" id="res-macro-f">78g</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Comprehensive Activity Guide Section -->
+        <section class="glass rounded-2xl p-8 shadow-xl mb-12" id="knowledge-base">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="kb_title">各项运动消耗详解</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="activity-grid">
+                <!-- Content injected via JS -->
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300">
+                <h3 class="font-bold text-slate-900 dark:text-white mb-2" data-i18n="guide_title">计算原理说明</h3>
+                <p id="guide-burn" data-i18n="guide_p1">
+                    <strong>运动消耗模式：</strong> 使用 MET 代谢当量法（有氧运动）或特定动作公式（深蹲/HIIT）计算。
+                </p>
+                <p id="guide-gain" class="hidden mt-2" data-i18n="guide_p2">
+                    <strong>增重/增肌模式：</strong> 基于 Mifflin-St Jeor 公式计算您的 BMR 和 TDEE，然后增加 500 卡路里的热量盈余。
+                </p>
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-slate-400 py-6">
+            <p>&copy; <span id="year"></span> Ultimate Health Calculator.</p>
+        </footer>
+
+    </div>
+
+    <!-- Required Scripts -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        // --- DATA & CONFIG ---
+        const i18nData = {
+            'zh-CN': {
+                title: "全能健康计算器", subtitle: "运动消耗 & 增肌增重计算",
+                mode_burn: "运动消耗", mode_gain: "TDEE / 增重", h2_config: "计算参数",
+                lbl_activity: "选择活动类型", lbl_weight: "体重", lbl_duration: "持续时间", lbl_reps: "重复次数",
+                lbl_intensity: "强度等级", int_low: "低强度", int_moderate: "中等", int_high: "高强度",
+                lbl_gender: "性别", gender_male: "男", gender_female: "女",
+                lbl_age: "年龄", lbl_height: "身高", lbl_lifestyle: "日常活动水平",
+                style_sedentary: "久坐 (办公室工作)", style_light: "轻度活动 (每周1-3次)", style_moderate: "中度活动 (每周3-5次)", style_active: "活跃 (每周6-7次)", style_extreme: "极度活跃 (体力工作)",
+                h2_results: "分析结果", tf_total: "总计", tf_hour: "每小时",
+                lbl_burned: "消耗热量", metric_fat: "预估燃脂", metric_food: "等效食物",
+                lbl_gain_target: "增重每日目标", lbl_gain_subtitle: "TDEE + 500 kcal 热量盈余", lbl_macros: "营养素分配建议",
+                kb_title: "各项运动消耗详解", guide_title: "计算原理说明", chart_title: "活动效率对比 (30 min)",
+                guide_p1: "运动消耗模式：包含高强度项目。结果基于 MET 公式及特定动作做功估算。",
+                guide_p2: "增重模式：基于 Mifflin-St Jeor 公式计算 TDEE，并增加 500 卡路里作为健康的增重盈余。",
+                hint_gain: "增重需要‘热量盈余’。建议每日多摄入 500 卡路里，并保证蛋白质充足以支持肌肉生长。"
+            },
+            'zh-TW': {
+                title: "全能健康計算器", subtitle: "運動消耗 & 增肌增重計算",
+                mode_burn: "運動消耗", mode_gain: "TDEE / 增重", h2_config: "計算參數",
+                lbl_activity: "選擇活動類型", lbl_weight: "體重", lbl_duration: "持續時間", lbl_reps: "重複次數",
+                lbl_intensity: "強度等級", int_low: "低強度", int_moderate: "中等", int_high: "高強度",
+                lbl_gender: "性別", gender_male: "男", gender_female: "女",
+                lbl_age: "年齡", lbl_height: "身高", lbl_lifestyle: "日常活動水平",
+                style_sedentary: "久坐 (辦公室工作)", style_light: "輕度活動 (每週1-3次)", style_moderate: "中度活動 (每週3-5次)", style_active: "活躍 (每週6-7次)", style_extreme: "極度活躍 (體力工作)",
+                h2_results: "分析結果", tf_total: "總計", tf_hour: "每小時",
+                lbl_burned: "消耗熱量", metric_fat: "預估燃脂", metric_food: "等效食物",
+                lbl_gain_target: "增重每日目標", lbl_gain_subtitle: "TDEE + 500 kcal 熱量盈餘", lbl_macros: "營養素分配建議",
+                kb_title: "各項運動消耗詳解", guide_title: "計算原理說明", chart_title: "活動效率對比 (30 min)",
+                guide_p1: "運動消耗模式：包含高強度項目。結果基於 MET 公式及特定動作做功估算。",
+                guide_p2: "增重模式：基於 Mifflin-St Jeor 公式計算 TDEE，並增加 500 卡路里作為健康的增重盈餘。",
+                hint_gain: "增重需要‘熱量盈餘’。建議每日多攝入 500 卡路里，並保證蛋白質充足以支持肌肉生長。"
+            },
+            'en': {
+                title: "Ultimate Health Calc", subtitle: "Calories Burned & Gain Calculator",
+                mode_burn: "Burn Calories", mode_gain: "TDEE / Gain", h2_config: "Configuration",
+                lbl_activity: "Activity Type", lbl_weight: "Weight", lbl_duration: "Duration", lbl_reps: "Reps",
+                lbl_intensity: "Intensity", int_low: "Low", int_moderate: "Moderate", int_high: "High",
+                lbl_gender: "Gender", gender_male: "Male", gender_female: "Female",
+                lbl_age: "Age", lbl_height: "Height", lbl_lifestyle: "Activity Level",
+                style_sedentary: "Sedentary (Office Job)", style_light: "Light Active (1-3 days/wk)", style_moderate: "Moderate (3-5 days/wk)", style_active: "Active (6-7 days/wk)", style_extreme: "Extreme (Physical Job)",
+                h2_results: "Analysis", tf_total: "Total", tf_hour: "Per Hour",
+                lbl_burned: "Calories Burned", metric_fat: "Est. Fat Loss", metric_food: "Equivalent Food",
+                lbl_gain_target: "Daily Gain Target", lbl_gain_subtitle: "TDEE + 500 kcal Surplus", lbl_macros: "Macro Suggestion",
+                kb_title: "Activity Details", guide_title: "Calculation Logic", chart_title: "Efficiency Comparison (30 min)",
+                guide_p1: "Burn Mode: Uses MET values (Aerobic) or specific work formulas (Squats/HIIT).",
+                guide_p2: "Gain Mode: Calculates TDEE via Mifflin-St Jeor and adds a 500 calorie surplus.",
+                hint_gain: "Gaining weight requires a caloric surplus. Aim for +500 kcal/day with sufficient protein."
+            },
+            'es': {
+                title: "Calculadora de Salud", subtitle: "Calorías Quemadas y Ganancia Muscular",
+                mode_burn: "Quemar Calorías", mode_gain: "TDEE / Ganancia", h2_config: "Configuración",
+                lbl_activity: "Actividad", lbl_weight: "Peso", lbl_duration: "Duración", lbl_reps: "Repeticiones",
+                lbl_intensity: "Intensidad", int_low: "Baja", int_moderate: "Moderada", int_high: "Alta",
+                lbl_gender: "Género", gender_male: "Hombre", gender_female: "Mujer",
+                lbl_age: "Edad", lbl_height: "Altura", lbl_lifestyle: "Nivel de Actividad",
+                style_sedentary: "Sedentario", style_light: "Ligeramente Activo", style_moderate: "Moderado", style_active: "Activo", style_extreme: "Muy Activo",
+                h2_results: "Resultados", tf_total: "Total", tf_hour: "Por Hora",
+                lbl_burned: "Calorías Quemadas", metric_fat: "Grasa Est.", metric_food: "Comida Equiv.",
+                lbl_gain_target: "Objetivo Diario", lbl_gain_subtitle: "TDEE + 500 kcal Superávit", lbl_macros: "Macros Sugeridos",
+                kb_title: "Detalles de Actividad", guide_title: "Lógica de Cálculo", chart_title: "Comparación (30 min)",
+                guide_p1: "Modo Quemar: Usa valores MET o fórmulas de trabajo específicas.",
+                guide_p2: "Modo Ganancia: Calcula TDEE y agrega 500 calorías de superávit.",
+                hint_gain: "Ganar peso requiere un superávit calórico. Apunta a +500 kcal/día."
+            },
+            'ja': {
+                title: "究極の健康計算機", subtitle: "消費カロリー & 増量計算",
+                mode_burn: "燃焼モード", mode_gain: "TDEE / 増量", h2_config: "設定",
+                lbl_activity: "活動タイプ", lbl_weight: "体重", lbl_duration: "時間 (分)", lbl_reps: "回数",
+                lbl_intensity: "強度", int_low: "低", int_moderate: "中", int_high: "高",
+                lbl_gender: "性別", gender_male: "男性", gender_female: "女性",
+                lbl_age: "年齢", lbl_height: "身長", lbl_lifestyle: "活動レベル",
+                style_sedentary: "座り仕事", style_light: "軽い運動 (週1-3回)", style_moderate: "中程度の運動 (週3-5回)", style_active: "活発 (週6-7回)", style_extreme: "非常に活発",
+                h2_results: "分析結果", tf_total: "合計", tf_hour: "1時間あたり",
+                lbl_burned: "消費カロリー", metric_fat: "予想脂肪燃焼", metric_food: "相当する食事",
+                lbl_gain_target: "増量目標", lbl_gain_subtitle: "TDEE + 500 kcal", lbl_macros: "マクロ栄養素",
+                kb_title: "活動の詳細", guide_title: "計算ロジック", chart_title: "効率比較 (30分)",
+                guide_p1: "燃焼モード：MET値または特定の動作公式を使用します。",
+                guide_p2: "増量モード：Mifflin-St Jeor式でTDEEを計算し、500kcalを追加します。",
+                hint_gain: "増量にはカロリーの余剰が必要です。1日+500kcalを目指しましょう。"
+            },
+            'ru': {
+                title: "Калькулятор Здоровья", subtitle: "Сжигание калорий и Набор массы",
+                mode_burn: "Сжигание", mode_gain: "TDEE / Набор", h2_config: "Параметры",
+                lbl_activity: "Вид активности", lbl_weight: "Вес", lbl_duration: "Длительность", lbl_reps: "Повторения",
+                lbl_intensity: "Интенсивность", int_low: "Низкая", int_moderate: "Средняя", int_high: "Высокая",
+                lbl_gender: "Пол", gender_male: "Муж", gender_female: "Жен",
+                lbl_age: "Возраст", lbl_height: "Рост", lbl_lifestyle: "Уровень активности",
+                style_sedentary: "Сидячий", style_light: "Легкая активность", style_moderate: "Умеренная", style_active: "Активная", style_extreme: "Экстремальная",
+                h2_results: "Результаты", tf_total: "Всего", tf_hour: "В час",
+                lbl_burned: "Сожжено", metric_fat: "Жир (г)", metric_food: "Еда",
+                lbl_gain_target: "Цель (ккал)", lbl_gain_subtitle: "TDEE + 500 ккал", lbl_macros: "Макронутриенты",
+                kb_title: "Детали активности", guide_title: "Логика расчета", chart_title: "Сравнение (30 мин)",
+                guide_p1: "Режим сжигания: Использует значения MET или формулы работы.",
+                guide_p2: "Режим набора: Рассчитывает TDEE и добавляет 500 ккал.",
+                hint_gain: "Для набора веса требуется профицит калорий (+500 ккал/день)."
+            },
+            'hi': {
+                title: "हेल्थ कैलकुलेटर", subtitle: "कैलोरी बर्न और वजन बढ़ाना",
+                mode_burn: "कैलोरी बर्न", mode_gain: "TDEE / वजन बढ़ाना", h2_config: "सेटिंग्स",
+                lbl_activity: "गतिविधि चुनें", lbl_weight: "वजन", lbl_duration: "अवधि", lbl_reps: "दोहराव (Reps)",
+                lbl_intensity: "तीव्रता", int_low: "कम", int_moderate: "मध्यम", int_high: "उच्च",
+                lbl_gender: "लिंग", gender_male: "पुरुष", gender_female: "महिला",
+                lbl_age: "उम्र", lbl_height: "कद", lbl_lifestyle: "सक्रियता स्तर",
+                style_sedentary: "निष्क्रीय", style_light: "हल्का सक्रिय", style_moderate: "मध्यम", style_active: "सक्रिय", style_extreme: "अत्यधिक सक्रिय",
+                h2_results: "परिणाम", tf_total: "कुल", tf_hour: "प्रति घंटा",
+                lbl_burned: "कैलोरी बर्न", metric_fat: "फैट लॉस", metric_food: "भोजन",
+                lbl_gain_target: "दैनिक लक्ष्य", lbl_gain_subtitle: "TDEE + 500 कैलोरी", lbl_macros: "मैक्रोन्यूट्रिएंट्स",
+                kb_title: "गतिविधि विवरण", guide_title: "गणना का आधार", chart_title: "तुलना (30 मिनट)",
+                guide_p1: "बर्न मोड: MET मूल्यों या विशिष्ट कार्य सूत्रों का उपयोग करता है।",
+                guide_p2: "गेन मोड: TDEE की गणना करता है और 500 कैलोरी जोड़ता है।",
+                hint_gain: "वजन बढ़ाने के लिए कैलोरी अधिशेष की आवश्यकता होती है (+500/दिन)।"
+            },
+            'pl': {
+                title: "Kalkulator Zdrowia", subtitle: "Spalanie Kalorii i Masa",
+                mode_burn: "Spalanie", mode_gain: "TDEE / Masa", h2_config: "Konfiguracja",
+                lbl_activity: "Aktywność", lbl_weight: "Waga", lbl_duration: "Czas", lbl_reps: "Powtórzenia",
+                lbl_intensity: "Intensywność", int_low: "Niska", int_moderate: "Średnia", int_high: "Wysoka",
+                lbl_gender: "Płeć", gender_male: "M", gender_female: "K",
+                lbl_age: "Wiek", lbl_height: "Wzrost", lbl_lifestyle: "Poziom aktywności",
+                style_sedentary: "Siedzący", style_light: "Lekko aktywny", style_moderate: "Umiarkowany", style_active: "Aktywny", style_extreme: "Bardzo aktywny",
+                h2_results: "Wyniki", tf_total: "Razem", tf_hour: "Na godz.",
+                lbl_burned: "Spalone Kalorie", metric_fat: "Tłuszcz", metric_food: "Jedzenie",
+                lbl_gain_target: "Cel Dzienny", lbl_gain_subtitle: "TDEE + 500 kcal", lbl_macros: "Makroskładniki",
+                kb_title: "Szczegóły", guide_title: "Metoda obliczeń", chart_title: "Porównanie (30 min)",
+                guide_p1: "Tryb spalania: Używa wartości MET lub wzorów pracy.",
+                guide_p2: "Tryb masy: Oblicza TDEE i dodaje 500 kcal nadwyżki.",
+                hint_gain: "Przyrost masy wymaga nadwyżki kalorycznej. Celuj w +500 kcal/dzień."
+            }
+        };
+
+        // --- CORE LOGIC ---
+        const Logic = {
+            activities: {
+                'gardening': { type: 'duration', met: 3.8, hint: 'hint_gardening', desc: 'desc_gardening', icon: 'fa-leaf', color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900/30' },
+                'skydiving': { type: 'duration', met: 3.5, hint: 'hint_skydiving', desc: 'desc_skydiving', icon: 'fa-cloud', color: 'text-sky-500', bg: 'bg-sky-100 dark:bg-sky-900/30' },
+                'stairs': { type: 'duration', met: 8.0, hint: 'hint_stairs', desc: 'desc_stairs', icon: 'fa-level-up', color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/30' },
+                'swimming': { type: 'duration', met: 6.0, hint: 'hint_swimming', desc: 'desc_swimming', icon: 'fa-tint', color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+                'dancing': { type: 'duration', met: 5.5, hint: 'hint_dancing', desc: 'desc_dancing', icon: 'fa-music', color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-900/30' },
+                'jogging': { type: 'duration', met: 7.0, hint: 'hint_jogging', desc: 'desc_jogging', icon: 'fa-road', color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-900/30' },
+                'jumping_rope': { type: 'duration', met: 11.0, hint: 'hint_jumping_rope', desc: 'desc_jumping_rope', icon: 'fa-heartbeat', color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30' },
+                'kayaking': { type: 'duration', met: 5.0, hint: 'hint_kayaking', desc: 'desc_kayaking', icon: 'fa-ship', color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+                'rock_climbing': { type: 'duration', met: 8.0, hint: 'hint_rock_climbing', desc: 'desc_rock_climbing', icon: 'fa-hand-rock-o', color: 'text-stone-600', bg: 'bg-stone-200 dark:bg-stone-700/50' },
+                'rollerblading': { type: 'duration', met: 7.0, hint: 'hint_rollerblading', desc: 'desc_rollerblading', icon: 'fa-circle-o', color: 'text-pink-600', bg: 'bg-pink-100 dark:bg-pink-900/30' },
+                'running': { type: 'duration', met: 9.8, hint: 'hint_running', desc: 'desc_running', icon: 'fa-road', color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/30' },
+                'basketball': { type: 'duration', met: 8.0, hint: 'hint_basketball', desc: 'desc_basketball', icon: 'fa-dribbble', color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/30' },
+                'badminton': { type: 'duration', met: 5.5, hint: 'hint_badminton', desc: 'desc_badminton', icon: 'fa-rocket', color: 'text-green-500', bg: 'bg-green-100 dark:bg-green-900/30' },
+                'billiards': { type: 'duration', met: 2.5, hint: 'hint_billiards', desc: 'desc_billiards', icon: 'fa-dot-circle-o', color: 'text-slate-600', bg: 'bg-slate-200 dark:bg-slate-700/50' },
+                'bowling': { type: 'duration', met: 3.0, hint: 'hint_bowling', desc: 'desc_bowling', icon: 'fa-circle', color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+                'racquetball': { type: 'duration', met: 7.0, hint: 'hint_racquetball', desc: 'desc_racquetball', icon: 'fa-play-circle', color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-900/30' },
+                'ball_sports': { type: 'duration', met: 6.0, hint: 'hint_ball_sports', desc: 'desc_ball_sports', icon: 'fa-futbol-o', color: 'text-teal-600', bg: 'bg-teal-100 dark:bg-teal-900/30' },
+                'walking': { type: 'duration', met: 3.5, hint: 'hint_walking', desc: 'desc_walking', icon: 'fa-male', color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-900/30' },
+                'water_walking': { type: 'duration', met: 4.5, hint: 'hint_water_walking', desc: 'desc_water_walking', icon: 'fa-life-ring', color: 'text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                'sailing': { type: 'duration', met: 4.0, hint: 'hint_sailing', desc: 'desc_sailing', icon: 'fa-ship', color: 'text-sky-600', bg: 'bg-sky-100 dark:bg-sky-900/30' },
+                'bodycombat': { type: 'duration', met: 8.5, hint: 'hint_bodycombat', desc: 'desc_bodycombat', icon: 'fa-hand-rock-o', color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-900/30' },
+                'bodybalance': { type: 'duration', met: 3.5, hint: 'hint_bodybalance', desc: 'desc_bodybalance', icon: 'fa-leaf', color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/30' },
+                'volleyball': { type: 'duration', met: 6.0, hint: 'hint_volleyball', desc: 'desc_volleyball', icon: 'fa-circle-o', color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/30' },
+                'skiing': { type: 'duration', met: 7.0, hint: 'hint_skiing', desc: 'desc_skiing', icon: 'fa-snowflake-o', color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-900/30' },
+                'hiking': { type: 'duration', met: 6.0, hint: 'hint_hiking', desc: 'desc_hiking', icon: 'fa-tree', color: 'text-emerald-700', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
+                'biking': { type: 'duration', met: 7.5, hint: 'hint_biking', desc: 'desc_biking', icon: 'fa-bicycle', color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+                'spinning': { type: 'duration', met: 8.5, hint: 'hint_spinning', desc: 'desc_spinning', icon: 'fa-refresh', color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/30' },
+                'scooter': { type: 'duration', met: 5.0, hint: 'hint_scooter', desc: 'desc_scooter', icon: 'fa-motorcycle', color: 'text-lime-600', bg: 'bg-lime-100 dark:bg-lime-900/30' },
+                'surfing': { type: 'duration', met: 4.0, hint: 'hint_surfing', desc: 'desc_surfing', icon: 'fa-tint', color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+                'soccer': { type: 'duration', met: 8.0, hint: 'hint_soccer', desc: 'desc_soccer', icon: 'fa-futbol-o', color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900/30' },
+                'push_ups': { type: 'reps', baseFactor: 0.35, hint: 'hint_push_ups', desc: 'desc_push_ups', icon: 'fa-chevron-down', color: 'text-gray-700', bg: 'bg-gray-100 dark:bg-gray-800' },
+                'squash': { type: 'duration', met: 10.0, hint: 'hint_squash', desc: 'desc_squash', icon: 'fa-trophy', color: 'text-indigo-600', bg: 'bg-indigo-100 dark:bg-indigo-900/30' },
+                'table_tennis': { type: 'duration', met: 4.0, hint: 'hint_table_tennis', desc: 'desc_table_tennis', icon: 'fa-circle', color: 'text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                'roller_skating': { type: 'duration', met: 7.0, hint: 'hint_roller_skating', desc: 'desc_roller_skating', icon: 'fa-bicycle', color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-900/30' },
+                'rugby': { type: 'duration', met: 10.0, hint: 'hint_rugby', desc: 'desc_rugby', icon: 'fa-shield', color: 'text-amber-700', bg: 'bg-amber-100 dark:bg-amber-900/30' },
+                'shopping': { type: 'duration', met: 2.3, hint: 'hint_shopping', desc: 'desc_shopping', icon: 'fa-shopping-bag', color: 'text-pink-500', bg: 'bg-pink-100 dark:bg-pink-900/30' },
+                'rowing': { type: 'duration', met: 7.0, hint: 'hint_rowing', desc: 'desc_rowing', icon: 'fa-ship', color: 'text-cyan-600', bg: 'bg-cyan-100 dark:bg-cyan-900/30' },
+                'kickboxing': { type: 'duration', met: 10.0, hint: 'hint_kickboxing', desc: 'desc_kickboxing', icon: 'fa-hand-rock-o', color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-900/30' },
+                'hiit': { type: 'duration', met: 9.5, hint: 'hint_hiit', desc: 'desc_hiit', icon: 'fa-bolt', color: 'text-yellow-500', bg: 'bg-yellow-100 dark:bg-yellow-900/30' },
+                'crossfit': { type: 'duration', met: 12.5, hint: 'hint_crossfit', desc: 'desc_crossfit', icon: 'fa-users', color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-900/30' },
+                'squats': { type: 'reps', baseFactor: 0.32, hint: 'hint_squats', desc: 'desc_squats', icon: 'fa-arrow-down', color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+                'reverse-crunches': { type: 'duration', met: 5.0, hint: 'hint_crunches', desc: 'desc_crunches', icon: 'fa-circle-o-notch', color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-900/30' },
+                'side-plank': { type: 'duration', met: 3.8, hint: 'hint_plank', desc: 'desc_plank', icon: 'fa-minus', color: 'text-teal-500', bg: 'bg-teal-100 dark:bg-teal-900/30' },
+                'auto-racing': { type: 'duration', met: 7.0, hint: 'hint_racing', desc: 'desc_racing', icon: 'fa-car', color: 'text-slate-600', bg: 'bg-slate-200 dark:bg-slate-700/50' }
+            },
+
+            getIntensityFactor(level) {
+                return level === 'low' ? 0.8 : (level === 'high' ? 1.2 : 1.0);
+            },
+
+            calculateBurn(activity, weightKg, inputVal, intensity) {
+                const config = this.activities[activity] || this.activities['walking'];
+                const factor = this.getIntensityFactor(intensity);
+                let calories = 0;
+
+                if (config.type === 'reps') {
+                    // Formula for reps
+                    const coeff = activity === 'push_ups' ? 0.0050 : 0.0065;
+                    calories = weightKg * inputVal * coeff * factor;
+                } else {
+                    // MET Formula
+                    calories = config.met * weightKg * (inputVal / 60) * factor;
+                }
+
+                return {
+                    calories: calories,
+                    fat: calories / 7.7
+                };
+            },
+
+            calculateGain(weightKg, heightCm, age, gender, activityLevel) {
+                // Mifflin-St Jeor
+                let s = (gender === 'male') ? 5 : -161;
+                let bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) + s;
+                let tdee = bmr * parseFloat(activityLevel);
+                let target = tdee + 500;
+
+                return {
+                    bmr: bmr,
+                    tdee: tdee,
+                    target: target,
+                    macros: {
+                        c: (target * 0.50) / 4,
+                        p: (target * 0.25) / 4,
+                        f: (target * 0.25) / 9
+                    }
+                };
+            }
+        };
+
+        // --- APP CONTROLLER ---
+        const App = {
+            lang: 'zh-CN',
+            unit: 'metric',
+            mode: 'burn', 
+            gender: 'male',
+            charts: {},
+
+            init() {
+                // URL Parameter Logic
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlLang = urlParams.get('lang');
+                
+                // Fallback valid languages
+                const validLangs = ['zh-CN', 'zh-TW', 'en', 'es', 'ja', 'ru', 'hi', 'pl'];
+                
+                if (urlLang && validLangs.includes(urlLang)) {
+                    this.lang = urlLang;
+                    document.getElementById('lang-selector').value = urlLang;
+                } else {
+                    this.lang = document.getElementById('lang-selector').value;
+                }
+
+                this.setupListeners();
+                this.setUnit('metric');
+                this.setMode('burn');
+                document.getElementById('year').textContent = new Date().getFullYear();
+                this.updateUI(); // Trigger UI update to set initial text
+                this.initCharts();
+            },
+
+            setupListeners() {
+                document.getElementById('lang-selector').addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    
+                    // Update URL without reloading
+                    try {
+                        const url = new URL(window.location);
+                        url.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', url);
+                    } catch (err) {
+                        console.warn('Unable to update URL parameters (likely running in a secure sandbox):', err);
+                    }
+
+                    this.updateUI();
+                });
+                document.getElementById('mode-toggle').addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    this.updateChartsTheme();
+                });
+            },
+
+            renderKnowledgeBase() {
+                const grid = document.getElementById('activity-grid');
+                if(!grid) return;
+                grid.innerHTML = '';
+                
+                const dict = i18nData[this.lang] || i18nData['en'];
+                const fallbackDict = i18nData['en']; // Fallback for missing descriptions
+                
+                Object.entries(Logic.activities).forEach(([key, act]) => {
+                    // Try current lang, then english, then just key name
+                    const title = dict[`act_${key}`] || fallbackDict[`act_${key}`] || key;
+                    const desc = dict[act.desc] || fallbackDict[act.desc] || "Description not available in this language.";
+
+                    const card = document.createElement('div');
+                    card.className = 'info-card';
+                    card.innerHTML = `
+                        <div class="info-icon ${act.bg} ${act.color}">
+                            <i class="fa ${act.icon}"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-2">${title}</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            ${desc}
+                        </p>
+                    `;
+                    grid.appendChild(card);
+                });
+            },
+
+            setMode(mode) {
+                this.mode = mode;
+                
+                const btnBurn = document.getElementById('mode-btn-burn');
+                const btnGain = document.getElementById('mode-btn-gain');
+                const inputCard = document.getElementById('input-card');
+                const hintBox = document.getElementById('hint-box');
+                const guideBurn = document.getElementById('guide-burn');
+                const guideGain = document.getElementById('guide-gain');
+                const tfSelector = document.getElementById('timeframe-selector');
+                const kbSection = document.getElementById('knowledge-base');
+
+                if (mode === 'burn') {
+                    btnBurn.className = 'mode-switch active-burn';
+                    btnGain.className = 'mode-switch inactive';
+                    
+                    document.getElementById('inputs-burn').classList.remove('hidden');
+                    document.getElementById('inputs-gain').classList.add('hidden');
+                    document.getElementById('results-burn').classList.remove('hidden');
+                    document.getElementById('results-gain').classList.add('hidden');
+                    
+                    inputCard.classList.remove('border-t-emerald-500');
+                    inputCard.classList.add('border-t-orange-500');
+                    
+                    hintBox.classList.remove('bg-emerald-50', 'dark:bg-emerald-900/20', 'text-emerald-800', 'dark:text-emerald-300', 'border-emerald-100');
+                    hintBox.classList.add('bg-orange-50', 'dark:bg-orange-900/20', 'text-orange-800', 'dark:text-orange-300', 'border-orange-100');
+                    
+                    guideBurn.classList.remove('hidden');
+                    guideGain.classList.add('hidden');
+                    tfSelector.classList.remove('invisible');
+                    kbSection.classList.remove('hidden');
+
+                    this.handleActivityChange(); 
+                } else {
+                    btnBurn.className = 'mode-switch inactive';
+                    btnGain.className = 'mode-switch active-gain';
+                    
+                    document.getElementById('inputs-burn').classList.add('hidden');
+                    document.getElementById('inputs-gain').classList.remove('hidden');
+                    document.getElementById('results-burn').classList.add('hidden');
+                    document.getElementById('results-gain').classList.remove('hidden');
+
+                    inputCard.classList.remove('border-t-orange-500');
+                    inputCard.classList.add('border-t-emerald-500');
+
+                    hintBox.classList.remove('bg-orange-50', 'dark:bg-orange-900/20', 'text-orange-800', 'dark:text-orange-300', 'border-orange-100');
+                    hintBox.classList.add('bg-emerald-50', 'dark:bg-emerald-900/20', 'text-emerald-800', 'dark:text-emerald-300', 'border-emerald-100');
+
+                    guideBurn.classList.add('hidden');
+                    guideGain.classList.remove('hidden');
+                    tfSelector.classList.add('invisible');
+                    kbSection.classList.add('hidden');
+
+                    const dict = i18nData[this.lang] || i18nData['en'];
+                    const fallback = i18nData['en'];
+                    document.getElementById('activity-hint').textContent = dict['hint_gain'] || fallback['hint_gain'];
+                }
+
+                Calculator.calculate();
+            },
+
+            setUnit(u) {
+                this.unit = u;
+                const isMetric = u === 'metric';
+                
+                const btnM = document.getElementById('btn-metric');
+                const btnI = document.getElementById('btn-imperial');
+                
+                const activeClass = isMetric ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white';
+                const inactiveClass = !isMetric ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white';
+                
+                btnM.className = `px-3 py-1 text-xs font-bold rounded-md transition-all ${activeClass}`;
+                btnI.className = `px-3 py-1 text-xs font-bold rounded-md transition-all ${inactiveClass}`;
+
+                document.getElementById('unit-weight').textContent = isMetric ? '(kg)' : '(lbs)';
+                document.getElementById('unit-height').textContent = isMetric ? '(cm)' : '(in)';
+                
+                const wInput = document.getElementById('input-weight');
+                const hInput = document.getElementById('input-height');
+                
+                let wVal = parseFloat(wInput.value) || 0;
+                let hVal = parseFloat(hInput.value) || 0;
+
+                if (wVal > 0) wInput.value = Math.round(isMetric ? wVal * 0.453592 : wVal * 2.20462);
+                if (hVal > 0) hInput.value = Math.round(isMetric ? hVal * 2.54 : hVal / 2.54);
+
+                Calculator.calculate();
+            },
+
+            setGender(g) {
+                this.gender = g;
+                document.getElementById('btn-male').className = `flex-1 py-2 rounded-lg text-sm font-medium transition-all ${g === 'male' ? 'border border-emerald-500 bg-emerald-500 text-white' : 'border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'}`;
+                document.getElementById('btn-female').className = `flex-1 py-2 rounded-lg text-sm font-medium transition-all ${g === 'female' ? 'border border-emerald-500 bg-emerald-500 text-white' : 'border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'}`;
+                Calculator.calculate();
+            },
+
+            handleActivityChange() {
+                const activity = document.getElementById('input-activity').value;
+                const config = Logic.activities[activity];
+                
+                if (config.type === 'reps') {
+                    document.getElementById('input-group-duration').classList.add('hidden');
+                    document.getElementById('input-group-reps').classList.remove('hidden');
+                } else {
+                    document.getElementById('input-group-duration').classList.remove('hidden');
+                    document.getElementById('input-group-reps').classList.add('hidden');
+                }
+
+                const dict = i18nData[this.lang] || i18nData['en'];
+                const fallback = i18nData['en'];
+                document.getElementById('activity-hint').textContent = dict[config.hint] || fallback[config.hint] || "...";
+
+                Calculator.calculate();
+            },
+
+            setTimeframe(tf) {
+                document.querySelectorAll('#timeframe-selector .tab-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.classList.add('inactive');
+                    if(b.dataset.tf === tf) {
+                        b.classList.add('active');
+                        b.classList.remove('inactive');
+                    }
+                });
+                Calculator.calculate();
+            },
+
+            updateUI() {
+                const dict = i18nData[this.lang] || i18nData['en'];
+                const fallbackDict = i18nData['en'];
+                document.documentElement.lang = this.lang;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    // Translate OR Fallback OR keep existing
+                    if (dict[key]) el.textContent = dict[key];
+                    else if (fallbackDict[key]) el.textContent = fallbackDict[key];
+                });
+                
+                // Update dropdown options
+                const select = document.getElementById('input-activity');
+                Array.from(select.options).forEach(opt => {
+                    const key = opt.getAttribute('data-i18n');
+                    if(key) {
+                        opt.textContent = dict[key] || fallbackDict[key] || opt.textContent;
+                    }
+                });
+
+                this.renderKnowledgeBase();
+
+                if(this.mode === 'burn') this.handleActivityChange();
+                else document.getElementById('activity-hint').textContent = dict['hint_gain'] || fallbackDict['hint_gain'];
+            },
+
+            initCharts() {
+                const ctxBurn = document.getElementById('burn-chart').getContext('2d');
+                this.charts.burn = new Chart(ctxBurn, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Walk', 'Jog', 'Jump Rope', 'Dance', 'Run', 'CrossFit'],
+                        datasets: [{
+                            label: 'kcal / 30min',
+                            data: [120, 240, 380, 180, 340, 430],
+                            backgroundColor: ['#94a3b8', '#f97316', '#ef4444', '#a855f7', '#f59e0b', '#ec4899'],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                const ctxGain = document.getElementById('gain-chart').getContext('2d');
+                this.charts.gain = new Chart(ctxGain, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Carbs (50%)', 'Protein (25%)', 'Fats (25%)'],
+                        datasets: [{
+                            data: [50, 25, 25],
+                            backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: { legend: { display: false } }
+                    }
+                });
+
+                this.updateChartsTheme();
+            },
+
+            updateChartsTheme() {
+                const isDark = document.documentElement.classList.contains('dark');
+                const gridColor = isDark ? '#334155' : '#e2e8f0';
+                const textColor = isDark ? '#94a3b8' : '#64748b';
+
+                if (this.charts.burn) {
+                    this.charts.burn.options.scales.y.grid.color = gridColor;
+                    this.charts.burn.options.scales.x.ticks.color = textColor;
+                    this.charts.burn.options.scales.y.ticks.color = textColor;
+                    this.charts.burn.update();
+                }
+            }
+        };
+
+        // --- CALCULATOR ENGINE (Defined BEFORE App) ---
+        const Calculator = {
+            calculate() {
+                let weight = parseFloat(document.getElementById('input-weight').value) || 0;
+                let weightKg = App.unit === 'imperial' ? weight * 0.453592 : weight;
+
+                if (App.mode === 'burn') {
+                    this.calculateBurn(weightKg);
+                } else {
+                    this.calculateGain(weightKg);
+                }
+            },
+
+            calculateBurn(weightKg) {
+                const activity = document.getElementById('input-activity').value;
+                const intensity = document.getElementById('input-intensity').value;
+                const config = Logic.activities[activity];
+                
+                let inputVal = config.type === 'reps' ? 
+                    parseFloat(document.getElementById('input-reps').value) || 0 : 
+                    parseFloat(document.getElementById('input-duration').value) || 0;
+
+                const res = Logic.calculateBurn(activity, weightKg, inputVal, intensity);
+                
+                const isHour = document.querySelector('#timeframe-selector .tab-btn.active').dataset.tf === 'hour';
+                let displayCals = res.calories;
+                
+                if (isHour && config.type === 'duration' && inputVal > 0) {
+                    displayCals = (res.calories / inputVal) * 60;
+                }
+
+                this.animateValue('res-calories', Math.round(displayCals));
+                document.getElementById('res-fat').textContent = res.fat.toFixed(1);
+                
+                const foods = [
+                    { cal: 90, name_zh: '半根香蕉', name_en: '1/2 Banana' },
+                    { cal: 150, name_zh: '1个鸡蛋', name_en: '1 Egg' },
+                    { cal: 300, name_zh: '1个汉堡', name_en: '1 Burger' },
+                    { cal: 500, name_zh: '1顿大餐', name_en: '1 Big Meal' }
+                ];
+                let food = foods.find(f => displayCals < f.cal) || foods[foods.length-1];
+                
+                // Simple food name localization
+                let foodName = food.name_en;
+                if(App.lang === 'zh-CN' || App.lang === 'zh-TW') foodName = food.name_zh;
+                // Add more food translations here if critical, otherwise fallback to English/Chinese
+                
+                document.getElementById('res-food').textContent = foodName;
+
+                const rateVal = config.type === 'reps' ? (res.calories / (inputVal || 1)) : (res.calories / (inputVal || 1));
+                document.getElementById('res-rate').textContent = rateVal.toFixed(2);
+                
+                const efficiencyMap = {
+                    'zh-CN': { rep: '每次消耗', min: '每分钟消耗' },
+                    'zh-TW': { rep: '每次消耗', min: '每分鐘消耗' },
+                    'en': { rep: 'Per Rep', min: 'Per Min' },
+                    'es': { rep: 'Por Rep', min: 'Por Min' },
+                    'ja': { rep: '1回あたり', min: '1分あたり' },
+                    'ru': { rep: 'За раз', min: 'В минуту' },
+                    'hi': { rep: 'प्रति बार', min: 'प्रति मिनट' },
+                    'pl': { rep: 'Na powt.', min: 'Na min' }
+                };
+                
+                const dict = efficiencyMap[App.lang] || efficiencyMap['en'];
+                document.getElementById('lbl-efficiency').textContent = config.type === 'reps' ? dict.rep : dict.min;
+
+                if (App.charts.burn) {
+                    const acts = ['walking', 'jogging', 'jumping_rope', 'dancing', 'running', 'crossfit'];
+                    const newData = acts.map(a => Logic.calculateBurn(a, weightKg, 30, 'moderate').calories);
+                    
+                    App.charts.burn.data.datasets[0].data = newData;
+                    App.charts.burn.update();
+                }
+            },
+
+            calculateGain(weightKg) {
+                let height = parseFloat(document.getElementById('input-height').value) || 0;
+                let age = parseFloat(document.getElementById('input-age').value) || 25;
+                const activityLevel = document.getElementById('input-lifestyle').value;
+
+                let heightCm = App.unit === 'imperial' ? height * 2.54 : height;
+
+                const res = Logic.calculateGain(weightKg, heightCm, age, App.gender, activityLevel);
+
+                this.animateValue('res-gain-cal', Math.round(res.target));
+                this.animateValue('res-tdee', Math.round(res.tdee));
+                this.animateValue('res-bmr', Math.round(res.bmr));
+
+                document.getElementById('res-macro-c').textContent = Math.round(res.macros.c) + 'g';
+                document.getElementById('res-macro-p').textContent = Math.round(res.macros.p) + 'g';
+                document.getElementById('res-macro-f').textContent = Math.round(res.macros.f) + 'g';
+            },
+
+            animateValue(id, end) {
+                const obj = document.getElementById(id);
+                if(obj) obj.textContent = end.toLocaleString();
+            }
+        };
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

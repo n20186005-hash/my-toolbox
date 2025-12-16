@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="health">
+    <meta name="description" content="Professional TDEE Calculator - Calculate your Total Daily Energy Expenditure, BMR, and macronutrients. TDEE 计算器，支持公制/英制单位、增肌减脂热量建议及多语言。">
+    <title>TDEE Calculator Pro | 每日总能量消耗计算器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#2563eb', hover: '#1d4ed8' }, /* Royal Blue for Health/Fitness */
+                        secondary: { DEFAULT: '#f59e0b', hover: '#d97706' }, /* Amber for Energy/Calories */
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#eff6ff', dark: '#0f172a' } /* Blue tint bg */
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+
+            .result-row {
+                @apply flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0;
+            }
+            
+            .tab-btn {
+                @apply px-4 py-1.5 rounded-full text-xs font-bold transition-all border;
+            }
+            .tab-btn.active {
+                @apply bg-primary text-white border-primary;
+            }
+            .tab-btn.inactive {
+                @apply bg-transparent text-slate-500 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800;
+            }
+            
+            .gender-btn {
+                @apply flex-1 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium transition-all hover:bg-slate-50 dark:hover:bg-slate-700;
+            }
+            .gender-btn.active {
+                @apply bg-primary text-white border-primary hover:bg-primary;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-orange-200 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20">
+                    <i class="fa fa-fire"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">TDEE Calculator Pro</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">科学计算您的每日热量消耗</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文 (简体)</option>
+                    <option value="zh-TW">🇨🇳 中文 (繁體)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-primary p-6 space-y-5">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                            <i class="fa fa-sliders text-primary"></i> <span data-i18n="h2_config">身体数据</span>
+                        </h2>
+                        <!-- Unit Toggle -->
+                        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                            <button class="px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white" id="btn-metric" onclick="App.setUnit('metric')">Metric</button>
+                            <button class="px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white" id="btn-imperial" onclick="App.setUnit('imperial')">Imperial</button>
+                        </div>
+                    </div>
+
+                    <!-- 1. Gender -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_gender">性别</label>
+                        <div class="flex gap-2">
+                            <button class="gender-btn active" id="btn-male" onclick="App.setGender('male')">
+                                <i class="fa fa-male mr-1"></i> <span data-i18n="gender_male">男</span>
+                            </button>
+                            <button class="gender-btn" id="btn-female" onclick="App.setGender('female')">
+                                <i class="fa fa-female mr-1"></i> <span data-i18n="gender_female">女</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Age & Weight -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-text" data-i18n="lbl_age">年龄</label>
+                            <input type="number" id="input-age" class="input-field font-mono" value="25" placeholder="25" oninput="Calculator.calculate()">
+                        </div>
+                        <div>
+                            <label class="label-text"><span data-i18n="lbl_weight">体重</span> <span id="unit-weight" class="text-xs text-slate-400">(kg)</span></label>
+                            <input type="number" id="input-weight" class="input-field font-mono" value="70" placeholder="70" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <!-- 3. Height -->
+                    <div id="height-metric">
+                        <label class="label-text"><span data-i18n="lbl_height">身高</span> <span class="text-xs text-slate-400">(cm)</span></label>
+                        <input type="number" id="input-height-cm" class="input-field font-mono" value="175" placeholder="175" oninput="Calculator.calculate()">
+                    </div>
+                    <div id="height-imperial" class="hidden grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-text" data-i18n="lbl_ft">英尺 (Ft)</label>
+                            <input type="number" id="input-height-ft" class="input-field font-mono" value="5" oninput="Calculator.calculate()">
+                        </div>
+                        <div>
+                            <label class="label-text" data-i18n="lbl_in">英寸 (In)</label>
+                            <input type="number" id="input-height-in" class="input-field font-mono" value="9" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <!-- 4. Activity Level -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_activity">活动水平</label>
+                        <select id="input-activity" class="input-field" onchange="Calculator.calculate()">
+                            <option value="1.2" data-i18n="act_sedentary">Sedentary (Office job)</option>
+                            <option value="1.375" data-i18n="act_light">Light Exercise (1-2 days/week)</option>
+                            <option value="1.55" data-i18n="act_moderate">Moderate Exercise (3-5 days/week)</option>
+                            <option value="1.725" data-i18n="act_heavy">Heavy Exercise (6-7 days/week)</option>
+                            <option value="1.9" data-i18n="act_athlete">Athlete (2x per day)</option>
+                        </select>
+                    </div>
+
+                    <!-- 5. Body Fat (Optional) -->
+                    <div>
+                        <label class="label-text"><span data-i18n="lbl_bodyfat">体脂率 % (选填)</span></label>
+                        <input type="number" id="input-bodyfat" class="input-field font-mono" placeholder="Optional" oninput="Calculator.calculate()">
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 border border-blue-100 dark:border-blue-800/30 text-sm text-blue-800 dark:text-blue-300">
+                    <i class="fa fa-info-circle mr-1"></i> <span data-i18n="hint_accuracy">越准确的输入数据，计算结果越具有参考价值。Mifflin-St Jeor 公式是目前公认最准确的标准。</span>
+                </div>
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <!-- Header -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg" data-i18n="h2_results">您的热量分析</h2>
+                        <div class="text-xs font-mono text-slate-400 bg-white dark:bg-slate-800 px-3 py-1 rounded border border-slate-200 dark:border-slate-700">
+                            Calories / Day
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-grow flex flex-col gap-8 animate-fade-in">
+                        
+                        <!-- Main Numbers -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Maintenance -->
+                            <div class="rounded-2xl border-2 border-primary/30 p-6 space-y-2 bg-blue-50/50 dark:bg-blue-900/10 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 bg-primary text-white text-[10px] px-3 py-1 rounded-bl-lg font-bold">MAINTENANCE</div>
+                                <h4 class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider text-center" data-i18n="lbl_tdee">每日总消耗 (TDEE)</h4>
+                                <div class="text-center py-4">
+                                    <span class="text-4xl md:text-5xl font-bold font-mono text-slate-800 dark:text-white" id="res-tdee">2,450</span>
+                                    <span class="text-sm text-slate-500 block mt-1">kcal / day</span>
+                                </div>
+                                <p class="text-center text-xs text-slate-500 dark:text-slate-400" data-i18n="desc_tdee">这是维持目前体重所需的每日热量。</p>
+                            </div>
+
+                            <!-- BMR -->
+                            <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 space-y-2 bg-slate-50/50 dark:bg-slate-800/30">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center" data-i18n="lbl_bmr">基础代谢率 (BMR)</h4>
+                                <div class="text-center py-4">
+                                    <span class="text-3xl md:text-4xl font-bold font-mono text-slate-600 dark:text-slate-300" id="res-bmr">1,650</span>
+                                    <span class="text-sm text-slate-500 block mt-1">kcal / day</span>
+                                </div>
+                                <p class="text-center text-xs text-slate-400" data-i18n="desc_bmr">即便躺着不动，身体维持生命所需的最低热量。</p>
+                            </div>
+                        </div>
+
+                        <!-- Goals -->
+                        <div>
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4" data-i18n="h3_goals">目标建议 (Goals)</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Cut -->
+                                <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 border border-yellow-100 dark:border-yellow-800/30">
+                                    <div class="text-xs text-yellow-600 dark:text-yellow-400 uppercase tracking-wide mb-1 font-bold" data-i18n="goal_cut">减脂 (Cutting)</div>
+                                    <div class="text-2xl font-bold text-yellow-700 dark:text-yellow-400 font-mono" id="res-cut">1,950</div>
+                                    <div class="text-xs text-slate-500 mt-1">-500 kcal</div>
+                                </div>
+                                <!-- Maintain -->
+                                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/30">
+                                    <div class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1 font-bold" data-i18n="goal_maintain">维持 (Maintain)</div>
+                                    <div class="text-2xl font-bold text-blue-700 dark:text-blue-400 font-mono" id="res-maintain">2,450</div>
+                                    <div class="text-xs text-slate-500 mt-1">100% TDEE</div>
+                                </div>
+                                <!-- Bulk -->
+                                <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-100 dark:border-emerald-800/30">
+                                    <div class="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-1 font-bold" data-i18n="goal_bulk">增肌 (Bulking)</div>
+                                    <div class="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-mono" id="res-bulk">2,950</div>
+                                    <div class="text-xs text-slate-500 mt-1">+500 kcal</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Macros -->
+                        <div>
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
+                                <span data-i18n="h3_macros">宏量营养素 (Macros)</span> 
+                                <span class="text-xs font-normal text-slate-400 border border-slate-300 dark:border-slate-600 rounded px-2 py-0.5">Maintenance</span>
+                            </h3>
+                            <div class="grid grid-cols-3 gap-1 text-center">
+                                <div class="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-l-xl border-y border-l border-indigo-100 dark:border-indigo-800/30">
+                                    <div class="text-[10px] uppercase text-indigo-500 font-bold mb-1">Protein</div>
+                                    <div class="font-mono font-bold text-indigo-700 dark:text-indigo-300 text-lg" id="res-protein">184g</div>
+                                    <div class="text-[10px] text-slate-400">30%</div>
+                                </div>
+                                <div class="bg-pink-50 dark:bg-pink-900/20 p-3 border-y border-pink-100 dark:border-pink-800/30">
+                                    <div class="text-[10px] uppercase text-pink-500 font-bold mb-1">Fats</div>
+                                    <div class="font-mono font-bold text-pink-700 dark:text-pink-300 text-lg" id="res-fat">95g</div>
+                                    <div class="text-[10px] text-slate-400">35%</div>
+                                </div>
+                                <div class="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-r-xl border-y border-r border-amber-100 dark:border-amber-800/30">
+                                    <div class="text-[10px] uppercase text-amber-500 font-bold mb-1">Carbs</div>
+                                    <div class="font-mono font-bold text-amber-700 dark:text-amber-300 text-lg" id="res-carbs">214g</div>
+                                    <div class="text-[10px] text-slate-400">35%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Comprehensive Guide Section -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Feature Introduction -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">TDEE 指南</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_what">什么是 TDEE？</h3>
+                                <p data-i18n="guide_p_what">TDEE（Total Daily Energy Expenditure）即每日总能量消耗。它代表了您在一天内消耗的总热量，包括基础代谢（BMR）、日常活动和运动消耗。了解您的 TDEE 是控制体重（增肌或减脂）的第一步。</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_calc">如何计算的？</h3>
+                                <p data-i18n="guide_p_calc">
+                                    本工具采用 **Mifflin-St Jeor 公式**，这是目前美国饮食协会（ADA）推荐的最准确的算法。
+                                    <br><br>
+                                    1. 首先计算 **BMR**（基础代谢率），即身体静止时的消耗。<br>
+                                    2. 然后乘以 **活动系数**（Activity Factor），从 1.2（久坐）到 1.9（极度活跃）。
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_macro">关于宏量营养素</h3>
+                                <p data-i18n="guide_p_macro">宏量营养素（Macros）是指蛋白质、脂肪和碳水化合物。本计算器默认提供 30/35/35 的均衡比例建议。如果您在进行高强度力量训练，建议适当增加蛋白质摄入。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-question-circle text-primary"></i> <span data-i18n="faq_title">常见问题 (FAQ)</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q1">TDEE 计算结果准确吗？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a1">所有在线计算器都只是估算值。建议您以此为起点，尝试摄入计算出的热量 2-3 周，观察体重变化。如果体重下降过快，请增加热量；如果没变化，请减少热量。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q2">我该选择哪个活动水平？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a2">这是大多数人容易高估的地方。如果您是办公室工作者，即便每周去健身房 3 次，通常也属于 "Lightly Active" 或 "Moderate"。如果全天坐着，请选择 "Sedentary"。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q3">减脂应该吃多少？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a3">一般建议是在 TDEE 的基础上减少 500 卡路里（Cutting 目标）。这样理论上每周可以减少约 0.5kg 的脂肪，这是一个健康且可持续的速度。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-slate-400 py-6">
+            <p>&copy; <span id="year"></span> TDEE Calculator Pro. <span data-i18n="footer_text">Results are estimates for informational purposes only.</span></p>
+        </footer>
+
+    </div>
+
+    <!-- Required Footer Code -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "TDEE 计算器 Pro", subtitle: "科学计算每日热量消耗与营养建议",
+                h2_config: "身体数据",
+                lbl_gender: "性别", gender_male: "男", gender_female: "女",
+                lbl_age: "年龄", lbl_weight: "体重", lbl_height: "身高", lbl_ft: "英尺 (Ft)", lbl_in: "英寸 (In)",
+                lbl_activity: "活动水平", lbl_bodyfat: "体脂率 % (选填)",
+                act_sedentary: "久坐 (办公室工作)", act_light: "轻度活动 (运动 1-3天/周)", 
+                act_moderate: "中度活动 (运动 3-5天/周)", act_heavy: "高度活动 (运动 6-7天/周)", act_athlete: "专业运动员 (每天2练)",
+                hint_accuracy: "数据越准确，结果越具有参考价值。Mifflin-St Jeor 公式是目前的行业标准。",
+                h2_results: "您的热量分析",
+                lbl_tdee: "每日总消耗 (TDEE)", desc_tdee: "这是维持目前体重所需的每日热量。",
+                lbl_bmr: "基础代谢率 (BMR)", desc_bmr: "身体静止不动维持生命所需的最低热量。",
+                h3_goals: "目标建议 (Goals)", goal_cut: "减脂 (Cutting)", goal_maintain: "维持 (Maintain)", goal_bulk: "增肌 (Bulking)",
+                h3_macros: "宏量营养素 (Macros)",
+                guide_title: "TDEE 指南",
+                guide_h_what: "什么是 TDEE？", guide_p_what: "TDEE（Total Daily Energy Expenditure）即每日总能量消耗。它代表了您在一天内消耗的总热量，包括基础代谢（BMR）、日常活动和运动消耗。",
+                guide_h_calc: "如何计算的？", guide_p_calc: "本工具采用 Mifflin-St Jeor 公式，首先计算 BMR，然后乘以活动系数（Activity Factor）。",
+                guide_h_macro: "关于宏量营养素", guide_p_macro: "宏量营养素指蛋白质、脂肪和碳水化合物。默认提供 30/35/35 的均衡比例。",
+                faq_title: "常见问题 (FAQ)",
+                faq_q1: "结果准确吗？", faq_a1: "计算器提供的是估算值。建议以此为起点，尝试 2-3 周并观察体重变化。",
+                faq_q2: "如何选择活动水平？", faq_a2: "大多数人容易高估。办公室工作者即便每周健身 3 次，通常也属于轻度或中度活动。",
+                faq_q3: "减脂该吃多少？", faq_a3: "建议在 TDEE 基础上减少 500 卡路里，理论上每周可减重约 0.5kg。",
+                footer_text: "计算结果仅供参考，不构成医疗建议。"
+            },
+            'zh-TW': {
+                title: "TDEE 計算機 Pro", subtitle: "科學計算每日熱量消耗與營養建議",
+                h2_config: "身體數據",
+                lbl_gender: "性別", gender_male: "男", gender_female: "女",
+                lbl_age: "年齡", lbl_weight: "體重", lbl_height: "身高", lbl_ft: "英尺 (Ft)", lbl_in: "英寸 (In)",
+                lbl_activity: "活動水平", lbl_bodyfat: "體脂率 % (選填)",
+                act_sedentary: "久坐 (辦公室工作)", act_light: "輕度活動 (運動 1-3天/週)", 
+                act_moderate: "中度活動 (運動 3-5天/週)", act_heavy: "高度活動 (運動 6-7天/週)", act_athlete: "專業運動員 (每天2練)",
+                hint_accuracy: "數據越準確，結果越具參考價值。Mifflin-St Jeor 公式是目前的行業標準。",
+                h2_results: "您的熱量分析",
+                lbl_tdee: "每日總消耗 (TDEE)", desc_tdee: "這是維持目前體重所需的每日熱量。",
+                lbl_bmr: "基礎代謝率 (BMR)", desc_bmr: "身體靜止不動維持生命所需的最低熱量。",
+                h3_goals: "目標建議 (Goals)", goal_cut: "減脂 (Cutting)", goal_maintain: "維持 (Maintain)", goal_bulk: "增肌 (Bulking)",
+                h3_macros: "營養素分配 (Macros)",
+                guide_title: "TDEE 指南",
+                guide_h_what: "什麼是 TDEE？", guide_p_what: "TDEE（Total Daily Energy Expenditure）即每日總能量消耗。它代表了您在一天內消耗的總熱量，包括基礎代謝（BMR）、日常活動和運動消耗。",
+                guide_h_calc: "如何計算的？", guide_p_calc: "本工具採用 Mifflin-St Jeor 公式，首先計算 BMR，然後乘以活動係數（Activity Factor）。",
+                guide_h_macro: "關於營養素", guide_p_macro: "營養素指蛋白質、脂肪和碳水化合物。默認提供 30/35/35 的均衡比例。",
+                faq_title: "常見問題 (FAQ)",
+                faq_q1: "結果準確嗎？", faq_a1: "計算器提供的是估算值。建議以此為起點，嘗試 2-3 週並觀察體重變化。",
+                faq_q2: "如何選擇活動水平？", faq_a2: "大多數人容易高估。辦公室工作者即便每週健身 3 次，通常也屬於輕度或中度活動。",
+                faq_q3: "減脂該吃多少？", faq_a3: "建議在 TDEE 基礎上減少 500 卡路里，理論上每週可減重約 0.5kg。",
+                footer_text: "計算結果僅供參考，不構成醫療建議。"
+            },
+            'en': {
+                title: "TDEE Calculator Pro", subtitle: "Scientific Daily Energy & Macro Planner",
+                h2_config: "Your Stats",
+                lbl_gender: "Gender", gender_male: "Male", gender_female: "Female",
+                lbl_age: "Age", lbl_weight: "Weight", lbl_height: "Height", lbl_ft: "Feet", lbl_in: "Inches",
+                lbl_activity: "Activity Level", lbl_bodyfat: "Body Fat % (Optional)",
+                act_sedentary: "Sedentary (Office job)", act_light: "Light Exercise (1-2 days/week)", 
+                act_moderate: "Moderate Exercise (3-5 days/week)", act_heavy: "Heavy Exercise (6-7 days/week)", act_athlete: "Athlete (2x per day)",
+                hint_accuracy: "The more accurate your data, the better the result. Uses the Mifflin-St Jeor formula.",
+                h2_results: "Calorie Analysis",
+                lbl_tdee: "Total Daily Expenditure (TDEE)", desc_tdee: "Calories needed to maintain your current weight.",
+                lbl_bmr: "Basal Metabolic Rate (BMR)", desc_bmr: "Calories burned at complete rest to stay alive.",
+                h3_goals: "Goal Targets", goal_cut: "Cutting (Fat Loss)", goal_maintain: "Maintenance", goal_bulk: "Bulking (Muscle)",
+                h3_macros: "Macronutrients",
+                guide_title: "TDEE Guide",
+                guide_h_what: "What is TDEE?", guide_p_what: "TDEE stands for Total Daily Energy Expenditure. It is the total number of calories you burn in a day, including your Basal Metabolic Rate (BMR) and physical activity.",
+                guide_h_calc: "How is it calculated?", guide_p_calc: "This tool uses the Mifflin-St Jeor equation, considered the gold standard for accuracy. BMR is calculated first, then multiplied by an activity factor.",
+                guide_h_macro: "About Macros", guide_p_macro: "Macros are Protein, Fats, and Carbs. The default split shown is a balanced 30/35/35 ratio suitable for general health.",
+                faq_title: "FAQ",
+                faq_q1: "Is this accurate?", faq_a1: "Calculators provide estimates. Use this as a starting point, track your weight for 2-3 weeks, and adjust if necessary.",
+                faq_q2: "Which activity level?", faq_a2: "Most people overestimate activity. If you work a desk job, you are likely 'Sedentary' or 'Lightly Active' even if you exercise a few times a week.",
+                faq_q3: "How much to cut?", faq_a3: "A standard deficit is 500 calories below your TDEE. This typically results in about 1lb (0.5kg) of weight loss per week.",
+                footer_text: "Results are estimates for information only."
+            },
+            'es': {
+                title: "Calculadora TDEE Pro", subtitle: "Planificador científico de energía y macros",
+                h2_config: "Sus Datos",
+                lbl_gender: "Género", gender_male: "Hombre", gender_female: "Mujer",
+                lbl_age: "Edad", lbl_weight: "Peso", lbl_height: "Altura", lbl_ft: "Pies", lbl_in: "Pulgadas",
+                lbl_activity: "Nivel de Actividad", lbl_bodyfat: "% Grasa Corporal (Opcional)",
+                act_sedentary: "Sedentario (Trabajo de oficina)", act_light: "Ejercicio Ligero (1-2 días/sem)", 
+                act_moderate: "Ejercicio Moderado (3-5 días/sem)", act_heavy: "Ejercicio Intenso (6-7 días/sem)", act_athlete: "Atleta (2x al día)",
+                hint_accuracy: "Cuanto más precisos sean los datos, mejor será el resultado. Utiliza la fórmula Mifflin-St Jeor.",
+                h2_results: "Análisis de Calorías",
+                lbl_tdee: "Gasto Energético Total (TDEE)", desc_tdee: "Calorías necesarias para mantener su peso actual.",
+                lbl_bmr: "Tasa Metabólica Basal (BMR)", desc_bmr: "Calorías quemadas en reposo absoluto.",
+                h3_goals: "Objetivos", goal_cut: "Definición (Perder Grasa)", goal_maintain: "Mantenimiento", goal_bulk: "Volumen (Ganar Músculo)",
+                h3_macros: "Macronutrientes",
+                guide_title: "Guía TDEE",
+                guide_h_what: "¿Qué es TDEE?", guide_p_what: "TDEE significa Gasto Energético Diario Total. Es el número total de calorías que quemas en un día, incluido tu BMR y la actividad física.",
+                guide_h_calc: "¿Cómo se calcula?", guide_p_calc: "Esta herramienta utiliza la ecuación Mifflin-St Jeor. Primero se calcula el BMR y luego se multiplica por un factor de actividad.",
+                guide_h_macro: "Sobre los Macros", guide_p_macro: "Los macros son Proteínas, Grasas y Carbohidratos. La división predeterminada es una proporción equilibrada de 30/35/35.",
+                faq_title: "Preguntas Frecuentes",
+                faq_q1: "¿Es preciso?", faq_a1: "Las calculadoras proporcionan estimaciones. Úselo como punto de partida y ajuste según sus resultados reales.",
+                faq_q2: "¿Qué nivel de actividad?", faq_a2: "La mayoría sobreestima. Si trabaja en oficina, probablemente sea 'Sedentario' o 'Ligeramente Activo'.",
+                faq_q3: "¿Cuánto reducir?", faq_a3: "Un déficit estándar es de 500 calorías por debajo de su TDEE para perder aproximadamente 0.5kg por semana.",
+                footer_text: "Los resultados son estimaciones solo informativas."
+            },
+            'ru': {
+                title: "Калькулятор TDEE Pro", subtitle: "Расчет калорий и макронутриентов",
+                h2_config: "Ваши Данные",
+                lbl_gender: "Пол", gender_male: "Муж", gender_female: "Жен",
+                lbl_age: "Возраст", lbl_weight: "Вес", lbl_height: "Рост", lbl_ft: "Футы", lbl_in: "Дюймы",
+                lbl_activity: "Активность", lbl_bodyfat: "% Жира (Опционально)",
+                act_sedentary: "Сидячий (Офисная работа)", act_light: "Легкая нагрузка (1-2 дня/нед)", 
+                act_moderate: "Средняя нагрузка (3-5 дней/нед)", act_heavy: "Тяжелая нагрузка (6-7 дней/нед)", act_athlete: "Атлет (2x в день)",
+                hint_accuracy: "Используется формула Миффлина-Сан Жеора для максимальной точности.",
+                h2_results: "Анализ Калорий",
+                lbl_tdee: "Суточный расход (TDEE)", desc_tdee: "Калории для поддержания текущего веса.",
+                lbl_bmr: "Базальный метаболизм (BMR)", desc_bmr: "Калории, сжигаемые в полном покое.",
+                h3_goals: "Цели", goal_cut: "Похудение", goal_maintain: "Поддержание", goal_bulk: "Набор массы",
+                h3_macros: "Макронутриенты",
+                guide_title: "Гид по TDEE",
+                guide_h_what: "Что такое TDEE?", guide_p_what: "TDEE - это общий суточный расход энергии. Сумма калорий, сжигаемых за день, включая BMR и физическую активность.",
+                guide_h_calc: "Как считается?", guide_p_calc: "Мы используем уравнение Миффлина-Сан Жеора. Сначала считается BMR, затем умножается на коэффициент активности.",
+                guide_h_macro: "О макросах", guide_p_macro: "Белки, жиры и углеводы. Показано сбалансированное соотношение 30/35/35.",
+                faq_title: "Частые вопросы",
+                faq_q1: "Это точно?", faq_a1: "Калькуляторы дают оценку. Используйте это как старт, следите за весом 2-3 недели и корректируйте.",
+                faq_q2: "Какой уровень активности?", faq_a2: "Многие переоценивают. Офисная работа - это обычно «Сидячий» или «Легкая активность», даже если есть тренировки.",
+                faq_q3: "Сколько урезать?", faq_a3: "Стандартный дефицит - 500 ккал от TDEE для потери около 0.5 кг в неделю.",
+                footer_text: "Результаты являются лишь оценкой."
+            },
+            'hi': {
+                title: "TDEE कैलकुलेटर Pro", subtitle: "दैनिक ऊर्जा और पोषण योजनाकार",
+                h2_config: "आपकी जानकारी",
+                lbl_gender: "लिंग", gender_male: "पुरुष", gender_female: "महिला",
+                lbl_age: "उम्र", lbl_weight: "वजन", lbl_height: "कद", lbl_ft: "फुट", lbl_in: "इंच",
+                lbl_activity: "गतिविधि स्तर", lbl_bodyfat: "शारीरिक वसा % (वैकल्पिक)",
+                act_sedentary: "न्यूनतम (ऑफ़िस जॉब)", act_light: "हल्का व्यायाम (1-2 दिन/सप्ताह)", 
+                act_moderate: "मध्यम व्यायाम (3-5 दिन/सप्ताह)", act_heavy: "भारी व्यायाम (6-7 दिन/सप्ताह)", act_athlete: "एथलीट (दिन में 2 बार)",
+                hint_accuracy: "अधिक सटीक डेटा बेहतर परिणाम देता है। मिफ्लिन-सेंट ज्योर फॉर्मूला का उपयोग करता है।",
+                h2_results: "कैलोरी विश्लेषण",
+                lbl_tdee: "कुल दैनिक ऊर्जा व्यय (TDEE)", desc_tdee: "मौजूदा वजन बनाए रखने के लिए आवश्यक कैलोरी।",
+                lbl_bmr: "बेसल मेटाबोलिक दर (BMR)", desc_bmr: "पूर्ण आराम की स्थिति में जलाई गई कैलोरी।",
+                h3_goals: "लक्ष्य", goal_cut: "वजन घटाना (Cutting)", goal_maintain: "बनाए रखना (Maintain)", goal_bulk: "मांसपेशी बढ़ाना (Bulking)",
+                h3_macros: "मैक्रोन्यूट्रिएंट्स",
+                guide_title: "TDEE गाइड",
+                guide_h_what: "TDEE क्या है?", guide_p_what: "TDEE का मतलब कुल दैनिक ऊर्जा व्यय है। यह एक दिन में आपके द्वारा जलाई जाने वाली कुल कैलोरी है।",
+                guide_h_calc: "इसकी गणना कैसे की जाती है?", guide_p_calc: "यह उपकरण मिफ्लिन-सेंट ज्योर समीकरण का उपयोग करता है। पहले BMR की गणना की जाती है, फिर गतिविधि कारक से गुणा किया जाता है।",
+                guide_h_macro: "मैक्रोज़ के बारे में", guide_p_macro: "मैक्रोज़ प्रोटीन, वसा और कार्ब्स हैं। डिफ़ॉल्ट रूप से 30/35/35 का संतुलित अनुपात दिखाया गया है।",
+                faq_title: "सामान्य प्रश्न",
+                faq_q1: "क्या यह सटीक है?", faq_a1: "कैलकुलेटर अनुमान प्रदान करते हैं। इसे शुरुआती बिंदु के रूप में उपयोग करें और यदि आवश्यक हो तो समायोजित करें।",
+                faq_q2: "कौन सा गतिविधि स्तर?", faq_a2: "ज्यादातर लोग गतिविधि को कम आंकते हैं। यदि आप डेस्क जॉब करते हैं, तो आप संभवतः 'न्यूनतम' या 'हल्का सक्रिय' हैं।",
+                faq_q3: "कितना कम करें?", faq_a3: "वजन कम करने के लिए अपने TDEE से 500 कैलोरी कम करना एक मानक है।",
+                footer_text: "परिणाम केवल सूचनात्मक उद्देश्यों के लिए अनुमान हैं।"
+            },
+            'pl': {
+                title: "Kalkulator TDEE Pro", subtitle: "Naukowe planowanie kalorii i makro",
+                h2_config: "Twoje Dane",
+                lbl_gender: "Płeć", gender_male: "Mężczyzna", gender_female: "Kobieta",
+                lbl_age: "Wiek", lbl_weight: "Waga", lbl_height: "Wzrost", lbl_ft: "Stopy", lbl_in: "Cale",
+                lbl_activity: "Poziom Aktywności", lbl_bodyfat: "% Tkanki Tłuszczowej (Opcja)",
+                act_sedentary: "Siedzący (Praca biurowa)", act_light: "Lekki (1-2 dni/tydzień)", 
+                act_moderate: "Umiarkowany (3-5 dni/tydzień)", act_heavy: "Ciężki (6-7 dni/tydzień)", act_athlete: "Sportowiec (2x dziennie)",
+                hint_accuracy: "Im dokładniejsze dane, tym lepszy wynik. Używa wzoru Mifflina-St Jeora.",
+                h2_results: "Analiza Kalorii",
+                lbl_tdee: "Całkowite Dzienne Zapotrzebowanie (TDEE)", desc_tdee: "Kalorie potrzebne do utrzymania obecnej wagi.",
+                lbl_bmr: "Podstawowa Przemiana Materii (BMR)", desc_bmr: "Kalorie spalane w całkowitym spoczynku.",
+                h3_goals: "Cele", goal_cut: "Redukcja", goal_maintain: "Utrzymanie", goal_bulk: "Masa",
+                h3_macros: "Makroskładniki",
+                guide_title: "Przewodnik TDEE",
+                guide_h_what: "Co to jest TDEE?", guide_p_what: "TDEE to całkowite dzienne zapotrzebowanie energetyczne. To suma kalorii spalanych w ciągu dnia, w tym BMR i aktywność fizyczna.",
+                guide_h_calc: "Jak to jest obliczane?", guide_p_calc: "To narzędzie używa wzoru Mifflina-St Jeora. Najpierw obliczane jest BMR, a następnie mnożone przez współczynnik aktywności.",
+                guide_h_macro: "O Makroskładnikach", guide_p_macro: "Makro to Białka, Tłuszcze i Węglowodany. Domyślnie pokazany jest zrównoważony podział 30/35/35.",
+                faq_title: "FAQ",
+                faq_q1: "Czy to dokładne?", faq_a1: "Kalkulatory podają szacunki. Użyj tego jako punktu startowego, obserwuj wagę przez 2-3 tygodnie i dostosuj.",
+                faq_q2: "Jaki poziom aktywności?", faq_a2: "Większość ludzi przecenia aktywność. Praca biurowa to zazwyczaj 'Tryb Siedzący' lub 'Lekki', nawet przy treningach.",
+                faq_q3: "Ile obciąć?", faq_a3: "Standardowy deficyt to 500 kalorii poniżej TDEE. Pozwala to schudnąć ok. 0.5kg tygodniowo.",
+                footer_text: "Wyniki są tylko danymi szacunkowymi."
+            },
+            'ja': {
+                title: "TDEE 計算機 Pro", subtitle: "毎日の消費カロリーと栄養プランナー",
+                h2_config: "身体データ",
+                lbl_gender: "性別", gender_male: "男性", gender_female: "女性",
+                lbl_age: "年齢", lbl_weight: "体重", lbl_height: "身長", lbl_ft: "フィート", lbl_in: "インチ",
+                lbl_activity: "活動レベル", lbl_bodyfat: "体脂肪率 % (任意)",
+                act_sedentary: "座り仕事 (運動なし)", act_light: "軽い運動 (週1-2日)", 
+                act_moderate: "中程度の運動 (週3-5日)", act_heavy: "激しい運動 (週6-7日)", act_athlete: "アスリート (1日2回)",
+                hint_accuracy: "データが正確であるほど、結果は良くなります。Mifflin-St Jeor式を使用しています。",
+                h2_results: "カロリー分析",
+                lbl_tdee: "総エネルギー消費量 (TDEE)", desc_tdee: "現在の体重を維持するために必要なカロリー。",
+                lbl_bmr: "基礎代謝率 (BMR)", desc_bmr: "生命維持のために安静時に消費されるカロリー。",
+                h3_goals: "目標", goal_cut: "減量 (Cutting)", goal_maintain: "維持 (Maintenance)", goal_bulk: "増量 (Bulking)",
+                h3_macros: "主要栄養素 (Macros)",
+                guide_title: "TDEE ガイド",
+                guide_h_what: "TDEEとは？", guide_p_what: "TDEEは総エネルギー消費量のことです。基礎代謝（BMR）と身体活動を含め、1日に消費する総カロリーです。",
+                guide_h_calc: "計算方法は？", guide_p_calc: "このツールはMifflin-St Jeor式を使用しています。まずBMRを計算し、それに活動係数を掛けます。",
+                guide_h_macro: "マクロ栄養素について", guide_p_macro: "マクロはタンパク質、脂質、炭水化物です。デフォルトでは30/35/35のバランスで表示されます。",
+                faq_title: "よくある質問",
+                faq_q1: "正確ですか？", faq_a1: "計算機は推定値を提供します。これを開始点として、2〜3週間体重を追跡し、必要に応じて調整してください。",
+                faq_q2: "どの活動レベル？", faq_a2: "多くの人は活動を過大評価します。デスクワークの場合、週に数回運動していても「座り仕事」または「軽い運動」である可能性が高いです。",
+                faq_q3: "どれくらい減らす？", faq_a3: "減量のためには、TDEEから500カロリー減らすのが標準的です。これにより、週に約0.5kg減量できます。",
+                footer_text: "結果はあくまで目安です。"
+            }
+        };
+
+        // --- Core Calculator Engine (Mifflin-St Jeor) ---
+        const Calculator = {
+            calculate() {
+                // Get raw inputs
+                const gender = App.gender;
+                const age = parseFloat(document.getElementById('input-age').value) || 0;
+                let weight = parseFloat(document.getElementById('input-weight').value) || 0;
+                let height = 0;
+
+                // Handle Units
+                if (App.unit === 'imperial') {
+                    // Convert lbs to kg
+                    weight = weight * 0.453592;
+                    // Convert ft/in to cm
+                    const ft = parseFloat(document.getElementById('input-height-ft').value) || 0;
+                    const in_val = parseFloat(document.getElementById('input-height-in').value) || 0;
+                    height = (ft * 30.48) + (in_val * 2.54);
+                } else {
+                    height = parseFloat(document.getElementById('input-height-cm').value) || 0;
+                }
+
+                const activity = parseFloat(document.getElementById('input-activity').value) || 1.2;
+                const bodyFat = parseFloat(document.getElementById('input-bodyfat').value);
+
+                if (age === 0 || weight === 0 || height === 0) return;
+
+                // 1. Calculate BMR
+                // Mifflin-St Jeor: (10 × weight in kg) + (6.25 × height in cm) - (5 × age in years) + s
+                // s = +5 for men, -161 for women
+                let s = (gender === 'male') ? 5 : -161;
+                let bmr = (10 * weight) + (6.25 * height) - (5 * age) + s;
+
+                // Optional: Katch-McArdle if body fat is provided and sensible
+                if (!isNaN(bodyFat) && bodyFat > 0 && bodyFat < 60) {
+                    const lbm = weight * (1 - (bodyFat / 100));
+                    bmr = 370 + (21.6 * lbm);
+                }
+
+                // 2. Calculate TDEE
+                const tdee = bmr * activity;
+
+                // 3. Update UI
+                this.animateValue('res-tdee', Math.round(tdee));
+                this.animateValue('res-bmr', Math.round(bmr));
+                
+                // Goals
+                this.animateValue('res-cut', Math.round(tdee - 500));
+                this.animateValue('res-maintain', Math.round(tdee));
+                this.animateValue('res-bulk', Math.round(tdee + 500));
+
+                // Macros (Maintenance) - 30% Protein, 35% Fat, 35% Carb
+                const pCal = tdee * 0.30;
+                const fCal = tdee * 0.35;
+                const cCal = tdee * 0.35;
+
+                document.getElementById('res-protein').textContent = Math.round(pCal / 4) + 'g';
+                document.getElementById('res-fat').textContent = Math.round(fCal / 9) + 'g';
+                document.getElementById('res-carbs').textContent = Math.round(cCal / 4) + 'g';
+            },
+
+            animateValue(id, end) {
+                const obj = document.getElementById(id);
+                if (!obj) return;
+                // Simple update for now to avoid jumpiness during typing
+                obj.textContent = end.toLocaleString();
+            }
+        };
+
+        // --- App Logic ---
+        const App = {
+            currentLang: 'zh-CN',
+            gender: 'male',
+            unit: 'metric', // metric or imperial
+
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                const savedLang = localStorage.getItem('app_lang_tdee');
+                
+                this.currentLang = (langParam && i18nData[langParam]) ? langParam : (savedLang || 'zh-CN');
+                
+                if (!langParam) this.updateUrl(this.currentLang);
+
+                document.getElementById('lang-selector').value = this.currentLang;
+
+                this.handleTheme();
+                this.setupLanguage();
+                this.updateYear();
+                this.translateUI(this.currentLang);
+                
+                // Initial Calc
+                Calculator.calculate();
+            },
+
+            setGender(g) {
+                this.gender = g;
+                document.getElementById('btn-male').className = `gender-btn ${g === 'male' ? 'active' : ''}`;
+                document.getElementById('btn-female').className = `gender-btn ${g === 'female' ? 'active' : ''}`;
+                Calculator.calculate();
+            },
+
+            setUnit(u) {
+                this.unit = u;
+                document.getElementById('btn-metric').className = `px-3 py-1 text-xs font-bold rounded-md shadow-sm transition-all ${u === 'metric' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'}`;
+                document.getElementById('btn-imperial').className = `px-3 py-1 text-xs font-bold rounded-md shadow-sm transition-all ${u === 'imperial' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'}`;
+
+                // Toggle Visibility
+                if (u === 'metric') {
+                    document.getElementById('height-metric').style.display = 'block';
+                    document.getElementById('height-imperial').style.display = 'none';
+                    document.getElementById('height-imperial').classList.remove('grid');
+                    document.getElementById('unit-weight').textContent = '(kg)';
+                } else {
+                    document.getElementById('height-metric').style.display = 'none';
+                    document.getElementById('height-imperial').style.display = 'grid';
+                    document.getElementById('height-imperial').classList.remove('hidden');
+                    document.getElementById('unit-weight').textContent = '(lbs)';
+                }
+                Calculator.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {}
+            },
+
+            setupLanguage() {
+                const selector = document.getElementById('lang-selector');
+                selector.addEventListener('change', (e) => {
+                    const lang = e.target.value;
+                    this.currentLang = lang;
+                    localStorage.setItem('app_lang_tdee', lang);
+                    this.updateUrl(lang);
+                    this.translateUI(lang);
+                    Calculator.calculate();
+                });
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) {
+                        // Handle input placeholders if needed, but innerHTML covers most text
+                        el.innerHTML = data[key];
+                    }
+                });
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

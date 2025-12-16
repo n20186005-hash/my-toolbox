@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Updated category as requested -->
+    <meta name="category" content="health">
+    <meta name="description" content="增肌减脂宏量营养素计算器 - 科学计算您的蛋白质、脂肪和碳水化合物需求，支持增肌、减脂和维持体重目标。">
+    <title>宏量营养素计算器 | Macronutrient Calculator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#8b5cf6', hover: '#7c3aed' }, /* Purple for nutrition */
+                        secondary: { DEFAULT: '#ec4899', hover: '#db2777' },
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#faf5ff', dark: '#0f172a' } /* Purple tint bg */
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+
+            .result-row {
+                @apply flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0;
+            }
+            
+            .gender-btn {
+                @apply flex-1 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium transition-all hover:bg-slate-50 dark:hover:bg-slate-700;
+            }
+            .gender-btn.active {
+                @apply bg-primary text-white border-primary hover:bg-primary;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden flex flex-col">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-pink-200 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex-grow">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-purple-500/20">
+                    <i class="fa fa-cutlery"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">宏量营养素计算器</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">增肌减脂营养比例科学计算</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文 (简体)</option>
+                    <option value="zh-TW">🇹🇼 中文 (繁體)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-primary p-6 space-y-5">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                            <i class="fa fa-sliders text-primary"></i> <span data-i18n="h2_config">身体数据</span>
+                        </h2>
+                        <!-- Unit Toggle -->
+                        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                            <button class="px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white" id="btn-metric" onclick="App.setUnit('metric')">Metric</button>
+                            <button class="px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white" id="btn-imperial" onclick="App.setUnit('imperial')">Imperial</button>
+                        </div>
+                    </div>
+
+                    <!-- 1. Gender -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_gender">性别</label>
+                        <div class="flex gap-2">
+                            <button class="gender-btn active" id="btn-male" onclick="App.setGender('male')">
+                                <i class="fa fa-male mr-1"></i> <span data-i18n="gender_male">男</span>
+                            </button>
+                            <button class="gender-btn" id="btn-female" onclick="App.setGender('female')">
+                                <i class="fa fa-female mr-1"></i> <span data-i18n="gender_female">女</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Age & Weight -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-text" data-i18n="lbl_age">年龄</label>
+                            <input type="number" id="input-age" class="input-field font-mono" value="25" min="18" max="120" placeholder="25" oninput="Calculator.calculate()">
+                        </div>
+                        <div>
+                            <label class="label-text"><span data-i18n="lbl_weight">体重</span> <span id="unit-weight" class="text-xs text-slate-400">(kg)</span></label>
+                            <input type="number" id="input-weight" class="input-field font-mono" value="70" min="30" max="300" step="0.1" placeholder="70" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <!-- 3. Height -->
+                    <div id="height-metric">
+                        <label class="label-text"><span data-i18n="lbl_height">身高</span> <span class="text-xs text-slate-400">(cm)</span></label>
+                        <input type="number" id="input-height-cm" class="input-field font-mono" value="175" min="100" max="250" placeholder="175" oninput="Calculator.calculate()">
+                    </div>
+                    <div id="height-imperial" class="hidden grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-text" data-i18n="lbl_ft">英尺 (Ft)</label>
+                            <input type="number" id="input-height-ft" class="input-field font-mono" value="5" min="3" max="8" oninput="Calculator.calculate()">
+                        </div>
+                        <div>
+                            <label class="label-text" data-i18n="lbl_in">英寸 (In)</label>
+                            <input type="number" id="input-height-in" class="input-field font-mono" value="9" min="0" max="11" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <!-- 4. Activity Level -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_activity">活动水平</label>
+                        <select id="input-activity" class="input-field" onchange="Calculator.calculate()">
+                            <option value="1.2" data-i18n="act_sedentary">久坐 (办公室工作)</option>
+                            <option value="1.375" data-i18n="act_light">轻度活动 (1-2天/周)</option>
+                            <option value="1.55" data-i18n="act_moderate">中度活动 (3-5天/周)</option>
+                            <option value="1.725" data-i18n="act_heavy">高度活动 (6-7天/周)</option>
+                            <option value="1.9" data-i18n="act_athlete">专业运动员 (每天2次)</option>
+                        </select>
+                    </div>
+
+                    <!-- 5. Goal -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_goal">目标</label>
+                        <select id="input-goal" class="input-field" onchange="Calculator.calculate()">
+                            <option value="cut" data-i18n="goal_cut">减脂 (减少500卡)</option>
+                            <option value="maintain" data-i18n="goal_maintain">维持体重</option>
+                            <option value="bulk" data-i18n="goal_bulk">增肌 (增加500卡)</option>
+                            <option value="bulk_extra" data-i18n="goal_bulk_extra">快速增肌 (增加750卡)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4 border border-purple-100 dark:border-purple-800/30 text-sm text-purple-800 dark:text-purple-300">
+                    <i class="fa fa-info-circle mr-1"></i> <span data-i18n="hint_accuracy">宏量营养素比例对增肌减脂效果至关重要。蛋白质建议为每公斤体重1.6-2.2克。</span>
+                </div>
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <!-- Header -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg" data-i18n="h2_results">您的宏量营养素需求</h2>
+                        <div class="text-xs font-mono text-slate-400 bg-white dark:bg-slate-800 px-3 py-1 rounded border border-slate-200 dark:border-slate-700">
+                            <span data-i18n="unit_nutrients">蛋白质 / 脂肪 / 碳水化合物</span>
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-grow flex flex-col gap-8 animate-fade-in">
+                        
+                        <!-- Main Numbers -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Calorie Target -->
+                            <div class="rounded-2xl border-2 border-primary/30 p-6 space-y-2 bg-purple-50/50 dark:bg-purple-900/10 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 bg-primary text-white text-[10px] px-3 py-1 rounded-bl-lg font-bold" id="calorie-goal-label">MAINTENANCE</div>
+                                <h4 class="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider text-center" data-i18n="lbl_calories">每日热量目标</h4>
+                                <div class="text-center py-4">
+                                    <span class="text-4xl md:text-5xl font-bold font-mono text-slate-800 dark:text-white" id="res-calories">2,450</span>
+                                    <span class="text-sm text-slate-500 block mt-1">kcal / <span data-i18n="lbl_day">天</span></span>
+                                </div>
+                                <p class="text-center text-xs text-slate-500 dark:text-slate-400" id="res-calories-desc" data-i18n="desc_calories">基于您的目标和活动水平计算</p>
+                            </div>
+
+                            <!-- Body Metrics -->
+                            <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 space-y-4 bg-slate-50/50 dark:bg-slate-800/30">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center" data-i18n="lbl_metrics">身体指标</h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="text-center">
+                                        <span class="text-xs text-slate-500 block mb-1" data-i18n="metric_bmi">BMI</span>
+                                        <span class="text-xl font-bold font-mono text-slate-600 dark:text-slate-300" id="res-bmi">22.9</span>
+                                        <span class="text-[10px] text-green-600 dark:text-green-400 block mt-1" data-i18n="bmi_normal">正常</span>
+                                    </div>
+                                    <div class="text-center">
+                                        <span class="text-xs text-slate-500 block mb-1" data-i18n="metric_bmr">基础代谢 (BMR)</span>
+                                        <span class="text-xl font-bold font-mono text-slate-600 dark:text-slate-300" id="res-bmr">1,650</span>
+                                        <span class="text-[10px] text-slate-400 block mt-1">kcal/<span data-i18n="lbl_day">天</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Macro Distribution Chart -->
+                        <div>
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4" data-i18n="h3_distribution">宏量营养素分配</h3>
+                            <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700 mb-4">
+                                <div class="h-32 flex items-end justify-around gap-2">
+                                    <div class="flex flex-col items-center w-1/3">
+                                        <div class="bg-indigo-500 rounded-t-lg w-full transition-all duration-500" id="chart-protein" style="height: 30%"></div>
+                                        <span class="text-xs mt-1 font-medium" data-i18n="chart_p">Protein</span>
+                                    </div>
+                                    <div class="flex flex-col items-center w-1/3">
+                                        <div class="bg-pink-500 rounded-t-lg w-full transition-all duration-500" id="chart-fat" style="height: 35%"></div>
+                                        <span class="text-xs mt-1 font-medium" data-i18n="chart_f">Fat</span>
+                                    </div>
+                                    <div class="flex flex-col items-center w-1/3">
+                                        <div class="bg-amber-500 rounded-t-lg w-full transition-all duration-500" id="chart-carbs" style="height: 35%"></div>
+                                        <span class="text-xs mt-1 font-medium" data-i18n="chart_c">Carbs</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Macros Details -->
+                        <div>
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
+                                <span data-i18n="h3_macros">每日宏量营养素需求</span> 
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Protein -->
+                                <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-800/30">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <div class="text-xs text-indigo-600 dark:text-indigo-400 uppercase tracking-wide font-bold" data-i18n="macro_protein">蛋白质</div>
+                                            <div class="text-3xl font-bold text-indigo-700 dark:text-indigo-300 font-mono" id="res-protein">184g</div>
+                                        </div>
+                                        <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800/50 flex items-center justify-center text-indigo-600">
+                                            <i class="fa fa-drumstick-bite"></i>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2 text-xs">
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-500" data-i18n="macro_calories">热量贡献</span>
+                                            <span class="font-medium" id="res-protein-calories">736 kcal</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-500" data-i18n="macro_percentage">占总热量</span>
+                                            <span class="font-medium" id="res-protein-percent">30%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-500" data-i18n="macro_per_kg">每公斤体重</span>
+                                            <span class="font-medium" id="res-protein-per-kg">2.6g</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Fat -->
+                                <div class="bg-pink-50 dark:bg-pink-900/20 rounded-xl p-5 border border-pink-100 dark:border-pink-800/30">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <div class="text-xs text-pink-600 dark:text-pink-400 uppercase tracking-wide font-bold" data-i18n="macro_fat">脂肪</div>
+                                            <div class="text-3xl font-bold text-pink-700 dark:text-pink-300 font-mono" id="res-fat">95g</div>
+                                        </div>
+                                        <div class="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-800/50 flex items-center justify-center text-pink-600">
+                                            <i class="fa fa-oil-can"></i>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2 text-xs">
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-500" data-i18n="macro_calories">热量贡献</span>
+                                            <span class="font-medium" id="res-fat-calories">855 kcal</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-500" data-i18n="macro_percentage">占总热量</span>
+                                            <span class="font-medium" id="res-fat-percent">35%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-500" data-i18n="macro_per_kg">每公斤体重</span>
+                                            <span class="font-medium" id="res-fat-per-kg">1.4g</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Carbs -->
+                                <div class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-5 border border-amber-100 dark:border-amber-800/30">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <div class="text-xs text-amber-600 dark:text-amber-400 uppercase tracking-wide font-bold" data-i18n="macro_carbs">碳水化合物</div>
+                                            <div class="text-3xl font-bold text-amber-700 dark:text-amber-300 font-mono" id="res-carbs">214g</div>
+                                        </div>
+                                        <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center text-amber-600">
+                                            <i class="fa fa-bread-slice"></i>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2 text-xs">
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-500" data-i18n="macro_calories">热量贡献</span>
+                                            <span class="font-medium" id="res-carbs-calories">856 kcal</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-500" data-i18n="macro_percentage">占总热量</span>
+                                            <span class="font-medium" id="res-carbs-percent">35%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-500" data-i18n="macro_per_kg">每公斤体重</span>
+                                            <span class="font-medium" id="res-carbs-per-kg">3.1g</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Comprehensive Guide Section -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Feature Introduction -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">宏量营养素指南</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_what">什么是宏量营养素？</h3>
+                                <p data-i18n="guide_p_what">宏量营养素是指人体需要大量摄入的营养物质，包括蛋白质、脂肪和碳水化合物。它们是热量的主要来源，对维持身体机能、构建肌肉和调节代谢至关重要。</p>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_why">为什么要计算它们？</h3>
+                                <p data-i18n="guide_p_why">仅仅控制总热量（卡路里）并不足以保证健康的体型。通过计算宏量营养素，您可以确保在减脂时最大限度地保留肌肉，或者在增肌时尽量减少脂肪堆积。这是一种更精确、更科学的饮食管理方法。</p>
+                            </div>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-indigo-600 dark:text-indigo-400" data-i18n="macro_protein">蛋白质</strong>: <span data-i18n="desc_p">肌肉构建的基石，增加饱腹感，提高代谢。</span></li>
+                                <li><strong class="text-pink-600 dark:text-pink-400" data-i18n="macro_fat">脂肪</strong>: <span data-i18n="desc_f">维持荷尔蒙平衡，保护细胞健康，提供持久能量。</span></li>
+                                <li><strong class="text-amber-600 dark:text-amber-400" data-i18n="macro_carbs">碳水化合物</strong>: <span data-i18n="desc_c">大脑和肌肉的主要能量来源，尤其在高强度运动时。</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- FAQ -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-question-circle text-secondary"></i> <span data-i18n="faq_title">常见问题</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-100 mb-2 text-sm" data-i18n="faq_q1">我应该如何测量食物？</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="faq_a1">建议使用厨房电子秤称量生食（烹饪前）。使用 MyFitnessPal 或 FatSecret 等应用记录摄入量。</p>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-100 mb-2 text-sm" data-i18n="faq_q2">如果我某天吃多了怎么办？</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="faq_a2">不要恐慌，也不要第二天刻意节食。回到原本的计划即可。身体的变化是基于长期的平均摄入量，而不是偶尔的一顿饭。</p>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-100 mb-2 text-sm" data-i18n="faq_q3">这个计算结果准确吗？</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="faq_a3">所有计算器都只是估算。建议以此为起点，尝试2-3周，观察体重和体型变化，然后根据实际情况微调。</p>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-100 mb-2 text-sm" data-i18n="faq_q4">活动水平怎么选？</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="faq_a4">大多数坐办公室且每周运动3-4次的人属于"轻度"或"中度"活动。如果您不确定，建议从较低的选项开始，以免热量过剩。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-8 relative z-10">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">
+                © <span id="current-year"></span> Macronutrient Calculator. All rights reserved.
+            </p>
+            <div id="related-tools-container"></div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // --- Translations ---
+        const translations = {
+            "zh-CN": {
+                title: "宏量营养素计算器",
+                subtitle: "增肌减脂营养比例科学计算",
+                h2_config: "身体数据",
+                lbl_gender: "性别",
+                gender_male: "男",
+                gender_female: "女",
+                lbl_age: "年龄",
+                lbl_weight: "体重",
+                lbl_height: "身高",
+                lbl_ft: "英尺 (Ft)",
+                lbl_in: "英寸 (In)",
+                lbl_activity: "活动水平",
+                act_sedentary: "久坐 (办公室工作)",
+                act_light: "轻度活动 (1-2天/周)",
+                act_moderate: "中度活动 (3-5天/周)",
+                act_heavy: "高度活动 (6-7天/周)",
+                act_athlete: "专业运动员 (每天2次)",
+                lbl_goal: "目标",
+                goal_cut: "减脂 (减少500卡)",
+                goal_maintain: "维持体重",
+                goal_bulk: "增肌 (增加500卡)",
+                goal_bulk_extra: "快速增肌 (增加750卡)",
+                hint_accuracy: "宏量营养素比例对增肌减脂效果至关重要。蛋白质建议为每公斤体重1.6-2.2克。",
+                h2_results: "您的宏量营养素需求",
+                unit_nutrients: "蛋白质 / 脂肪 / 碳水化合物",
+                lbl_calories: "每日热量目标",
+                lbl_day: "天",
+                desc_calories: "基于您的目标和活动水平计算",
+                lbl_metrics: "身体指标",
+                metric_bmi: "BMI",
+                metric_bmr: "基础代谢 (BMR)",
+                bmi_normal: "正常",
+                h3_distribution: "宏量营养素分配",
+                chart_p: "蛋白质",
+                chart_f: "脂肪",
+                chart_c: "碳水",
+                h3_macros: "每日宏量营养素需求",
+                macro_protein: "蛋白质",
+                macro_fat: "脂肪",
+                macro_carbs: "碳水化合物",
+                macro_calories: "热量贡献",
+                macro_percentage: "占总热量",
+                macro_per_kg: "每公斤体重",
+                guide_title: "宏量营养素指南",
+                guide_h_what: "什么是宏量营养素？",
+                guide_p_what: "宏量营养素是指人体需要大量摄入的营养物质，包括蛋白质、脂肪和碳水化合物。它们是热量的主要来源，对维持身体机能、构建肌肉和调节代谢至关重要。",
+                guide_h_why: "为什么要计算它们？",
+                guide_p_why: "仅仅控制总热量（卡路里）并不足以保证健康的体型。通过计算宏量营养素，您可以确保在减脂时最大限度地保留肌肉，或者在增肌时尽量减少脂肪堆积。",
+                desc_p: "肌肉构建的基石，增加饱腹感，提高代谢。",
+                desc_f: "维持荷尔蒙平衡，保护细胞健康，提供持久能量。",
+                desc_c: "大脑和肌肉的主要能量来源，尤其在高强度运动时。",
+                faq_title: "常见问题",
+                faq_q1: "我应该如何测量食物？",
+                faq_a1: "建议使用厨房电子秤称量生食（烹饪前）。使用 MyFitnessPal 或 FatSecret 等应用记录摄入量。",
+                faq_q2: "如果我某天吃多了怎么办？",
+                faq_a2: "不要恐慌，也不要第二天刻意节食。回到原本的计划即可。身体的变化是基于长期的平均摄入量，而不是偶尔的一顿饭。",
+                faq_q3: "这个计算结果准确吗？",
+                faq_a3: "所有计算器都只是估算。建议以此为起点，尝试2-3周，观察体重和体型变化，然后根据实际情况微调。",
+                faq_q4: "活动水平怎么选？",
+                faq_a4: "大多数坐办公室且每周运动3-4次的人属于'轻度'或'中度'活动。如果您不确定，建议从较低的选项开始，以免热量过剩。"
+            },
+            "zh-TW": {
+                title: "宏量營養素計算器",
+                subtitle: "增肌減脂營養比例科學計算",
+                h2_config: "身體數據",
+                lbl_gender: "性別",
+                gender_male: "男",
+                gender_female: "女",
+                lbl_age: "年齡",
+                lbl_weight: "體重",
+                lbl_height: "身高",
+                lbl_ft: "英尺 (Ft)",
+                lbl_in: "英寸 (In)",
+                lbl_activity: "活動水平",
+                act_sedentary: "久坐 (辦公室工作)",
+                act_light: "輕度活動 (1-2天/週)",
+                act_moderate: "中度活動 (3-5天/週)",
+                act_heavy: "高度活動 (6-7天/週)",
+                act_athlete: "專業運動員 (每天2次)",
+                lbl_goal: "目標",
+                goal_cut: "減脂 (減少500卡)",
+                goal_maintain: "維持體重",
+                goal_bulk: "增肌 (增加500卡)",
+                goal_bulk_extra: "快速增肌 (增加750卡)",
+                hint_accuracy: "宏量營養素比例對增肌減脂效果至關重要。蛋白質建議為每公斤體重1.6-2.2克。",
+                h2_results: "您的宏量營養素需求",
+                unit_nutrients: "蛋白質 / 脂肪 / 碳水化合物",
+                lbl_calories: "每日熱量目標",
+                lbl_day: "天",
+                desc_calories: "基於您的目標和活動水平計算",
+                lbl_metrics: "身體指標",
+                metric_bmi: "BMI",
+                metric_bmr: "基礎代謝 (BMR)",
+                bmi_normal: "正常",
+                h3_distribution: "宏量營養素分配",
+                chart_p: "蛋白質",
+                chart_f: "脂肪",
+                chart_c: "碳水",
+                h3_macros: "每日宏量營養素需求",
+                macro_protein: "蛋白質",
+                macro_fat: "脂肪",
+                macro_carbs: "碳水化合物",
+                macro_calories: "熱量貢獻",
+                macro_percentage: "佔總熱量",
+                macro_per_kg: "每公斤體重",
+                guide_title: "宏量營養素指南",
+                guide_h_what: "什麼是宏量營養素？",
+                guide_p_what: "宏量營養素是指人體需要大量攝入的營養物質，包括蛋白質、脂肪和碳水化合物。它們是熱量的主要來源，對維持身體機能、構建肌肉和調節代謝至關重要。",
+                guide_h_why: "為什麼要計算它們？",
+                guide_p_why: "僅僅控制總熱量（卡路里）並不足以保證健康的體型。通過計算宏量營養素，您可以確保在減脂時最大限度地保留肌肉，或者在增肌時儘量減少脂肪堆積。",
+                desc_p: "肌肉構建的基石，增加飽腹感，提高代謝。",
+                desc_f: "維持荷爾蒙平衡，保護細胞健康，提供持久能量。",
+                desc_c: "大腦和肌肉的主要能量來源，尤其在高強度運動時。",
+                faq_title: "常見問題",
+                faq_q1: "我應該如何測量食物？",
+                faq_a1: "建議使用廚房電子秤稱量生食（烹飪前）。使用 MyFitnessPal 或 FatSecret 等應用記錄攝入量。",
+                faq_q2: "如果我某天吃多了怎麼辦？",
+                faq_a2: "不要恐慌，也不要第二天刻意節食。回到原本的計劃即可。身體的變化是基於長期的平均攝入量，而不是偶爾的一頓飯。",
+                faq_q3: "這個計算結果準確嗎？",
+                faq_a3: "所有計算器都只是估算。建議以此為起點，嘗試2-3週，觀察體重和體型變化，然後根據實際情況微調。",
+                faq_q4: "活動水平怎麼選？",
+                faq_a4: "大多數坐辦公室且每週運動3-4次的人屬於'輕度'或'中度'活動。如果您不確定，建議從較低的選項開始，以免熱量過剩。"
+            },
+            "en": {
+                title: "Macro Calculator",
+                subtitle: "Scientific Calculation for Muscle Gain & Fat Loss",
+                h2_config: "Body Stats",
+                lbl_gender: "Gender",
+                gender_male: "Male",
+                gender_female: "Female",
+                lbl_age: "Age",
+                lbl_weight: "Weight",
+                lbl_height: "Height",
+                lbl_ft: "Feet",
+                lbl_in: "Inches",
+                lbl_activity: "Activity",
+                act_sedentary: "Sedentary (Office Job)",
+                act_light: "Light (1-2 days/week)",
+                act_moderate: "Moderate (3-5 days/week)",
+                act_heavy: "Heavy (6-7 days/week)",
+                act_athlete: "Athlete (2x daily)",
+                lbl_goal: "Goal",
+                goal_cut: "Cut (-500 kcal)",
+                goal_maintain: "Maintain",
+                goal_bulk: "Bulk (+500 kcal)",
+                goal_bulk_extra: "Fast Bulk (+750 kcal)",
+                hint_accuracy: "Macro ratios are key for body composition. Protein is recommended at 1.6-2.2g per kg of bodyweight.",
+                h2_results: "Your Macro Needs",
+                unit_nutrients: "Protein / Fat / Carbs",
+                lbl_calories: "Daily Target",
+                lbl_day: "day",
+                desc_calories: "Based on your goal and activity",
+                lbl_metrics: "Metrics",
+                metric_bmi: "BMI",
+                metric_bmr: "BMR",
+                bmi_normal: "Normal",
+                h3_distribution: "Distribution",
+                chart_p: "Protein",
+                chart_f: "Fat",
+                chart_c: "Carbs",
+                h3_macros: "Daily Macro Breakdown",
+                macro_protein: "Protein",
+                macro_fat: "Fat",
+                macro_carbs: "Carbs",
+                macro_calories: "Calories",
+                macro_percentage: "% of Total",
+                macro_per_kg: "Per kg",
+                guide_title: "Macronutrient Guide",
+                guide_h_what: "What are Macros?",
+                guide_p_what: "Macronutrients are nutrients the body needs in large amounts: Protein, Fats, and Carbohydrates. They provide energy and are essential for growth and repair.",
+                guide_h_why: "Why count them?",
+                guide_p_why: "Counting calories isn't enough for body composition. Macros ensure you keep muscle while losing fat, or gain muscle with minimal fat gain.",
+                desc_p: "Building block for muscle, increases satiety, boosts metabolism.",
+                desc_f: "Essential for hormone balance and cell health.",
+                desc_c: "Primary energy source for brain and high-intensity exercise.",
+                faq_title: "FAQ",
+                faq_q1: "How do I measure food?",
+                faq_a1: "Weigh food raw using a kitchen scale. Track using apps like MyFitnessPal.",
+                faq_q2: "What if I overeat one day?",
+                faq_a2: "Don't panic. Just get back on track the next day. Consistency matters more than perfection.",
+                faq_q3: "Is this accurate?",
+                faq_a3: "It's an estimate. Use it as a starting point, monitor your weight for 2-3 weeks, and adjust.",
+                faq_q4: "Which activity level?",
+                faq_a4: "Most office workers are 'Sedentary' or 'Light'. Start lower if unsure."
+            },
+            "es": {
+                title: "Calculadora de Macros",
+                subtitle: "Cálculo Científico para Ganar Músculo y Perder Grasa",
+                h2_config: "Datos Corporales",
+                lbl_gender: "Género",
+                gender_male: "Hombre",
+                gender_female: "Mujer",
+                lbl_age: "Edad",
+                lbl_weight: "Peso",
+                lbl_height: "Altura",
+                lbl_ft: "Pies",
+                lbl_in: "Pulgadas",
+                lbl_activity: "Actividad",
+                act_sedentary: "Sedentario (Oficina)",
+                act_light: "Ligero (1-2 días/sem)",
+                act_moderate: "Moderado (3-5 días/sem)",
+                act_heavy: "Intenso (6-7 días/sem)",
+                act_athlete: "Atleta (2x al día)",
+                lbl_goal: "Objetivo",
+                goal_cut: "Definición (-500 kcal)",
+                goal_maintain: "Mantenimiento",
+                goal_bulk: "Volumen (+500 kcal)",
+                goal_bulk_extra: "Volumen Rápido (+750)",
+                hint_accuracy: "Los macros son clave. Se recomienda 1.6-2.2g de proteína por kg.",
+                h2_results: "Tus Necesidades",
+                unit_nutrients: "Proteína / Grasa / Carbohidratos",
+                lbl_calories: "Meta Diaria",
+                lbl_day: "día",
+                desc_calories: "Basado en tu objetivo y actividad",
+                lbl_metrics: "Métricas",
+                metric_bmi: "IMC",
+                metric_bmr: "TMB",
+                bmi_normal: "Normal",
+                h3_distribution: "Distribución",
+                chart_p: "Proteína",
+                chart_f: "Grasa",
+                chart_c: "Carbohidratos",
+                h3_macros: "Desglose Diario",
+                macro_protein: "Proteína",
+                macro_fat: "Grasa",
+                macro_carbs: "Carbohidratos",
+                macro_calories: "Calorías",
+                macro_percentage: "% del Total",
+                macro_per_kg: "Por kg",
+                guide_title: "Guía de Macronutrientes",
+                guide_h_what: "¿Qué son los Macros?",
+                guide_p_what: "Son nutrientes necesarios en grandes cantidades: Proteínas, Grasas y Carbohidratos. Proporcionan energía y son esenciales.",
+                guide_h_why: "¿Por qué contarlos?",
+                guide_p_why: "Para optimizar la composición corporal: mantener músculo al perder grasa o ganar músculo minimizando grasa.",
+                desc_p: "Construye músculo y aumenta la saciedad.",
+                desc_f: "Esencial para las hormonas y la salud celular.",
+                desc_c: "Energía principal para el cerebro y el ejercicio.",
+                faq_title: "Preguntas Frecuentes",
+                faq_q1: "¿Cómo mido la comida?",
+                faq_a1: "Pesa la comida cruda. Usa apps como MyFitnessPal.",
+                faq_q2: "¿Si como demasiado un día?",
+                faq_a2: "No entres en pánico. Vuelve al plan al día siguiente.",
+                faq_q3: "¿Es exacto?",
+                faq_a3: "Es una estimación. Ajusta según tus resultados en 2-3 semanas.",
+                faq_q4: "¿Qué nivel de actividad?",
+                faq_a4: "Si trabajas en oficina, elige Sedentario o Ligero."
+            },
+            "ru": {
+                title: "Калькулятор КБЖУ",
+                subtitle: "Расчет для набора мышц и сжигания жира",
+                h2_config: "Параметры тела",
+                lbl_gender: "Пол",
+                gender_male: "Муж",
+                gender_female: "Жен",
+                lbl_age: "Возраст",
+                lbl_weight: "Вес",
+                lbl_height: "Рост",
+                lbl_ft: "Футы",
+                lbl_in: "Дюймы",
+                lbl_activity: "Активность",
+                act_sedentary: "Сидячий (Офис)",
+                act_light: "Легкая (1-2 дня/нед)",
+                act_moderate: "Средняя (3-5 дней/нед)",
+                act_heavy: "Высокая (6-7 дней/нед)",
+                act_athlete: "Атлет (2 раза в день)",
+                lbl_goal: "Цель",
+                goal_cut: "Сушка (-500 ккал)",
+                goal_maintain: "Поддержание",
+                goal_bulk: "Набор (+500 ккал)",
+                goal_bulk_extra: "Быстрый набор (+750)",
+                hint_accuracy: "Баланс БЖУ важен. Рекомендуется 1.6-2.2г белка на кг веса.",
+                h2_results: "Ваши потребности",
+                unit_nutrients: "Белки / Жиры / Углеводы",
+                lbl_calories: "Калории в день",
+                lbl_day: "день",
+                desc_calories: "Исходя из вашей цели",
+                lbl_metrics: "Показатели",
+                metric_bmi: "ИМТ",
+                metric_bmr: "BMR (База)",
+                bmi_normal: "Норма",
+                h3_distribution: "Распределение",
+                chart_p: "Белки",
+                chart_f: "Жиры",
+                chart_c: "Угли",
+                h3_macros: "Детализация БЖУ",
+                macro_protein: "Белки",
+                macro_fat: "Жиры",
+                macro_carbs: "Углеводы",
+                macro_calories: "Ккал",
+                macro_percentage: "% от всего",
+                macro_per_kg: "На кг",
+                guide_title: "Гид по макронутриентам",
+                guide_h_what: "Что такое макронутриенты?",
+                guide_p_what: "Это питательные вещества, необходимые в больших количествах: Белки, Жиры и Углеводы.",
+                guide_h_why: "Зачем их считать?",
+                guide_p_why: "Чтобы улучшить композицию тела: сохранить мышцы при похудении или набрать массу без лишнего жира.",
+                desc_p: "Строительный материал для мышц, сытость.",
+                desc_f: "Гормональный баланс и здоровье клеток.",
+                desc_c: "Энергия для мозга и тренировок.",
+                faq_title: "Частые вопросы",
+                faq_q1: "Как взвешивать еду?",
+                faq_a1: "Взвешивайте в суром виде. Используйте FatSecret.",
+                faq_q2: "Что если переел?",
+                faq_a2: "Продолжайте по плану на следующий день.",
+                faq_q3: "Это точно?",
+                faq_a3: "Это оценка. Следите за весом 2-3 недели и корректируйте.",
+                faq_q4: "Какая активность?",
+                faq_a4: "Офисная работа — обычно 'Сидячий' или 'Легкая'."
+            },
+            "hi": {
+                title: "मैक्रोन्यूट्रिएंट कैलकुलेटर",
+                subtitle: "मांसपेशियों और वसा हानि के लिए वैज्ञानिक गणना",
+                h2_config: "शारीरिक आंकड़े",
+                lbl_gender: "लिंग",
+                gender_male: "पुरुष",
+                gender_female: "महिला",
+                lbl_age: "उम्र",
+                lbl_weight: "वजन",
+                lbl_height: "कद",
+                lbl_ft: "फीट",
+                lbl_in: "इंच",
+                lbl_activity: "गतिविधि",
+                act_sedentary: "निष्क्रिय (ऑफिस वर्क)",
+                act_light: "हल्का (1-2 दिन/सप्ताह)",
+                act_moderate: "मध्यम (3-5 दिन/सप्ताह)",
+                act_heavy: "भारी (6-7 दिन/सप्ताह)",
+                act_athlete: "एथलीट (दिन में 2 बार)",
+                lbl_goal: "लक्ष्य",
+                goal_cut: "वजन घटाना (-500 kcal)",
+                goal_maintain: "वजन बनाए रखना",
+                goal_bulk: "वजन बढ़ाना (+500 kcal)",
+                goal_bulk_extra: "तेजी से बढ़ाना (+750)",
+                hint_accuracy: "मैक्रोज़ शरीर की संरचना के लिए महत्वपूर्ण हैं। 1.6-2.2 ग्राम प्रोटीन प्रति किलो की सिफारिश की जाती है।",
+                h2_results: "आपकी आवश्यकताएं",
+                unit_nutrients: "प्रोटीन / वसा / कार्ब्स",
+                lbl_calories: "दैनिक लक्ष्य",
+                lbl_day: "दिन",
+                desc_calories: "आपके लक्ष्य के आधार पर",
+                lbl_metrics: "मेट्रिक्स",
+                metric_bmi: "बीएमआई",
+                metric_bmr: "बीएमआर",
+                bmi_normal: "सामान्य",
+                h3_distribution: "वितरण",
+                chart_p: "प्रोटीन",
+                chart_f: "वसा",
+                chart_c: "कार्ब्स",
+                h3_macros: "दैनिक विवरण",
+                macro_protein: "प्रोटीन",
+                macro_fat: "वसा",
+                macro_carbs: "कार्बोहाइड्रेट",
+                macro_calories: "कैलोरी",
+                macro_percentage: "कुल %",
+                macro_per_kg: "प्रति किलो",
+                guide_title: "मैक्रोन्यूट्रिएंट गाइड",
+                guide_h_what: "मैक्रोन्यूट्रिएंट्स क्या हैं?",
+                guide_p_what: "शरीर को बड़ी मात्रा में इनकी आवश्यकता होती है: प्रोटीन, वसा और कार्बोहाइड्रेट।",
+                guide_h_why: "इन्हें क्यों गिनें?",
+                guide_p_why: "वसा खोते समय मांसपेशियों को बनाए रखने के लिए, या न्यूनतम वसा के साथ मांसपेशियों को प्राप्त करने के लिए।",
+                desc_p: "मांसपेशियों के लिए जरूरी, चयापचय बढ़ाता है।",
+                desc_f: "हार्मोन संतुलन के लिए आवश्यक।",
+                desc_c: "मस्तिष्क और व्यायाम के लिए ऊर्जा।",
+                faq_title: "सामान्य प्रश्न",
+                faq_q1: "भोजन कैसे मापें?",
+                faq_a1: "कच्चे भोजन का वजन करें। HealthifyMe जैसे ऐप्स का उपयोग करें।",
+                faq_q2: "अगर ज्यादा खा लिया?",
+                faq_a2: "घबराएं नहीं। बस अगले दिन योजना पर वापस आ जाएं।",
+                faq_q3: "क्या यह सटीक है?",
+                faq_a3: "यह एक अनुमान है। 2-3 सप्ताह तक वजन की निगरानी करें और समायोजित करें।",
+                faq_q4: "कौन सी गतिविधि?",
+                faq_a4: "ज्यादातर ऑफिस वाले 'निष्क्रिय' या 'हल्का' होते हैं।"
+            },
+            "pl": {
+                title: "Kalkulator Makroskładników",
+                subtitle: "Naukowy kalkulator na masę i redukcję",
+                h2_config: "Dane ciała",
+                lbl_gender: "Płeć",
+                gender_male: "Mężczyzna",
+                gender_female: "Kobieta",
+                lbl_age: "Wiek",
+                lbl_weight: "Waga",
+                lbl_height: "Wzrost",
+                lbl_ft: "Stopy",
+                lbl_in: "Cale",
+                lbl_activity: "Aktywność",
+                act_sedentary: "Siedzący (Biuro)",
+                act_light: "Lekki (1-2 dni/tydz)",
+                act_moderate: "Średni (3-5 dni/tydz)",
+                act_heavy: "Wysoki (6-7 dni/tydz)",
+                act_athlete: "Sportowiec (2x dziennie)",
+                lbl_goal: "Cel",
+                goal_cut: "Redukcja (-500 kcal)",
+                goal_maintain: "Utrzymanie",
+                goal_bulk: "Masa (+500 kcal)",
+                goal_bulk_extra: "Szybka masa (+750)",
+                hint_accuracy: "Proporcje makro są kluczowe. Zaleca się 1.6-2.2g białka na kg masy ciała.",
+                h2_results: "Twoje zapotrzebowanie",
+                unit_nutrients: "Białko / Tłuszcze / Węglowodany",
+                lbl_calories: "Dzienny Cel",
+                lbl_day: "dzień",
+                desc_calories: "Na podstawie Twojego celu",
+                lbl_metrics: "Wskaźniki",
+                metric_bmi: "BMI",
+                metric_bmr: "BMR",
+                bmi_normal: "Norma",
+                h3_distribution: "Rozkład",
+                chart_p: "Białko",
+                chart_f: "Tłuszcz",
+                chart_c: "Węgle",
+                h3_macros: "Szczegóły Makro",
+                macro_protein: "Białko",
+                macro_fat: "Tłuszcz",
+                macro_carbs: "Węglowodany",
+                macro_calories: "Kalorie",
+                macro_percentage: "% Całości",
+                macro_per_kg: "Na kg",
+                guide_title: "Przewodnik po Makroskładnikach",
+                guide_h_what: "Czym są makroskładniki?",
+                guide_p_what: "To składniki odżywcze potrzebne w dużych ilościach: Białko, Tłuszcze i Węglowodany. Dostarczają energii i budulca.",
+                guide_h_why: "Po co je liczyć?",
+                guide_p_why: "Aby zachować mięśnie podczas redukcji tłuszczu lub budować mięśnie bez nadmiaru tłuszczu.",
+                desc_p: "Budulec mięśni, zwiększa sytość.",
+                desc_f: "Niezbędny dla hormonów i zdrowia komórek.",
+                desc_c: "Główne źródło energii dla mózgu i treningu.",
+                faq_title: "FAQ",
+                faq_q1: "Jak ważyć jedzenie?",
+                faq_a1: "Waż produkty na surowo. Używaj Fitatu lub MyFitnessPal.",
+                faq_q2: "Co jeśli zjem za dużo?",
+                faq_a2: "Nie panikuj. Wróć do planu następnego dnia.",
+                faq_q3: "Czy to dokładne?",
+                faq_a3: "To szacunek. Obserwuj wagę przez 2-3 tygodnie i koryguj.",
+                faq_q4: "Jaka aktywność?",
+                faq_a4: "Praca biurowa to zazwyczaj 'Siedzący' lub 'Lekki'."
+            }
+        };
+
+        // --- Logic ---
+        const App = {
+            lang: 'zh-CN',
+            unit: 'metric',
+            gender: 'male',
+
+            init() {
+                // 1. URL Language Handling
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlLang = urlParams.get('lang');
+                
+                if (urlLang && translations[urlLang]) {
+                    this.lang = urlLang;
+                } else {
+                    // Default logic if no URL param
+                    const userLang = navigator.language || navigator.userLanguage;
+                    if (userLang.startsWith('zh-TW') || userLang.startsWith('zh-HK')) this.lang = 'zh-TW';
+                    else if (userLang.startsWith('en')) this.lang = 'en';
+                    else if (userLang.startsWith('es')) this.lang = 'es';
+                    else if (userLang.startsWith('ru')) this.lang = 'ru';
+                    else if (userLang.startsWith('hi')) this.lang = 'hi';
+                    else if (userLang.startsWith('pl')) this.lang = 'pl';
+                }
+
+                document.getElementById('lang-selector').value = this.lang;
+                this.updateLanguage();
+                this.bindEvents();
+                
+                // Dark Mode Init
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+
+                // Initial Calc
+                Calculator.calculate();
+
+                // Dynamic Year
+                document.getElementById('current-year').textContent = new Date().getFullYear();
+            },
+
+            bindEvents() {
+                // Language Switcher
+                document.getElementById('lang-selector').addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    
+                    // Update URL with safety check for sandbox environments
+                    try {
+                        const url = new URL(window.location);
+                        url.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', url);
+                    } catch (err) {
+                        console.warn('Cannot update URL history in this environment:', err);
+                    }
+
+                    this.updateLanguage();
+                    Calculator.calculate();
+                });
+
+                // Theme Toggle
+                document.getElementById('mode-toggle').addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    if (document.documentElement.classList.contains('dark')) {
+                        localStorage.theme = 'dark';
+                    } else {
+                        localStorage.theme = 'light';
+                    }
+                });
+            },
+
+            setUnit(unit) {
+                this.unit = unit;
+                document.getElementById('btn-metric').className = unit === 'metric' ? 
+                    "px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white" : 
+                    "px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white";
+                document.getElementById('btn-imperial').className = unit === 'imperial' ? 
+                    "px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white" : 
+                    "px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white";
+                
+                if (unit === 'metric') {
+                    document.getElementById('height-metric').classList.remove('hidden');
+                    document.getElementById('height-imperial').classList.add('hidden');
+                    document.getElementById('height-imperial').classList.remove('grid');
+                    document.getElementById('unit-weight').textContent = '(kg)';
+                } else {
+                    document.getElementById('height-metric').classList.add('hidden');
+                    document.getElementById('height-imperial').classList.remove('hidden');
+                    document.getElementById('height-imperial').classList.add('grid');
+                    document.getElementById('unit-weight').textContent = '(lbs)';
+                    
+                    // Convert current values for better UX
+                    const cm = parseFloat(document.getElementById('input-height-cm').value);
+                    if (cm) {
+                        const totalInches = cm / 2.54;
+                        document.getElementById('input-height-ft').value = Math.floor(totalInches / 12);
+                        document.getElementById('input-height-in').value = Math.round(totalInches % 12);
+                    }
+                    const kg = parseFloat(document.getElementById('input-weight').value);
+                    if (kg && kg < 150) { // Simple check to avoid double conversion loop issues
+                         document.getElementById('input-weight').value = Math.round(kg * 2.20462);
+                    }
+                }
+                Calculator.calculate();
+            },
+
+            setGender(gender) {
+                this.gender = gender;
+                document.getElementById('btn-male').className = gender === 'male' ? "gender-btn active" : "gender-btn";
+                document.getElementById('btn-female').className = gender === 'female' ? "gender-btn active" : "gender-btn";
+                Calculator.calculate();
+            },
+
+            updateLanguage() {
+                const t = translations[this.lang];
+                document.documentElement.lang = this.lang;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (t[key]) {
+                        el.textContent = t[key];
+                    }
+                });
+            }
+        };
+
+        const Calculator = {
+            calculate() {
+                // Get inputs
+                let weight = parseFloat(document.getElementById('input-weight').value) || 0;
+                let height = parseFloat(document.getElementById('input-height-cm').value) || 0;
+                let age = parseFloat(document.getElementById('input-age').value) || 0;
+                const activity = parseFloat(document.getElementById('input-activity').value);
+                const goal = document.getElementById('input-goal').value;
+
+                // Convert Imperial if needed
+                if (App.unit === 'imperial') {
+                    weight = weight * 0.453592; // lbs to kg
+                    const ft = parseFloat(document.getElementById('input-height-ft').value) || 0;
+                    const inch = parseFloat(document.getElementById('input-height-in').value) || 0;
+                    height = (ft * 30.48) + (inch * 2.54); // ft/in to cm
+                }
+
+                if (weight <= 0 || height <= 0 || age <= 0) return;
+
+                // 1. Calculate BMR (Mifflin-St Jeor)
+                // Men: 10W + 6.25H - 5A + 5
+                // Women: 10W + 6.25H - 5A - 161
+                let bmr = (10 * weight) + (6.25 * height) - (5 * age);
+                bmr += (App.gender === 'male' ? 5 : -161);
+
+                // 2. TDEE
+                const tdee = bmr * activity;
+
+                // 3. Goal Adjustment
+                let targetCalories = tdee;
+                let proteinPerKg = 2.0; // Default high protein
+                
+                const labelMap = {
+                    'cut': { add: -500, color: 'bg-red-500' },
+                    'maintain': { add: 0, color: 'bg-green-500' },
+                    'bulk': { add: 500, color: 'bg-blue-500' },
+                    'bulk_extra': { add: 750, color: 'bg-indigo-600' }
+                };
+
+                targetCalories += labelMap[goal].add;
+                
+                // Adjust Protein based on goal (Cutting needs more protein to spare muscle)
+                if (goal === 'cut') proteinPerKg = 2.2;
+                if (goal === 'bulk' || goal === 'bulk_extra') proteinPerKg = 1.8; 
+
+                // 4. Macro Split Calculation
+                // Protein: Fixed by bodyweight
+                let proteinGrams = weight * proteinPerKg;
+                let proteinCals = proteinGrams * 4;
+
+                // Fat: Usually 0.8g - 1g per kg, or % of calories. Let's use 25-30% of total cals
+                let fatCals = targetCalories * 0.30; // 30% fat default
+                let fatGrams = fatCals / 9;
+
+                // Carbs: Remainder
+                let carbCals = targetCalories - proteinCals - fatCals;
+                // Safety check for low carbs
+                if (carbCals < 0) {
+                    fatCals = targetCalories * 0.20; // Reduce fat if needed
+                    fatGrams = fatCals / 9;
+                    carbCals = targetCalories - proteinCals - fatCals;
+                }
+                let carbGrams = carbCals / 4;
+
+                // 5. Update UI
+                
+                // Animate Numbers
+                this.animateValue('res-calories', Math.round(targetCalories));
+                this.animateValue('res-bmr', Math.round(bmr));
+                
+                // BMI
+                const heightM = height / 100;
+                const bmi = weight / (heightM * heightM);
+                document.getElementById('res-bmi').textContent = bmi.toFixed(1);
+                
+                // Macros
+                document.getElementById('res-protein').textContent = Math.round(proteinGrams) + 'g';
+                document.getElementById('res-fat').textContent = Math.round(fatGrams) + 'g';
+                document.getElementById('res-carbs').textContent = Math.round(carbGrams) + 'g';
+
+                document.getElementById('res-protein-calories').textContent = Math.round(proteinCals) + ' kcal';
+                document.getElementById('res-fat-calories').textContent = Math.round(fatCals) + ' kcal';
+                document.getElementById('res-carbs-calories').textContent = Math.round(carbCals) + ' kcal';
+
+                document.getElementById('res-protein-percent').textContent = Math.round((proteinCals/targetCalories)*100) + '%';
+                document.getElementById('res-fat-percent').textContent = Math.round((fatCals/targetCalories)*100) + '%';
+                document.getElementById('res-carbs-percent').textContent = Math.round((carbCals/targetCalories)*100) + '%';
+
+                document.getElementById('res-protein-per-kg').textContent = (proteinGrams/weight).toFixed(1) + 'g';
+                document.getElementById('res-fat-per-kg').textContent = (fatGrams/weight).toFixed(1) + 'g';
+                document.getElementById('res-carbs-per-kg').textContent = (carbGrams/weight).toFixed(1) + 'g';
+
+                // Charts
+                document.getElementById('chart-protein').style.height = Math.round((proteinCals/targetCalories)*100) + '%';
+                document.getElementById('chart-fat').style.height = Math.round((fatCals/targetCalories)*100) + '%';
+                document.getElementById('chart-carbs').style.height = Math.round((carbCals/targetCalories)*100) + '%';
+
+                // Goal Label
+                const labelEl = document.getElementById('calorie-goal-label');
+                labelEl.textContent = goal.toUpperCase().replace('_', ' ');
+                labelEl.className = `absolute top-0 right-0 text-white text-[10px] px-3 py-1 rounded-bl-lg font-bold ${labelMap[goal].color}`;
+            },
+
+            animateValue(id, end) {
+                const obj = document.getElementById(id);
+                const current = parseInt(obj.textContent.replace(/,/g, '')) || 0;
+                if (current === end) return;
+                
+                // Simple animation
+                obj.textContent = end.toLocaleString(); 
+            }
+        };
+
+        // Start
+        window.addEventListener('DOMContentLoaded', () => {
+            App.init();
+        });
+
+    </script>
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>
