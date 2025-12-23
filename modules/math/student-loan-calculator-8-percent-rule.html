@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="finance">
+    <meta name="description" content="Student Loan 8% Rule Calculator - Determine affordable borrowing limits based on future salary and visualize the impact on long-term wealth.">
+    <title>Student Loan 8% Rule | 学生贷款规划器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#6366f1', hover: '#4f46e5' }, /* Indigo for Education/Logic */
+                        secondary: { DEFAULT: '#ec4899', hover: '#db2777' }, /* Pink for Highlights */
+                        success: { DEFAULT: '#10b981', hover: '#059669' },
+                        warning: { DEFAULT: '#f59e0b', hover: '#d97706' },
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#eff6ff', dark: '#0f172a' } 
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass-panel {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-white/20 dark:border-slate-700 shadow-xl rounded-2xl overflow-hidden transition-all duration-300;
+            }
+            .step-header {
+                @apply flex items-center gap-3 text-lg font-bold text-slate-800 dark:text-white mb-6 border-b border-slate-100 dark:border-slate-700 pb-4;
+            }
+            .step-number {
+                @apply w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/30;
+            }
+            .input-label {
+                @apply block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5;
+            }
+            .currency-input-group {
+                @apply relative flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all;
+            }
+            .currency-symbol {
+                @apply text-slate-400 font-mono text-lg mr-2;
+            }
+            .currency-input {
+                @apply w-full bg-transparent border-none p-0 text-slate-900 dark:text-white font-mono font-bold text-lg focus:ring-0 outline-none;
+            }
+            .result-card {
+                @apply bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-dashed border-slate-200 dark:border-slate-700;
+            }
+            .result-value {
+                @apply text-2xl font-mono font-bold text-primary mt-1;
+            }
+            
+            /* Budget Input Specifics */
+            .budget-row {
+                @apply flex items-center justify-between p-3 rounded-lg border border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:border-slate-100 dark:hover:border-slate-700 transition-all;
+            }
+            .budget-input {
+                @apply w-28 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-right font-mono text-sm font-bold focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300">
+
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] -right-[10%] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[100px]"></div>
+        <div class="absolute top-[20%] -left-[10%] w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[100px]"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl relative z-10">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-500/20">
+                    <i class="fa fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Student Loan 8% Rule</h1>
+                    <p class="text-xs text-slate-500 font-medium tracking-wide uppercase" data-i18n="subtitle">学生贷款计算器 | 8% 规则</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-xs font-bold px-2 py-1 rounded outline-none cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">CN</option>
+                    <option value="en">EN</option>
+                </select>
+                <div class="w-px h-4 bg-slate-200 dark:bg-slate-600"></div>
+                <button id="mode-toggle" class="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-primary transition-all">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Intro -->
+        <div class="mb-10 max-w-3xl mx-auto text-center">
+            <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed" data-i18n="intro_text">
+                为了在大学毕业后成功管理学生债务，您借入的金额产生的每月还款额，最多不应超过您月收入的 8%。此工具通过 8% 规则帮助您推算合理的借贷上限，并展示提前储蓄与过度借贷对未来财富的巨大影响。
+            </p>
+        </div>
+
+        <div class="space-y-8">
+
+            <!-- Step 1: Borrowing Limit -->
+            <section class="glass-panel p-6 md:p-8 border-l-4 border-l-indigo-500">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <span data-i18n="step1_title">计算您的借贷限额 (Borrowing Limit)</span>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="input-label" data-i18n="lbl_major">专业或职业 (可选)</label>
+                            <div class="currency-input-group">
+                                <i class="fa fa-briefcase text-slate-400 mr-2"></i>
+                                <input type="text" class="currency-input !text-base !font-normal" placeholder="e.g. Computer Science" id="inp-major">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="input-label" data-i18n="lbl_salary">预期年薪 (Annual Salary)</label>
+                            <div class="currency-input-group">
+                                <span class="currency-symbol">$</span>
+                                <input type="number" class="currency-input calc-trigger" value="40000" id="inp-salary">
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2" data-i18n="hint_salary">提示：参考 Payscale 或相关网站查询早期职业薪酬。</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="result-card bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800">
+                            <div class="text-xs text-slate-500 uppercase tracking-wider" data-i18n="res_monthly_income">月收入 (Monthly Salary)</div>
+                            <div class="result-value text-indigo-600 dark:text-indigo-400" id="val-monthly-income">$3,333</div>
+                        </div>
+                        <div class="result-card bg-emerald-50/50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800">
+                            <div class="text-xs text-slate-500 uppercase tracking-wider flex justify-between">
+                                <span data-i18n="res_max_payment">最高月供 (8% Rule)</span>
+                                <i class="fa fa-check-circle text-emerald-500"></i>
+                            </div>
+                            <div class="result-value text-emerald-600 dark:text-emerald-400" id="val-max-payment">$267</div>
+                        </div>
+                        <div class="result-card bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                            <div class="text-xs text-slate-500 uppercase tracking-wider" data-i18n="res_max_loan">建议借贷上限 (Max Loan)</div>
+                            <div class="result-value text-slate-700 dark:text-slate-200" id="val-max-loan">$23,453</div>
+                            <div class="text-[10px] text-slate-400 mt-1" data-i18n="loan_assumptions">*假设：10年期，利率 6.8%</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Monthly Budget -->
+            <section class="glass-panel p-6 md:p-8 border-l-4 border-l-pink-500">
+                <div class="step-header">
+                    <div class="step-number bg-pink-500 shadow-pink-500/30">2</div>
+                    <span data-i18n="step2_title">探索月度预算 (Monthly Budget)</span>
+                </div>
+
+                <div class="grid md:grid-cols-12 gap-8">
+                    <div class="md:col-span-7 space-y-4">
+                        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4" data-i18n="step2_desc">
+                            基于您的预期月收入，以下是一个健康的预算分配示例。您可以手动修改以下金额以适应您的实际情况。
+                        </p>
+                        
+                        <div id="budget-list" class="space-y-2">
+                            <!-- JS Generated Rows -->
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-sm font-bold">
+                            <span class="text-slate-500 uppercase" data-i18n="lbl_total_budget">预算总计</span>
+                            <span class="text-slate-800 dark:text-white font-mono" id="budget-total">$0</span>
+                        </div>
+                    </div>
+                    <div class="md:col-span-5 flex items-center justify-center relative">
+                        <div class="w-full max-w-[280px]">
+                            <canvas id="budgetChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 3: Wealth Impact -->
+            <section class="glass-panel p-6 md:p-8 border-l-4 border-l-amber-500">
+                <div class="step-header">
+                    <div class="step-number bg-amber-500 shadow-amber-500/30">3</div>
+                    <span data-i18n="step3_title">了解早期储蓄的力量 (Wealth Creation)</span>
+                </div>
+
+                <div class="mb-8">
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-6" data-i18n="step3_desc">
+                        如果多借钱，每月的还款额就会增加，从而挤占您的储蓄。看看这小小的差异在复利魔力下，40年后会变成多大的财富差距。
+                    </p>
+
+                    <div class="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-6 border border-amber-100 dark:border-amber-900/30">
+                        <label class="input-label mb-2 flex justify-between">
+                            <span data-i18n="lbl_extra_borrow">假设：您额外借贷了 (Additional Borrowing)</span>
+                            <span class="text-amber-600 font-mono" id="disp-extra-borrow">$5,000</span>
+                        </label>
+                        <input type="range" id="slider-extra-borrow" min="0" max="50000" step="1000" value="5000" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-2">
+                            <span>$0</span>
+                            <span>$50,000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Scenario A -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                            <h4 class="font-bold text-sm" data-i18n="scenario_a">情景 A：标准储蓄 (Standard)</h4>
+                        </div>
+                        <ul class="text-xs text-slate-600 dark:text-slate-400 space-y-2 border-l-2 border-slate-200 dark:border-slate-700 pl-3">
+                            <li class="flex justify-between">
+                                <span data-i18n="lbl_monthly_save">前10年每月储蓄:</span>
+                                <span class="font-mono font-bold text-slate-800 dark:text-white" id="val-save-a">$333</span>
+                            </li>
+                            <li class="flex justify-between">
+                                <span data-i18n="lbl_total_principal">10年总本金:</span>
+                                <span class="font-mono font-bold text-slate-800 dark:text-white" id="val-princ-a">$40,000</span>
+                            </li>
+                            <li class="flex justify-between items-center pt-2 mt-2 border-t border-slate-100 dark:border-slate-800">
+                                <span class="font-bold text-emerald-600" data-i18n="lbl_final_wealth">40年后总财富:</span>
+                                <span class="text-xl font-mono font-bold text-emerald-600" id="val-wealth-a">$583,093</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Scenario B -->
+                    <div class="space-y-4 opacity-100 transition-opacity" id="scenario-b-container">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+                            <h4 class="font-bold text-sm" data-i18n="scenario_b">情景 B：减少储蓄 (Reduced)</h4>
+                        </div>
+                        <ul class="text-xs text-slate-600 dark:text-slate-400 space-y-2 border-l-2 border-slate-200 dark:border-slate-700 pl-3">
+                            <li class="flex justify-between">
+                                <span data-i18n="lbl_new_loan_pay">额外月供:</span>
+                                <span class="font-mono font-bold text-rose-500" id="val-extra-pay">+$57</span>
+                            </li>
+                            <li class="flex justify-between">
+                                <span data-i18n="lbl_monthly_save">前10年每月储蓄:</span>
+                                <span class="font-mono font-bold text-slate-800 dark:text-white" id="val-save-b">$276</span>
+                            </li>
+                            <li class="flex justify-between items-center pt-2 mt-2 border-t border-slate-100 dark:border-slate-800">
+                                <span class="font-bold text-rose-500" data-i18n="lbl_final_wealth">40年后总财富:</span>
+                                <span class="text-xl font-mono font-bold text-rose-500" id="val-wealth-b">$483,646</span>
+                            </li>
+                        </ul>
+                        <div class="text-center text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 py-2 rounded">
+                            <span data-i18n="lbl_loss">财富缩水:</span> <span class="text-rose-500" id="val-wealth-diff">-$99,447</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 h-64 w-full">
+                    <canvas id="wealthChart"></canvas>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 border-t border-slate-200 dark:border-slate-800 pt-8 pb-12 text-center">
+            <div class="max-w-4xl mx-auto space-y-4">
+               <p class="text-[10px] text-slate-400 dark:text-slate-600 leading-relaxed max-w-3xl mx-auto" data-i18n="footer_disclaimer">
+                   此工具基于假设：贷款利率6.8%，投资年化回报率8%，前10年每月定投，之后30年仅复利增长。结果仅供参考，不构成财务建议。
+               </p>
+            </div>
+       </footer>
+
+    </div>
+
+    <script>
+        // Constants
+        const LOAN_TERM_YEARS = 10;
+        const LOAN_RATE = 0.068; // 6.8%
+        const INVESTMENT_RATE = 0.08; // 8%
+        const INVESTMENT_TERM_CONTRIB = 10;
+        const INVESTMENT_TERM_GROWTH = 30; // Total 40 years
+
+        const i18nData = {
+            'zh-CN': {
+                title: "Student Loan Pro", subtitle: "学生贷款计算器 | 8% 规则",
+                intro_text: "为了在大学毕业后成功管理学生债务，您借入的金额最多应为您每月收入或工资的 8% 的贷款偿还额。此工具可让您探索未来潜在薪资的合理借贷。",
+                
+                step1_title: "计算您的借贷限额",
+                lbl_major: "专业或职业 (可选)", lbl_salary: "预期年薪", hint_salary: "在 Payscale 等网站搜索您的职业起薪。",
+                res_monthly_income: "月收入", res_max_payment: "最高月供 (8%)", res_max_loan: "建议借贷上限",
+                loan_assumptions: "*基于10年期，6.8%利率估算",
+
+                step2_title: "探索月度预算样本",
+                step2_desc: "基于您的预期月收入，以下是一个健康的预算分配示例。您可以手动修改以下金额以适应您的实际情况。",
+                bud_taxes: "税收 (27%)", bud_loan: "贷款还款 (8%)", bud_savings: "储蓄 (10%)", bud_housing: "住房 (30%)", bud_daily: "日常开销 (25%)",
+                lbl_total_budget: "预算总计",
+
+                step3_title: "了解早期储蓄的力量",
+                step3_desc: "早期储蓄对财富创造有巨大影响！下面的数字假设您在前10年每月存入相同金额，然后让余额在复利魔力下自然增长30年。",
+                lbl_extra_borrow: "假设：您额外借贷了",
+                scenario_a: "情景 A：标准储蓄", scenario_b: "情景 B：减少储蓄 (因额外借贷)",
+                lbl_monthly_save: "前10年每月储蓄", lbl_total_principal: "10年总本金", lbl_final_wealth: "40年后总财富",
+                lbl_new_loan_pay: "额外月供", lbl_loss: "财富缩水",
+                
+                footer_disclaimer: "此计算基于您输入信息的准确性和完整性以及某些假设。结果仅供参考，不构成财务建议，也不应被视为财务建议。"
+            },
+            'en': {
+                title: "Student Loan Pro", subtitle: "Student Loan Calculator | 8% Rule",
+                intro_text: "To successfully manage student debt after graduation, your monthly loan payment should be no more than 8% of your monthly income. This tool helps you explore affordable borrowing.",
+                
+                step1_title: "Calculate Borrowing Limit",
+                lbl_major: "Major or Career (Optional)", lbl_salary: "Future Annual Salary", hint_salary: "Check Payscale for early career salary data.",
+                res_monthly_income: "Monthly Salary", res_max_payment: "Max Payment (8%)", res_max_loan: "Borrowing Limit",
+                loan_assumptions: "*Based on 10-year term, 6.8% rate",
+
+                step2_title: "Explore Monthly Budget",
+                step2_desc: "Based on your income, here is a recommended budget breakdown. You can edit the values below to fit your reality.",
+                bud_taxes: "Taxes (27%)", bud_loan: "Loan Payments (8%)", bud_savings: "Savings (10%)", bud_housing: "Housing (30%)", bud_daily: "Daily Expenses (25%)",
+                lbl_total_budget: "Total Budget",
+
+                step3_title: "Power of Saving Early",
+                step3_desc: "Saving early makes a huge difference! The numbers below assume you save the same amount for the first 10 years, then allow it to grow for another 30 years.",
+                lbl_extra_borrow: "Scenario: You borrow an additional",
+                scenario_a: "Scenario A: Standard Savings", scenario_b: "Scenario B: Reduced Savings",
+                lbl_monthly_save: "Monthly Savings (10 Yrs)", lbl_total_principal: "Total Principal", lbl_final_wealth: "Wealth after 40 Yrs",
+                lbl_new_loan_pay: "Extra Loan Payment", lbl_loss: "Wealth Lost",
+                
+                footer_disclaimer: "This calculation is based on assumptions (6.8% loan rate, 8% investment return). Results are for reference only and not financial advice."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            charts: {},
+
+            init() {
+                // Setup Listeners
+                document.getElementById('inp-salary').addEventListener('input', () => this.calculate());
+                document.getElementById('slider-extra-borrow').addEventListener('input', (e) => {
+                    document.getElementById('disp-extra-borrow').innerText = this.fmt(e.target.value);
+                    this.calculateWealth();
+                });
+                
+                document.getElementById('lang-selector').addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    this.translate();
+                    this.calculate(); 
+                });
+
+                document.getElementById('mode-toggle').addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                });
+
+                // Init
+                this.translate();
+                this.calculate();
+            },
+
+            fmt(val) {
+                return '$' + Math.round(val).toLocaleString();
+            },
+
+            translate() {
+                const t = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(t[key]) el.innerText = t[key];
+                });
+            },
+
+            calculate() {
+                const annualSalary = parseFloat(document.getElementById('inp-salary').value) || 0;
+                const monthlySalary = annualSalary / 12;
+                const maxPayment = monthlySalary * 0.08;
+
+                // Step 1: Loan Limit
+                const r = LOAN_RATE / 12;
+                const n = LOAN_TERM_YEARS * 12;
+                const maxLoan = maxPayment * (1 - Math.pow(1 + r, -n)) / r;
+
+                // UI Update Step 1
+                document.getElementById('val-monthly-income').innerText = this.fmt(monthlySalary);
+                document.getElementById('val-max-payment').innerText = this.fmt(maxPayment);
+                document.getElementById('val-max-loan').innerText = this.fmt(maxLoan);
+
+                // Step 2: Budget (Re-render with defaults based on new salary)
+                this.renderBudget(monthlySalary, maxPayment);
+
+                // Step 3: Wealth
+                this.calculateWealth(monthlySalary);
+            },
+
+            renderBudget(monthlyIncome, loanPayment) {
+                const t = i18nData[this.lang];
+                
+                // Calculate Default Amounts
+                const budgetData = [
+                    { label: t.bud_taxes, value: monthlyIncome * 0.27, color: '#94a3b8' },
+                    { label: t.bud_loan, value: loanPayment, color: '#f43f5e' },
+                    { label: t.bud_savings, value: monthlyIncome * 0.10, color: '#10b981' },
+                    { label: t.bud_housing, value: monthlyIncome * 0.30, color: '#f59e0b' },
+                    { label: t.bud_daily, value: monthlyIncome - (monthlyIncome * 0.27) - loanPayment - (monthlyIncome * 0.10) - (monthlyIncome * 0.30), color: '#6366f1' }
+                ];
+
+                // Render Input List
+                const listEl = document.getElementById('budget-list');
+                listEl.innerHTML = '';
+                
+                budgetData.forEach((item, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'budget-row';
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full" style="background-color: ${item.color}"></span>
+                            <span class="text-sm text-slate-600 dark:text-slate-300 font-medium">${item.label}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-slate-400 mr-1 text-xs">$</span>
+                            <input type="number" class="budget-input" value="${Math.round(item.value)}" data-index="${index}">
+                        </div>
+                    `;
+                    listEl.appendChild(row);
+                });
+
+                // Attach Listeners to Inputs for Real-time Chart Updates
+                document.querySelectorAll('.budget-input').forEach(input => {
+                    input.addEventListener('input', () => this.updateBudgetChartFromInputs());
+                });
+
+                // Initial Chart Render
+                this.updateBudgetChart(budgetData.map(d => d.value), budgetData.map(d => d.label), budgetData.map(d => d.color));
+            },
+
+            updateBudgetChartFromInputs() {
+                const inputs = document.querySelectorAll('.budget-input');
+                const newData = [];
+                let total = 0;
+                inputs.forEach(input => {
+                    const val = parseFloat(input.value) || 0;
+                    newData.push(val);
+                    total += val;
+                });
+
+                document.getElementById('budget-total').innerText = this.fmt(total);
+
+                if (this.charts.budget) {
+                    this.charts.budget.data.datasets[0].data = newData;
+                    this.charts.budget.update();
+                }
+            },
+
+            updateBudgetChart(data, labels, colors) {
+                const ctx = document.getElementById('budgetChart').getContext('2d');
+                
+                // Update Total Text
+                const total = data.reduce((a, b) => a + b, 0);
+                document.getElementById('budget-total').innerText = this.fmt(total);
+
+                if (this.charts.budget) this.charts.budget.destroy();
+                
+                this.charts.budget = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{ data: data, backgroundColor: colors, borderWidth: 0 }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        cutout: '65%'
+                    }
+                });
+            },
+
+            calculateWealth() {
+                const annualSalary = parseFloat(document.getElementById('inp-salary').value) || 0;
+                const monthlySalary = annualSalary / 12;
+                const standardSavings = monthlySalary * 0.10; // 10%
+                
+                // Scenario A: Standard
+                const r_inv = INVESTMENT_RATE / 12;
+                const n_contrib = INVESTMENT_TERM_CONTRIB * 12;
+                const fv_contrib_a = standardSavings * (Math.pow(1 + r_inv, n_contrib) - 1) / r_inv;
+                const n_growth = INVESTMENT_TERM_GROWTH * 12;
+                const final_wealth_a = fv_contrib_a * Math.pow(1 + r_inv, n_growth);
+
+                // Scenario B: Extra Borrowing
+                const extraBorrow = parseFloat(document.getElementById('slider-extra-borrow').value) || 0;
+                const r_loan = LOAN_RATE / 12;
+                const n_loan = LOAN_TERM_YEARS * 12;
+                let extraPayment = 0;
+                if(extraBorrow > 0) {
+                    extraPayment = extraBorrow * (r_loan * Math.pow(1 + r_loan, n_loan)) / (Math.pow(1 + r_loan, n_loan) - 1);
+                }
+
+                const reducedSavings = Math.max(0, standardSavings - extraPayment);
+                const fv_contrib_b = reducedSavings * (Math.pow(1 + r_inv, n_contrib) - 1) / r_inv;
+                const final_wealth_b = fv_contrib_b * Math.pow(1 + r_inv, n_growth);
+
+                // UI Updates
+                document.getElementById('val-save-a').innerText = this.fmt(standardSavings);
+                document.getElementById('val-princ-a').innerText = this.fmt(standardSavings * n_contrib);
+                document.getElementById('val-wealth-a').innerText = this.fmt(final_wealth_a);
+
+                document.getElementById('val-extra-pay').innerText = '+' + this.fmt(extraPayment);
+                document.getElementById('val-save-b').innerText = this.fmt(reducedSavings);
+                document.getElementById('val-wealth-b').innerText = this.fmt(final_wealth_b);
+                document.getElementById('val-wealth-diff').innerText = '-' + this.fmt(final_wealth_a - final_wealth_b);
+
+                this.renderWealthChart(final_wealth_a, final_wealth_b);
+            },
+
+            renderWealthChart(wealthA, wealthB) {
+                const ctx = document.getElementById('wealthChart').getContext('2d');
+                const t = i18nData[this.lang];
+                
+                if (this.charts.wealth) this.charts.wealth.destroy();
+
+                this.charts.wealth = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [t.scenario_a, t.scenario_b],
+                        datasets: [{
+                            label: '40 Year Wealth',
+                            data: [wealthA, wealthB],
+                            backgroundColor: ['#10b981', '#f43f5e'],
+                            borderRadius: 8,
+                            barThickness: 50
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { 
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { 
+                                    color: '#94a3b8',
+                                    callback: function(value) { return '$' + value/1000 + 'k'; }
+                                } 
+                            },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

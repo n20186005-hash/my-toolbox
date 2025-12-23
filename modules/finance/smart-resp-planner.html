@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="finance">
+    <meta name="description" content="RESP Education Savings Calculator - Estimate your education savings growth with government grants and investment returns.">
+    <title>Smart RESP Planner | 智能教育储蓄计算器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#059669', hover: '#047857' }, /* Emerald Green for Savings */
+                        secondary: { DEFAULT: '#0ea5e9', hover: '#0284c7' }, /* Sky Blue */
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f0fdf4', dark: '#020617' } // Light Green BG
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            
+            .input-field {
+                @apply w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            
+            .label-text {
+                @apply text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 block uppercase tracking-wide;
+            }
+
+            .result-row {
+                @apply flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0;
+            }
+            
+            .child-card {
+                @apply bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 relative transition-all hover:border-emerald-300 dark:hover:border-emerald-700;
+            }
+        }
+
+        .currency-input-wrapper { position: relative; }
+        .currency-input-wrapper::before {
+            content: '$';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+        }
+        .currency-input-wrapper input { padding-left: 24px; }
+        
+        /* Range slider styling */
+        input[type=range] {
+            @apply w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            @apply appearance-none w-4 h-4 bg-primary rounded-full shadow-md hover:scale-110 transition-transform;
+        }
+        
+        .remove-btn {
+            @apply absolute -top-2 -right-2 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-xs shadow-md hover:bg-rose-600 transition-colors cursor-pointer z-10;
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-green-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-sky-300 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa fa-line-chart"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Smart RESP Planner</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">加拿大注册教育储蓄计划计算器</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文</option>
+                    <option value="en">🇺🇸 English</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                
+                <!-- 1. Child & Education Profile -->
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-emerald-500 p-5 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                            <i class="fa fa-child text-emerald-500"></i> <span data-i18n="h2_child">子女信息</span>
+                        </h2>
+                        <button onclick="App.addChild()" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+                            <i class="fa fa-plus"></i> <span data-i18n="btn_add_child">添加子女</span>
+                        </button>
+                    </div>
+
+                    <!-- Dynamic Children List -->
+                    <div id="children-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-hide">
+                        <!-- Children rendered here by JS -->
+                    </div>
+
+                    <!-- Common Education Settings -->
+                    <div class="pt-4 border-t border-slate-100 dark:border-slate-700 mt-2">
+                        <label class="label-text" data-i18n="lbl_province">就读省份 (预估学费)</label>
+                        <select id="input-province" class="input-field" onchange="Calculator.updateCosts(); Calculator.calculate()">
+                            <option value="AB">Alberta</option>
+                            <option value="BC">British Columbia</option>
+                            <option value="MB">Manitoba</option>
+                            <option value="NB">New Brunswick</option>
+                            <option value="NL">Newfoundland & Labrador</option>
+                            <option value="NS">Nova Scotia</option>
+                            <option value="ON" selected>Ontario</option>
+                            <option value="PE">Prince Edward Island</option>
+                            <option value="QC">Quebec</option>
+                            <option value="SK">Saskatchewan</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-text" data-i18n="lbl_tuition">年均学费</label>
+                            <div class="currency-input-wrapper">
+                                <input type="number" id="input-tuition" class="input-field font-mono" value="7900" oninput="Calculator.calculate()">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label-text" data-i18n="lbl_other_cost">其他杂费/年</label>
+                            <div class="currency-input-wrapper">
+                                <input type="number" id="input-other-cost" class="input-field font-mono" value="13000" oninput="Calculator.calculate()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Financials -->
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-sky-500 p-5 space-y-4">
+                    <h2 class="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                        <i class="fa fa-bank text-sky-500"></i> <span data-i18n="h2_finance">储蓄计划</span>
+                    </h2>
+
+                    <div>
+                        <label class="label-text" data-i18n="lbl_income">家庭年收入 (净值)</label>
+                        <div class="currency-input-wrapper">
+                            <input type="number" id="input-income" class="input-field font-mono" value="85000" oninput="Calculator.calculate()">
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1" data-i18n="hint_income">用于计算政府补助 (CESG) 级别</p>
+                    </div>
+
+                    <div>
+                        <label class="label-text" data-i18n="lbl_existing">现有 RESP 总余额</label>
+                        <div class="currency-input-wrapper">
+                            <input type="number" id="input-existing" class="input-field font-mono" value="5000" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-sky-50 dark:bg-sky-900/10 rounded-xl border border-sky-100 dark:border-sky-800/30">
+                        <label class="label-text text-sky-700 dark:text-sky-400" data-i18n="lbl_contrib_total">家庭总供款预算</label>
+                        <div class="flex gap-2">
+                            <div class="currency-input-wrapper flex-grow">
+                                <input type="number" id="input-contrib" class="input-field font-mono font-bold text-sky-700" value="400" oninput="Calculator.calculate()">
+                            </div>
+                            <select id="input-freq" class="input-field w-24 px-1" onchange="Calculator.calculate()">
+                                <option value="12" data-i18n="opt_monthly">每月</option>
+                                <option value="26" data-i18n="opt_biweekly">每两周</option>
+                                <option value="52" data-i18n="opt_weekly">每周</option>
+                                <option value="1" data-i18n="opt_annual">每年</option>
+                            </select>
+                        </div>
+                         <p class="text-[10px] text-sky-500/70 mt-1.5" data-i18n="hint_contrib">资金将自动分配给符合补助资格的孩子</p>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between">
+                            <label class="label-text" data-i18n="lbl_return">预计年回报率</label>
+                            <span class="text-xs font-bold text-primary" id="return-val">5.0%</span>
+                        </div>
+                        <input type="range" id="input-return" min="0" max="15" step="0.5" value="5" class="mt-2" oninput="document.getElementById('return-val').textContent = this.value + '%'; Calculator.calculate()">
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                
+                <!-- Main Result Card -->
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[400px] flex flex-col relative">
+                    <div class="bg-gradient-to-r from-emerald-50 to-sky-50 dark:from-emerald-900/10 dark:to-sky-900/10 border-b border-slate-200 dark:border-slate-700 p-6 flex justify-between items-center">
+                        <div>
+                            <h2 class="font-bold text-xl text-slate-800 dark:text-slate-100" data-i18n="h2_projection">家庭储蓄预测</h2>
+                            <p class="text-xs text-slate-500" data-i18n="sub_projection">所有子女入学时的总资产预估</p>
+                        </div>
+                        <div class="text-right">
+                             <div class="text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400" id="res-total-savings">$0</div>
+                             <div class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="lbl_total_savings">预计储蓄总额</div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-grow flex flex-col justify-center gap-8 animate-fade-in">
+                        
+                        <!-- Analysis Row -->
+                        <div class="grid md:grid-cols-2 gap-8 items-center">
+                            
+                            <!-- Breakdown Bars -->
+                            <div class="space-y-5">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex justify-between">
+                                    <span data-i18n="h4_source">资金来源构成</span>
+                                    <span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-500" id="child-count-badge">1 Child</span>
+                                </h4>
+                                
+                                <!-- Principal -->
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="font-medium text-slate-600 dark:text-slate-300" data-i18n="lbl_principal">本金投入</span>
+                                        <span class="font-mono font-bold text-slate-800 dark:text-white" id="bar-val-principal">$0</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                                        <div id="bar-principal" class="bg-sky-500 h-2.5 rounded-full shadow-sm" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Grants -->
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="font-medium text-slate-600 dark:text-slate-300" data-i18n="lbl_grants">政府补助 (CESG)</span>
+                                        <span class="font-mono font-bold text-slate-800 dark:text-white" id="bar-val-grants">$0</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                                        <div id="bar-grants" class="bg-purple-500 h-2.5 rounded-full shadow-sm" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Interest -->
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="font-medium text-slate-600 dark:text-slate-300" data-i18n="lbl_growth">投资增长</span>
+                                        <span class="font-mono font-bold text-slate-800 dark:text-white" id="bar-val-interest">$0</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                                        <div id="bar-interest" class="bg-emerald-500 h-2.5 rounded-full shadow-sm" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cost Comparison -->
+                            <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 flex flex-col justify-center h-full relative overflow-hidden">
+                                <!-- Decorative BG -->
+                                <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl"></div>
+
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 text-center" data-i18n="h4_goal">目标达成分析</h4>
+                                
+                                <div class="space-y-4 relative z-10">
+                                    <div class="flex justify-between items-end border-b border-slate-200 dark:border-slate-700 pb-2">
+                                        <span class="text-sm text-slate-600 dark:text-slate-400" data-i18n="lbl_est_cost">预计教育总开支</span>
+                                        <span class="font-mono font-bold text-slate-800 dark:text-white" id="res-total-cost">$0</span>
+                                    </div>
+                                    
+                                    <div class="text-center pt-2">
+                                        <div class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1" id="lbl-diff-text">资金缺口 / 盈余</div>
+                                        <div class="text-3xl font-black font-mono transition-colors duration-300" id="res-difference">
+                                            $0
+                                        </div>
+                                        <div class="mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold transition-all duration-300" id="status-badge">
+                                            ON TRACK
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info Strip -->
+                        <div class="grid grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-6">
+                            <div class="text-center group">
+                                <div class="text-[10px] text-slate-400 uppercase tracking-wide mb-1 group-hover:text-primary transition-colors" data-i18n="stat_max_year">最长投资期</div>
+                                <div class="font-bold text-slate-700 dark:text-slate-300 font-mono" id="stat-max-year">0 Years</div>
+                            </div>
+                            <div class="text-center group">
+                                <div class="text-[10px] text-slate-400 uppercase tracking-wide mb-1 group-hover:text-purple-500 transition-colors" data-i18n="stat_grant_total">获得补助总额</div>
+                                <div class="font-bold text-purple-600 dark:text-purple-400 font-mono" id="stat-grant-total">$0</div>
+                            </div>
+                            <div class="text-center group">
+                                <div class="text-[10px] text-slate-400 uppercase tracking-wide mb-1 group-hover:text-sky-500 transition-colors" data-i18n="stat_contrib_total">总投入本金</div>
+                                <div class="font-bold text-sky-600 dark:text-sky-400 font-mono" id="stat-contrib-total">$0</div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+
+                <!-- Info Cards -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500 hover:shadow-lg transition-shadow">
+                        <h3 class="font-bold text-slate-800 dark:text-white mb-2 text-sm flex items-center gap-2">
+                            <i class="fa fa-gift text-emerald-500"></i> <span data-i18n="info_grant_title">关于 CESG 补助</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed" data-i18n="info_grant_desc">
+                            加拿大政府提供每位子女终身最高 $7,200 的补助。基础补助为年度供款的 20%（上限 $500/年）。中低收入家庭可能获得额外 10-20% 的补助。
+                        </p>
+                    </div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-sky-500 hover:shadow-lg transition-shadow">
+                        <h3 class="font-bold text-slate-800 dark:text-white mb-2 text-sm flex items-center gap-2">
+                            <i class="fa fa-shield text-sky-500"></i> <span data-i18n="info_tax_title">免税增长优势</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed" data-i18n="info_tax_desc">
+                            RESP 账户内的投资收益在提取前免税。当子女上学提取资金（EAP）时，这部分收益按子女的收入税率征税，通常税率极低或为零。
+                        </p>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <footer class="text-center text-xs text-slate-400 py-6">
+            <p>&copy; <span id="year"></span> Smart RESP Planner. <span data-i18n="footer_text">Results are estimates for educational purposes only. Not financial advice.</span></p>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "Smart RESP Planner", subtitle: "智能教育储蓄计算器",
+                h2_child: "子女信息", btn_add_child: "添加子女",
+                lbl_child_num: "子女", lbl_age: "现龄", lbl_start: "入学",
+                lbl_province: "就读省份 (预估学费)", hint_province: "决定预估学费标准",
+                lbl_tuition: "年均学费", lbl_other_cost: "其他杂费/年",
+                h2_finance: "储蓄计划",
+                lbl_income: "家庭年收入 (净值)", hint_income: "用于计算政府补助 (CESG) 级别",
+                lbl_existing: "现有 RESP 总余额",
+                lbl_contrib_total: "家庭总供款预算", hint_contrib: "资金将自动分配给符合补助资格的孩子",
+                opt_monthly: "每月", opt_biweekly: "每两周", opt_weekly: "每周", opt_annual: "每年",
+                lbl_return: "预计年回报率",
+                h2_projection: "家庭储蓄预测", sub_projection: "所有子女入学时的总资产预估",
+                lbl_total_savings: "预计储蓄总额",
+                h4_source: "资金来源构成",
+                lbl_principal: "本金投入", lbl_grants: "政府补助 (CESG)", lbl_growth: "投资增长",
+                h4_goal: "目标达成分析",
+                lbl_est_cost: "预计教育总开支",
+                lbl_diff_text_surplus: "资金盈余", lbl_diff_text_short: "资金缺口",
+                badge_track: "资金充足", badge_short: "需要增加储蓄",
+                stat_max_year: "最长投资期", stat_grant_total: "获得补助总额", stat_contrib_total: "总投入本金",
+                info_grant_title: "关于 CESG 补助", 
+                info_grant_desc: "加拿大政府提供每位子女终身最高 $7,200 的补助。基础补助为年度供款的 20%（上限 $500/年）。中低收入家庭可能获得额外 10-20% 的补助。",
+                info_tax_title: "免税增长优势", 
+                info_tax_desc: "RESP 账户内的投资收益在提取前免税。当子女上学提取资金（EAP）时，这部分收益按子女的收入税率征税，通常税率极低或为零。",
+                footer_text: "结果仅供参考，不构成财务建议。",
+                child_badge_suffix: "名子女"
+            },
+            'en': {
+                title: "Smart RESP Planner", subtitle: "Education Savings Calculator",
+                h2_child: "Children Info", btn_add_child: "Add Child",
+                lbl_child_num: "Child", lbl_age: "Age", lbl_start: "Start",
+                lbl_province: "Province (Est. Tuition)", hint_province: "Determines estimated tuition costs",
+                lbl_tuition: "Annual Tuition", lbl_other_cost: "Other Costs/Yr",
+                h2_finance: "Savings Plan",
+                lbl_income: "Family Net Income", hint_income: "Determines CESG grant tiers",
+                lbl_existing: "Existing RESP Balance",
+                lbl_contrib_total: "Total Family Contribution", hint_contrib: "Allocated automatically to eligible children",
+                opt_monthly: "Monthly", opt_biweekly: "Bi-Weekly", opt_weekly: "Weekly", opt_annual: "Annually",
+                lbl_return: "Exp. Return Rate",
+                h2_projection: "Savings Projection", sub_projection: "Estimated total for all children",
+                lbl_total_savings: "Total Estimated Savings",
+                h4_source: "Fund Breakdown",
+                lbl_principal: "Principal", lbl_grants: "Govt Grants (CESG)", lbl_growth: "Investment Growth",
+                h4_goal: "Goal Analysis",
+                lbl_est_cost: "Total Education Cost",
+                lbl_diff_text_surplus: "Total Surplus", lbl_diff_text_short: "Total Shortfall",
+                badge_track: "ON TRACK", badge_short: "SAVE MORE",
+                stat_max_year: "Max Investment Term", stat_grant_total: "Total Grants", stat_contrib_total: "Total Principal",
+                info_grant_title: "About CESG Grants", 
+                info_grant_desc: "The Govt of Canada matches 20% of your contributions up to $500/year (Lifetime max $7,200). Lower income families may receive an extra 10-20%.",
+                info_tax_title: "Tax-Free Growth", 
+                info_tax_desc: "Investment earnings grow tax-free within the RESP. When withdrawn for school (EAP), they are taxed in the student's hands, usually at a very low rate.",
+                footer_text: "Results are estimates only. Not financial advice.",
+                child_badge_suffix: "Children"
+            }
+        };
+
+        // --- Calculation Engine ---
+        const Calculator = {
+            PROVINCE_COSTS: {
+                'AB': { tuition: 7000, other: 12000 },
+                'BC': { tuition: 6500, other: 14000 },
+                'MB': { tuition: 5000, other: 11000 },
+                'NB': { tuition: 7500, other: 10000 },
+                'NL': { tuition: 3500, other: 10000 },
+                'NS': { tuition: 8500, other: 11000 },
+                'ON': { tuition: 7900, other: 13000 },
+                'PE': { tuition: 6800, other: 10500 },
+                'QC': { tuition: 4000, other: 10000 },
+                'SK': { tuition: 6800, other: 11000 }
+            },
+
+            updateCosts() {
+                const prov = document.getElementById('input-province').value;
+                const costs = this.PROVINCE_COSTS[prov] || { tuition: 7000, other: 12000 };
+                document.getElementById('input-tuition').value = costs.tuition;
+                document.getElementById('input-other-cost').value = costs.other;
+            },
+
+            calculate() {
+                // 1. Get Global Inputs
+                const tuition = parseFloat(document.getElementById('input-tuition').value) || 0;
+                const otherCost = parseFloat(document.getElementById('input-other-cost').value) || 0;
+                const income = parseFloat(document.getElementById('input-income').value) || 0;
+                const existing = parseFloat(document.getElementById('input-existing').value) || 0;
+                const totalContribAmt = parseFloat(document.getElementById('input-contrib').value) || 0;
+                const freq = parseInt(document.getElementById('input-freq').value) || 12;
+                const returnRate = parseFloat(document.getElementById('input-return').value) / 100 || 0;
+
+                // 2. Setup Children Data
+                if(App.children.length === 0) return; // Should not happen
+                
+                // Initialize Totals
+                let grandTotalPrincipal = 0;
+                let grandTotalGrants = 0;
+                // We track the portfolio as a single pool for simplicity, but track grants/principal separately
+                let currentBalance = existing;
+                let grandTotalCost = 0;
+                let maxYears = 0;
+
+                // CESG Logic
+                const LIFETIME_GRANT_LIMIT = 7200;
+                const LIFETIME_CONTRIB_LIMIT = 50000;
+                const TIER1_LIMIT = 53359; 
+                const TIER2_LIMIT = 106717;
+
+                // Track each child's state
+                let childStates = App.children.map(c => ({
+                    age: c.age,
+                    startAge: c.startAge,
+                    lifetimeGrant: 0,
+                    lifetimeContrib: 0,
+                    active: true, // Is investing phase active?
+                    cost: (tuition + otherCost) * 4 // 4 years of school
+                }));
+
+                grandTotalCost = childStates.reduce((acc, c) => acc + c.cost, 0);
+
+                // Find the longest investment horizon
+                maxYears = Math.max(...childStates.map(c => Math.max(0, c.startAge - c.age)));
+
+                // 3. Simulation Loop (Year by Year)
+                for (let year = 1; year <= maxYears; year++) {
+                    
+                    // Identify which children are eligible for contributions this year
+                    // Eligibile if: age <= 17 AND startAge > currentAge
+                    // (Usually contributions stop when they start school or turn 17, technically can contrib until 31 but grants stop at 17. 
+                    // Simplified: We contribute until they start school or 17, whichever comes first for grant purposes, but maybe continue principal only? 
+                    // Let's assume we contribute until they start school for simplicity of goal planning)
+                    
+                    let activeChildrenIndices = [];
+                    childStates.forEach((c, idx) => {
+                        let currentAge = c.age + (year - 1);
+                        // We contribute until startAge. Grant eligibility is age <= 17.
+                        if (currentAge < c.startAge) {
+                            activeChildrenIndices.push(idx);
+                        }
+                    });
+
+                    // Annual Contribution Total
+                    let annualTotalContrib = totalContribAmt * freq;
+                    
+                    // Split contribution among active children
+                    // If no children active, money isn't contributed (savings goal reached/time up)
+                    let contribPerChild = activeChildrenIndices.length > 0 ? annualTotalContrib / activeChildrenIndices.length : 0;
+
+                    let yearTotalContrib = 0;
+                    let yearTotalGrant = 0;
+
+                    // Process each child for this year
+                    childStates.forEach((c, idx) => {
+                        let currentAge = c.age + (year - 1);
+                        
+                        // Only process if this child is in the investment phase
+                        if (currentAge < c.startAge) {
+                            let myContrib = contribPerChild;
+
+                            // Check Lifetime Contrib Limit
+                            if (c.lifetimeContrib + myContrib > LIFETIME_CONTRIB_LIMIT) {
+                                myContrib = Math.max(0, LIFETIME_CONTRIB_LIMIT - c.lifetimeContrib);
+                            }
+                            c.lifetimeContrib += myContrib;
+                            yearTotalContrib += myContrib;
+
+                            // Calculate Grant (Only if age <= 17)
+                            let myGrant = 0;
+                            if (currentAge <= 17 && c.lifetimeGrant < LIFETIME_GRANT_LIMIT) {
+                                let grantableAmount = Math.min(myContrib, 2500);
+                                let basicGrant = grantableAmount * 0.20;
+                                
+                                let additionalGrant = 0;
+                                let first500 = Math.min(myContrib, 500);
+                                
+                                if (income <= TIER1_LIMIT) additionalGrant = first500 * 0.20;
+                                else if (income <= TIER2_LIMIT) additionalGrant = first500 * 0.10;
+                                
+                                myGrant = basicGrant + additionalGrant;
+
+                                if (c.lifetimeGrant + myGrant > LIFETIME_GRANT_LIMIT) {
+                                    myGrant = LIFETIME_GRANT_LIMIT - c.lifetimeGrant;
+                                }
+                                
+                                // Cap annual grant (simplified catchup logic omitted for clarity)
+                                if (myGrant > 1000) myGrant = 1000; 
+
+                                c.lifetimeGrant += myGrant;
+                                yearTotalGrant += myGrant;
+                            }
+                        }
+                    });
+
+                    // Growth calculation on the POOL
+                    let interestOnBalance = currentBalance * returnRate;
+                    let interestOnNew = (yearTotalContrib + yearTotalGrant) * (returnRate / 2);
+                    let annualGrowth = interestOnBalance + interestOnNew;
+
+                    currentBalance += yearTotalContrib + yearTotalGrant + annualGrowth;
+                    grandTotalPrincipal += yearTotalContrib;
+                    grandTotalGrants += yearTotalGrant;
+                }
+
+                // Growth Calc derived
+                let grandTotalGrowth = currentBalance - existing - grandTotalPrincipal - grandTotalGrants;
+
+                // 4. Update UI
+                this.updateCurrency('res-total-savings', currentBalance);
+                this.updateCurrency('bar-val-principal', grandTotalPrincipal + existing);
+                this.updateCurrency('bar-val-grants', grandTotalGrants);
+                this.updateCurrency('bar-val-interest', grandTotalGrowth);
+                
+                this.updateCurrency('res-total-cost', grandTotalCost);
+
+                // Difference
+                const difference = currentBalance - grandTotalCost;
+                const isSurplus = difference >= 0;
+                const absDiff = Math.abs(difference);
+                
+                const diffEl = document.getElementById('res-difference');
+                diffEl.textContent = (isSurplus ? '+' : '-') + '$' + absDiff.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                diffEl.className = isSurplus ? "text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400" : "text-3xl font-black font-mono text-rose-500";
+                
+                const texts = i18nData[App.currentLang] || i18nData['en'];
+                document.getElementById('lbl-diff-text').textContent = isSurplus ? texts.lbl_diff_text_surplus : texts.lbl_diff_text_short;
+                
+                const badge = document.getElementById('status-badge');
+                badge.textContent = isSurplus ? texts.badge_track : texts.badge_short;
+                badge.className = isSurplus 
+                    ? "mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300"
+                    : "mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300";
+
+                // Bars
+                const totalBar = currentBalance || 1;
+                document.getElementById('bar-principal').style.width = ((grandTotalPrincipal + existing) / totalBar * 100) + '%';
+                document.getElementById('bar-grants').style.width = (grandTotalGrants / totalBar * 100) + '%';
+                document.getElementById('bar-interest').style.width = (grandTotalGrowth / totalBar * 100) + '%';
+
+                // Stats
+                document.getElementById('stat-max-year').textContent = maxYears + " Years";
+                this.updateCurrency('stat-grant-total', grandTotalGrants);
+                this.updateCurrency('stat-contrib-total', grandTotalPrincipal);
+                
+                // Badge Update
+                const suffix = texts.child_badge_suffix || "Child(ren)";
+                document.getElementById('child-count-badge').textContent = App.children.length + " " + suffix;
+            },
+
+            updateCurrency(id, val) {
+                const el = document.getElementById(id);
+                if(el) el.textContent = '$' + val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            }
+        };
+
+        // --- App Logic ---
+        const App = {
+            currentLang: 'zh-CN',
+            children: [
+                { id: 1, age: 2, startAge: 18 }
+            ],
+
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                this.currentLang = urlParams.get('lang') || 'zh-CN';
+                document.getElementById('lang-selector').value = this.currentLang;
+
+                if (!urlParams.has('lang')) {
+                    this.updateUrl(this.currentLang);
+                }
+
+                this.handleTheme();
+                this.setupLanguage();
+                this.updateYear();
+                this.renderChildren();
+                this.translateUI(this.currentLang);
+                
+                // Initial calc is called inside renderChildren -> inputs
+                Calculator.calculate();
+            },
+
+            addChild() {
+                const newId = (this.children.length > 0 ? Math.max(...this.children.map(c => c.id)) : 0) + 1;
+                this.children.push({ id: newId, age: 0, startAge: 18 });
+                this.renderChildren();
+                Calculator.calculate();
+            },
+
+            removeChild(id) {
+                if(this.children.length <= 1) return; // Keep at least one
+                this.children = this.children.filter(c => c.id !== id);
+                this.renderChildren();
+                Calculator.calculate();
+            },
+
+            updateChild(id, field, val) {
+                const child = this.children.find(c => c.id === id);
+                if(child) {
+                    child[field] = parseInt(val) || 0;
+                    Calculator.calculate();
+                }
+            },
+
+            renderChildren() {
+                const container = document.getElementById('children-list');
+                const texts = i18nData[this.currentLang] || i18nData['en'];
+                
+                container.innerHTML = '';
+                
+                this.children.forEach((child, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'child-card';
+                    
+                    // Only show remove button if more than 1 child
+                    const removeBtn = this.children.length > 1 
+                        ? `<div onclick="App.removeChild(${child.id})" class="remove-btn"><i class="fa fa-times"></i></div>` 
+                        : '';
+
+                    div.innerHTML = `
+                        ${removeBtn}
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">
+                                ${index + 1}
+                            </div>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">${texts.lbl_child_num} ${index + 1}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">${texts.lbl_age}</label>
+                                <input type="number" class="input-field py-1 text-center" value="${child.age}" min="0" max="17" 
+                                    oninput="App.updateChild(${child.id}, 'age', this.value)">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">${texts.lbl_start}</label>
+                                <input type="number" class="input-field py-1 text-center" value="${child.startAge}" min="17" max="25"
+                                    oninput="App.updateChild(${child.id}, 'startAge', this.value)">
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {
+                    console.log('URL update failed:', e);
+                }
+            },
+
+            setupLanguage() {
+                document.getElementById('lang-selector').addEventListener('change', (e) => {
+                    this.currentLang = e.target.value;
+                    this.updateUrl(this.currentLang);
+                    this.translateUI(this.currentLang);
+                    this.renderChildren(); // Re-render to translate labels inside dynamic list
+                    Calculator.calculate();
+                });
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) el.innerHTML = data[key];
+                });
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

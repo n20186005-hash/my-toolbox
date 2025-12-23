@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="finance">
+    <meta name="description" content="Net Worth Calculator - Assess your financial health by comparing assets and liabilities.">
+    <title>Net Worth Pro | 个人净值计算器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for Visuals -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#10b981', hover: '#059669' }, /* Emerald for Wealth */
+                        secondary: { DEFAULT: '#f43f5e', hover: '#e11d48' }, /* Rose for Debt */
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f8fafc', dark: '#020617' } 
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    boxShadow: {
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            /* 列表行样式 */
+            .list-row {
+                @apply flex items-center gap-3 py-3.5 px-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50;
+            }
+            .list-row:last-child {
+                @apply border-b-0;
+            }
+
+            /* 左侧标签输入 */
+            .label-input {
+                @apply flex-grow bg-transparent border-none text-sm font-semibold text-slate-700 dark:text-slate-200 focus:text-slate-900 dark:focus:text-white focus:ring-0 p-0 placeholder-slate-400 transition-colors;
+            }
+
+            /* 右侧金额输入容器 */
+            .amount-wrapper {
+                @apply flex items-center bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-1.5 border border-transparent transition-all focus-within:bg-white dark:focus-within:bg-black focus-within:shadow-sm;
+            }
+            
+            /* 资产特定样式 */
+            .wrapper-asset:focus-within {
+                @apply border-emerald-500 ring-1 ring-emerald-500/20;
+            }
+            .text-asset { @apply text-emerald-600 dark:text-emerald-400; }
+
+            /* 负债特定样式 */
+            .wrapper-liability:focus-within {
+                @apply border-rose-500 ring-1 ring-rose-500/20;
+            }
+            .text-liability { @apply text-rose-600 dark:text-rose-400; }
+
+            /* 输入框本体 */
+            .input-field {
+                @apply w-28 sm:w-36 bg-transparent border-none text-right font-mono font-bold text-base outline-none p-0 ml-1 text-slate-800 dark:text-slate-200 placeholder-slate-400;
+            }
+
+            /* 删除按钮 */
+            .delete-btn {
+                @apply w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all cursor-pointer flex-shrink-0;
+            }
+
+            /* 添加按钮 */
+            .add-btn {
+                @apply w-full py-3.5 text-sm font-semibold text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-center justify-center gap-2 border-t border-slate-100 dark:border-slate-800;
+            }
+            
+            /* 快速添加标签样式 */
+            .quick-add-container {
+                @apply px-5 py-3 flex flex-wrap gap-2 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800;
+            }
+            .chip {
+                @apply px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-all border;
+            }
+            .chip-asset {
+                @apply bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 dark:hover:border-emerald-800;
+            }
+            .chip-liability {
+                @apply bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-900/20 dark:hover:text-rose-400 dark:hover:border-rose-800;
+            }
+            
+            /* 总计区域 */
+            .section-footer {
+                @apply p-5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center rounded-b-2xl;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xl shadow-lg">
+                    <i class="fa fa-calculator"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Net Worth Pro</h1>
+                    <p class="text-xs text-slate-500 font-medium tracking-wide uppercase" data-i18n="subtitle">Personal Finance Tool</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-xs font-bold px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <option value="zh-CN">CN</option>
+                    <option value="en">EN</option>
+                </select>
+                <div class="w-px h-4 bg-slate-200 dark:bg-slate-600"></div>
+                <button id="mode-toggle" class="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-indigo-600 dark:hover:text-yellow-400 transition-all">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="grid lg:grid-cols-12 gap-8 items-start mb-12">
+            
+            <!-- Left Column: Calculation List -->
+            <main class="lg:col-span-7 space-y-8">
+                
+                <!-- Assets Section -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-card border border-slate-200 dark:border-slate-800">
+                    <!-- Header -->
+                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-emerald-50/50 dark:bg-emerald-900/10 rounded-t-2xl">
+                        <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm uppercase tracking-wide">
+                            <i class="fa fa-plus-square"></i> <span data-i18n="h_assets">资产 (Assets)</span>
+                        </div>
+                    </div>
+                    
+                    <!-- List -->
+                    <div id="assets-list" class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <!-- Rows injected here -->
+                    </div>
+
+                    <!-- Quick Add Chips -->
+                    <div class="quick-add-container">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 self-center mr-1" data-i18n="lbl_quick_add">快速添加:</span>
+                        <div id="assets-chips" class="flex flex-wrap gap-2">
+                            <!-- Chips injected via JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <button onclick="App.addRow('assets')" class="add-btn hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                        <i class="fa fa-plus text-xs"></i> <span data-i18n="btn_add_row">添加自定义资产</span>
+                    </button>
+                    
+                    <!-- Footer Total -->
+                    <div class="section-footer">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="subtotal_assets">总资产</span>
+                        <span class="font-mono text-xl font-bold text-emerald-600 dark:text-emerald-400" id="display-total-assets">¥0</span>
+                    </div>
+                </div>
+
+                <!-- Liabilities Section -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-card border border-slate-200 dark:border-slate-800">
+                    <!-- Header -->
+                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-rose-50/50 dark:bg-rose-900/10 rounded-t-2xl">
+                        <div class="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-bold text-sm uppercase tracking-wide">
+                            <i class="fa fa-minus-square"></i> <span data-i18n="h_liabilities">负债 (Liabilities)</span>
+                        </div>
+                    </div>
+                    
+                    <!-- List -->
+                    <div id="liabilities-list" class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <!-- Rows injected here -->
+                    </div>
+
+                    <!-- Quick Add Chips -->
+                    <div class="quick-add-container">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 self-center mr-1" data-i18n="lbl_quick_add">快速添加:</span>
+                        <div id="liabilities-chips" class="flex flex-wrap gap-2">
+                             <!-- Chips injected via JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <button onclick="App.addRow('liabilities')" class="add-btn hover:text-rose-500 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-900/20">
+                        <i class="fa fa-plus text-xs"></i> <span data-i18n="btn_add_row_debt">添加自定义负债</span>
+                    </button>
+
+                    <!-- Footer Total -->
+                    <div class="section-footer">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="subtotal_liabilities">总负债</span>
+                        <span class="font-mono text-xl font-bold text-rose-600 dark:text-rose-400" id="display-total-liabilities">¥0</span>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- Right Column: Dashboard Sticky -->
+            <aside class="lg:col-span-5 lg:sticky lg:top-6 space-y-6">
+                
+                <!-- Net Worth Card -->
+                <div class="bg-slate-900 dark:bg-black text-white rounded-3xl shadow-xl p-8 relative overflow-hidden flex flex-col items-center text-center">
+                    <!-- Glow Effects -->
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none"></div>
+                    
+                    <h2 class="relative z-10 text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mb-4" data-i18n="res_net_worth">净值总额</h2>
+                    
+                    <div class="relative z-10 mb-8">
+                        <div class="text-5xl sm:text-6xl font-mono font-bold tracking-tighter" id="main-net-worth">¥0</div>
+                        <div id="net-worth-status" class="mt-3 inline-block px-4 py-1.5 rounded-full bg-white/10 text-[10px] font-medium backdrop-blur-md border border-white/5 text-slate-300">
+                            Ready
+                        </div>
+                    </div>
+
+                    <!-- Chart & Legend -->
+                    <div class="relative z-10 w-full bg-white/5 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                                <span class="text-slate-300" data-i18n="h_assets">Assets</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="text-slate-300" data-i18n="h_liabilities">Liabilities</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar for Debt Ratio -->
+                        <div class="space-y-2">
+                             <div class="flex justify-between text-[10px] font-medium text-slate-400">
+                                <span data-i18n="ratio_debt_asset">负债率 (Debt Ratio)</span>
+                                <span id="ratio-display" class="text-white font-mono">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden">
+                                <div id="ratio-bar" class="bg-indigo-500 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                         <div class="h-32 w-full mt-6 flex justify-center">
+                             <canvas id="netWorthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+        </div>
+
+        <!-- Expanded Guide Section -->
+        <section class="mb-12">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-card border border-slate-200 dark:border-slate-800">
+                
+                <div class="grid md:grid-cols-2 gap-10">
+                    <!-- Left: Core Concept -->
+                    <div class="space-y-4">
+                        <h3 class="flex items-center gap-3 text-lg font-bold text-slate-900 dark:text-white">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center">
+                                <i class="fa fa-book"></i>
+                            </div>
+                            <span data-i18n="intro_title">关于您的净值</span>
+                        </h3>
+                        <div class="prose prose-slate dark:prose-invert text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                            <p data-i18n="intro_text_main">
+                                为了更好地了解您当下的财务状况以及如何开始为明天制定规划，您需要将您的资产与您的负债进行比较。净值是反映您财务健康状况的真实快照。
+                            </p>
+                            <p class="mt-3 text-xs text-slate-400 border-l-2 border-slate-200 dark:border-slate-700 pl-3" data-i18n="intro_formula">
+                                净值 = 您的所有资产 (您拥有的) - 您的所有负债 (您亏欠的)
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Optimization Tips -->
+                    <div class="space-y-6">
+                        <h3 class="flex items-center gap-3 text-lg font-bold text-slate-900 dark:text-white">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center justify-center">
+                                <i class="fa fa-lightbulb-o"></i>
+                            </div>
+                            <span data-i18n="intro_tips_title">优化与规划</span>
+                        </h3>
+                        
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <!-- Tip 1 -->
+                            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10 transition-colors group">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2 text-xs uppercase tracking-wide group-hover:text-emerald-600 transition-colors" data-i18n="tip_h_assets">增加资产</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed" data-i18n="tip_p_assets">
+                                    定期储蓄并投资于房产、股票或基金等增值资产。复利是增长净值的关键。
+                                </p>
+                            </div>
+
+                            <!-- Tip 2 -->
+                            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 hover:bg-rose-50/50 dark:hover:bg-rose-900/10 transition-colors group">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2 text-xs uppercase tracking-wide group-hover:text-rose-600 transition-colors" data-i18n="tip_h_debt">控制负债</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed" data-i18n="tip_p_debt">
+                                    优先偿还高利率的信用卡和消费贷款。良性债务（如房贷）应控制在合理比例内。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="border-t border-slate-200 dark:border-slate-800 pt-8 pb-12 text-center">
+             <div class="max-w-4xl mx-auto space-y-4">
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed" data-i18n="footer_disclaimer_1">
+                    这些结果取决于您输入信息的准确性和完整性。这些结果并非财务计划。
+                </p>
+                <p class="text-[10px] text-slate-400 dark:text-slate-600 leading-relaxed max-w-3xl mx-auto opacity-80" data-i18n="footer_disclaimer_2">
+                    本文所含信息仅供参考。信息出自我们认为可靠的来源。本信息不提供财务、法律、税务或投资方面的规划或建议。具体的投资、交易或税务策略应根据每位投资者的目标和风险承受能力加以评估。
+                </p>
+                <p class="text-[10px] text-slate-400 dark:text-slate-600 leading-relaxed max-w-3xl mx-auto opacity-80" data-i18n="footer_disclaimer_3">
+                    对于您或任何第三方提供给我们的信息的准确性、对于因您或任何第三方使用本文档中的信息所导致的任何后果，以及对于任何人以任何方式使用本文档中的信息而产生的任何原因的任何直接或间接损失，道明投资服务有限公司、道明银行及其附属公司和相关实体均不承担任何责任。
+                </p>
+             </div>
+        </footer>
+
+    </div>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "Net Worth Pro", subtitle: "个人净值计算器",
+                h_assets: "资产 (Assets)", h_liabilities: "负债 (Liabilities)",
+                btn_add_row: "添加资产项目", btn_add_row_debt: "添加负债项目",
+                subtotal_assets: "总资产", subtotal_liabilities: "总负债",
+                res_net_worth: "净值总额", 
+                ratio_debt_asset: "负债率 (Debt Ratio)",
+                lbl_quick_add: "其他示例（点击添加）:",
+                
+                // New Guide Section
+                intro_title: "关于您的净值",
+                intro_text_main: "为了更好地了解您当下的财务状况以及如何开始为明天制定规划，您需要将您的资产与您的负债进行比较。净值是反映您财务健康状况的真实快照。",
+                intro_formula: "净值 = 您的所有资产 (您拥有的) - 您的所有负债 (您亏欠的)",
+                intro_tips_title: "优化与规划",
+                tip_h_assets: "增加资产",
+                tip_p_assets: "定期储蓄并投资于房产、股票或基金等增值资产。利用复利效应加速财富积累。",
+                tip_h_debt: "管理负债",
+                tip_p_debt: "优先偿还高利率的信用卡和消费贷款。保持健康的负债率，避免过度杠杆。",
+
+                // Footer
+                footer_disclaimer_1: "这些结果取决于您输入信息的准确性和完整性。这些结果并非财务计划。",
+                footer_disclaimer_2: "本文所含信息仅供参考。信息出自我们认为可靠的来源。本信息不提供财务、法律、税务或投资方面的规划或建议。具体的投资、交易或税务策略应根据每位投资者的目标和风险承受能力加以评估。",
+                footer_disclaimer_3: "对于您或任何第三方提供给我们的信息的准确性、对于因您或任何第三方使用本文档中的信息所导致的任何后果，以及对于任何人以任何方式使用本文档中的信息而产生的任何原因的任何直接或间接损失，道明投资服务有限公司、道明银行及其附属公司和相关实体均不承担任何责任。",
+
+                // Defaults & Chips
+                def_cash: "现钞/存款", def_property: "房产估值", def_invest: "股票/基金", def_vehicles: "车辆",
+                def_mortgage: "房屋贷款", def_loans: "消费贷款", def_credit_card: "信用卡欠款", def_other_debt: "其他借款",
+                
+                chip_tfsa: "TFSA", chip_gic: "GIC和债券", chip_mutual: "互惠基金", chip_nonreg: "非注册账户", chip_annuity: "年金", chip_stock: "股票", chip_other_asset: "其他现金和投资资产",
+                chip_p_loan: "个人贷款", chip_mortgage_other: "其他房屋贷款", chip_loc: "个人信用贷款", chip_store: "商店卡", chip_bnpl: "先买后付贷款", chip_tax: "未缴税款", chip_other_liab: "其他"
+            },
+            'en': {
+                title: "Net Worth Pro", subtitle: "Financial Calculator",
+                h_assets: "Assets", h_liabilities: "Liabilities",
+                btn_add_row: "Add Custom Asset", btn_add_row_debt: "Add Custom Liability",
+                subtotal_assets: "Total Assets", subtotal_liabilities: "Total Liabilities",
+                res_net_worth: "Net Worth", 
+                ratio_debt_asset: "Debt Ratio",
+                lbl_quick_add: "Quick Add:",
+                
+                // New Guide Section
+                intro_title: "About Your Net Worth",
+                intro_text_main: "To better understand your current financial situation and how to start planning for tomorrow, compare your assets against your liabilities. Net worth is the true snapshot of your financial health.",
+                intro_formula: "Net Worth = Total Assets (what you own) - Total Liabilities (what you owe)",
+                intro_tips_title: "Optimization & Planning",
+                tip_h_assets: "Grow Assets",
+                tip_p_assets: "Save regularly and invest in appreciating assets like real estate or funds. Use compound interest to build wealth.",
+                tip_h_debt: "Manage Debt",
+                tip_p_debt: "Prioritize paying off high-interest credit cards and loans. Maintain a healthy debt-to-asset ratio.",
+
+                // Footer
+                footer_disclaimer_1: "These results depend on the accuracy and completeness of the information you entered. These results are not a financial plan.",
+                footer_disclaimer_2: "The information contained herein is for informational purposes only. The information is derived from sources believed to be reliable. This information does not constitute financial, legal, tax or investment planning or advice. Specific investment, trading or tax strategies should be evaluated based on each investor's objectives and risk tolerance.",
+                footer_disclaimer_3: "TD Investment Services Inc., TD Bank and its affiliates and related entities do not assume any liability for the accuracy of the information provided to us by you or any third party, for any consequences arising from your or any third party's use of the information in this document, or for any direct or indirect loss arising from any use of the information in this document by anyone in any manner.",
+
+                // Defaults & Chips
+                def_cash: "Cash & Savings", def_property: "Real Estate", def_invest: "Investments", def_vehicles: "Vehicles",
+                def_mortgage: "Mortgages", def_loans: "Personal Loans", def_credit_card: "Credit Cards", def_other_debt: "Other Debt",
+
+                chip_tfsa: "TFSA", chip_gic: "GICs & Bonds", chip_mutual: "Mutual Funds", chip_nonreg: "Non-reg Accounts", chip_annuity: "Annuities", chip_stock: "Stocks", chip_other_asset: "Other Assets",
+                chip_p_loan: "Personal Loans", chip_mortgage_other: "Other Mortgages", chip_loc: "Line of Credit", chip_store: "Store Cards", chip_bnpl: "BNPL Loans", chip_tax: "Unpaid Taxes", chip_other_liab: "Other"
+            }
+        };
+
+        const Calculator = {
+            chart: null,
+            calculate() {
+                const assets = this.sumInputs('assets');
+                const liabilities = this.sumInputs('liabilities');
+                const netWorth = assets - liabilities;
+
+                this.updateText('display-total-assets', assets);
+                this.updateText('display-total-liabilities', liabilities);
+                
+                const nwEl = document.getElementById('main-net-worth');
+                nwEl.textContent = this.format(netWorth);
+                nwEl.className = `text-5xl sm:text-6xl font-mono font-bold tracking-tighter ${netWorth < 0 ? 'text-rose-400' : 'text-white'}`;
+
+                const ratio = assets > 0 ? (liabilities / assets) * 100 : (liabilities > 0 ? 100 : 0);
+                document.getElementById('ratio-display').textContent = ratio.toFixed(1) + '%';
+                
+                const bar = document.getElementById('ratio-bar');
+                bar.style.width = Math.min(ratio, 100) + '%';
+                bar.className = `h-full rounded-full transition-all duration-700 ${ratio > 50 ? 'bg-rose-500' : 'bg-emerald-500'}`;
+
+                let status = "Healthy";
+                if(netWorth < 0) status = "Attention Needed";
+                else if(ratio > 50) status = "High Debt";
+                else status = "Excellent";
+                document.getElementById('net-worth-status').textContent = status;
+
+                this.updateChart(assets, liabilities);
+            },
+            sumInputs(id) {
+                let sum = 0;
+                document.querySelectorAll(`#${id}-list .input-field`).forEach(el => sum += parseFloat(el.value) || 0);
+                return sum;
+            },
+            format(val) {
+                return App.symbol + val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            },
+            updateText(id, val) {
+                document.getElementById(id).textContent = this.format(val);
+            },
+            updateChart(assets, liabilities) {
+                const ctx = document.getElementById('netWorthChart').getContext('2d');
+                if (this.chart) {
+                    this.chart.data.datasets[0].data = [assets, liabilities];
+                    this.chart.update();
+                } else {
+                    this.chart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Assets', 'Liabilities'],
+                            datasets: [{
+                                data: [assets, liabilities],
+                                backgroundColor: ['#34d399', '#f43f5e'],
+                                borderWidth: 0,
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '85%',
+                            plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                        }
+                    });
+                }
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            symbol: '¥',
+            
+            // Chip Definitions
+            assetChips: ['chip_tfsa', 'chip_gic', 'chip_mutual', 'chip_nonreg', 'chip_annuity', 'chip_stock', 'chip_other_asset'],
+            liabilityChips: ['chip_p_loan', 'chip_mortgage_other', 'chip_loc', 'chip_store', 'chip_bnpl', 'chip_tax', 'chip_other_liab'],
+
+            init() {
+                const params = new URLSearchParams(window.location.search);
+                this.lang = params.get('lang') || 'zh-CN';
+                document.getElementById('lang-selector').value = this.lang;
+                this.updateSymbol();
+
+                this.renderRow('assets', 'def_cash', 50000);
+                this.renderRow('assets', 'def_property', 2000000);
+                this.renderRow('liabilities', 'def_mortgage', 1200000);
+                this.renderRow('liabilities', 'def_loans', 50000);
+                
+                document.getElementById('lang-selector').addEventListener('change', e => {
+                    this.lang = e.target.value;
+                    this.updateSymbol();
+                    this.translate();
+                    this.translateRows(); // New function call
+                    this.renderChips();
+                    this.updateUrl(); // New function call
+                    Calculator.calculate();
+                });
+                
+                document.getElementById('mode-toggle').addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                });
+
+                this.translate();
+                this.renderChips();
+                Calculator.calculate();
+            },
+            
+            updateSymbol() {
+                this.symbol = this.lang === 'zh-CN' ? '¥' : '$';
+            },
+
+            updateUrl() {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', this.lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {
+                    console.warn('URL update skipped due to environment restrictions.');
+                }
+            },
+
+            renderRow(type, labelKey, val) {
+                const container = document.getElementById(type + '-list');
+                const div = document.createElement('div');
+                div.className = 'list-row group';
+                
+                const texts = i18nData[this.lang] || i18nData['en'];
+                const label = texts[labelKey] || labelKey || 'Item';
+                const wrapClass = type === 'assets' ? 'wrapper-asset text-asset' : 'wrapper-liability text-liability';
+                
+                // If it's a known key (starts with def_ or chip_), add data-key attribute for translation
+                const isKnownKey = (labelKey.startsWith('def_') || labelKey.startsWith('chip_'));
+                const dataKeyAttr = isKnownKey ? `data-key="${labelKey}"` : '';
+
+                div.innerHTML = `
+                    <input type="text" class="label-input" value="${label}" placeholder="Item Name" ${dataKeyAttr}>
+                    <div class="amount-wrapper ${wrapClass}">
+                        <span class="text-xs font-bold opacity-50 font-mono">${this.symbol}</span>
+                        <input type="number" class="input-field" value="${val}" oninput="Calculator.calculate()" placeholder="0">
+                    </div>
+                    <div class="delete-btn" onclick="this.parentElement.remove(); Calculator.calculate();">
+                        <i class="fa fa-times text-xs"></i>
+                    </div>
+                `;
+                container.appendChild(div);
+                return div;
+            },
+            
+            renderChips() {
+                this.renderChipSet('assets', this.assetChips, 'chip-asset');
+                this.renderChipSet('liabilities', this.liabilityChips, 'chip-liability');
+            },
+            
+            renderChipSet(type, keys, cssClass) {
+                const container = document.getElementById(type + '-chips');
+                container.innerHTML = '';
+                const texts = i18nData[this.lang] || i18nData['en'];
+                
+                keys.forEach(key => {
+                    const label = texts[key] || key;
+                    const span = document.createElement('span');
+                    span.className = `chip ${cssClass}`;
+                    span.textContent = `+ ${label}`;
+                    span.onclick = () => {
+                        this.renderRow(type, key, 0); // Pass key instead of label for future translation
+                        Calculator.calculate();
+                    };
+                    container.appendChild(span);
+                });
+            },
+
+            addRow(type) {
+                this.renderRow(type, type === 'assets' ? 'New Asset' : 'New Liability', 0);
+                Calculator.calculate();
+            },
+
+            translate() {
+                const t = i18nData[this.lang] || i18nData['en'];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(t[key]) el.innerHTML = t[key];
+                });
+            },
+
+            translateRows() {
+                const t = i18nData[this.lang] || i18nData['en'];
+                document.querySelectorAll('.label-input[data-key]').forEach(input => {
+                    const key = input.getAttribute('data-key');
+                    if(t[key]) {
+                        input.value = t[key];
+                    }
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

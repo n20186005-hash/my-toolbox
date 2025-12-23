@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="finance">
+    <meta name="description" content="Student Budget Calculator - Estimate education costs and funding for the academic year.">
+    <title>Student Budget Pro | 学生预算计算器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#17a2b8', hover: '#138496' }, /* Cyan for Education */
+                        expense: { DEFAULT: '#f59e0b', hover: '#d97706' }, /* Amber for Costs */
+                        fund: { DEFAULT: '#10b981', hover: '#059669' }, /* Emerald for Funds */
+                        bg: { light: '#f0fdfa', dark: '#020617' } 
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .section-card {
+                @apply bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mb-6;
+            }
+            .section-header {
+                @apply px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center;
+            }
+            .input-row {
+                @apply flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3 border-b border-slate-50 dark:border-slate-800/50 last:border-0;
+            }
+            .currency-input {
+                @apply w-32 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-right font-mono font-bold focus:ring-2 focus:ring-primary/50 outline-none transition-all;
+            }
+            .preset-btn {
+                @apply px-3 py-1.5 text-xs font-medium rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900;
+            }
+            .preset-btn.active {
+                @apply bg-primary/10 border-primary text-primary;
+            }
+            .dynamic-group {
+                @apply bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 mt-4 border border-dashed border-slate-200 dark:border-slate-700;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center text-xl shadow-lg">
+                    <i class="fa fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight" data-i18n="title">Student Budget Pro</h1>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wide" data-i18n="subtitle">学生预算计算器</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                <select id="lang-selector" class="bg-transparent text-xs font-bold px-2 py-1 rounded outline-none cursor-pointer">
+                    <option value="zh-CN">CN</option>
+                    <option value="en">EN</option>
+                </select>
+                <div class="w-px h-4 bg-slate-200 dark:bg-slate-700"></div>
+                <button id="mode-toggle" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-primary">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Disclaimer Intro -->
+        <div class="mb-8 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            <p data-i18n="intro_disclaimer">
+                TD学生预算计算器旨在帮助用户评估其预期的年度开销和与中学后教育相关的资金来源。结果仅供参考，不构成也不应被视为财务建议。某些字段的默认金额以加拿大平均费用为依据。
+            </p>
+        </div>
+
+        <div class="grid lg:grid-cols-12 gap-8 items-start mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-7">
+
+                <!-- 1. Tuition -->
+                <div class="section-card border-l-4 border-l-cyan-500">
+                    <div class="section-header">
+                        <h3 class="font-bold flex items-center gap-2"><i class="fa fa-university text-cyan-500"></i> <span data-i18n="h_tuition">学费 (Tuition)</span></h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="input-row">
+                            <div>
+                                <label class="block text-sm font-medium mb-1" data-i18n="lbl_tuition_fee">您每年的学费是多少？</label>
+                                <p class="text-[10px] text-slate-400" data-i18n="hint_tuition">您可以在学校的网站上找到此信息。</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400 font-mono">$</span>
+                                <input type="number" id="inp-tuition" class="currency-input calc-trigger" value="8000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Housing -->
+                <div class="section-card border-l-4 border-l-orange-500">
+                    <div class="section-header">
+                        <h3 class="font-bold flex items-center gap-2"><i class="fa fa-home text-orange-500"></i> <span data-i18n="h_housing">住房 (Housing)</span></h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2" data-i18n="lbl_housing_type">您将住在哪里？</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button class="housing-btn preset-btn py-3 active text-center" data-val="home" data-i18n="opt_home">住家里</button>
+                                <button class="housing-btn preset-btn py-3 text-center" data-val="campus" data-i18n="opt_campus">住校</button>
+                                <button class="housing-btn preset-btn py-3 text-center" data-val="rental" data-i18n="opt_rental">住校外租房</button>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Housing Content -->
+                        <div id="housing-content">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Living Expenses -->
+                <div class="section-card border-l-4 border-l-amber-500">
+                    <div class="section-header">
+                        <h3 class="font-bold flex items-center gap-2"><i class="fa fa-shopping-cart text-amber-500"></i> <span data-i18n="h_expenses">开支 (Living Expenses)</span></h3>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        
+                        <!-- Groceries -->
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="text-sm font-medium" data-i18n="lbl_groceries">杂货 (每周)</label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 font-mono">$</span>
+                                    <input type="number" id="inp-groceries" class="currency-input w-24 calc-trigger" value="50">
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button class="preset-btn" onclick="setVal('inp-groceries', 30)" data-i18n="btn_snacks">主要是小吃</button>
+                                <button class="preset-btn" onclick="setVal('inp-groceries', 80)" data-i18n="btn_few_meals">几次用餐</button>
+                                <button class="preset-btn" onclick="setVal('inp-groceries', 150)" data-i18n="btn_all_meals">所有餐点</button>
+                            </div>
+                        </div>
+
+                        <!-- Going Out -->
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="text-sm font-medium" data-i18n="lbl_going_out">外出/娱乐 (每周)</label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 font-mono">$</span>
+                                    <input type="number" id="inp-entertainment" class="currency-input w-24 calc-trigger" value="40">
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button class="preset-btn" onclick="setVal('inp-entertainment', 30)" data-i18n="btn_once">一次</button>
+                                <button class="preset-btn" onclick="setVal('inp-entertainment', 70)" data-i18n="btn_few_times">几次</button>
+                                <button class="preset-btn" onclick="setVal('inp-entertainment', 120)" data-i18n="btn_daily">每天</button>
+                            </div>
+                        </div>
+
+                        <!-- Monthly Expenses List -->
+                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-3" data-i18n="sub_monthly">每月固定开销</h4>
+                            <div id="monthly-list" class="space-y-3">
+                                <!-- Generated JS -->
+                            </div>
+                            <button onclick="addExpenseRow('monthly')" class="mt-3 text-xs text-primary font-bold hover:underline" data-i18n="btn_add_other">+ 添加其他</button>
+                        </div>
+
+                        <!-- Annual Expenses List -->
+                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-3" data-i18n="sub_annual">年度大额开销</h4>
+                            <div id="annual-list" class="space-y-3">
+                                <!-- Generated JS -->
+                            </div>
+                            <button onclick="addExpenseRow('annual')" class="mt-3 text-xs text-primary font-bold hover:underline" data-i18n="btn_add_other">+ 添加其他</button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 4. Funding -->
+                <div class="section-card border-l-4 border-l-emerald-500">
+                    <div class="section-header">
+                        <h3 class="font-bold flex items-center gap-2"><i class="fa fa-money text-emerald-500"></i> <span data-i18n="h_funding">经济资助与收入 (Funding)</span></h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <p class="text-xs text-slate-500 mb-4" data-i18n="hint_funding">包括您在该学年收到的任何奖学金、助学金、津贴、贷款及个人收入。</p>
+                        
+                        <div id="funding-list" class="space-y-3">
+                            <!-- Generated JS -->
+                        </div>
+                        <button onclick="addFundingRow()" class="mt-3 text-xs text-primary font-bold hover:underline" data-i18n="btn_add_other">+ 添加其他</button>
+
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- Right Column: Dashboard -->
+            <aside class="lg:col-span-5 lg:sticky lg:top-6 space-y-6">
+                
+                <!-- Summary Card -->
+                <div class="bg-slate-900 text-white rounded-3xl shadow-xl p-6 md:p-8 relative overflow-hidden flex flex-col items-center text-center">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/20 rounded-full blur-[80px] pointer-events-none"></div>
+
+                    <h2 class="relative z-10 text-slate-400 text-xs font-bold uppercase tracking-widest mb-2" data-i18n="res_balance">预算结余 (Balance)</h2>
+                    
+                    <div class="relative z-10 mb-6">
+                        <div class="text-4xl md:text-5xl font-mono font-bold tracking-tighter" id="res-balance">$0</div>
+                        <div id="status-badge" class="mt-2 inline-block px-3 py-1 rounded-full bg-white/10 text-[10px] font-medium border border-white/5">
+                            Calculating...
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="relative z-10 w-full h-48 bg-white/5 rounded-xl p-4 backdrop-blur-sm">
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+
+                    <!-- Breakdown -->
+                    <div class="relative z-10 grid grid-cols-2 gap-4 w-full mt-6 pt-6 border-t border-white/10">
+                        <div>
+                            <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1" data-i18n="sum_costs">一学年总开销</div>
+                            <div class="text-lg font-mono font-bold text-amber-400" id="res-total-costs">$0</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1" data-i18n="sum_funds">预计可用资金</div>
+                            <div class="text-lg font-mono font-bold text-emerald-400" id="res-total-funds">$0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tips Card -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 class="font-bold mb-3 flex items-center gap-2 text-sm"><i class="fa fa-lightbulb-o text-yellow-500"></i> <span data-i18n="tips_title">预算提示</span></h3>
+                    <div class="text-xs text-slate-600 dark:text-slate-400 space-y-2 leading-relaxed">
+                        <p data-i18n="tip_1">• 考虑购买二手课本或数字版以节省年度大额开销。</p>
+                        <p data-i18n="tip_2">• 如果资金出现缺口，请查阅加拿大学生贷款计划或学校的助学金机会。</p>
+                        <p data-i18n="tip_3">• 利用学生优惠：很多杂货店、交通和软件都有学生折扣。</p>
+                    </div>
+                </div>
+
+            </aside>
+        </div>
+
+        <!-- Footer -->
+        <footer class="border-t border-slate-200 dark:border-slate-800 pt-8 pb-12 text-center">
+            <div class="max-w-4xl mx-auto space-y-4">
+                <p class="text-[10px] text-slate-400 dark:text-slate-600 leading-relaxed max-w-3xl mx-auto" data-i18n="footer_disclaimer">
+                    本文所含信息仅供参考。信息出自我们认为可靠的来源。具体投资、交易或税务策略应根据每位投资者的目标和风险承受能力加以评估。道明银行及其附属公司不承担任何直接或间接损失责任。
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // Constants
+        const ACADEMIC_MONTHS = 8; // Standard academic year duration
+
+        const i18nData = {
+            'zh-CN': {
+                title: "Student Budget Pro", subtitle: "学生预算计算器",
+                intro_disclaimer: "TD学生预算计算器旨在帮助用户评估其预期的年度开销和与中学后教育相关的资金来源。结果仅供参考。",
+                
+                h_tuition: "学费", lbl_tuition_fee: "您每年的学费是多少？", hint_tuition: "您可以在学校的网站上找到此信息。",
+                h_housing: "住房", lbl_housing_type: "您将住在哪里？",
+                opt_home: "住家里", opt_campus: "住校", opt_rental: "住校外租房",
+                
+                lbl_contrib_home: "分担家庭开销 (月)",
+                lbl_res_fee: "住宿费 (年)", lbl_meal_plan: "餐费 (年)", lbl_extra_fees: "额外收费 (年)",
+                lbl_rent: "每月租金", lbl_utils: "水电/保险 (月)",
+
+                h_expenses: "生活开支", lbl_groceries: "杂货 (每周)", lbl_going_out: "外出/娱乐 (每周)",
+                btn_snacks: "主要是小吃", btn_few_meals: "几次用餐", btn_all_meals: "所有餐点",
+                btn_once: "一次", btn_few_times: "几次", btn_daily: "每天",
+                
+                sub_monthly: "每月固定开销", sub_annual: "年度大额开销", btn_add_other: "+ 添加其他",
+                
+                h_funding: "经济资助与收入", hint_funding: "包括您在该学年收到的任何奖学金、助学金、津贴、贷款及个人收入。",
+                
+                res_balance: "预算结余", sum_costs: "一学年总开销", sum_funds: "预计可用资金",
+                
+                // Chart Labels
+                chart_costs: "总开销", chart_funding: "总资金",
+
+                tips_title: "预算提示",
+                tip_1: "• 考虑购买二手课本或数字版以节省年度大额开销。",
+                tip_2: "• 如果资金出现缺口，请查阅加拿大学生贷款计划或学校的助学金机会。",
+                tip_3: "• 利用学生优惠：很多杂货店、交通和软件都有学生折扣。",
+                
+                footer_disclaimer: "本文所含信息仅供参考。具体投资、交易或税务策略应根据每位投资者的目标和风险承受能力加以评估。",
+                
+                // Dynamic labels
+                item_travel: "回家路费 (月)", item_phone: "手机套餐 (月)", item_shopping: "购物 (月)", item_car_ins: "汽车保险 (月)", item_gas: "汽油 (月)",
+                item_books: "课本 (年)", item_furniture: "家具 (年)", item_tech: "科技产品 (年)",
+                item_scholarship: "奖学金/助学金", item_loan: "政府/信用贷款", item_other_fund: "其他供款 (RESP/父母)", item_savings: "个人储蓄", item_income: "个人年收入"
+            },
+            'en': {
+                title: "Student Budget Pro", subtitle: "Student Budget Calculator",
+                intro_disclaimer: "The TD Student Budget Calculator helps users estimate their expected annual expenses and funding sources. Results are for estimation only.",
+                
+                h_tuition: "Tuition", lbl_tuition_fee: "What is your annual tuition?", hint_tuition: "Check your school's website for this info.",
+                h_housing: "Housing", lbl_housing_type: "Where will you live?",
+                opt_home: "At Home", opt_campus: "On Campus", opt_rental: "Off Campus",
+                
+                lbl_contrib_home: "Family Contribution (Monthly)",
+                lbl_res_fee: "Residence Fee (Year)", lbl_meal_plan: "Meal Plan (Year)", lbl_extra_fees: "Extra Fees (Year)",
+                lbl_rent: "Monthly Rent", lbl_utils: "Utilities/Ins. (Monthly)",
+
+                h_expenses: "Living Expenses", lbl_groceries: "Groceries (Weekly)", lbl_going_out: "Going Out (Weekly)",
+                btn_snacks: "Snacks", btn_few_meals: "Few Meals", btn_all_meals: "All Meals",
+                btn_once: "Once", btn_few_times: "A few times", btn_daily: "Daily",
+                
+                sub_monthly: "Monthly Expenses", sub_annual: "Annual Expenses", btn_add_other: "+ Add Other",
+                
+                h_funding: "Funding & Income", hint_funding: "Includes scholarships, grants, loans, and personal income for the academic year.",
+                
+                res_balance: "Budget Balance", sum_costs: "Total Est. Costs", sum_funds: "Total Funding",
+                
+                // Chart Labels
+                chart_costs: "Costs", chart_funding: "Funding",
+
+                tips_title: "Budget Tips",
+                tip_1: "• Buy used or digital textbooks to save on large annual costs.",
+                tip_2: "• Check government loan programs if you have a deficit.",
+                tip_3: "• Use student discounts for software, transit, and groceries.",
+                
+                footer_disclaimer: "Information is for reference only. Evaluate specific strategies based on your objectives and risk tolerance.",
+                
+                // Dynamic labels
+                item_travel: "Travel Home (Mo)", item_phone: "Phone Plan (Mo)", item_shopping: "Shopping (Mo)", item_car_ins: "Car Ins. (Mo)", item_gas: "Gas (Mo)",
+                item_books: "Textbooks (Yr)", item_furniture: "Furniture (Yr)", item_tech: "Tech (Yr)",
+                item_scholarship: "Scholarships", item_loan: "Gov/Credit Loans", item_other_fund: "Other (RESP/Parents)", item_savings: "Savings", item_income: "Annual Income"
+            }
+        };
+
+        // --- Logic ---
+        
+        let currentHousing = 'home';
+        
+        function setVal(id, val) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.value = val;
+                Calculator.calculate();
+            }
+        }
+
+        const Calculator = {
+            chart: null,
+            
+            calculate() {
+                // 1. Costs
+                const tuition = this.val('inp-tuition');
+                
+                // Housing
+                let housingCost = 0;
+                if(currentHousing === 'home') {
+                    housingCost = this.val('inp-home-contrib') * ACADEMIC_MONTHS;
+                } else if (currentHousing === 'campus') {
+                    housingCost = this.val('inp-res-fee') + this.val('inp-meal-plan') + this.val('inp-extra-fees');
+                } else if (currentHousing === 'rental') {
+                    housingCost = (this.val('inp-rent') + this.val('inp-utils')) * ACADEMIC_MONTHS;
+                }
+
+                // Living
+                const weeklyWeeks = ACADEMIC_MONTHS * 4; // Approx 32 weeks
+                const groceries = this.val('inp-groceries') * weeklyWeeks;
+                const entertainment = this.val('inp-entertainment') * weeklyWeeks;
+                
+                const monthlyExpenses = this.sumGroup('monthly-list') * ACADEMIC_MONTHS;
+                const annualExpenses = this.sumGroup('annual-list');
+                
+                const totalCosts = tuition + housingCost + groceries + entertainment + monthlyExpenses + annualExpenses;
+
+                // 2. Funding
+                const totalFunding = this.sumGroup('funding-list');
+
+                // 3. Balance
+                const balance = totalFunding - totalCosts;
+
+                // 4. Update UI
+                this.updateText('res-total-costs', totalCosts);
+                this.updateText('res-total-funds', totalFunding);
+                this.updateText('res-balance', balance);
+                
+                const badge = document.getElementById('status-badge');
+                if(balance >= 0) {
+                    badge.textContent = "Surplus · 盈余";
+                    badge.className = "mt-2 inline-block px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-medium";
+                    document.getElementById('res-balance').className = "text-4xl md:text-5xl font-mono font-bold tracking-tighter text-emerald-400";
+                } else {
+                    badge.textContent = "Deficit · 缺口";
+                    badge.className = "mt-2 inline-block px-3 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-medium";
+                    document.getElementById('res-balance').className = "text-4xl md:text-5xl font-mono font-bold tracking-tighter text-rose-400";
+                }
+
+                this.updateChart(totalCosts, totalFunding);
+            },
+
+            val(id) {
+                const el = document.getElementById(id);
+                return el ? (parseFloat(el.value) || 0) : 0;
+            },
+
+            sumGroup(containerId) {
+                let sum = 0;
+                document.querySelectorAll(`#${containerId} input[type="number"]`).forEach(el => {
+                    sum += parseFloat(el.value) || 0;
+                });
+                return sum;
+            },
+
+            updateText(id, val) {
+                const el = document.getElementById(id);
+                if(el) el.innerText = '$' + Math.round(val).toLocaleString();
+            },
+
+            updateChart(costs, funds) {
+                const ctx = document.getElementById('budgetChart').getContext('2d');
+                const t = i18nData[App.lang] || i18nData['en'];
+                const labels = [t.chart_costs || 'Costs', t.chart_funding || 'Funding'];
+
+                if(this.chart) {
+                    this.chart.data.labels = labels; // Update labels on language change
+                    this.chart.data.datasets[0].data = [costs, funds];
+                    this.chart.update();
+                } else {
+                    this.chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Amount',
+                                data: [costs, funds],
+                                backgroundColor: ['#f59e0b', '#10b981'],
+                                borderRadius: 6,
+                                barThickness: 40
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                                y: { grid: { display: false }, ticks: { color: '#e2e8f0', font: { weight: 'bold' } } }
+                            }
+                        }
+                    });
+                }
+            }
+        };
+
+        // --- Dynamic Renderers ---
+
+        function renderHousing(type) {
+            currentHousing = type;
+            const container = document.getElementById('housing-content');
+            container.innerHTML = '';
+            
+            const btns = document.querySelectorAll('.housing-btn');
+            btns.forEach(b => {
+                b.classList.toggle('active', b.dataset.val === type);
+            });
+
+            if(type === 'home') {
+                container.innerHTML = createInput('inp-home-contrib', 'lbl_contrib_home', 0, 'text-slate-500');
+            } else if (type === 'campus') {
+                container.innerHTML = `
+                    ${createInput('inp-res-fee', 'lbl_res_fee', 6000)}
+                    ${createInput('inp-meal-plan', 'lbl_meal_plan', 4000)}
+                    ${createInput('inp-extra-fees', 'lbl_extra_fees', 500)}
+                `;
+            } else if (type === 'rental') {
+                container.innerHTML = `
+                    ${createInput('inp-rent', 'lbl_rent', 800)}
+                    ${createInput('inp-utils', 'lbl_utils', 90)}
+                `;
+            }
+            
+            App.translate();
+            attachListeners();
+            Calculator.calculate();
+        }
+
+        function createInput(id, labelKey, defVal, labelClass="text-slate-600 dark:text-slate-300") {
+            return `
+                <div class="input-row">
+                    <label class="text-sm font-medium ${labelClass}" data-i18n="${labelKey}">Label</label>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-400 font-mono">$</span>
+                        <input type="number" id="${id}" class="currency-input calc-trigger" value="${defVal}">
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderRow(containerId, labelKey, defVal) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.innerHTML = createInput(`dyn-${Date.now()}`, labelKey, defVal);
+            // Add delete button logic if needed, simplfied here
+            container.appendChild(div.firstElementChild); 
+        }
+
+        function addExpenseRow(type) {
+            const container = type === 'monthly' ? 'monthly-list' : 'annual-list';
+            const div = document.createElement('div');
+            div.className = "input-row";
+            div.innerHTML = `
+                <input type="text" class="bg-transparent border-b border-dashed border-slate-300 dark:border-slate-600 text-sm w-full mr-4 focus:outline-none" placeholder="Item Name">
+                <div class="flex items-center gap-2">
+                    <span class="text-slate-400 font-mono">$</span>
+                    <input type="number" class="currency-input calc-trigger" value="0">
+                </div>
+            `;
+            document.getElementById(container).appendChild(div);
+            attachListeners();
+        }
+        
+        function addFundingRow() {
+            const div = document.createElement('div');
+            div.className = "input-row";
+            div.innerHTML = `
+                <input type="text" class="bg-transparent border-b border-dashed border-slate-300 dark:border-slate-600 text-sm w-full mr-4 focus:outline-none" placeholder="Source Name">
+                <div class="flex items-center gap-2">
+                    <span class="text-slate-400 font-mono">$</span>
+                    <input type="number" class="currency-input calc-trigger" value="0">
+                </div>
+            `;
+            document.getElementById('funding-list').appendChild(div);
+            attachListeners();
+        }
+
+        function attachListeners() {
+            document.querySelectorAll('.calc-trigger').forEach(el => {
+                el.removeEventListener('input', () => Calculator.calculate()); // Prevent dupes
+                el.addEventListener('input', () => Calculator.calculate());
+            });
+        }
+
+        const App = {
+            lang: 'zh-CN',
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                document.getElementById('lang-selector').value = this.lang;
+
+                // Initial Renders
+                renderHousing('home');
+                
+                // Monthly Defaults
+                const monthlyContainer = document.getElementById('monthly-list');
+                monthlyContainer.innerHTML = '';
+                monthlyContainer.insertAdjacentHTML('beforeend', createInput('inp-travel', 'item_travel', 0));
+                monthlyContainer.insertAdjacentHTML('beforeend', createInput('inp-phone', 'item_phone', 60));
+                monthlyContainer.insertAdjacentHTML('beforeend', createInput('inp-shopping', 'item_shopping', 50));
+                
+                // Annual Defaults
+                const annualContainer = document.getElementById('annual-list');
+                annualContainer.innerHTML = '';
+                annualContainer.insertAdjacentHTML('beforeend', createInput('inp-books', 'item_books', 800));
+                annualContainer.insertAdjacentHTML('beforeend', createInput('inp-tech', 'item_tech', 500));
+
+                // Funding Defaults
+                const fundingContainer = document.getElementById('funding-list');
+                fundingContainer.innerHTML = '';
+                fundingContainer.insertAdjacentHTML('beforeend', createInput('inp-scholarship', 'item_scholarship', 1000));
+                fundingContainer.insertAdjacentHTML('beforeend', createInput('inp-loan', 'item_loan', 5000));
+                fundingContainer.insertAdjacentHTML('beforeend', createInput('inp-savings', 'item_savings', 2000));
+                fundingContainer.insertAdjacentHTML('beforeend', createInput('inp-income', 'item_income', 3000));
+
+                // Events
+                document.querySelectorAll('.housing-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => renderHousing(e.target.dataset.val));
+                });
+                
+                document.getElementById('lang-selector').addEventListener('change', e => {
+                    this.lang = e.target.value;
+                    this.translate();
+                    this.updateUrl();
+                    // Explicitly call calculate to update chart labels via updateChart logic
+                    Calculator.calculate();
+                });
+
+                document.getElementById('mode-toggle').addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                });
+
+                this.translate();
+                attachListeners();
+                Calculator.calculate();
+            },
+            
+            translate() {
+                const t = i18nData[this.lang] || i18nData['en'];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(t[key]) el.innerText = t[key];
+                });
+            },
+            
+            updateUrl() {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', this.lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch(e) {}
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

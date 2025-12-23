@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="finance">
+    <meta name="description" content="Student Loan Optimizer - Compare repayment plans, refinancing options, and calculate savings. 学生贷款计算器，支持再融资对比、额外还款分析及利息节省计算。">
+    <title>Student Loan Pro | 学生贷款优化助手</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#00B894', hover: '#00a383' }, /* NerdWallet Green-ish */
+                        secondary: { DEFAULT: '#4A154B', hover: '#3a103b' }, /* Dark Purple */
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f5f7fa', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            .glass {
+                @apply bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700;
+            }
+            
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            
+            .label-text {
+                @apply text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+
+            .star-rating {
+                @apply text-green-500 text-sm tracking-tighter;
+            }
+        }
+
+        .currency-input-wrapper { position: relative; }
+        .currency-input-wrapper::before {
+            content: '$'; 
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .currency-input-wrapper input { padding-left: 28px; }
+        
+        .percent-input-wrapper { position: relative; }
+        .percent-input-wrapper::after {
+            content: '%';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-xl font-bold">
+                    NW
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Student Loan Tools</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">学生贷款工具和指南</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文</option>
+                    <option value="en">🇺🇸 English</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass rounded-2xl shadow-sm border-t-4 border-t-primary p-6 space-y-5">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                        <span data-i18n="h2_config">计算器配置</span>
+                    </h2>
+
+                    <!-- 1. Current Loan Details -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_balance">贷款余额 (Balance)</label>
+                        <div class="currency-input-wrapper">
+                            <input type="number" id="input-balance" class="input-field font-mono" value="30000" placeholder="30000" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-text" data-i18n="lbl_rate">当前年利率 (APR)</label>
+                            <div class="percent-input-wrapper">
+                                <input type="number" id="input-rate" class="input-field font-mono" value="6.8" step="0.1" oninput="Calculator.calculate()">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label-text" data-i18n="lbl_term">剩余年限</label>
+                            <input type="number" id="input-term" class="input-field font-mono" value="10" placeholder="10" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <div class="w-full h-px bg-slate-200 dark:bg-slate-700 my-2"></div>
+
+                    <!-- 2. Optimization Strategy -->
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                        <span data-i18n="h2_strategy">优化方案</span>
+                    </h2>
+
+                    <div>
+                        <label class="label-text" data-i18n="lbl_strategy_type">策略类型</label>
+                        <select id="input-strategy" class="input-field" onchange="Calculator.calculate()">
+                            <option value="refinance" data-i18n="opt_refinance">🔄 再融资 (降低利率)</option>
+                            <option value="extra" data-i18n="opt_extra">💰 额外还款 (加速还清)</option>
+                        </select>
+                    </div>
+
+                    <!-- Refinance Inputs -->
+                    <div id="section-refinance" class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-text flex justify-between">
+                                <span data-i18n="lbl_new_rate">新利率</span>
+                                <span class="text-[10px] text-primary cursor-pointer hover:underline" onclick="Calculator.fillRate(2.89)" title="Apply Min Market Rate">Use 2.89%</span>
+                            </label>
+                            <div class="percent-input-wrapper">
+                                <input type="number" id="input-new-rate" class="input-field font-mono" value="4.5" step="0.1" oninput="Calculator.calculate()">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label-text" data-i18n="lbl_new_term">新期限 (年)</label>
+                            <input type="number" id="input-new-term" class="input-field font-mono" value="10" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+
+                    <!-- Extra Payment Inputs (Hidden by default) -->
+                    <div id="section-extra" class="hidden">
+                        <label class="label-text" data-i18n="lbl_extra_pay">每月额外还款</label>
+                        <div class="currency-input-wrapper">
+                            <input type="number" id="input-extra-pay" class="input-field font-mono" value="100" placeholder="100" oninput="Calculator.calculate()">
+                        </div>
+                    </div>
+                    
+                </div>
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-2xl shadow-sm overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <div class="p-6 md:p-8 flex-grow flex flex-col gap-8 animate-fade-in">
+                        <!-- Main Comparison Cards -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Current Plan -->
+                            <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 bg-slate-50 dark:bg-slate-800/50">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="h4_current">当前计划</h4>
+                                
+                                <div class="space-y-2">
+                                    <div class="result-row">
+                                        <span class="text-sm text-slate-600 dark:text-slate-400" data-i18n="res_monthly">月供</span>
+                                        <span class="font-mono font-bold text-lg" id="res-monthly-old">$0</span>
+                                    </div>
+                                    <div class="result-row">
+                                        <span class="text-sm text-slate-600 dark:text-slate-400" data-i18n="res_total_interest">总利息</span>
+                                        <span class="font-mono text-slate-500" id="res-interest-old">$0</span>
+                                    </div>
+                                    <div class="result-row">
+                                        <span class="text-sm text-slate-600 dark:text-slate-400" data-i18n="res_payoff">还清日期</span>
+                                        <span class="font-mono text-slate-500" id="res-date-old">...</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- New Plan -->
+                            <div class="rounded-xl border-2 border-primary/30 p-5 space-y-4 bg-green-50 dark:bg-green-900/10 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 bg-primary text-white text-[10px] px-3 py-1 rounded-bl-lg font-bold" data-i18n="badge_optimized">SAVINGS</div>
+                                <h4 class="text-xs font-bold text-primary dark:text-green-400 uppercase tracking-wider" data-i18n="h4_new">优化后</h4>
+                                
+                                <div class="space-y-2">
+                                    <div class="result-row border-green-100 dark:border-green-800/30">
+                                        <span class="text-sm text-slate-600 dark:text-slate-400" data-i18n="res_monthly">月供</span>
+                                        <span class="font-mono font-bold text-lg text-slate-800 dark:text-slate-200" id="res-monthly-new">$0</span>
+                                    </div>
+                                    <div class="result-row border-green-100 dark:border-green-800/30">
+                                        <span class="text-sm text-slate-600 dark:text-slate-400" data-i18n="res_total_interest">总利息</span>
+                                        <span class="font-mono text-primary font-bold" id="res-interest-new">$0</span>
+                                    </div>
+                                    <div class="result-row border-green-100 dark:border-green-800/30">
+                                        <span class="text-sm text-slate-600 dark:text-slate-400" data-i18n="res_payoff">还清日期</span>
+                                        <span class="font-mono text-primary" id="res-date-new">...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Highlights -->
+                        <div class="bg-slate-900 text-white rounded-xl p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div class="text-center md:text-left">
+                                <div class="text-xs uppercase tracking-wide text-slate-400 mb-1" data-i18n="stat_interest_saved">节省总利息</div>
+                                <div class="text-3xl font-bold font-mono text-primary" id="stat-saved">$0</div>
+                            </div>
+                            <div class="h-px w-full md:w-px md:h-12 bg-slate-700"></div>
+                            <div class="text-center md:text-left">
+                                <div class="text-xs uppercase tracking-wide text-slate-400 mb-1" data-i18n="stat_time_saved">缩短时间</div>
+                                <div class="text-3xl font-bold font-mono" id="stat-time">0 Yrs</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lender Comparison Section -->
+                    <div class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-6">
+                        <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                            <span data-i18n="h3_featured">我们评分最高的助学贷款机构</span>
+                        </h3>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <!-- College Ave -->
+                            <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden" onclick="Calculator.fillRate(2.89)">
+                                <div class="flex justify-between items-start mb-1">
+                                    <span class="font-bold text-slate-900 dark:text-white text-lg">College Ave</span>
+                                    <span class="text-xs font-bold text-slate-500">5.0 <i class="fa fa-star text-green-500"></i></span>
+                                </div>
+                                <div class="text-[10px] text-slate-500 uppercase tracking-wide mb-3" data-i18n="tag_flexible">最适合灵活支付</div>
+                                <div class="space-y-1 text-xs text-slate-600 dark:text-slate-400 mb-2">
+                                    <div class="flex justify-between"><span>固定年利率:</span> <span class="font-mono font-bold">2.89% - 17.99%</span></div>
+                                    <div class="flex justify-between"><span>最低信用分:</span> <span>600年代中期</span></div>
+                                </div>
+                                <div class="mt-2 text-center py-1.5 bg-primary text-white text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">点击套用利率</div>
+                            </div>
+
+                            <!-- Sallie Mae -->
+                            <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer group" onclick="Calculator.fillRate(2.89)">
+                                <div class="flex justify-between items-start mb-1">
+                                    <span class="font-bold text-slate-900 dark:text-white text-lg">Sallie Mae</span>
+                                    <span class="text-xs font-bold text-slate-500">4.5 <i class="fa fa-star text-green-500"></i></span>
+                                </div>
+                                <div class="text-[10px] text-slate-500 uppercase tracking-wide mb-3">综合推荐</div>
+                                <div class="space-y-1 text-xs text-slate-600 dark:text-slate-400 mb-2">
+                                    <div class="flex justify-between"><span>固定年利率:</span> <span class="font-mono font-bold">2.89% - 17.49%</span></div>
+                                    <div class="flex justify-between"><span>最低信用分:</span> <span>600多岁</span></div>
+                                </div>
+                                <div class="mt-2 text-center py-1.5 bg-primary text-white text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">点击套用利率</div>
+                            </div>
+
+                            <!-- SoFi -->
+                            <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer group" onclick="Calculator.fillRate(3.18)">
+                                <div class="flex justify-between items-start mb-1">
+                                    <span class="font-bold text-slate-900 dark:text-white text-lg">SoFi®</span>
+                                    <span class="text-xs font-bold text-slate-500">5.0 <i class="fa fa-star text-green-500"></i></span>
+                                </div>
+                                <div class="text-[10px] text-slate-500 uppercase tracking-wide mb-3">最佳再融资</div>
+                                <div class="space-y-1 text-xs text-slate-600 dark:text-slate-400 mb-2">
+                                    <div class="flex justify-between"><span>固定年利率:</span> <span class="font-mono font-bold">3.18% - 15.99%</span></div>
+                                    <div class="flex justify-between"><span>最低信用分:</span> <span>600年代中期</span></div>
+                                </div>
+                                <div class="mt-2 text-center py-1.5 bg-primary text-white text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">点击套用利率</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+
+        <!-- Explore Categories (New Section) -->
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 px-1" data-i18n="h2_explore">探索学生贷款提供商</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center hover:border-primary transition-colors cursor-pointer">
+                    <i class="fa fa-credit-card text-2xl text-purple-500 mb-2"></i>
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white">信用不良/无信用</h3>
+                    <p class="text-xs text-slate-500 mt-1">无需良好信用记录</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center hover:border-primary transition-colors cursor-pointer">
+                    <i class="fa fa-users text-2xl text-blue-500 mb-2"></i>
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white">无需担保人</h3>
+                    <p class="text-xs text-slate-500 mt-1">独立借款</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center hover:border-primary transition-colors cursor-pointer">
+                    <i class="fa fa-globe text-2xl text-emerald-500 mb-2"></i>
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white">国际学生贷款</h3>
+                    <p class="text-xs text-slate-500 mt-1">留学资金支持</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center hover:border-primary transition-colors cursor-pointer">
+                    <i class="fa fa-graduation-cap text-2xl text-indigo-500 mb-2"></i>
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white">研究生助学贷款</h3>
+                    <p class="text-xs text-slate-500 mt-1">MBA, 法学, 医学</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- News & Guides -->
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+            <!-- News List -->
+            <div>
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fa fa-newspaper-o text-primary"></i> <span data-i18n="h2_news">NerdWallet 教育团队动态</span>
+                </h2>
+                <div class="space-y-4">
+                    <div class="flex gap-4 items-start pb-4 border-b border-slate-200 dark:border-slate-700 last:border-0">
+                        <div class="text-xs font-bold text-slate-400 w-16 pt-1">11天前</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm hover:text-primary cursor-pointer">2026 年学生贷款：借款人需要了解什么</h4>
+                            <p class="text-xs text-slate-500 mt-1">作者：<span class="text-slate-700 dark:text-slate-300">里克·范德克尼夫 (Rick VanderKnyff)</span></p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start pb-4 border-b border-slate-200 dark:border-slate-700 last:border-0">
+                        <div class="text-xs font-bold text-slate-400 w-16 pt-1">26天前</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm hover:text-primary cursor-pointer">解散美国教育部：这对你意味着什么</h4>
+                            <p class="text-xs text-slate-500 mt-1">作者：<span class="text-slate-700 dark:text-slate-300">丽莎·穆尔卡 (Lisa Murka)</span></p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start pb-4 border-b border-slate-200 dark:border-slate-700 last:border-0">
+                        <div class="text-xs font-bold text-slate-400 w-16 pt-1">94天前</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm hover:text-primary cursor-pointer">美联储降息如何影响学生贷款</h4>
+                            <p class="text-xs text-slate-500 mt-1">作者：<span class="text-slate-700 dark:text-slate-300">伊丽莎·哈弗斯托克 (Eliza Haverstock)</span></p>
+                        </div>
+                    </div>
+                     <div class="flex gap-4 items-start pb-4 border-b border-slate-200 dark:border-slate-700 last:border-0">
+                        <div class="text-xs font-bold text-slate-400 w-16 pt-1">热门</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm hover:text-primary cursor-pointer">特朗普与学生贷款：贷款减免、FAFSA 等政策的最新进展</h4>
+                            <p class="text-xs text-slate-500 mt-1">作者：<span class="text-slate-700 dark:text-slate-300">朱莉·米尔-努内斯</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guide Links -->
+            <div>
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fa fa-book text-primary"></i> <span>学生贷款入门指南</span>
+                </h2>
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <a href="#" class="block p-4 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-800 dark:text-white">支付大学学费</h4>
+                                <p class="text-xs text-slate-500 mt-0.5">作者：凯伦·高德特·布鲁尔</p>
+                            </div>
+                            <i class="fa fa-chevron-right text-xs text-slate-400"></i>
+                        </div>
+                    </a>
+                    <a href="#" class="block p-4 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-800 dark:text-white">FAFSA 指南</h4>
+                                <p class="text-xs text-slate-500 mt-0.5">作者：凯伦·高德特·布鲁尔</p>
+                            </div>
+                            <i class="fa fa-chevron-right text-xs text-slate-400"></i>
+                        </div>
+                    </a>
+                    <a href="#" class="block p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-800 dark:text-white">偿还学生债务</h4>
+                                <p class="text-xs text-slate-500 mt-0.5">作者：凯伦·高德特·布鲁尔</p>
+                            </div>
+                            <i class="fa fa-chevron-right text-xs text-slate-400"></i>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <footer class="border-t border-slate-200 dark:border-slate-700 pt-8 pb-12 mt-auto">
+            <div class="text-[10px] text-slate-400 space-y-4 leading-relaxed text-justify">
+                <p>免责声明： NerdWallet 致力于确保信息的准确性和时效性。但您在访问金融机构、服务提供商或特定产品网站时所看到的信息可能与此有所不同。所有金融产品、购物产品和服务均不提供任何形式的担保。在评估优惠时，请仔细阅读金融机构的条款和条件。</p>
+                <p>NerdWallet Compare, Inc. <strong>NMLS ID# 1617539</strong> | NMLS消费者访问 | 许可和披露</p>
+                <p>加利福尼亚州：加州金融贷款机构根据加州金融保护和创新部金融贷款机构许可证 #60DBO-74812 安排贷款。保险服务由 NerdWallet Insurance Services, Inc.（加州居民许可证号：OK92033）提供。</p>
+                <p>&copy; <span id="year"></span> NerdWallet. 图片仅供参考。</p>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "Student Loan Tools", subtitle: "学生贷款工具和指南",
+                h2_config: "计算器配置",
+                lbl_balance: "贷款余额 (Balance)",
+                lbl_rate: "当前年利率 (APR)", lbl_term: "剩余年限 (Years)",
+                h2_strategy: "优化方案",
+                lbl_strategy_type: "策略类型",
+                opt_refinance: "🔄 再融资 (降低利率)", opt_extra: "💰 额外还款 (加速还清)",
+                lbl_new_rate: "新利率 (Refinance Rate)", lbl_new_term: "新期限 (年)",
+                lbl_extra_pay: "每月额外还款 ($)",
+                h2_analysis: "还款分析",
+                h4_current: "当前计划", h4_new: "优化后",
+                res_monthly: "月供", res_total_interest: "总利息", res_payoff: "还清日期",
+                badge_optimized: "SAVINGS",
+                stat_interest_saved: "节省总利息", stat_time_saved: "缩短时间",
+                h3_featured: "我们评分最高的助学贷款机构",
+                tag_flexible: "最适合灵活支付",
+                h2_explore: "探索学生贷款提供商",
+                h2_news: "NerdWallet 教育团队动态"
+            },
+            'en': {
+                title: "Student Loan Tools", subtitle: "Tools & Guides",
+                h2_config: "Calculator Config",
+                lbl_balance: "Loan Balance",
+                lbl_rate: "Current APR (%)", lbl_term: "Remaining Term (Years)",
+                h2_strategy: "Optimization Strategy",
+                lbl_strategy_type: "Strategy Type",
+                opt_refinance: "🔄 Refinance (Lower Rate)", opt_extra: "💰 Extra Payment (Pay Early)",
+                lbl_new_rate: "New Interest Rate (%)", lbl_new_term: "New Term (Years)",
+                lbl_extra_pay: "Monthly Extra Payment ($)",
+                h2_analysis: "Analysis",
+                h4_current: "Current Plan", h4_new: "New Plan",
+                res_monthly: "Monthly Pay", res_total_interest: "Total Interest", res_payoff: "Payoff Date",
+                badge_optimized: "SAVINGS",
+                stat_interest_saved: "Total Interest Saved", stat_time_saved: "Time Saved",
+                h3_featured: "Top Rated Student Loan Lenders",
+                tag_flexible: "Best for Flexible Payment",
+                h2_explore: "Explore Loan Providers",
+                h2_news: "NerdWallet Ed Team Updates"
+            }
+        };
+
+        // --- Student Loan Calculator Logic ---
+        const Calculator = {
+            calculate() {
+                // Inputs
+                const balance = parseFloat(document.getElementById('input-balance').value) || 0;
+                const rate = parseFloat(document.getElementById('input-rate').value) || 0;
+                const term = parseFloat(document.getElementById('input-term').value) || 0;
+                
+                const strategy = document.getElementById('input-strategy').value;
+                const newRate = parseFloat(document.getElementById('input-new-rate').value) || 0;
+                const newTerm = parseFloat(document.getElementById('input-new-term').value) || 0;
+                const extraPay = parseFloat(document.getElementById('input-extra-pay').value) || 0;
+
+                // Toggle Inputs visibility
+                if (strategy === 'refinance') {
+                    document.getElementById('section-refinance').classList.remove('hidden');
+                    document.getElementById('section-refinance').classList.add('grid');
+                    document.getElementById('section-extra').classList.add('hidden');
+                } else {
+                    document.getElementById('section-refinance').classList.add('hidden');
+                    document.getElementById('section-refinance').classList.remove('grid');
+                    document.getElementById('section-extra').classList.remove('hidden');
+                }
+
+                // 1. Calculate Current Plan
+                const currentPlan = this.calcAmortization(balance, rate, term, 0);
+
+                // 2. Calculate New Plan
+                let newPlan;
+                if (strategy === 'refinance') {
+                    // Refinance is essentially a new loan with new rate/term
+                    newPlan = this.calcAmortization(balance, newRate, newTerm, 0);
+                } else {
+                    // Extra payment uses current rate/term but adds monthly principal
+                    newPlan = this.calcAmortization(balance, rate, term, extraPay);
+                }
+
+                // 3. Update UI
+                this.updateUI(currentPlan, newPlan);
+            },
+
+            calcAmortization(balance, annualRate, years, extraMonthly) {
+                if (balance <= 0) return { monthly: 0, totalInterest: 0, totalCost: 0, months: 0 };
+                
+                const r = annualRate / 100 / 12;
+                const n = years * 12;
+                
+                let monthlyPayment = 0;
+                if (r === 0) {
+                    monthlyPayment = balance / n;
+                } else {
+                    monthlyPayment = (balance * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                }
+
+                // Simulation for Extra Payments or exact totals
+                let remaining = balance;
+                let totalInterest = 0;
+                let actualMonths = 0;
+                const actualMonthlyPay = monthlyPayment + extraMonthly;
+
+                // Loop to find actual payoff with extra payments
+                for (let i = 0; i < n * 2; i++) {
+                    if (remaining <= 0.1) break; // Tolerance
+                    
+                    const interest = remaining * r;
+                    let principal = actualMonthlyPay - interest;
+                    
+                    if (remaining < principal) {
+                        principal = remaining; // Last payment
+                    }
+                    
+                    totalInterest += interest;
+                    remaining -= principal;
+                    actualMonths++;
+                }
+
+                return {
+                    monthly: monthlyPayment, // The required payment
+                    actualMonthly: actualMonthlyPay, // What they actually pay
+                    totalInterest: totalInterest,
+                    totalCost: balance + totalInterest,
+                    months: actualMonths
+                };
+            },
+
+            updateUI(oldPlan, newPlan) {
+                // Old
+                this.setVal('res-monthly-old', oldPlan.monthly);
+                this.setVal('res-interest-old', oldPlan.totalInterest);
+                this.setDate('res-date-old', oldPlan.months);
+
+                // New
+                this.setVal('res-monthly-new', newPlan.actualMonthly);
+                this.setVal('res-interest-new', newPlan.totalInterest);
+                this.setDate('res-date-new', newPlan.months);
+
+                // Stats
+                const interestSaved = oldPlan.totalInterest - newPlan.totalInterest;
+                const timeSavedYears = Math.max(0, (oldPlan.months - newPlan.months) / 12);
+
+                this.setVal('stat-saved', interestSaved);
+                document.getElementById('stat-time').textContent = timeSavedYears.toFixed(1) + (App.currentLang === 'zh-CN' ? ' 年' : ' Yrs');
+            },
+
+            setVal(id, val) {
+                document.getElementById(id).textContent = '$' + val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            },
+
+            setDate(id, months) {
+                const d = new Date();
+                d.setMonth(d.getMonth() + months);
+                const str = d.toLocaleDateString(App.currentLang, { year: 'numeric', month: 'short' });
+                document.getElementById(id).textContent = str;
+            },
+
+            fillRate(rate) {
+                document.getElementById('input-strategy').value = 'refinance';
+                document.getElementById('input-new-rate').value = rate;
+                // Highlight input
+                const el = document.getElementById('input-new-rate');
+                el.classList.add('ring-2', 'ring-primary');
+                setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 1000);
+                this.calculate();
+            }
+        };
+
+        // --- App Logic ---
+        const App = {
+            currentLang: 'zh-CN',
+
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                const savedLang = localStorage.getItem('app_lang_loan');
+                
+                this.currentLang = (langParam && i18nData[langParam]) ? langParam : (savedLang || 'zh-CN');
+                
+                document.getElementById('lang-selector').value = this.currentLang;
+
+                if (!langParam || langParam !== this.currentLang) {
+                    this.updateUrl(this.currentLang, true);
+                }
+
+                this.handleTheme();
+                this.setupLanguage();
+                this.updateYear();
+                this.translateUI(this.currentLang);
+                
+                Calculator.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            updateUrl(lang, replace = false) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    if (replace) {
+                        window.history.replaceState({}, '', newUrl);
+                    } else {
+                        window.history.pushState({}, '', newUrl);
+                    }
+                } catch (e) {
+                    console.log("History API update failed");
+                }
+            },
+
+            setupLanguage() {
+                const selector = document.getElementById('lang-selector');
+                selector.addEventListener('change', (e) => {
+                    const lang = e.target.value;
+                    this.currentLang = lang;
+                    localStorage.setItem('app_lang_loan', lang);
+                    this.updateUrl(lang, false);
+                    this.translateUI(lang);
+                    Calculator.calculate();
+                });
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) {
+                        el.innerHTML = data[key];
+                    }
+                });
+                
+                Calculator.calculate();
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+</body>
+</html>

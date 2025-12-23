@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="category" content="finance">
+    <meta name="description" content="加拿大免税储蓄账户(TFSA)计算器 - 估算您的投资增长及节税潜力。">
+    <title>TFSA Calculator | 免税储蓄账户计算器</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Chart.js for the Graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#10b981', hover: '#059669' }, /* Emerald for Money/Growth */
+                        secondary: { DEFAULT: '#0d9488', hover: '#0f766e' }, /* Teal */
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f0fdf4', dark: '#022c22' } // Light Green BG
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(5px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+            .result-row {
+                @apply flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0;
+            }
+        }
+        
+        /* Custom Range Slider */
+        input[type=range] {
+            @apply w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            @apply appearance-none w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-md transition-transform hover:scale-110;
+        }
+
+        .currency-input-wrapper { position: relative; }
+        .currency-input-wrapper::before {
+            content: '$';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .currency-input-wrapper input { padding-left: 28px; }
+        
+        .percent-input-wrapper { position: relative; }
+        .percent-input-wrapper::after {
+            content: '%';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background Decoration -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-emerald-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-teal-300 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa fa-leaf"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">免税储蓄账户计算器</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">TFSA Savings Calculator</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <!-- Language Selector -->
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文</option>
+                    <option value="en">🇺🇸 English</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <!-- Dark Mode Toggle -->
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-emerald-500 p-6 space-y-5">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                        <i class="fa fa-sliders text-emerald-500"></i> <span data-i18n="section_info">我的信息</span>
+                    </h2>
+
+                    <!-- 1. Location & Income -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-text" data-i18n="lbl_province">我居住的省份</label>
+                            <select id="input-province" class="input-field" onchange="Calculator.calculate()">
+                                <option value="AB">AB (Alberta)</option>
+                                <option value="BC">BC (British Columbia)</option>
+                                <option value="MB">MB (Manitoba)</option>
+                                <option value="NB">NB (New Brunswick)</option>
+                                <option value="NL">NL (Newfoundland)</option>
+                                <option value="NT">NT (NWT)</option>
+                                <option value="NS">NS (Nova Scotia)</option>
+                                <option value="NU">NU (Nunavut)</option>
+                                <option value="ON" selected>ON (Ontario)</option>
+                                <option value="PE">PE (PEI)</option>
+                                <option value="QC">QC (Quebec)</option>
+                                <option value="SK">SK (Saskatchewan)</option>
+                                <option value="YT">YT (Yukon)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label-text" data-i18n="lbl_income">目前年收入 (估算)</label>
+                            <div class="currency-input-wrapper">
+                                <input type="number" id="input-income" class="input-field font-mono" value="65000" step="1000" oninput="Calculator.calculate()">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100 dark:border-slate-700">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-500" data-i18n="lbl_tax_rate">预估边际税率:</span>
+                            <span id="tax-rate-display" class="font-mono font-bold text-slate-700 dark:text-slate-300">0.0%</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 leading-tight" data-i18n="desc_tax_rate">基于省份和收入估算的综合税率。</p>
+                    </div>
+
+                    <hr class="border-slate-100 dark:border-slate-700">
+
+                    <!-- 2. Contribution Details -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_initial">现在供款金额 (Initial)</label>
+                        <div class="currency-input-wrapper">
+                            <input type="number" id="input-initial" class="input-field font-mono" value="10000" placeholder="0" oninput="Calculator.calculate()">
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1" data-i18n="desc_limit">最高 $102,000 (假设从未供款且符合资格)。</p>
+                    </div>
+
+                    <div class="grid grid-cols-5 gap-3">
+                        <div class="col-span-2">
+                            <label class="label-text" data-i18n="lbl_freq">供款频率</label>
+                            <select id="input-freq" class="input-field px-2" onchange="Calculator.calculate()">
+                                <option value="52" data-i18n="opt_weekly">每周</option>
+                                <option value="26" data-i18n="opt_biweekly">每两周</option>
+                                <option value="12" selected data-i18n="opt_monthly">每月</option>
+                                <option value="1" data-i18n="opt_yearly">每年</option>
+                            </select>
+                        </div>
+                        <div class="col-span-3">
+                            <label class="label-text" data-i18n="lbl_regular">定期供款金额</label>
+                            <div class="currency-input-wrapper">
+                                <input type="number" id="input-regular" class="input-field font-mono" value="500" oninput="Calculator.calculate()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Growth Assumptions -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-text" data-i18n="lbl_return">年回报率</label>
+                            <div class="percent-input-wrapper">
+                                <input type="number" id="input-rate" class="input-field font-mono" value="5.0" step="0.1" max="15" oninput="Calculator.calculate()">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label-text" data-i18n="lbl_years">储蓄年数</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="input-years-num" class="input-field font-mono" value="10" min="1" max="50" oninput="Calculator.syncYears(this.value)">
+                            </div>
+                        </div>
+                    </div>
+                     <div>
+                        <input type="range" id="input-years-range" min="1" max="50" value="10" class="mt-1" oninput="Calculator.syncYears(this.value)">
+                    </div>
+
+                </div>
+            </main>
+
+            <!-- Right Column: Results -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center">
+                        <h2 class="font-bold text-slate-700 dark:text-slate-200" data-i18n="h2_analysis">增长预测分析</h2>
+                        <span class="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+                            <i class="fa fa-clock-o mr-1"></i> <span id="years-badge">10 年</span>
+                        </span>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-grow flex flex-col gap-6 animate-fade-in">
+                        
+                        <!-- Top Highlights -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- TFSA Result -->
+                            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-lg shadow-emerald-500/20">
+                                <div class="absolute top-0 right-0 p-4 opacity-20">
+                                    <i class="fa fa-shield text-6xl"></i>
+                                </div>
+                                <div class="relative z-10">
+                                    <p class="text-sm font-medium text-emerald-100 mb-1 break-words" data-i18n="lbl_tfsa_total">估计 TFSA 总额</p>
+                                    <h3 class="text-3xl md:text-4xl font-bold font-mono tracking-tight break-all" id="res-tfsa-total">$0</h3>
+                                    <p class="text-xs text-emerald-200 mt-2 break-words" data-i18n="desc_tfsa_growth">免税增长，全部归您所有。</p>
+                                </div>
+                            </div>
+
+                            <!-- Non-Reg Result -->
+                            <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-slate-50 dark:bg-slate-800/50 flex flex-col justify-center">
+                                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1 break-words" data-i18n="lbl_nonreg_total">估计非注册投资总额</p>
+                                <h3 class="text-2xl md:text-3xl font-bold font-mono text-slate-700 dark:text-slate-300 break-all" id="res-taxable-total">$0</h3>
+                                <div class="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                    <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                                    <span class="break-words"><span data-i18n="lbl_tax_lost">损失税款:</span> <span id="res-tax-lost" class="font-mono text-rose-500 font-bold">$0</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Savings Highlight Banner -->
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30 flex items-center gap-4">
+                            <div class="hidden md:flex w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300 items-center justify-center shrink-0">
+                                <i class="fa fa-line-chart"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-indigo-800 dark:text-indigo-300">
+                                    <span data-i18n="banner_text_pre">投资 TFSA (对比非注册账户) 达到</span>
+                                    <span id="years-text" class="font-bold">10</span> 
+                                    <span data-i18n="banner_text_post">年，可将您的财富额外增加：</span>
+                                </p>
+                                <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 font-mono" id="res-difference">$0</p>
+                            </div>
+                        </div>
+
+                        <!-- Chart Container -->
+                        <div class="flex-grow min-h-[250px] relative bg-white dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 p-4">
+                            <canvas id="growthChart"></canvas>
+                        </div>
+
+                        <p class="text-center text-[10px] text-slate-400" data-i18n="disclaimer">
+                            *计算结果仅供参考。非注册账户假设收益为利息收入并按您的边际税率全额征税。实际情况可能因资本利得税优惠等因素而异。
+                        </p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Info Section -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fa fa-info-circle text-primary"></i> <span data-i18n="info_h1">关于 TFSA 免税储蓄账户</span>
+                        </h2>
+                        <div class="space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <p data-i18n="info_p1">
+                                <strong>免税储蓄账户 (TFSA)</strong> 是一项在联邦政府注册的储蓄计划。通过此计划赚取的收入（无论是利息、股息还是资本收益）通常无需纳税，取款也完全免税。
+                            </p>
+                            <p data-i18n="info_p2">
+                                根据您的目标和风险承受能力，您可以在 TFSA 中持有各种投资产品，包括：现金储蓄、GIC（担保投资证）、互惠基金、ETF 和股票等。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fa fa-lightbulb-o text-primary"></i> <span data-i18n="info_h2">为什么选择 TFSA?</span>
+                        </h2>
+                        <ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                            <li class="flex gap-3">
+                                <i class="fa fa-check text-emerald-500 mt-1"></i>
+                                <span data-i18n="benefit_1"><strong>灵活性：</strong> 您可以随时取款用于任何目的（如买房、旅游、应急），且取款额度会在次年重新加回您的供款空间。</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i class="fa fa-check text-emerald-500 mt-1"></i>
+                                <span data-i18n="benefit_2"><strong>无年龄上限：</strong> 与 RRSP 不同，TFSA 没有供款年龄上限，您可以终身进行免税投资。</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i class="fa fa-check text-emerald-500 mt-1"></i>
+                                <span data-i18n="benefit_3"><strong>不影响福利：</strong> TFSA 的取款不会作为收入计算，因此不会影响您领取养老金 (OAS) 或其他基于收入的福利。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "免税储蓄账户计算器",
+                subtitle: "TFSA Savings Calculator",
+                section_info: "我的信息",
+                lbl_province: "我居住的省份",
+                lbl_income: "目前年收入 (估算)",
+                lbl_tax_rate: "预估边际税率:",
+                desc_tax_rate: "基于省份和收入估算的综合税率。",
+                lbl_initial: "现在供款金额 (Initial)",
+                desc_limit: "最高 $102,000 (假设从未供款且符合资格)。",
+                lbl_freq: "供款频率",
+                opt_weekly: "每周", opt_biweekly: "每两周", opt_monthly: "每月", opt_yearly: "每年",
+                lbl_regular: "定期供款金额",
+                lbl_return: "年回报率",
+                lbl_years: "储蓄年数",
+                h2_analysis: "增长预测分析",
+                lbl_tfsa_total: "估计 TFSA 总额",
+                desc_tfsa_growth: "免税增长，全部归您所有。",
+                lbl_nonreg_total: "估计非注册投资总额",
+                lbl_tax_lost: "损失税款:",
+                banner_text_pre: "投资 TFSA (对比非注册账户) 达到",
+                banner_text_post: "年，可将您的财富额外增加：",
+                disclaimer: "*计算结果仅供参考。非注册账户假设收益为利息收入并按您的边际税率全额征税。实际情况可能因资本利得税优惠等因素而异。",
+                info_h1: "关于 TFSA 免税储蓄账户",
+                info_p1: "<strong>免税储蓄账户 (TFSA)</strong> 是一项在联邦政府注册的储蓄计划。通过此计划赚取的收入（无论是利息、股息还是资本收益）通常无需纳税，取款也完全免税。",
+                info_p2: "根据您的目标和风险承受能力，您可以在 TFSA 中持有各种投资产品，包括：现金储蓄、GIC（担保投资证）、互惠基金、ETF 和股票等。",
+                info_h2: "为什么选择 TFSA?",
+                benefit_1: "<strong>灵活性：</strong> 您可以随时取款用于任何目的（如买房、旅游、应急），且取款额度会在次年重新加回您的供款空间。",
+                benefit_2: "<strong>无年龄上限：</strong> 与 RRSP 不同，TFSA 没有供款年龄上限，您可以终身进行免税投资。",
+                benefit_3: "<strong>不影响福利：</strong> TFSA 的取款不会作为收入计算，因此不会影响您领取养老金 (OAS) 或其他基于收入的福利。",
+                unit_year: "年"
+            },
+            'en': {
+                title: "TFSA Calculator",
+                subtitle: "Tax-Free Savings Account",
+                section_info: "My Information",
+                lbl_province: "Province of Residence",
+                lbl_income: "Current Annual Income",
+                lbl_tax_rate: "Est. Tax Rate:",
+                desc_tax_rate: "Combined rate based on province and income.",
+                lbl_initial: "Initial Contribution",
+                desc_limit: "Max $102,000 (if eligible & never contributed).",
+                lbl_freq: "Freqency",
+                opt_weekly: "Weekly", opt_biweekly: "Bi-weekly", opt_monthly: "Monthly", opt_yearly: "Annually",
+                lbl_regular: "Regular Contribution",
+                lbl_return: "Annual Return",
+                lbl_years: "Years to Save",
+                h2_analysis: "Growth Forecast",
+                lbl_tfsa_total: "Est. TFSA Total",
+                desc_tfsa_growth: "Tax-free growth, all yours to keep.",
+                lbl_nonreg_total: "Est. Non-Registered",
+                lbl_tax_lost: "Tax Lost:",
+                banner_text_pre: "Investing in TFSA vs Non-Registered for",
+                banner_text_post: "years could increase your wealth by:",
+                disclaimer: "*Results are estimates. Non-registered assumes interest income taxed at your marginal rate. Capital gains may be taxed lower.",
+                info_h1: "About TFSA",
+                info_p1: "The <strong>Tax-Free Savings Account (TFSA)</strong> is a registered savings plan. Income earned (interest, dividends, capital gains) is generally tax-free, as are withdrawals.",
+                info_p2: "Depending on your goals and risk tolerance, you can hold various investments in a TFSA, including: cash, GICs, mutual funds, ETFs, and stocks.",
+                info_h2: "Why Choose TFSA?",
+                benefit_1: "<strong>Flexibility:</strong> Withdraw anytime for any purpose (home, travel, emergency). Withdrawals are added back to your contribution room the following year.",
+                benefit_2: "<strong>No Age Limit:</strong> Unlike RRSPs, there is no maximum age for contributions. You can invest tax-free for life.",
+                benefit_3: "<strong>No Benefit Impact:</strong> Withdrawals do not count as income, so they won't affect OAS pension or other income-tested benefits.",
+                unit_year: "Years"
+            }
+        };
+
+        // --- Logic & Data ---
+        
+        // 2024 Simplified Combined Marginal Tax Rate Estimator
+        const TAX_DATA = {
+            'AB': { base: 0.25, tiers: [[55000, 0.305], [111000, 0.36], [173000, 0.41], [246000, 0.48]] },
+            'BC': { base: 0.20, tiers: [[47000, 0.22], [55000, 0.28], [111000, 0.38], [173000, 0.46], [252000, 0.535]] },
+            'MB': { base: 0.258, tiers: [[55000, 0.33], [111000, 0.43], [173000, 0.50]] },
+            'NB': { base: 0.24, tiers: [[50000, 0.30], [98000, 0.38], [173000, 0.47], [246000, 0.525]] },
+            'NL': { base: 0.23, tiers: [[43000, 0.29], [86000, 0.37], [154000, 0.45], [246000, 0.54]] },
+            'NS': { base: 0.23, tiers: [[29000, 0.30], [59000, 0.37], [93000, 0.43], [150000, 0.50], [246000, 0.54]] },
+            'NT': { base: 0.20, tiers: [[50000, 0.24], [100000, 0.33], [164000, 0.43], [246000, 0.47]] },
+            'NU': { base: 0.19, tiers: [[50000, 0.22], [100000, 0.29], [164000, 0.40], [246000, 0.44]] },
+            'ON': { base: 0.20, tiers: [[51000, 0.24], [55000, 0.29], [102000, 0.34], [111000, 0.38], [150000, 0.43], [220000, 0.53]] },
+            'PE': { base: 0.24, tiers: [[32000, 0.29], [64000, 0.37], [105000, 0.44], [246000, 0.51]] },
+            'QC': { base: 0.27, tiers: [[50000, 0.32], [98000, 0.37], [126000, 0.45], [246000, 0.53]] },
+            'SK': { base: 0.25, tiers: [[52000, 0.30], [111000, 0.38], [148000, 0.43], [246000, 0.47]] },
+            'YT': { base: 0.21, tiers: [[55000, 0.26], [111000, 0.35], [173000, 0.42], [500000, 0.48]] }
+        };
+
+        let chartInstance = null;
+
+        const Calculator = {
+            getMarginalRate(province, income) {
+                const data = TAX_DATA[province];
+                if (!data) return 0.25; 
+
+                let rate = data.base;
+                for (let tier of data.tiers) {
+                    if (income > tier[0]) {
+                        rate = tier[1];
+                    } else {
+                        break;
+                    }
+                }
+                return rate;
+            },
+
+            calculateFV(principal, pmt, annualRate, years, freq) {
+                const r = annualRate / 100;
+                const n = years;
+                const compoundsPerYear = freq; 
+                const ratePerPeriod = r / compoundsPerYear;
+                const totalPeriods = n * compoundsPerYear;
+
+                let fvPrincipal = principal * Math.pow(1 + ratePerPeriod, totalPeriods);
+                let fvContributions = 0;
+
+                if (ratePerPeriod > 0) {
+                    fvContributions = pmt * (Math.pow(1 + ratePerPeriod, totalPeriods) - 1) / ratePerPeriod;
+                } else {
+                    fvContributions = pmt * totalPeriods;
+                }
+
+                return fvPrincipal + fvContributions;
+            },
+
+            generateGrowthData(principal, pmt, annualRate, years, freq) {
+                let data = [];
+                const r = annualRate / 100;
+                const ratePerPeriod = r / freq;
+                let currentBalance = principal;
+                data.push(currentBalance);
+
+                for (let y = 1; y <= years; y++) {
+                    for(let i=0; i<freq; i++) {
+                        currentBalance = currentBalance * (1 + ratePerPeriod) + pmt;
+                    }
+                    data.push(currentBalance);
+                }
+                return data;
+            },
+
+            syncYears(val) {
+                document.getElementById('input-years-num').value = val;
+                document.getElementById('input-years-range').value = val;
+                this.calculate();
+            },
+
+            calculate() {
+                const province = document.getElementById('input-province').value;
+                const income = parseFloat(document.getElementById('input-income').value) || 0;
+                const initial = parseFloat(document.getElementById('input-initial').value) || 0;
+                const freq = parseInt(document.getElementById('input-freq').value);
+                const regular = parseFloat(document.getElementById('input-regular').value) || 0;
+                const annualRate = parseFloat(document.getElementById('input-rate').value) || 0;
+                const years = parseInt(document.getElementById('input-years-num').value);
+
+                const taxRate = this.getMarginalRate(province, income);
+                const afterTaxRate = annualRate * (1 - taxRate);
+
+                const tfsaTotal = this.calculateFV(initial, regular, annualRate, years, freq);
+                const taxableTotal = this.calculateFV(initial, regular, afterTaxRate * 100, years, freq); 
+                const difference = tfsaTotal - taxableTotal;
+                const taxLost = difference;
+
+                this.updateText('tax-rate-display', (taxRate * 100).toFixed(1) + '%');
+                this.updateCurrency('res-tfsa-total', tfsaTotal);
+                this.updateCurrency('res-taxable-total', taxableTotal);
+                this.updateCurrency('res-difference', difference);
+                this.updateCurrency('res-tax-lost', taxLost);
+                
+                // Localized text for years
+                const lang = App.currentLang || 'zh-CN';
+                const unit = i18nData[lang].unit_year || "年";
+                document.getElementById('years-badge').textContent = years + " " + unit;
+                document.getElementById('years-text').textContent = years;
+
+                this.updateChart(initial, regular, annualRate, afterTaxRate * 100, years, freq);
+            },
+
+            updateText(id, txt) {
+                const el = document.getElementById(id);
+                if(el) el.textContent = txt;
+            },
+
+            updateCurrency(id, val) {
+                const el = document.getElementById(id);
+                if(el) el.textContent = '$' + val.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            },
+
+            updateChart(initial, regular, tfsaRate, taxableRate, years, freq) {
+                const ctx = document.getElementById('growthChart').getContext('2d');
+                
+                const tfsaData = this.generateGrowthData(initial, regular, tfsaRate, years, freq);
+                const taxableData = this.generateGrowthData(initial, regular, taxableRate, years, freq);
+                const labels = Array.from({length: years + 1}, (_, i) => i); 
+                
+                // Localization for Chart
+                const lang = App.currentLang || 'zh-CN';
+                const labelsMap = {
+                    'zh-CN': { tfsa: 'TFSA 免税账户', nonreg: '非注册账户', year: '年数' },
+                    'en': { tfsa: 'TFSA Account', nonreg: 'Non-Registered', year: 'Years' }
+                };
+                const txt = labelsMap[lang];
+
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+
+                const isDark = document.documentElement.classList.contains('dark');
+                const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+                const textColor = isDark ? '#94a3b8' : '#64748b';
+
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: txt.tfsa,
+                                data: tfsaData,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: txt.nonreg,
+                                data: taxableData,
+                                borderColor: '#64748b',
+                                borderDash: [5, 5],
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                tension: 0.3,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { color: textColor, font: {family: 'Inter'} }
+                            },
+                            tooltip: {
+                                backgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                                titleColor: isDark ? '#fff' : '#0f172a',
+                                bodyColor: isDark ? '#fff' : '#0f172a',
+                                borderColor: isDark ? '#334155' : '#e2e8f0',
+                                borderWidth: 1,
+                                padding: 10,
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) { label += ': '; }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: gridColor, display: false },
+                                ticks: { color: textColor },
+                                title: { display: true, text: txt.year, color: textColor }
+                            },
+                            y: {
+                                grid: { color: gridColor },
+                                ticks: { 
+                                    color: textColor,
+                                    callback: function(value) { return '$' + value / 1000 + 'k'; } 
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        const App = {
+            currentLang: 'zh-CN',
+
+            init() {
+                // 1. Read URL Param
+                const urlParams = new URLSearchParams(window.location.search);
+                this.currentLang = urlParams.get('lang') || 'zh-CN';
+                
+                // 2. Set Selector
+                const selector = document.getElementById('lang-selector');
+                if(selector) selector.value = this.currentLang;
+
+                // 3. Ensure URL has param (optional, but requested behavior)
+                if (!urlParams.has('lang')) {
+                    this.updateUrl(this.currentLang);
+                }
+
+                this.handleTheme();
+                this.setupLanguage();
+                this.translateUI(this.currentLang);
+                Calculator.calculate();
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {
+                    console.log('URL update failed:', e);
+                }
+            },
+
+            setupLanguage() {
+                document.getElementById('lang-selector').addEventListener('change', (e) => {
+                    this.currentLang = e.target.value;
+                    this.updateUrl(this.currentLang);
+                    this.translateUI(this.currentLang);
+                    Calculator.calculate(); // Recalculate to update dynamic texts like Chart
+                });
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                
+                // Update simple text elements
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) el.innerHTML = data[key];
+                });
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                    Calculator.calculate(); 
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>
