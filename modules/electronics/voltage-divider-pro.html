@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Voltage Divider Calculator - Calculate Vout, Vin, Ra, or Rb based on Ohm's Law.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M50,10 L50,40 M50,60 L50,90 M30,40 L70,40 L70,60 L30,60 L30,40 M50,90 L80,90%22 fill=%22none%22 stroke=%22%236366f1%22 stroke-width=%226%22/></svg>">
+    
+    <title>电阻分压计算器 | Voltage Divider Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#6366f1', hover: '#4f46e5' }, /* Indigo */
+                        secondary: { DEFAULT: '#10b981', hover: '#059669' }, /* Emerald */
+                        bg: { light: '#eef2ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-indigo-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center transition-all;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-10 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all text-lg font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-sm font-bold pointer-events-none;
+            }
+            .result-highlight {
+                @apply bg-indigo-50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300 font-bold !important;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-base;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-3 px-6 rounded-xl transition-all text-base;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .circuit-text { font-family: monospace; font-size: 11px; fill: currentColor; }
+            .component-fill { fill: currentColor; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    V÷
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">电阻分压计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Voltage Divider Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-5 space-y-4">
+            <div class="glass rounded-2xl p-6 shadow-sm space-y-5 border-t-4 border-t-indigo-500">
+                
+                <div>
+                    <h3 class="text-sm font-bold text-slate-500 uppercase mb-1 flex items-center gap-2">
+                        <i class="fa fa-sliders"></i> <span data-i18n="h_inputs">输入参数</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4" data-i18n="p_hint">输入任意3个值，计算第4个值。</p>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Vin -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_vin">输入电压 (Vin):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vin" class="input-field" placeholder="-" oninput="App.checkInput('vin')">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Ra -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_ra">串联电阻 (Ra):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-ra" class="input-field" placeholder="-" oninput="App.checkInput('ra')">
+                            <span class="unit-label">Ω</span>
+                        </div>
+                    </div>
+
+                    <!-- Rb -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_rb">并联电阻 (Rb):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-rb" class="input-field" placeholder="-" oninput="App.checkInput('rb')">
+                            <span class="unit-label">Ω</span>
+                        </div>
+                    </div>
+
+                    <!-- Vout -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_vout">输出电压 (Vout):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vout" class="input-field" placeholder="-" oninput="App.checkInput('vout')">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button onclick="App.calculate()" class="btn-primary flex-1" id="btn-calc" disabled>
+                        <span data-i18n="btn_calc">计算</span> (0/3)
+                    </button>
+                    <button onclick="App.reset()" class="btn-secondary text-red-500 hover:text-red-600">
+                        <i class="fa fa-refresh"></i> <span data-i18n="btn_clear">清空</span>
+                    </button>
+                </div>
+                
+                <div id="error-msg" class="text-xs text-red-500 font-bold hidden text-center"></div>
+            </div>
+        </div>
+
+        <!-- Output / Diagram Panel -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Circuit Diagram -->
+            <div class="glass rounded-2xl shadow-sm border-t-4 border-t-emerald-500 flex flex-col h-full items-center justify-center p-6 relative">
+                
+                <div class="absolute top-4 left-4">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
+                        <i class="fa fa-microchip"></i> <span data-i18n="h_circuit">电路图</span>
+                    </h3>
+                </div>
+
+                <!-- SVG Diagram -->
+                <div class="w-full max-w-[350px] aspect-[4/3] relative">
+                    <svg viewBox="0 0 200 250" class="w-full h-full text-slate-600 dark:text-slate-300">
+                        
+                        <!-- Main Path -->
+                        <!-- Vin to Ra -->
+                        <line x1="100" y1="20" x2="100" y2="50" class="circuit-line" />
+                        
+                        <!-- Ra -->
+                        <rect x="90" y="50" width="20" height="60" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                        <text x="75" y="85" class="circuit-text font-bold text-emerald-600 dark:text-emerald-400" text-anchor="end">Ra</text>
+                        
+                        <!-- Node Vout -->
+                        <line x1="100" y1="110" x2="100" y2="140" class="circuit-line" />
+                        <circle cx="100" cy="125" r="3" class="component-fill" />
+                        <!-- Vout Tap -->
+                        <line x1="100" y1="125" x2="150" y2="125" class="circuit-line" />
+                        <circle cx="150" cy="125" r="3" class="component-fill" />
+                        <text x="160" y="130" class="circuit-text font-bold text-indigo-600 dark:text-indigo-400">Vout</text>
+
+                        <!-- Rb -->
+                        <rect x="90" y="140" width="20" height="60" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                        <text x="75" y="175" class="circuit-text font-bold text-emerald-600 dark:text-emerald-400" text-anchor="end">Rb</text>
+                        
+                        <!-- Ground -->
+                        <line x1="100" y1="200" x2="100" y2="220" class="circuit-line" />
+                        <line x1="80" y1="220" x2="120" y2="220" class="circuit-line" />
+                        <line x1="85" y1="225" x2="115" y2="225" class="circuit-line" />
+                        <line x1="90" y1="230" x2="110" y2="230" class="circuit-line" />
+
+                        <!-- Vin Label -->
+                        <circle cx="100" cy="20" r="3" class="component-fill" />
+                        <text x="100" y="12" class="circuit-text font-bold text-indigo-600 dark:text-indigo-400" text-anchor="middle">Vin</text>
+
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">分压原理</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <p data-i18n="desc_theory">
+                        在串联电路中，电流处处相等 ($I = V_{in} / (R_a + R_b)$)。根据欧姆定律，各电阻两端的电压与其阻值成正比。总电压等于各分电压之和，因此每个电阻分得一部分电压。
+                    </p>
+                    <div class="bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-indigo-800 dark:text-indigo-200 mb-2 text-sm uppercase" data-i18n="h_formula">计算公式</h3>
+                        <div class="font-mono text-indigo-900 dark:text-indigo-100 text-sm overflow-x-auto space-y-2">
+                            <p>$$ V_{out} = V_{in} \cdot \frac{R_b}{R_a + R_b} $$</p>
+                            <p>$$ R_a = R_b \cdot \left( \frac{V_{in}}{V_{out}} - 1 \right) $$</p>
+                            <p>$$ R_b = R_a \cdot \frac{V_{out}}{V_{in} - V_{out}} $$</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <div class="bg-emerald-50 dark:bg-emerald-900/20 border-l-4 border-emerald-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-emerald-800 dark:text-emerald-200 mb-2 text-sm uppercase" data-i18n="h_tips">注意事项</h3>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li data-i18n="tip_load"><strong>负载效应：</strong> 如果在 Vout 端连接负载（RL），它将与 Rb 并联，导致实际输出电压低于计算值。分压电路适用于高阻抗负载或参考电压。</li>
+                            <li data-i18n="tip_power"><strong>功率损耗：</strong> 通过电阻的电流会产生热量。请确保电阻的额定功率满足 $P = I^2 R$ 的要求。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Voltage Divider Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "电阻分压计算器", subtitle: "电阻串联分压计算工具",
+                h_inputs: "输入参数", p_hint: "输入任意3个值，计算第4个值。",
+                lbl_vin: "输入电压 (Vin):", lbl_ra: "串联电阻 (Ra):", lbl_rb: "并联电阻 (Rb):", lbl_vout: "输出电压 (Vout):",
+                btn_calc: "计算", btn_clear: "清空",
+                h_circuit: "电路图",
+                guide_title: "分压原理",
+                desc_theory: "在串联电路中，各电阻上的电流相等，各电阻两端的电压之和等于电路总电压。可知每个电阻上的电压小于电路总电压，故串联电阻分压。",
+                h_formula: "计算公式",
+                h_tips: "注意事项",
+                tip_load: "<strong>负载效应：</strong> 如果在 Vout 端连接负载，它将与 Rb 并联，导致实际输出电压降低。分压器适用于高阻抗负载。",
+                tip_power: "<strong>功率损耗：</strong> 电流流过电阻会产生热量，请确保电阻功率足够。"
+            },
+            'en': {
+                title: "Voltage Divider Calculator", subtitle: "Series Resistor Divider Tool",
+                h_inputs: "Parameters", p_hint: "Enter any 3 values to calculate the 4th.",
+                lbl_vin: "Input Voltage (Vin):", lbl_ra: "Series Resistor (Ra):", lbl_rb: "Parallel Resistor (Rb):", lbl_vout: "Output Voltage (Vout):",
+                btn_calc: "Calculate", btn_clear: "Clear",
+                h_circuit: "Circuit Diagram",
+                guide_title: "Voltage Divider Theory",
+                desc_theory: "In a series circuit, current is constant through all resistors. The sum of voltages equals the source voltage. Thus, the voltage drops across each resistor, dividing the total voltage.",
+                h_formula: "Formulas",
+                h_tips: "Design Tips",
+                tip_load: "<strong>Loading Effect:</strong> Connecting a load to Vout puts it in parallel with Rb, lowering the actual output voltage.",
+                tip_power: "<strong>Power Dissipation:</strong> Ensure resistors are rated for the power (heat) generated by the current flow."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            inputs: { vin: '', ra: '', rb: '', vout: '' },
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                    this.checkInput();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            checkInput(id) {
+                this.inputs.vin = document.getElementById('inp-vin').value;
+                this.inputs.ra = document.getElementById('inp-ra').value;
+                this.inputs.rb = document.getElementById('inp-rb').value;
+                this.inputs.vout = document.getElementById('inp-vout').value;
+
+                let filled = 0;
+                if(this.inputs.vin) filled++;
+                if(this.inputs.ra) filled++;
+                if(this.inputs.rb) filled++;
+                if(this.inputs.vout) filled++;
+
+                const btn = document.getElementById('btn-calc');
+                const baseTxt = this.lang === 'zh-CN' ? '计算' : 'Calculate';
+                btn.innerHTML = `<span>${baseTxt}</span> (${filled}/3)`;
+
+                if (filled >= 3) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            },
+
+            calculate() {
+                let vin = parseFloat(this.inputs.vin);
+                let ra = parseFloat(this.inputs.ra);
+                let rb = parseFloat(this.inputs.rb);
+                let vout = parseFloat(this.inputs.vout);
+
+                const hasVin = !isNaN(vin);
+                const hasRa = !isNaN(ra);
+                const hasRb = !isNaN(rb);
+                const hasVout = !isNaN(vout);
+                
+                const errEl = document.getElementById('error-msg');
+                errEl.classList.add('hidden');
+
+                // Logic: Find the missing one
+                if (!hasVout && hasVin && hasRa && hasRb) {
+                    // Find Vout
+                    vout = vin * (rb / (ra + rb));
+                    this.updateField('inp-vout', vout, false);
+                } 
+                else if (!hasVin && hasVout && hasRa && hasRb) {
+                    // Find Vin
+                    vin = vout * ((ra + rb) / rb);
+                    this.updateField('inp-vin', vin, false);
+                }
+                else if (!hasRa && hasVin && hasVout && hasRb) {
+                    // Find Ra
+                    // Vout = Vin * Rb / (Ra + Rb) -> Vout(Ra+Rb) = Vin*Rb -> Vout*Ra = Rb(Vin - Vout)
+                    if (vout >= vin) {
+                        errEl.textContent = this.lang === 'zh-CN' ? "错误：Vout 必须小于 Vin" : "Error: Vout must be < Vin";
+                        errEl.classList.remove('hidden');
+                        return;
+                    }
+                    ra = rb * ((vin / vout) - 1);
+                    this.updateField('inp-ra', ra, false);
+                }
+                else if (!hasRb && hasVin && hasVout && hasRa) {
+                    // Find Rb
+                    // Vout(Ra+Rb) = Vin*Rb -> Vout*Ra = Rb(Vin - Vout) -> Rb = Vout*Ra / (Vin - Vout)
+                    if (vout >= vin) {
+                        errEl.textContent = this.lang === 'zh-CN' ? "错误：Vout 必须小于 Vin" : "Error: Vout must be < Vin";
+                        errEl.classList.remove('hidden');
+                        return;
+                    }
+                    rb = (vout * ra) / (vin - vout);
+                    this.updateField('inp-rb', rb, false);
+                }
+                else {
+                    // Case where all 4 might be filled, usually we just don't overwrite or check consistency.
+                    // Or if <3 filled.
+                }
+                
+                // Highlight inputs too? No, keep user inputs standard, highlight result.
+                // We passed false to updateField for the calculated one.
+            },
+
+            updateField(id, val, wasUserForced) {
+                const el = document.getElementById(id);
+                if (isNaN(val) || !isFinite(val)) {
+                    return; // Don't set error string in number input
+                }
+                
+                // Format
+                const displayVal = parseFloat(val.toFixed(4)); 
+                el.value = displayVal;
+
+                if (!wasUserForced) {
+                    el.classList.add('result-highlight');
+                    el.style.transform = 'scale(1.02)';
+                    setTimeout(() => el.style.transform = 'scale(1)', 200);
+                } else {
+                    el.classList.remove('result-highlight');
+                }
+            },
+
+            reset() {
+                this.inputs = { vin: '', ra: '', rb: '', vout: '' };
+                ['inp-vin', 'inp-ra', 'inp-rb', 'inp-vout'].forEach(id => {
+                    const el = document.getElementById(id);
+                    el.value = '';
+                    el.classList.remove('result-highlight');
+                });
+                document.getElementById('error-msg').classList.add('hidden');
+                this.checkInput();
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

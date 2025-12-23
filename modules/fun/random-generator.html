@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="fun">
+    <meta name="icon" content="🎲">
+    <meta name="description" content="Online Random Number Generator - Generate random numbers with ranges and presets.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔢</text></svg>">
+    
+    <title>在线随机数生成器 | RNG Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#3b82f6', hover: '#2563eb' },
+                        secondary: { DEFAULT: '#8b5cf6', hover: '#7c3aed' },
+                        bg: { light: '#f0f9ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-fast': 'pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-field {
+                @apply w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm font-mono;
+            }
+            .label-text {
+                @apply text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-1.5 px-3 rounded-lg transition-all text-xs;
+            }
+            .chip-btn {
+                @apply px-3 py-1 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-500 transition-colors cursor-pointer select-none;
+            }
+            .chip-btn.active {
+                @apply bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-600 dark:text-blue-400;
+            }
+            
+            /* Display Area */
+            .result-container {
+                @apply relative overflow-hidden rounded-3xl bg-slate-900 flex flex-col items-center justify-center border-4 border-slate-800 shadow-2xl p-6 min-h-[300px];
+                background-image: radial-gradient(circle at center, #334155 0%, #0f172a 100%);
+            }
+            .result-text {
+                @apply font-bold text-white text-center break-all leading-tight font-mono;
+                text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-violet-300 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20">
+                    <i class="fa fa-sort-numeric-asc"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">在线随机数生成器</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">高效率随机数值生成工具</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                 <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文</option>
+                    <option value="en">🇺🇸 English</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Settings -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                
+                <!-- Main Config Card -->
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-blue-500 p-6 space-y-6">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                        <i class="fa fa-sliders text-blue-500"></i> <span data-i18n="h_settings">设置</span>
+                    </h2>
+
+                    <!-- Range Input -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="label-text" data-i18n="lbl_min">最小值</label>
+                            <input type="number" id="input-min" class="input-field" value="1" onchange="App.validateInputs()">
+                        </div>
+                        <div>
+                            <label class="label-text" data-i18n="lbl_max">最大值</label>
+                            <input type="number" id="input-max" class="input-field" value="100" onchange="App.validateInputs()">
+                        </div>
+                    </div>
+
+                    <!-- Count Input -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_count">数目</label>
+                        <div class="flex items-center gap-3">
+                            <input type="number" id="input-count" class="input-field" value="1" min="1" max="10000" onchange="App.validateInputs()">
+                            <div class="text-xs text-slate-400 whitespace-nowrap">
+                                <span data-i18n="lbl_limit">上限: 10,000</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Repeat Toggle -->
+                    <div>
+                        <label class="label-text" data-i18n="lbl_repeat">重复出现</label>
+                        <div class="flex bg-slate-100 dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+                            <button onclick="App.setRepeat(false)" id="btn-unique" class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all shadow-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white">
+                                <span data-i18n="opt_unique">不重复</span>
+                            </button>
+                            <button onclick="App.setRepeat(true)" id="btn-repeat" class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                                <span data-i18n="opt_repeat">可重复</span>
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-red-500 mt-2 hidden" id="error-msg"></p>
+                    </div>
+                </div>
+
+                <!-- Presets Card -->
+                <div class="glass rounded-3xl shadow-lg p-6 space-y-4">
+                    <h2 class="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-200 uppercase tracking-wide">
+                        <i class="fa fa-bolt text-amber-500"></i> <span data-i18n="h_presets">快速预设</span>
+                    </h2>
+
+                    <!-- Count Presets -->
+                    <div class="space-y-2">
+                        <span class="text-xs text-slate-400" data-i18n="lbl_preset_count">数目:</span>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="chip-btn" onclick="App.setCount(1)">1</button>
+                            <button class="chip-btn" onclick="App.setCount(2)">2</button>
+                            <button class="chip-btn" onclick="App.setCount(3)">3</button>
+                            <button class="chip-btn" onclick="App.setCount(5)">5</button>
+                            <button class="chip-btn" onclick="App.setCount(10)">10</button>
+                        </div>
+                    </div>
+
+                    <!-- Range Presets -->
+                    <div class="space-y-2">
+                        <span class="text-xs text-slate-400" data-i18n="lbl_preset_range">范围:</span>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="chip-btn" onclick="App.setRange(1, 10)">1-10</button>
+                            <button class="chip-btn" onclick="App.setRange(1, 100)">1-100</button>
+                            <button class="chip-btn" onclick="App.setRange(100, 200)">100-200</button>
+                            <button class="chip-btn" onclick="App.setRange(1, 1000)">1-1000</button>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- Right Column: Display & Actions -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col p-8 relative">
+                    
+                    <!-- Display Area -->
+                    <div class="flex-grow flex flex-col gap-6">
+                        
+                        <div class="result-container relative group">
+                            <!-- Overlay Flash Effect -->
+                            <div id="flash-overlay" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-100"></div>
+                            
+                            <!-- Numbers Display -->
+                            <div id="result-display" class="result-text text-6xl transition-all duration-200">
+                                0
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <button onclick="App.generate(false)" class="btn-primary bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-emerald-500/30">
+                                <i class="fa fa-bolt"></i> <span data-i18n="btn_direct">直接生成</span>
+                            </button>
+                            
+                            <button id="btn-roll" onclick="App.startRoll()" class="btn-primary">
+                                <i class="fa fa-play"></i> <span data-i18n="btn_roll">开始（计时）</span>
+                            </button>
+                            
+                            <button onclick="App.copyResult()" class="btn-secondary border-2 border-slate-200 dark:border-slate-700 hover:border-blue-400 text-base">
+                                <i class="fa fa-copy"></i> <span data-i18n="btn_copy">复制</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Status/Toast -->
+                        <div id="toast-msg" class="text-center text-xs text-slate-400 opacity-0 transition-opacity">
+                            Result Copied!
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Guide Section -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Feature Introduction -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">功能使用指南</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_mode">🔢 生成模式</h3>
+                                <p data-i18n="guide_p_mode">支持“不重复”和“可重复”两种模式。在不重复模式下，如果生成的数量超过了范围内的总数（例如在1-10之间生成11个数），系统会自动调整为最大允许数量。</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_anim">⚡ 计时动画</h3>
+                                <p data-i18n="guide_p_anim">点击“开始（计时）”会模拟数字滚动的效果，适合抽奖或公开演示场景，增加紧张感。点击“直接生成”则会瞬间给出结果。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-question-circle text-primary"></i> <span data-i18n="qa_title">常见问题</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30">
+                                <h4 class="font-bold text-indigo-800 dark:text-indigo-300 mb-2" data-i18n="qa_h_random">随机性如何？</h4>
+                                <p class="text-sm text-indigo-700 dark:text-indigo-400" data-i18n="qa_p_random">采用浏览器内置的 <code>crypto.getRandomValues</code> 强随机算法（如果支持），确保数字分布均匀且不可预测。</p>
+                            </div>
+                            
+                            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/30">
+                                <h4 class="font-bold text-blue-800 dark:text-blue-300 mb-2" data-i18n="qa_h_copy">复制格式是怎样的？</h4>
+                                <p class="text-sm text-blue-700 dark:text-blue-400" data-i18n="qa_p_copy">复制的内容为纯文本格式，数字之间以空格分隔（如 "1 5 8"），方便直接粘贴到 Excel 或聊天软件中。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <footer class="text-center text-xs text-slate-400 py-6">
+            <p>&copy; <span id="year"></span> RNG Pro. Generated for Educational Purposes.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "在线随机数生成器", subtitle: "高效率随机数值生成工具",
+                h_settings: "设置",
+                lbl_min: "最小值", lbl_max: "最大值",
+                lbl_count: "数目", lbl_limit: "上限: 10,000",
+                lbl_repeat: "重复出现", opt_unique: "不重复", opt_repeat: "可重复",
+                h_presets: "快速预设", lbl_preset_count: "数目:", lbl_preset_range: "范围:",
+                btn_direct: "直接生成", btn_roll: "开始（计时）", btn_copy: "复制",
+                guide_title: "功能使用指南",
+                guide_h_mode: "🔢 生成模式", guide_p_mode: "支持“不重复”模式。若请求数量超过范围总数，系统将自动修正。",
+                guide_h_anim: "⚡ 计时动画", guide_p_anim: "“开始（计时）”模拟滚动效果，增加演示趣味性。",
+                qa_title: "常见问题",
+                qa_h_random: "随机性如何？", qa_p_random: "采用 crypto 强随机算法，确保结果不可预测。",
+                qa_h_copy: "复制格式？", qa_p_copy: "纯文本格式，数字间以空格分隔。",
+                err_range: "最小值必须小于最大值", err_count: "数量超过范围容量 (不重复模式)",
+                toast_copied: "已复制到剪贴板！"
+            },
+            'en': {
+                title: "Random Generator", subtitle: "Efficient RNG Tool",
+                h_settings: "Settings",
+                lbl_min: "Min Value", lbl_max: "Max Value",
+                lbl_count: "Count", lbl_limit: "Limit: 10,000",
+                lbl_repeat: "Repetition", opt_unique: "Unique", opt_repeat: "Allow Repeat",
+                h_presets: "Presets", lbl_preset_count: "Count:", lbl_preset_range: "Range:",
+                btn_direct: "Generate", btn_roll: "Start (Timer)", btn_copy: "Copy",
+                guide_title: "User Guide",
+                guide_h_mode: "🔢 Modes", guide_p_mode: "Supports Unique/Repeat modes. In Unique mode, count cannot exceed range size.",
+                guide_h_anim: "⚡ Animation", guide_p_anim: "Use 'Start (Timer)' for a dramatic rolling effect.",
+                qa_title: "FAQ",
+                qa_h_random: "Is it random?", qa_p_random: "Uses cryptographic random algorithms for fairness.",
+                qa_h_copy: "Copy Format?", qa_p_copy: "Space-separated text format for easy pasting.",
+                err_range: "Min must be less than Max", err_count: "Count exceeds range size (Unique Mode)",
+                toast_copied: "Copied to clipboard!"
+            }
+        };
+
+        const App = {
+            state: {
+                min: 1,
+                max: 100,
+                count: 1,
+                allowRepeat: false,
+                currentResults: []
+            },
+            isRolling: false,
+            rollInterval: null,
+            currentLang: 'zh-CN',
+            
+            init() {
+                // 1. Language Setup
+                const urlParams = new URLSearchParams(window.location.search);
+                this.currentLang = urlParams.get('lang') || 'zh-CN';
+                if (!i18nData[this.currentLang]) this.currentLang = 'zh-CN';
+                
+                const langSelector = document.getElementById('lang-selector');
+                if(langSelector) {
+                    langSelector.value = this.currentLang;
+                    langSelector.addEventListener('change', (e) => {
+                        this.currentLang = e.target.value;
+                        this.updateUrl(this.currentLang);
+                        this.translateUI(this.currentLang);
+                        this.validateInputs(); // Re-validate to show localized errors
+                    });
+                }
+                
+                if (!urlParams.has('lang')) this.updateUrl(this.currentLang);
+
+                this.translateUI(this.currentLang);
+                this.handleTheme();
+                this.updateYear();
+                
+                // Initial State Render
+                this.setRepeat(false);
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) { console.log(e); }
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) el.innerHTML = data[key];
+                });
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            // --- Logic ---
+
+            validateInputs() {
+                const minEl = document.getElementById('input-min');
+                const maxEl = document.getElementById('input-max');
+                const countEl = document.getElementById('input-count');
+                const errorEl = document.getElementById('error-msg');
+                const langData = i18nData[this.currentLang];
+
+                let min = parseInt(minEl.value) || 0;
+                let max = parseInt(maxEl.value) || 0;
+                let count = parseInt(countEl.value) || 1;
+
+                this.state.min = min;
+                this.state.max = max;
+                this.state.count = count;
+
+                let error = null;
+
+                if (min >= max) {
+                    error = langData.err_range;
+                } else if (!this.state.allowRepeat) {
+                    const rangeSize = max - min + 1;
+                    if (count > rangeSize) {
+                        error = `${langData.err_count} (Max: ${rangeSize})`;
+                    }
+                }
+
+                if (error) {
+                    errorEl.textContent = error;
+                    errorEl.classList.remove('hidden');
+                    return false;
+                } else {
+                    errorEl.classList.add('hidden');
+                    return true;
+                }
+            },
+
+            setRepeat(allowed) {
+                this.state.allowRepeat = allowed;
+                const btnUnique = document.getElementById('btn-unique');
+                const btnRepeat = document.getElementById('btn-repeat');
+
+                if (!allowed) {
+                    btnUnique.className = "flex-1 py-1.5 text-xs font-bold rounded-md transition-all shadow-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white";
+                    btnRepeat.className = "flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300";
+                } else {
+                    btnRepeat.className = "flex-1 py-1.5 text-xs font-bold rounded-md transition-all shadow-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white";
+                    btnUnique.className = "flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300";
+                }
+                this.validateInputs();
+            },
+
+            setCount(n) {
+                document.getElementById('input-count').value = n;
+                this.validateInputs();
+            },
+
+            setRange(min, max) {
+                document.getElementById('input-min').value = min;
+                document.getElementById('input-max').value = max;
+                this.validateInputs();
+            },
+
+            // --- Generation ---
+
+            getRandomInt(min, max) {
+                // Use crypto if available for better randomness
+                if (window.crypto && window.crypto.getRandomValues) {
+                    const range = max - min + 1;
+                    const max_request = 4294967295; // Max Uint32
+                    const request = new Uint32Array(1);
+                    while (true) {
+                        window.crypto.getRandomValues(request);
+                        const val = request[0];
+                        // Reject if val is in the uneven remainder zone
+                        if (val < max_request - (max_request % range)) {
+                            return min + (val % range);
+                        }
+                    }
+                } else {
+                    // Fallback
+                    return Math.floor(Math.random() * (max - min + 1)) + min;
+                }
+            },
+
+            generateNumbers() {
+                const { min, max, count, allowRepeat } = this.state;
+                let results = [];
+
+                if (!allowRepeat) {
+                    // Unique generation
+                    const rangeSize = max - min + 1;
+                    const safeCount = Math.min(count, rangeSize);
+                    
+                    // Optimization: If count is close to range size, shuffle full array
+                    // Otherwise use Set to pick randoms
+                    if (rangeSize < 5000 || safeCount > rangeSize / 2) {
+                        // Create full pool
+                        const pool = Array.from({length: rangeSize}, (_, i) => min + i);
+                        // Shuffle pool (Fisher-Yates partial)
+                        for (let i = 0; i < safeCount; i++) {
+                            const j = Math.floor(Math.random() * (rangeSize - i)) + i;
+                            [pool[i], pool[j]] = [pool[j], pool[i]];
+                        }
+                        results = pool.slice(0, safeCount);
+                    } else {
+                        // Sparse picking
+                        const picked = new Set();
+                        while (picked.size < safeCount) {
+                            picked.add(this.getRandomInt(min, max));
+                        }
+                        results = Array.from(picked);
+                    }
+                } else {
+                    // Repeat allowed
+                    for (let i = 0; i < count; i++) {
+                        results.push(this.getRandomInt(min, max));
+                    }
+                }
+                
+                this.state.currentResults = results;
+                return results;
+            },
+
+            // --- Actions ---
+
+            updateDisplay(numbers) {
+                const displayEl = document.getElementById('result-display');
+                
+                // Styling based on count
+                if (numbers.length === 1) {
+                    displayEl.className = "result-text text-6xl md:text-8xl transition-all duration-200";
+                } else if (numbers.length <= 5) {
+                    displayEl.className = "result-text text-4xl md:text-5xl flex flex-wrap justify-center gap-4 transition-all duration-200";
+                } else if (numbers.length <= 20) {
+                    displayEl.className = "result-text text-2xl md:text-3xl flex flex-wrap justify-center gap-3 transition-all duration-200";
+                } else {
+                    displayEl.className = "result-text text-lg flex flex-wrap justify-center gap-2 max-h-[250px] overflow-y-auto scrollbar-hide text-slate-300";
+                }
+
+                displayEl.textContent = numbers.join(' ');
+            },
+
+            generate(animate = false) {
+                if (!this.validateInputs()) return;
+                if (this.isRolling) return;
+
+                const finalNumbers = this.generateNumbers();
+                
+                // Flash effect
+                const flash = document.getElementById('flash-overlay');
+                flash.classList.remove('duration-100'); // Reset duration
+                flash.style.opacity = '0.3';
+                setTimeout(() => {
+                    flash.classList.add('duration-500');
+                    flash.style.opacity = '0';
+                }, 50);
+
+                if (!animate) {
+                    this.updateDisplay(finalNumbers);
+                }
+            },
+
+            startRoll() {
+                if (this.isRolling) return;
+                if (!this.validateInputs()) return;
+
+                this.isRolling = true;
+                const btn = document.getElementById('btn-roll');
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                const { min, max, count } = this.state;
+                let speed = 50;
+                const duration = 2000;
+                
+                // Rolling Animation
+                this.rollInterval = setInterval(() => {
+                    // Generate small batch of fake numbers for visual effect
+                    // Don't care about uniqueness during roll for performance
+                    let fake = [];
+                    for(let i=0; i<Math.min(count, 10); i++) {
+                        fake.push(Math.floor(Math.random() * (max - min + 1)) + min);
+                    }
+                    if (count > 10) fake.push("...");
+                    this.updateDisplay(fake);
+                }, speed);
+
+                // Stop
+                setTimeout(() => {
+                    clearInterval(this.rollInterval);
+                    const finalNumbers = this.generateNumbers();
+                    this.updateDisplay(finalNumbers);
+                    
+                    this.isRolling = false;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    
+                    // Final flash
+                    const flash = document.getElementById('flash-overlay');
+                    flash.style.opacity = '0.5';
+                    setTimeout(() => flash.style.opacity = '0', 300);
+
+                }, duration);
+            },
+
+            copyResult() {
+                if (this.state.currentResults.length === 0) return;
+                
+                const text = this.state.currentResults.join(' ');
+                
+                // Modern Clipboard API with fallback
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => this.showToast());
+                } else {
+                    // Fallback
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    this.showToast();
+                }
+            },
+
+            showToast() {
+                const toast = document.getElementById('toast-msg');
+                const langData = i18nData[this.currentLang];
+                toast.textContent = langData.toast_copied;
+                toast.classList.remove('opacity-0');
+                setTimeout(() => toast.classList.add('opacity-0'), 2000);
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

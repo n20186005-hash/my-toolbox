@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="electronics">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Op-Amp High Pass Filter Calculator - Calculate capacitor values for Sallen-Key topology.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>HPF</text></svg>">
+    
+    <title>运放高通滤波器计算器 | High Pass Filter Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#0ea5e9', hover: '#0284c7' }, /* Sky Blue */
+                        secondary: { DEFAULT: '#64748b', hover: '#475569' }, /* Slate */
+                        bg: { light: '#f0f9ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-4 pr-12 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all text-lg font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-4 text-slate-400 text-sm font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-sky-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2 text-base;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-3 px-6 rounded-xl transition-all text-base;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .circuit-text { font-family: monospace; font-size: 12px; fill: currentColor; }
+            .component-fill { fill: currentColor; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-sky-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-300 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-5xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-700 text-white flex items-center justify-center text-xl shadow-lg shadow-sky-500/20 font-bold border-2 border-white/20">
+                    <i class="fa fa-filter"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">运放高通滤波器计算器</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">二阶 Sallen-Key 拓扑参数设计</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                 <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文</option>
+                    <option value="en">🇺🇸 English</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid md:grid-cols-12 gap-6 mb-8">
+            
+            <!-- Input Section -->
+            <div class="md:col-span-5 glass rounded-3xl shadow-lg p-6 flex flex-col justify-center border-t-4 border-t-sky-500">
+                
+                <div class="space-y-5">
+                    <!-- Fc -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide" data-i18n="lbl_fc">截止频率 (Fc):</label>
+                        <div class="input-group">
+                            <input type="number" id="input-fc" class="input-field" placeholder="1.0" oninput="App.calculate()">
+                            <span class="unit-label">KHz</span>
+                        </div>
+                    </div>
+
+                    <!-- R1 -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide" data-i18n="lbl_r1">电阻值 (R1):</label>
+                        <div class="input-group">
+                            <input type="number" id="input-r1" class="input-field" placeholder="10" oninput="App.calculate()">
+                            <span class="unit-label">KΩ</span>
+                        </div>
+                    </div>
+
+                    <!-- R2 -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide" data-i18n="lbl_r2">电阻值 (R2):</label>
+                        <div class="input-group">
+                            <input type="number" id="input-r2" class="input-field" placeholder="10" oninput="App.calculate()">
+                            <span class="unit-label">KΩ</span>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button onclick="App.calculate()" class="btn-primary">
+                            <i class="fa fa-calculator"></i> <span data-i18n="btn_calc">计算</span>
+                        </button>
+                        <button onclick="App.clearInput()" class="btn-secondary text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                            <i class="fa fa-eraser"></i> <span data-i18n="btn_clear">清除</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result & Diagram Section -->
+            <div class="md:col-span-7 flex flex-col gap-6">
+                
+                <!-- Result Display -->
+                <div class="glass rounded-3xl shadow-lg p-6 flex flex-col justify-center items-center text-center border-t-4 border-t-indigo-500 relative overflow-hidden min-h-[180px]">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i class="fa fa-bolt text-8xl"></i>
+                    </div>
+                    
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide z-10" data-i18n="lbl_result">推荐电容值 (C1 = C2)：</label>
+                    
+                    <div class="relative z-10 w-full py-2">
+                        <div id="result-display" class="text-4xl md:text-5xl font-mono font-bold break-all leading-relaxed text-sky-600 dark:text-sky-400">
+                            -
+                        </div>
+                        <div id="result-raw" class="text-xs text-slate-400 mt-2 font-mono opacity-0 transition-opacity">
+                            Raw: 0.000000 F
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Circuit Diagram -->
+                <div class="glass rounded-3xl shadow-lg p-6 flex items-center justify-center border-t-4 border-t-slate-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                    <div class="w-full max-w-[400px]">
+                        <!-- Sallen-Key High Pass Filter SVG -->
+                        <svg viewBox="0 0 400 250" class="w-full h-auto">
+                            <!-- Op-Amp Triangle -->
+                            <path d="M 250 100 L 250 200 L 350 150 Z" class="circuit-line" stroke-linejoin="round"/>
+                            <text x="260" y="130" class="circuit-text font-bold text-lg">-</text>
+                            <text x="260" y="180" class="circuit-text font-bold text-lg">+</text>
+                            
+                            <!-- Input to C1 -->
+                            <line x1="20" y1="170" x2="80" y2="170" class="circuit-line" />
+                            <circle cx="20" cy="170" r="3" class="component-fill" />
+                            <text x="20" y="160" class="circuit-text">Vin</text>
+
+                            <!-- C1 -->
+                            <line x1="80" y1="160" x2="80" y2="180" class="circuit-line" />
+                            <line x1="90" y1="160" x2="90" y2="180" class="circuit-line" />
+                            <text x="75" y="150" class="circuit-text font-bold">C1</text>
+
+                            <!-- C1 to C2 Node -->
+                            <line x1="90" y1="170" x2="160" y2="170" class="circuit-line" />
+                            
+                            <!-- R1 down to Vout feedback -->
+                            <line x1="125" y1="170" x2="125" y2="230" class="circuit-line" />
+                            <rect x="115" y="230" width="20" height="40" class="circuit-line" /> <!-- R1 Body -->
+                            <text x="90" y="255" class="circuit-text font-bold">R1</text>
+                            <line x1="125" y1="270" x2="125" y2="290" class="circuit-line" /> <!-- Placeholder for connection -->
+                            <!-- Feedback Path R1 connects to Output -->
+                            <line x1="125" y1="270" x2="380" y2="270" class="circuit-line" />
+                            <line x1="380" y1="270" x2="380" y2="150" class="circuit-line" />
+
+                            <!-- C2 -->
+                            <line x1="160" y1="160" x2="160" y2="180" class="circuit-line" />
+                            <line x1="170" y1="160" x2="170" y2="180" class="circuit-line" />
+                            <text x="155" y="150" class="circuit-text font-bold">C2</text>
+
+                            <!-- C2 to OpAmp Non-Inv -->
+                            <line x1="170" y1="170" x2="250" y2="170" class="circuit-line" />
+
+                            <!-- R2 down to Ground -->
+                            <line x1="210" y1="170" x2="210" y2="210" class="circuit-line" />
+                            <rect x="200" y="210" width="20" height="40" class="circuit-line" /> <!-- R2 Body -->
+                            <text x="225" y="235" class="circuit-text font-bold">R2</text>
+                            <line x1="210" y1="250" x2="210" y2="270" class="circuit-line" />
+                            <!-- Ground Symbol -->
+                            <line x1="200" y1="270" x2="220" y2="270" class="circuit-line" />
+                            <line x1="205" y1="275" x2="215" y2="275" class="circuit-line" />
+                            <line x1="208" y1="280" x2="212" y2="280" class="circuit-line" />
+
+                            <!-- OpAmp Output -->
+                            <line x1="350" y1="150" x2="390" y2="150" class="circuit-line" />
+                            <circle cx="390" cy="150" r="3" class="component-fill" />
+                            <text x="370" y="140" class="circuit-text">Vout</text>
+
+                            <!-- Feedback Negative Input (Unity Gain) -->
+                            <line x1="250" y1="130" x2="230" y2="130" class="circuit-line" />
+                            <line x1="230" y1="130" x2="230" y2="150" class="circuit-line" /> <!-- Loop over -->
+                            <line x1="230" y1="150" x2="360" y2="150" class="circuit-line" /> <!-- Direct feedback -->
+                            <!-- Note: The drawing is simplified for visual representation -->
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description Section -->
+        <section class="glass rounded-3xl p-8 shadow-xl mb-12">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="desc_title">二阶有源高通滤波器 (Sallen-Key)</span>
+            </h2>
+            
+            <div class="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 space-y-6 leading-relaxed text-sm">
+                <p data-i18n="desc_p1">
+                    这是一个基于运算放大器的二阶 <strong>Sallen-Key</strong> 高通滤波器设计工具。该电路使用两个电容和两个电阻来确定截止频率。
+                </p>
+                
+                <div class="bg-sky-50 dark:bg-sky-900/20 border-l-4 border-sky-500 p-4 rounded-r-lg">
+                    <h3 class="font-bold text-sky-800 dark:text-sky-200 mb-2 text-sm uppercase" data-i18n="formula_title">计算公式</h3>
+                    <div class="font-mono text-sky-700 dark:text-sky-300 text-base">
+                        $$ C = \frac{1}{2 \pi \cdot Fc \cdot \sqrt{R1 \cdot R2}} $$
+                    </div>
+                    <p class="text-xs mt-2 text-sky-600/80 dark:text-sky-400/80">
+                        *假设 C1 = C2 = C。公式中 R 单位为欧姆(Ω)，Fc 单位为赫兹(Hz)，C 单位为法拉(F)。
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-2 text-sm" data-i18n="tip_h1">元件选择建议</h4>
+                        <ul class="list-disc list-inside text-xs space-y-1">
+                            <li data-i18n="tip_l1">电阻建议选择 1KΩ ~ 100KΩ 之间，以减少噪声和负载效应。</li>
+                            <li data-i18n="tip_l2">电容应选择标准值 (E12/E24系列)，计算出 C 后，请选取最接近的标准值，再反推精确的截止频率。</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-2 text-sm" data-i18n="tip_h2">关于品质因数 (Q)</h4>
+                        <p class="text-xs" data-i18n="tip_p1">
+                            当 R1 = R2 且 C1 = C2 时，该电路的品质因数 Q = 0.5。这属于临界阻尼（Butterworth 响应通常需要 Q=0.707，需调整 R1/R2 或增益）。本计算器提供基础设计参考。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <footer class="text-center text-xs text-slate-400 py-6 mt-auto">
+            <p>&copy; <span id="year"></span> High Pass Filter Calculator. Generated for Educational Purposes.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "运放高通滤波器计算器", subtitle: "二阶 Sallen-Key 拓扑参数设计",
+                lbl_fc: "截止频率 (Fc):", lbl_r1: "电阻值 (R1):", lbl_r2: "电阻值 (R2):",
+                btn_calc: "计算", btn_clear: "清除",
+                lbl_result: "推荐电容值 (C1 = C2)：",
+                desc_title: "二阶有源高通滤波器 (Sallen-Key)",
+                desc_p1: "这是一个基于运算放大器的二阶 Sallen-Key 高通滤波器设计工具。该电路使用两个电容和两个电阻来确定截止频率。",
+                formula_title: "计算公式",
+                tip_h1: "元件选择建议",
+                tip_l1: "电阻建议选择 1KΩ ~ 100KΩ 之间，以减少噪声和负载效应。",
+                tip_l2: "电容应选择标准值，计算出 C 后，请选取最接近的标准值。",
+                tip_h2: "关于品质因数 (Q)",
+                tip_p1: "当 R1 = R2 且 C1 = C2 时，该电路的品质因数 Q = 0.5 (亚临界阻尼)。如需 Butterworth 响应 (Q=0.707)，通常需调整 R1/R2 比值或引入增益。"
+            },
+            'en': {
+                title: "High Pass Filter Calculator", subtitle: "Sallen-Key 2nd Order Design",
+                lbl_fc: "Cutoff Frequency (Fc):", lbl_r1: "Resistor (R1):", lbl_r2: "Resistor (R2):",
+                btn_calc: "Calculate", btn_clear: "Clear",
+                lbl_result: "Capacitor Value (C1 = C2):",
+                desc_title: "Sallen-Key High Pass Filter",
+                desc_p1: "This tool designs a 2nd order Sallen-Key active high-pass filter using an Op-Amp. It calculates the required capacitor values based on your resistors and target frequency.",
+                formula_title: "Formula",
+                tip_h1: "Component Tips",
+                tip_l1: "Resistors should ideally be between 1KΩ and 100KΩ to minimize noise and loading.",
+                tip_l2: "Select the nearest standard capacitor value to the calculated result.",
+                tip_h2: "About Q Factor",
+                tip_p1: "With R1=R2 and C1=C2, the Q factor is 0.5 (Sub-critical damping). For a Butterworth response (Q=0.707), R1/R2 ratios or gain adjustments are needed."
+            }
+        };
+
+        const App = {
+            currentLang: 'zh-CN',
+            
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                this.currentLang = urlParams.get('lang') || 'zh-CN';
+                
+                const langSelector = document.getElementById('lang-selector');
+                if(langSelector) {
+                    langSelector.value = this.currentLang;
+                    langSelector.addEventListener('change', (e) => {
+                        this.currentLang = e.target.value;
+                        this.updateUrl(this.currentLang);
+                        this.translateUI(this.currentLang);
+                    });
+                }
+                
+                if (!urlParams.has('lang')) this.updateUrl(this.currentLang);
+
+                this.translateUI(this.currentLang);
+                this.handleTheme();
+                this.updateYear();
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) { console.log(e); }
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) el.innerHTML = data[key];
+                });
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            // --- Logic ---
+
+            calculate() {
+                const fcInput = document.getElementById('input-fc').value;
+                const r1Input = document.getElementById('input-r1').value;
+                const r2Input = document.getElementById('input-r2').value;
+                
+                const display = document.getElementById('result-display');
+                const rawDisplay = document.getElementById('result-raw');
+
+                if (fcInput === '' || r1Input === '' || r2Input === '') {
+                    display.textContent = '-';
+                    rawDisplay.style.opacity = '0';
+                    return;
+                }
+
+                const fc = parseFloat(fcInput) * 1000; // KHz -> Hz
+                const r1 = parseFloat(r1Input) * 1000; // KΩ -> Ω
+                const r2 = parseFloat(r2Input) * 1000; // KΩ -> Ω
+
+                if (fc <= 0 || r1 <= 0 || r2 <= 0) {
+                    display.textContent = 'Error';
+                    return;
+                }
+
+                // Formula: C = 1 / (2 * pi * Fc * sqrt(R1 * R2))
+                const cFarad = 1 / (2 * Math.PI * fc * Math.sqrt(r1 * r2));
+
+                // Formatting
+                let formatted = '';
+                let unit = '';
+
+                // Auto range: pF, nF, uF
+                if (cFarad < 1e-9) {
+                    // Less than 1nF -> pF
+                    formatted = (cFarad * 1e12).toFixed(2);
+                    unit = 'pF';
+                } else if (cFarad < 1e-6) {
+                    // Less than 1uF -> nF
+                    formatted = (cFarad * 1e9).toFixed(2);
+                    unit = 'nF';
+                } else {
+                    // uF
+                    formatted = (cFarad * 1e6).toFixed(3);
+                    unit = 'μF';
+                }
+
+                display.textContent = `${formatted} ${unit}`;
+                
+                rawDisplay.textContent = `Raw: ${cFarad.toExponential(4)} F`;
+                rawDisplay.style.opacity = '1';
+            },
+
+            clearInput() {
+                document.getElementById('input-fc').value = '';
+                document.getElementById('input-r1').value = '';
+                document.getElementById('input-r2').value = '';
+                document.getElementById('result-display').textContent = '-';
+                document.getElementById('result-raw').style.opacity = '0';
+                document.getElementById('input-fc').focus();
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

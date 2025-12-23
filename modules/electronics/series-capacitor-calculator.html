@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Series Capacitor Calculator - Design series combinations and calculate equivalent capacitance and voltage distribution.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><line x1=%2210%22 y1=%2250%22 x2=%2240%22 y2=%2250%22 stroke=%22%233b82f6%22 stroke-width=%224%22/><line x1=%2240%22 y1=%2230%22 x2=%2240%22 y2=%2270%22 stroke=%22%233b82f6%22 stroke-width=%224%22/><line x1=%2250%22 y1=%2230%22 x2=%2250%22 y2=%2270%22 stroke=%22%233b82f6%22 stroke-width=%224%22/><line x1=%2250%22 y1=%2250%22 x2=%2290%22 y2=%2250%22 stroke=%22%233b82f6%22 stroke-width=%224%22/></svg>">
+    
+    <title>串联电容计算器 | Series Cap Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#3b82f6', hover: '#2563eb' }, /* Blue */
+                        secondary: { DEFAULT: '#8b5cf6', hover: '#7c3aed' }, /* Violet */
+                        bg: { light: '#eff6ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-blue-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-12 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-select {
+                @apply absolute right-1 top-1 bottom-1 w-16 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-none rounded cursor-pointer focus:ring-0 text-center;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all text-sm;
+            }
+            .tab-btn {
+                @apply flex-1 py-2 text-xs font-bold rounded-lg transition-colors text-center cursor-pointer select-none;
+            }
+            .tab-btn.active {
+                @apply bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50;
+            }
+            .tab-btn.inactive {
+                @apply text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .circuit-text { font-family: monospace; font-size: 10px; fill: currentColor; }
+            .component-fill { fill: currentColor; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    Cap
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">串联电容计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Series Capacitor Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Main Panel -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="glass rounded-2xl p-5 shadow-sm border-t-4 border-t-blue-500">
+                
+                <!-- Tabs -->
+                <div class="flex gap-2 p-1 bg-slate-50 dark:bg-slate-800 rounded-xl mb-6">
+                    <div class="tab-btn active" id="tab-design" onclick="App.setMode('design')">
+                        <i class="fa fa-search mr-1"></i> <span data-i18n="mode_design">反推元件值</span>
+                    </div>
+                    <div class="tab-btn inactive" id="tab-calc" onclick="App.setMode('calc')">
+                        <i class="fa fa-calculator mr-1"></i> <span data-i18n="mode_calc">计算总容量</span>
+                    </div>
+                </div>
+
+                <!-- Mode: Design (Find C1, C2) -->
+                <div id="panel-design">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_target">可望得到的电容量 (Target):</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-target" class="input-field" value="2400">
+                                <select id="unit-target" class="unit-select">
+                                    <option value="1e-12" selected>pF</option>
+                                    <option value="1e-9">nF</option>
+                                    <option value="1e-6">μF</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_series">选择顺序 (Series):</label>
+                            <select id="inp-series" class="input-field cursor-pointer">
+                                <option value="E12">E12 (10%)</option>
+                                <option value="E24" selected>E24 (5%)</option>
+                            </select>
+                        </div>
+
+                        <button onclick="App.calculateDesign()" class="btn-primary w-full mt-2">
+                            <span data-i18n="btn_calc_design">寻找组合</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mode: Calc (Find Total) -->
+                <div id="panel-calc" class="hidden">
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_c1">电容 1:</label>
+                                <div class="input-group">
+                                    <input type="number" id="inp-c1" class="input-field" value="10" oninput="App.calculateTotal()">
+                                    <select id="unit-c1" class="unit-select" onchange="App.calculateTotal()">
+                                        <option value="1e-12">pF</option>
+                                        <option value="1e-9">nF</option>
+                                        <option value="1e-6" selected>μF</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_c2">电容 2:</label>
+                                <div class="input-group">
+                                    <input type="number" id="inp-c2" class="input-field" value="22" oninput="App.calculateTotal()">
+                                    <select id="unit-c2" class="unit-select" onchange="App.calculateTotal()">
+                                        <option value="1e-12">pF</option>
+                                        <option value="1e-9">nF</option>
+                                        <option value="1e-6" selected>μF</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_volts">总电压 (选填/用于分压计算):</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-volts" class="input-field" placeholder="Optional" oninput="App.calculateTotal()">
+                                <span class="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none">V</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs text-slate-500 font-bold" data-i18n="res_total">等效容量:</span>
+                                <span id="res-total-val" class="text-lg font-mono font-bold text-indigo-600 dark:text-indigo-400">-</span>
+                            </div>
+                            <div class="h-px bg-indigo-200 dark:bg-indigo-700/50 my-2"></div>
+                            <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                                <div>U1 (C1): <span id="res-u1" class="font-bold text-slate-700 dark:text-slate-300">-</span></div>
+                                <div>U2 (C2): <span id="res-u2" class="font-bold text-slate-700 dark:text-slate-300">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Result / Diagram -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Design Result Box -->
+            <div id="design-results" class="glass rounded-2xl shadow-sm border-t-4 border-t-indigo-500 p-6 flex flex-col justify-center min-h-[200px]">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4" data-i18n="h_suggestion">推荐组合 (Best Match)</h3>
+                
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="text-center">
+                        <div class="text-xs text-blue-500 font-bold mb-1" data-i18n="lbl_res_c1">电容 1 (C1)</div>
+                        <div id="res-c1-best" class="text-2xl md:text-3xl font-mono font-bold text-slate-800 dark:text-white">-</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xs text-blue-500 font-bold mb-1" data-i18n="lbl_res_c2">电容 2 (C2)</div>
+                        <div id="res-c2-best" class="text-2xl md:text-3xl font-mono font-bold text-slate-800 dark:text-white">-</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 flex justify-between items-center text-sm border border-slate-100 dark:border-slate-700">
+                    <span class="text-slate-500" data-i18n="res_actual">串联后实际容量:</span>
+                    <div class="text-right">
+                        <span id="res-actual" class="font-bold text-indigo-600 dark:text-indigo-400 block">-</span>
+                        <span id="res-error" class="text-xs text-slate-400 font-mono block">Error: 0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Circuit Diagram -->
+            <div class="glass rounded-2xl p-6 flex justify-center items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 h-[200px]">
+                <svg viewBox="0 0 300 120" class="w-full h-full max-w-[350px] text-slate-600 dark:text-slate-300">
+                    <!-- Terminals -->
+                    <circle cx="20" cy="60" r="3" class="component-fill"/>
+                    <circle cx="280" cy="60" r="3" class="component-fill"/>
+                    <text x="20" y="45" class="circuit-text" text-anchor="middle">+</text>
+                    <text x="280" y="45" class="circuit-text" text-anchor="middle">-</text>
+
+                    <!-- Line -->
+                    <line x1="20" y1="60" x2="80" y2="60" class="circuit-line"/>
+                    
+                    <!-- C1 -->
+                    <line x1="80" y1="45" x2="80" y2="75" class="circuit-line"/>
+                    <line x1="90" y1="45" x2="90" y2="75" class="circuit-line"/>
+                    <text x="85" y="35" class="circuit-text font-bold text-blue-500" text-anchor="middle">C1</text>
+                    
+                    <!-- Mid -->
+                    <line x1="90" y1="60" x2="140" y2="60" class="circuit-line"/>
+                    
+                    <!-- C2 -->
+                    <line x1="140" y1="45" x2="140" y2="75" class="circuit-line"/>
+                    <line x1="150" y1="45" x2="150" y2="75" class="circuit-line"/>
+                    <text x="145" y="35" class="circuit-text font-bold text-blue-500" text-anchor="middle">C2</text>
+
+                    <!-- Mid 2 -->
+                    <line x1="150" y1="60" x2="200" y2="60" class="circuit-line"/>
+
+                    <!-- C3 (Ghost/Optional) representation or just dots -->
+                    <text x="220" y="65" class="circuit-text" text-anchor="middle">...</text>
+
+                    <!-- End -->
+                    <line x1="240" y1="60" x2="280" y2="60" class="circuit-line"/>
+                    
+                    <!-- Voltage Labels (Dynamic) -->
+                    <text x="150" y="100" class="circuit-text font-bold text-xs" text-anchor="middle" id="svg-total-label">Total = C1 || C2</text>
+                </svg>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">计算公式与原理</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-blue-800 dark:text-blue-200 mb-2 text-sm uppercase" data-i18n="h_formula_basic">基本公式</h3>
+                        <ul class="space-y-2 font-mono text-xs md:text-sm text-blue-900 dark:text-blue-100">
+                            <li data-i18n="formula_q">1. Q<sub>T</sub> = Q<sub>1</sub> = Q<sub>2</sub> ... (电量相等)</li>
+                            <li data-i18n="formula_e">2. E = V<sub>1</sub> + V<sub>2</sub> ... (总电压)</li>
+                            <li data-i18n="formula_c">3. 1/C<sub>T</sub> = 1/C<sub>1</sub> + 1/C<sub>2</sub> ... (倒数和)</li>
+                            <li data-i18n="formula_w">4. W<sub>T</sub> = W<sub>1</sub> + W<sub>2</sub> ... (总能量)</li>
+                        </ul>
+                        <p class="text-[10px] mt-2 text-blue-600/80 dark:text-blue-400/80" data-i18n="note_simplified">
+                            *两只电容串联简化公式： C<sub>T</sub> = (C1 × C2) / (C1 + C2)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <div class="bg-slate-100 dark:bg-slate-800 border-l-4 border-slate-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm uppercase" data-i18n="h_formula_v">耐压计算公式</h3>
+                        <div class="font-mono text-slate-700 dark:text-slate-300 text-xs space-y-1">
+                            <p>U<sub>1</sub> = C2 × U / (C1 + C2)</p>
+                            <p>U<sub>2</sub> = C1 × U / (C1 + C2)</p>
+                        </div>
+                        <p class="text-[10px] mt-2 italic" data-i18n="example_voltage">
+                            例：C1=10μF, C2=22μF, U=50V。<br>
+                            U1 ≈ 34.37V, U2 ≈ 15.62V。<br>
+                            结论：串联时电压与电容值成反比。
+                        </p>
+                    </div>
+
+                    <div class="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-100 dark:border-red-900/30 text-xs text-red-600 dark:text-red-400">
+                        <i class="fa fa-exclamation-triangle mr-1"></i> <strong data-i18n="warning_title">安全警示：</strong>
+                        <span data-i18n="warning_text">对于高压电路，电容串联均压并不理想。若一只击穿，总电压将加在另一只上导致连锁损坏。建议并在每个电容两端并联数百kΩ的分压电阻以强制均压。</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Series Capacitor Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "串联电容计算器", subtitle: "电容串联计算与分压分析",
+                mode_design: "反推元件值", mode_calc: "计算总容量",
+                lbl_target: "可望得到的电容量 (Target):", lbl_series: "选择顺序 (Series):",
+                btn_calc_design: "寻找组合",
+                lbl_c1: "电容 1:", lbl_c2: "电容 2:", lbl_volts: "总电压 (选填/用于分压计算):",
+                res_total: "等效容量:", h_suggestion: "推荐组合 (Best Match)",
+                res_actual: "串联后实际容量:",
+                lbl_res_c1: "电容 1 (C1)", lbl_res_c2: "电容 2 (C2)",
+                
+                guide_title: "计算公式与原理",
+                h_formula_basic: "基本公式", h_formula_v: "耐压计算公式",
+                formula_q: "1. Q<sub>T</sub> = Q<sub>1</sub> = Q<sub>2</sub> ... (电量相等)",
+                formula_e: "2. E = V<sub>1</sub> + V<sub>2</sub> ... (总电压)",
+                formula_c: "3. 1/C<sub>T</sub> = 1/C<sub>1</sub> + 1/C<sub>2</sub> ... (倒数和)",
+                formula_w: "4. W<sub>T</sub> = W<sub>1</sub> + W<sub>2</sub> ... (总能量)",
+                note_simplified: "*两只电容串联简化公式： C<sub>T</sub> = (C1 × C2) / (C1 + C2)",
+                example_voltage: "例：C1=10μF, C2=22μF, U=50V。<br>U1 ≈ 34.37V, U2 ≈ 15.62V。<br>结论：串联时电压与电容值成反比。",
+                
+                warning_title: "安全警示：",
+                warning_text: "对于高压电路，电容串联均压并不理想。若一只击穿，总电压将加在另一只上导致连锁损坏。建议并在每个电容两端并联数百kΩ的分压电阻以强制均压。"
+            },
+            'en': {
+                title: "Series Capacitor Calculator", subtitle: "Series Capacitance & Voltage Divider",
+                mode_design: "Find Components", mode_calc: "Calculate Total",
+                lbl_target: "Desired Capacitance (Target):", lbl_series: "E-Series:",
+                btn_calc_design: "Find Combination",
+                lbl_c1: "Capacitor 1:", lbl_c2: "Capacitor 2:", lbl_volts: "Total Voltage (Optional):",
+                res_total: "Equivalent C:", h_suggestion: "Best Series Combination",
+                res_actual: "Actual Capacitance:",
+                lbl_res_c1: "Capacitor 1 (C1)", lbl_res_c2: "Capacitor 2 (C2)",
+                
+                guide_title: "Formulas & Theory",
+                h_formula_basic: "Basic Formulas", h_formula_v: "Voltage Divider Formulas",
+                formula_q: "1. Q<sub>T</sub> = Q<sub>1</sub> = Q<sub>2</sub> ... (Total Charge)",
+                formula_e: "2. E = V<sub>1</sub> + V<sub>2</sub> ... (Total Voltage)",
+                formula_c: "3. 1/C<sub>T</sub> = 1/C<sub>1</sub> + 1/C<sub>2</sub> ... (Reciprocal Sum)",
+                formula_w: "4. W<sub>T</sub> = W<sub>1</sub> + W<sub>2</sub> ... (Total Energy)",
+                note_simplified: "*Simplified formula for two capacitors: C<sub>T</sub> = (C1 × C2) / (C1 + C2)",
+                example_voltage: "Ex: C1=10μF, C2=22μF, U=50V.<br>U1 ≈ 34.37V, U2 ≈ 15.62V.<br>Conclusion: Voltage is inversely proportional to capacitance.",
+                
+                warning_title: "Safety Warning:",
+                warning_text: "In high voltage circuits, series voltage sharing is not ideal. If one capacitor shorts, the full voltage applies to the other. Use parallel balancing resistors (MΩ range) for safety."
+            }
+        };
+
+        // Standard Capacitor Values (multipliers handled in logic)
+        const E12 = [10, 12, 15, 18, 22, 27, 33, 39, 47, 56, 68, 82];
+        const E24 = [10, 11, 12, 13, 15, 16, 18, 20, 22, 24, 27, 30, 33, 36, 39, 43, 47, 51, 56, 62, 68, 75, 82, 91];
+
+        const App = {
+            lang: 'zh-CN',
+            mode: 'design', // 'design', 'calc'
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                this.calculateTotal(); // Init calc mode
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            setMode(m) {
+                this.mode = m;
+                const tabDesign = document.getElementById('tab-design');
+                const tabCalc = document.getElementById('tab-calc');
+                const pDesign = document.getElementById('panel-design');
+                const pCalc = document.getElementById('panel-calc');
+                const resDesign = document.getElementById('design-results');
+
+                if (m === 'design') {
+                    tabDesign.className = 'tab-btn active';
+                    tabCalc.className = 'tab-btn inactive';
+                    pDesign.classList.remove('hidden');
+                    pCalc.classList.add('hidden');
+                    resDesign.classList.remove('hidden');
+                } else {
+                    tabDesign.className = 'tab-btn inactive';
+                    tabCalc.className = 'tab-btn active';
+                    pDesign.classList.add('hidden');
+                    pCalc.classList.remove('hidden');
+                    resDesign.classList.add('hidden');
+                }
+            },
+
+            // --- Logic: Calculate Total & Voltage ---
+            calculateTotal() {
+                const c1Val = parseFloat(document.getElementById('inp-c1').value) || 0;
+                const c1Mult = parseFloat(document.getElementById('unit-c1').value);
+                const c2Val = parseFloat(document.getElementById('inp-c2').value) || 0;
+                const c2Mult = parseFloat(document.getElementById('unit-c2').value);
+                const volts = parseFloat(document.getElementById('inp-volts').value);
+
+                const c1 = c1Val * c1Mult;
+                const c2 = c2Val * c2Mult;
+
+                const resDisplay = document.getElementById('res-total-val');
+                const u1Display = document.getElementById('res-u1');
+                const u2Display = document.getElementById('res-u2');
+
+                if (c1 <= 0 || c2 <= 0) {
+                    resDisplay.textContent = '-';
+                    u1Display.textContent = '-';
+                    u2Display.textContent = '-';
+                    return;
+                }
+
+                // Series: 1/Ct = 1/C1 + 1/C2 -> Ct = (C1*C2)/(C1+C2)
+                const ct = (c1 * c2) / (c1 + c2);
+                resDisplay.textContent = this.formatCap(ct);
+
+                // Voltage
+                if (!isNaN(volts)) {
+                    // U1 = C2 * U / (C1 + C2)
+                    // U2 = C1 * U / (C1 + C2)
+                    const u1 = (c2 * volts) / (c1 + c2);
+                    const u2 = (c1 * volts) / (c1 + c2);
+                    u1Display.textContent = u1.toFixed(2) + ' V';
+                    u2Display.textContent = u2.toFixed(2) + ' V';
+                } else {
+                    u1Display.textContent = '-';
+                    u2Display.textContent = '-';
+                }
+            },
+
+            // --- Logic: Find Series Combinations ---
+            calculateDesign() {
+                const targetVal = parseFloat(document.getElementById('inp-target').value) || 0;
+                const targetMult = parseFloat(document.getElementById('unit-target').value);
+                const seriesType = document.getElementById('inp-series').value;
+                
+                const targetC = targetVal * targetMult; // Farads
+
+                if (targetC <= 0) return;
+
+                // Series logic: 1/Ct = 1/C1 + 1/C2 -> Ct < min(C1, C2)
+                // So we need C1 > Target and C2 > Target.
+                
+                // Generate value list based on E-Series
+                const baseValues = seriesType === 'E12' ? E12 : E24;
+                const values = [];
+                // Range: from slightly above target to reasonable max (e.g. 100x target)
+                // Need to cover decades. e.g. pF range up to uF.
+                // Let's generate decades around the target order of magnitude.
+                const logVal = Math.log10(targetC);
+                const minExp = Math.floor(logVal); 
+                const maxExp = minExp + 2; 
+
+                for (let exp = minExp; exp <= maxExp; exp++) {
+                    const mult = Math.pow(10, exp);
+                    for (let v of baseValues) {
+                        // The base values are like 10, 11... they are effectively e.g. 1.0 * 10^x
+                        // Standard E24 is 1.0, 1.1... but array is 10, 11. 
+                        // So actual value is v * 10^(exp-1) roughly? 
+                        // Let's treat base values as 10..91. To get 1.0..9.1, divide by 10.
+                        const realC = (v / 10) * mult; 
+                        if (realC > targetC) {
+                            values.push(realC);
+                        }
+                    }
+                }
+
+                // Brute force pairs
+                let bestC1 = 0, bestC2 = 0;
+                let bestError = Infinity;
+                let bestActual = 0;
+
+                for (let i = 0; i < values.length; i++) {
+                    for (let j = i; j < values.length; j++) { // j=i allows C1=C2
+                        const c1 = values[i];
+                        const c2 = values[j];
+                        const series = (c1 * c2) / (c1 + c2);
+                        const err = Math.abs((series - targetC) / targetC);
+
+                        if (err < bestError) {
+                            bestError = err;
+                            bestC1 = c1;
+                            bestC2 = c2;
+                            bestActual = series;
+                        }
+                    }
+                }
+
+                // Render
+                document.getElementById('res-c1-best').textContent = this.formatCap(bestC1);
+                document.getElementById('res-c2-best').textContent = this.formatCap(bestC2);
+                document.getElementById('res-actual').textContent = this.formatCap(bestActual);
+                document.getElementById('res-error').textContent = `Error: ${(bestError * 100).toFixed(2)}%`;
+            },
+
+            formatCap(val) {
+                if (val < 1e-9) {
+                    return (val * 1e12).toFixed(0) + ' pF';
+                } else if (val < 1e-6) {
+                    return (val * 1e9).toFixed(2) + ' nF';
+                } else if (val < 1e-3) {
+                    return (val * 1e6).toFixed(2) + ' μF';
+                } else {
+                    return (val * 1e3).toFixed(2) + ' mF';
+                }
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

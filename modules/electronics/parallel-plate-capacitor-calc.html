@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Parallel Plate Capacitor Calculator - Calculate capacitance based on dimensions and dielectric material.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2220%22 y=%2230%22 width=%2260%22 height=%2210%22 fill=%22%23f59e0b%22/><rect x=%2220%22 y=%2260%22 width=%2260%22 height=%2210%22 fill=%22%23f59e0b%22/><rect x=%2220%22 y=%2240%22 width=%2260%22 height=%2220%22 fill=%22%2306b6d4%22 opacity=%220.5%22/></svg>">
+    
+    <title>平板电容容量在线计算器 | Plate Cap Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#06b6d4', hover: '#0891b2' }, /* Cyan */
+                        secondary: { DEFAULT: '#f59e0b', hover: '#d97706' }, /* Amber */
+                        bg: { light: '#ecfeff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-cyan-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-16 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .unit-select {
+                @apply absolute right-1 top-1 bottom-1 w-14 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-none rounded cursor-pointer focus:ring-0 text-center;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all text-sm;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .component-fill { fill: currentColor; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    Cap
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">平板电容容量在线计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Parallel Plate Capacitor Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="glass rounded-2xl p-5 shadow-sm border-t-4 border-t-cyan-500">
+                
+                <h3 class="text-sm font-bold text-slate-500 uppercase mb-4 flex items-center gap-2">
+                    <i class="fa fa-sliders"></i> <span data-i18n="h_inputs">输入参数</span>
+                </h3>
+
+                <div class="space-y-4">
+                    <!-- Global Unit -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_unit">尺寸单位 (Unit):</label>
+                        <select id="inp-unit" class="input-field cursor-pointer" onchange="App.calculate()">
+                            <option value="1e-3" selected data-i18n="opt_mm">毫米 (mm)</option>
+                            <option value="1e-2" data-i18n="opt_cm">厘米 (cm)</option>
+                            <option value="1" data-i18n="opt_m">米 (m)</option>
+                            <option value="2.54e-2" data-i18n="opt_inch">英寸 (inch)</option>
+                        </select>
+                    </div>
+
+                    <!-- Material -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_material">绝缘介质 (Dielectric):</label>
+                        <select id="inp-material" class="input-field cursor-pointer mb-2" onchange="App.setDielectric()">
+                            <option value="1.0006" data-i18n="mat_air">空气 (Air) [1.0]</option>
+                            <option value="2.3" selected data-i18n="mat_pe">低/高密度聚乙烯 (Polyethylene) [2.3]</option>
+                            <option value="2.1" data-i18n="mat_teflon">特氟龙 (Teflon) [2.1]</option>
+                            <option value="2.5" data-i18n="mat_ps">聚苯乙烯 (Polystyrene) [2.5]</option>
+                            <option value="3.0" data-i18n="mat_polyester">聚酯 (Polyester) [3.0]</option>
+                            <option value="3.5" data-i18n="mat_paper">纸 (Paper) [3.5]</option>
+                            <option value="5.0" data-i18n="mat_mica">云母 (Mica) [5.0]</option>
+                            <option value="7.5" data-i18n="mat_glass">玻璃 (Glass) [7.5]</option>
+                            <option value="custom" data-i18n="mat_custom">自定义 (Custom)</option>
+                        </select>
+                        
+                        <div class="input-group">
+                            <span class="absolute left-3 text-xs font-bold text-slate-400 pointer-events-none">k (DC) =</span>
+                            <input type="number" id="inp-dc" class="input-field pl-16" value="2.3" oninput="App.calculate()">
+                        </div>
+                    </div>
+
+                    <!-- N -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_n">对板数 (Number of Plates, N):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-n" class="input-field" value="2" min="2" step="1" oninput="App.calculate()">
+                            <span class="unit-label">pcs</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Distance -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_d">板间距 (Distance, D):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-d" class="input-field" value="1.0" oninput="App.calculate()">
+                            <span class="unit-label" id="unit-label-d">mm</span>
+                        </div>
+                    </div>
+
+                    <!-- Area (L x W) -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_l">长度 (L):</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-l" class="input-field pr-8" value="10" oninput="App.calculate()">
+                                <span class="unit-label" id="unit-label-l">mm</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_w">宽度 (W):</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-w" class="input-field pr-8" value="10" oninput="App.calculate()">
+                                <span class="unit-label" id="unit-label-w">mm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="App.calculate()" class="btn-primary w-full mt-2">
+                        <span data-i18n="btn_calc">计算电容</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result / Diagram -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Result Box -->
+            <div class="glass rounded-2xl shadow-sm border-t-4 border-t-amber-500 p-6 flex flex-col justify-center min-h-[160px]">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 text-center" data-i18n="h_result">计算结果</h3>
+                
+                <div class="text-center">
+                    <div class="text-xs text-amber-600 font-bold mb-1 uppercase" data-i18n="lbl_res_c">电容容量 (Capacitance C)</div>
+                    <div id="res-c" class="text-4xl md:text-5xl font-mono font-bold text-cyan-600 dark:text-cyan-400 break-all my-2">-</div>
+                    <div class="text-xs text-slate-400 font-mono" id="res-area-calc">Area: - m²</div>
+                </div>
+            </div>
+
+            <!-- Diagram -->
+            <div class="glass rounded-2xl p-6 flex flex-col justify-center items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 h-[300px]">
+                <div class="w-full flex justify-between items-center mb-2 px-2">
+                    <span class="text-[10px] text-slate-400 uppercase font-bold" data-i18n="h_diagram">结构示意图</span>
+                    <span class="text-[10px] text-slate-400 font-mono" id="diag-n-label">N=2</span>
+                </div>
+                
+                <div id="canvas-container" class="w-full flex-grow relative overflow-hidden flex items-center justify-center">
+                    <!-- SVG rendered dynamically -->
+                    <svg id="cap-svg" viewBox="0 0 300 200" class="w-full h-full text-slate-600 dark:text-slate-300">
+                        <!-- Content via JS -->
+                    </svg>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">原理与公式</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <div class="bg-cyan-50 dark:bg-cyan-900/20 border-l-4 border-cyan-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-cyan-800 dark:text-cyan-200 mb-2 text-sm uppercase" data-i18n="h_formula">计算公式</h3>
+                        <div class="font-mono text-cyan-900 dark:text-cyan-100 text-sm overflow-x-auto space-y-2">
+                            <p>$$ C = \frac{\varepsilon_0 \cdot \varepsilon_r \cdot A \cdot (N-1)}{d} $$</p>
+                        </div>
+                        <ul class="list-disc list-inside text-[10px] mt-2 text-cyan-700/80 dark:text-cyan-300/80 space-y-1">
+                            <li data-i18n="var_e0">$\varepsilon_0$: 真空介电常数 ($8.854 \times 10^{-12} F/m$)</li>
+                            <li data-i18n="var_er">$\varepsilon_r$ (or k/DC): 相对介电常数</li>
+                            <li data-i18n="var_a">A: 重叠面积 ($L \times W$), 单位 $m^2$</li>
+                            <li data-i18n="var_d">d: 板间距, 单位 m</li>
+                            <li data-i18n="var_n">N: 极板总数 (对板数)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <p data-i18n="desc_p1">
+                        平板电容器的电容量与极板的重叠面积成正比，与板间距离成反比，并取决于介质的性质。增加极板数量 N 相当于并联了 $(N-1)$ 个电容器，从而成倍增加总容量。
+                    </p>
+                    <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded text-xs">
+                        <strong data-i18n="note_title">注意：</strong>
+                        <span data-i18n="note_text">计算结果为理想值，实际制作中还需考虑边缘效应、引线电感及介质损耗等因素。</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Plate Capacitor Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "平板电容容量在线计算器", subtitle: "Parallel Plate Capacitor Calculator",
+                h_inputs: "输入参数", lbl_unit: "尺寸单位:",
+                opt_mm: "毫米 (mm)", opt_cm: "厘米 (cm)", opt_m: "米 (m)", opt_inch: "英寸 (inch)",
+                lbl_material: "绝缘介质:", 
+                mat_air: "空气 (Air) [1.0]", mat_pe: "低/高密度聚乙烯 (Polyethylene) [2.3]",
+                mat_teflon: "特氟龙 (Teflon) [2.1]", mat_ps: "聚苯乙烯 (Polystyrene) [2.5]",
+                mat_polyester: "聚酯 (Polyester) [3.0]", mat_paper: "纸 (Paper) [3.5]",
+                mat_mica: "云母 (Mica) [5.0]", mat_glass: "玻璃 (Glass) [7.5]",
+                mat_custom: "自定义 (Custom)",
+                lbl_n: "对板数 (N):", lbl_d: "板间距 (D):", lbl_l: "长度 (重叠 L):", lbl_w: "宽度 (重叠 W):",
+                btn_calc: "计算电容",
+                h_result: "计算结果", lbl_res_c: "电容容量 (C)",
+                h_diagram: "结构示意图",
+                guide_title: "原理与公式",
+                h_formula: "计算公式",
+                var_e0: "$\\varepsilon_0$: 真空介电常数 ($8.854 \\times 10^{-12} F/m$)",
+                var_er: "$\\varepsilon_r$ (or k/DC): 相对介电常数",
+                var_a: "A: 重叠面积 ($L \\times W$), 单位 $m^2$",
+                var_d: "d: 板间距, 单位 m",
+                var_n: "N: 极板总数 (对板数)",
+                desc_p1: "平板电容器的电容量与极板的重叠面积成正比，与板间距离成反比，并取决于介质的性质。增加极板数量 N 相当于并联了 (N-1) 个电容器，从而成倍增加总容量。",
+                note_title: "注意：", note_text: "计算结果为理想值，实际制作中还需考虑边缘效应、引线电感及介质损耗等因素。"
+            },
+            'en': {
+                title: "Parallel Plate Capacitor Calc", subtitle: "Capacitance Calculation Tool",
+                h_inputs: "Parameters", lbl_unit: "Dimensions Unit:",
+                opt_mm: "Millimeters (mm)", opt_cm: "Centimeters (cm)", opt_m: "Meters (m)", opt_inch: "Inches",
+                lbl_material: "Dielectric Material:", 
+                mat_air: "Air [1.0]", mat_pe: "Polyethylene [2.3]",
+                mat_teflon: "Teflon [2.1]", mat_ps: "Polystyrene [2.5]",
+                mat_polyester: "Polyester [3.0]", mat_paper: "Paper [3.5]",
+                mat_mica: "Mica [5.0]", mat_glass: "Glass [7.5]",
+                mat_custom: "Custom",
+                lbl_n: "Number of Plates (N):", lbl_d: "Distance (D):", lbl_l: "Length (Overlap L):", lbl_w: "Width (Overlap W):",
+                btn_calc: "Calculate C",
+                h_result: "Result", lbl_res_c: "Capacitance (C)",
+                h_diagram: "Structure Diagram",
+                guide_title: "Theory & Formula",
+                h_formula: "Formula",
+                var_e0: "$\\varepsilon_0$: Vacuum Permittivity ($8.854 \\times 10^{-12} F/m$)",
+                var_er: "$\\varepsilon_r$ (or k/DC): Relative Permittivity",
+                var_a: "A: Overlap Area ($L \\times W$), unit $m^2$",
+                var_d: "d: Distance between plates, unit m",
+                var_n: "N: Number of plates",
+                desc_p1: "Capacitance is directly proportional to the overlap area of the plates and the dielectric constant, and inversely proportional to the distance between plates. Increasing plate count N effectively puts (N-1) capacitors in parallel.",
+                note_title: "Note:", note_text: "Results are ideal. Real-world factors like edge effects, lead inductance, and dielectric loss are not included."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            EPSILON_0: 8.854e-12, // F/m
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                this.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                    this.updateUnitLabels();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            updateUnitLabels() {
+                const unitSelect = document.getElementById('inp-unit');
+                // Get the text content of selected option but just the symbol part roughly
+                // Or just hardcode logic based on value
+                const val = unitSelect.value;
+                let symbol = 'mm';
+                if(val == '1') symbol = 'm';
+                if(val == '1e-2') symbol = 'cm';
+                if(val.includes('2.54')) symbol = 'in';
+                
+                document.getElementById('unit-label-d').textContent = symbol;
+                document.getElementById('unit-label-l').textContent = symbol;
+                document.getElementById('unit-label-w').textContent = symbol;
+            },
+
+            setDielectric() {
+                const mat = document.getElementById('inp-material').value;
+                const dcInput = document.getElementById('inp-dc');
+                if (mat !== 'custom') {
+                    dcInput.value = mat;
+                } else {
+                    dcInput.focus();
+                }
+                this.calculate();
+            },
+
+            calculate() {
+                this.updateUnitLabels();
+
+                const unitScale = parseFloat(document.getElementById('inp-unit').value);
+                const dc = parseFloat(document.getElementById('inp-dc').value);
+                const n = parseInt(document.getElementById('inp-n').value) || 2;
+                const d = parseFloat(document.getElementById('inp-d').value);
+                const l = parseFloat(document.getElementById('inp-l').value);
+                const w = parseFloat(document.getElementById('inp-w').value);
+
+                const resC = document.getElementById('res-c');
+                const resArea = document.getElementById('res-area-calc');
+
+                if (dc <= 0 || n < 2 || d <= 0 || l <= 0 || w <= 0) {
+                    resC.textContent = '-';
+                    return;
+                }
+
+                // Convert dims to meters
+                const d_m = d * unitScale;
+                const l_m = l * unitScale;
+                const w_m = w * unitScale;
+
+                // Area in m^2
+                const A = l_m * w_m;
+
+                // Formula: C = e0 * er * A * (N-1) / d
+                const C = (this.EPSILON_0 * dc * A * (n - 1)) / d_m;
+
+                // Format Result
+                resC.textContent = this.formatCap(C);
+                resArea.textContent = `Area A: ${A.toExponential(2)} m², Count N: ${n}`;
+
+                this.drawDiagram(n);
+            },
+
+            formatCap(val) {
+                if (val < 1e-9) return (val * 1e12).toFixed(2) + ' pF';
+                if (val < 1e-6) return (val * 1e9).toFixed(3) + ' nF';
+                if (val < 1e-3) return (val * 1e6).toFixed(3) + ' μF';
+                return (val * 1e3).toFixed(3) + ' mF';
+            },
+
+            drawDiagram(n) {
+                const svg = document.getElementById('cap-svg');
+                const w = 300, h = 200;
+                
+                // Clear SVG
+                while (svg.firstChild) { svg.removeChild(svg.firstChild); }
+
+                // Determine scale based on N (max visual N=10 to keep sane)
+                const visN = Math.min(n, 8); 
+                const plateH = 8;
+                const gapH = 12;
+                const totalStackH = visN * plateH + (visN-1) * gapH;
+                const startY = (h - totalStackH) / 2;
+                
+                // Draw Dielectric blocks first (between plates)
+                for (let i = 0; i < visN - 1; i++) {
+                    const y = startY + plateH + i*(plateH+gapH);
+                    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    rect.setAttribute("x", "60");
+                    rect.setAttribute("y", y);
+                    rect.setAttribute("width", "180");
+                    rect.setAttribute("height", gapH);
+                    rect.setAttribute("fill", "#06b6d4"); // Cyan
+                    rect.setAttribute("opacity", "0.3");
+                    svg.appendChild(rect);
+                }
+
+                // Draw Plates
+                for (let i = 0; i < visN; i++) {
+                    const y = startY + i*(plateH+gapH);
+                    const isEven = i % 2 === 0;
+                    
+                    // Plate Rect
+                    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    rect.setAttribute("x", "60");
+                    rect.setAttribute("y", y);
+                    rect.setAttribute("width", "180");
+                    rect.setAttribute("height", plateH);
+                    rect.setAttribute("fill", "#f59e0b"); // Amber
+                    rect.setAttribute("stroke", "none");
+                    svg.appendChild(rect);
+
+                    // Connector Lines
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    let pathD = "";
+                    if (isEven) {
+                        // Connect left
+                        pathD = `M 60 ${y+plateH/2} L 40 ${y+plateH/2} L 40 ${startY + plateH/2}`; // Join to top rail stub
+                    } else {
+                        // Connect right
+                        pathD = `M 240 ${y+plateH/2} L 260 ${y+plateH/2} L 260 ${startY + plateH + gapH + plateH/2}`; // Join to bot rail stub?
+                    }
+                    line.setAttribute("d", pathD);
+                    line.setAttribute("stroke", isEven ? "#f59e0b" : "#f59e0b");
+                    line.setAttribute("stroke-width", "2");
+                    line.setAttribute("fill", "none");
+                    // svg.appendChild(line); // Simplified: visual only, hard to route all perfectly in generic logic
+                }
+                
+                // Add simplified terminals visual
+                // Left Terminal (Pos)
+                const t1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                t1.setAttribute("x1", "40"); t1.setAttribute("y1", startY);
+                t1.setAttribute("x2", "40"); t1.setAttribute("y2", startY + totalStackH);
+                t1.setAttribute("stroke", "#f59e0b"); t1.setAttribute("stroke-width", "3");
+                svg.appendChild(t1);
+
+                // Right Terminal (Neg)
+                const t2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                t2.setAttribute("x1", "260"); t2.setAttribute("y1", startY);
+                t2.setAttribute("x2", "260"); t2.setAttribute("y2", startY + totalStackH);
+                t2.setAttribute("stroke", "#f59e0b"); t2.setAttribute("stroke-width", "3");
+                svg.appendChild(t2);
+
+                // Leads out
+                const l1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                l1.setAttribute("x1", "40"); l1.setAttribute("y1", h/2);
+                l1.setAttribute("x2", "10"); l1.setAttribute("y2", h/2);
+                l1.setAttribute("stroke", "#64748b"); l1.setAttribute("stroke-width", "2");
+                svg.appendChild(l1);
+
+                const l2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                l2.setAttribute("x1", "260"); l2.setAttribute("y1", h/2);
+                l2.setAttribute("x2", "290"); l2.setAttribute("y2", h/2);
+                l2.setAttribute("stroke", "#64748b"); l2.setAttribute("stroke-width", "2");
+                svg.appendChild(l2);
+
+                // Update Label
+                document.getElementById('diag-n-label').textContent = `N=${n}${n>8?'+':''}`;
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

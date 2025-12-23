@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Constant Current Source Calculator - Design BJT current sources and check power dissipation.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2240%22 stroke=%22%23f59e0b%22 stroke-width=%228%22 fill=%22none%22/><path d=%22M30,50 L70,50 M60,40 L70,50 L60,60%22 stroke=%22%23f59e0b%22 stroke-width=%228%22 fill=%22none%22/></svg>">
+    
+    <title>恒流源在线计算器 | Current Source Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#f59e0b', hover: '#d97706' }, /* Amber */
+                        secondary: { DEFAULT: '#6366f1', hover: '#4f46e5' }, /* Indigo */
+                        bg: { light: '#fffbeb', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-amber-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-12 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all text-sm;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .circuit-text { font-family: monospace; font-size: 11px; fill: currentColor; }
+            .component-fill { fill: currentColor; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    CC
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">恒流源在线计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Constant Current Source Design</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="glass rounded-2xl p-5 shadow-sm space-y-4 border-t-4 border-t-amber-500">
+                
+                <h3 class="text-sm font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                    <i class="fa fa-sliders"></i> <span data-i18n="h_inputs">输入参数 (1. Inputs)</span>
+                </h3>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_iout">希望的电流值 (Iout):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-iout" class="input-field" value="10" oninput="App.calculate()">
+                            <span class="unit-label">mA</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_ptot">Q1耗散功率 (Ptot):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-ptot" class="input-field" value="300" oninput="App.calculate()">
+                            <span class="unit-label">mW</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_e1">电源电压 (E1):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-e1" class="input-field" value="12" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button onclick="App.calculate()" class="btn-primary flex-1">
+                        <span data-i18n="btn_calc">计算</span>
+                    </button>
+                    <button onclick="App.reset()" class="btn-secondary text-red-500">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="lg:col-span-8 space-y-6">
+            
+            <div class="glass rounded-2xl shadow-sm border-t-4 border-t-slate-500 overflow-hidden flex flex-col h-full">
+                <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 dark:text-white text-sm" data-i18n="h_result">2. 电路图 & 3. 输出结果</h3>
+                    <div id="status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 hidden">OK</div>
+                </div>
+                
+                <div class="p-6 grid md:grid-cols-2 gap-8 items-center flex-grow">
+                    
+                    <!-- Circuit SVG -->
+                    <div class="flex items-center justify-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 aspect-square max-h-[300px] w-full" id="circuit-container">
+                        <svg viewBox="0 0 250 250" class="w-full h-full text-slate-600 dark:text-slate-300">
+                            <!-- Power Rail Top -->
+                            <line x1="50" y1="20" x2="200" y2="20" class="circuit-line" />
+                            <text x="125" y="15" class="circuit-text font-bold" text-anchor="middle">E1 (Vcc)</text>
+
+                            <!-- Ground Rail Bottom -->
+                            <line x1="50" y1="230" x2="200" y2="230" class="circuit-line" />
+                            <text x="125" y="245" class="circuit-text font-bold" text-anchor="middle">GND</text>
+
+                            <!-- R1 (Top Left) -->
+                            <line x1="80" y1="20" x2="80" y2="50" class="circuit-line" />
+                            <rect x="70" y="50" width="20" height="40" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                            <text x="60" y="75" class="circuit-text font-bold text-amber-600 dark:text-amber-400" text-anchor="end">R1</text>
+                            <line x1="80" y1="90" x2="80" y2="120" class="circuit-line" />
+
+                            <!-- R2 (Bottom Left) -->
+                            <line x1="80" y1="120" x2="80" y2="150" class="circuit-line" />
+                            <rect x="70" y="150" width="20" height="40" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                            <text x="60" y="175" class="circuit-text font-bold text-amber-600 dark:text-amber-400" text-anchor="end">R2</text>
+                            <line x1="80" y1="190" x2="80" y2="230" class="circuit-line" />
+
+                            <!-- Base Connection -->
+                            <line x1="80" y1="120" x2="140" y2="120" class="circuit-line" />
+
+                            <!-- NPN Transistor Q1 -->
+                            <circle cx="155" cy="120" r="18" class="circuit-line opacity-20" />
+                            <line x1="140" y1="110" x2="140" y2="130" class="circuit-line" stroke-width="3" /> <!-- Base Plate -->
+                            <line x1="140" y1="120" x2="150" y2="110" class="circuit-line" /> <!-- Collector Leg -->
+                            <line x1="140" y1="120" x2="150" y2="130" class="circuit-line" /> <!-- Emitter Leg -->
+                            <line x1="150" y1="130" x2="145" y2="133" class="circuit-line" /> <!-- Arrow -->
+                            <line x1="150" y1="130" x2="153" y2="125" class="circuit-line" />
+                            <text x="175" y="125" class="circuit-text font-bold">Q1</text>
+
+                            <!-- Collector Path (Load) -->
+                            <line x1="150" y1="110" x2="150" y2="80" class="circuit-line" />
+                            <rect x="140" y="40" width="20" height="40" stroke-dasharray="2" class="circuit-line bg-slate-100 fill-slate-100 dark:fill-slate-800" />
+                            <text x="150" y="65" class="circuit-text text-[8px]" text-anchor="middle">LOAD</text>
+                            <line x1="150" y1="40" x2="150" y2="20" class="circuit-line" />
+                            
+                            <!-- Emitter Resistor R3 -->
+                            <line x1="150" y1="130" x2="150" y2="150" class="circuit-line" />
+                            <rect x="140" y="150" width="20" height="40" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                            <text x="170" y="175" class="circuit-text font-bold text-amber-600 dark:text-amber-400" text-anchor="start">R3</text>
+                            <line x1="150" y1="190" x2="150" y2="230" class="circuit-line" />
+
+                            <!-- Iout Arrow -->
+                            <line x1="180" y1="50" x2="180" y2="80" class="circuit-line text-blue-500" />
+                            <path d="M177,75 L180,80 L183,75" class="circuit-line text-blue-500" />
+                            <text x="190" y="70" class="circuit-text font-bold text-blue-500">Iout</text>
+                        </svg>
+                    </div>
+
+                    <!-- Result List -->
+                    <div class="space-y-3">
+                        
+                        <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-100 dark:border-slate-700">
+                            <span class="text-xs text-slate-500 font-bold">R1 =</span>
+                            <span id="res-r1" class="font-mono font-bold text-amber-600 dark:text-amber-400">- kΩ</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-100 dark:border-slate-700">
+                            <span class="text-xs text-slate-500 font-bold">R2 =</span>
+                            <span id="res-r2" class="font-mono font-bold text-amber-600 dark:text-amber-400">- kΩ</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-100 dark:border-slate-700">
+                            <span class="text-xs text-slate-500 font-bold">R3 (Re) =</span>
+                            <span id="res-r3" class="font-mono font-bold text-amber-600 dark:text-amber-400">- kΩ</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-100 dark:border-slate-700">
+                            <span class="text-xs text-slate-500 font-bold" title="Output Impedance (Early Voltage approx)">Ro (Zout) ≈</span>
+                            <span id="res-ro" class="font-mono font-bold text-slate-600 dark:text-slate-300">- kΩ</span>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-slate-500 font-bold">Px (Q1 Power) =</span>
+                                <span id="res-px" class="font-mono font-bold text-slate-800 dark:text-white">- mW</span>
+                            </div>
+                            <div id="warning-msg" class="text-[10px] text-red-500 mt-1 font-bold hidden">
+                                <i class="fa fa-exclamation-triangle"></i> 警告: 功耗过高! (> Ptot)
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">设计原理</span>
+            </h2>
+            
+            <div class="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 space-y-6 leading-relaxed text-sm">
+                <p data-i18n="desc_p1">
+                    这是一个经典的**分压偏置式恒流源**。通过 R1 和 R2 设定基极电压 $V_B$，进而固定发射极电压 $V_E = V_B - 0.7V$。由于 $V_E$ 固定，流过 R3 的电流 $I_E = V_E / R3$ 也就恒定。因为 $I_C \approx I_E$，所以流过负载的电流 $I_{out}$ 保持恒定，与负载电阻变化（在一定范围内）无关。
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Formulas -->
+                    <div class="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-amber-800 dark:text-amber-200 mb-2 text-sm uppercase" data-i18n="h_formula">计算逻辑</h3>
+                        <ul class="list-disc list-inside text-xs text-amber-700 dark:text-amber-300 space-y-1 font-mono">
+                            <li>V_R3 (Target) ≈ 1.2V (Stability)</li>
+                            <li>R3 = V_R3 / Iout</li>
+                            <li>V_Base = V_R3 + 0.7V</li>
+                            <li>I_div ≈ Iout / 10 (Stiff divider)</li>
+                            <li>R2 = V_Base / I_div</li>
+                            <li>R1 = (E1 - V_Base) / I_div</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-slate-100 dark:bg-slate-800 border-l-4 border-slate-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm uppercase" data-i18n="h_power">功耗分析</h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-400" data-i18n="desc_power_p">
+                            <strong>Px (Q1 Power):</strong> 计算的是在<strong>最坏情况</strong>（负载短路）下晶体管的功耗。<br>
+                            $$ P_x = (E1 - V_{R3}) \cdot I_{out} $$<br>
+                            如果实际负载有电阻，Q1 的压降会减小，实际功耗会低于此值。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Constant Current Source Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "恒流源在线计算器", subtitle: "BJT 恒流源设计工具",
+                h_inputs: "输入参数 (1. Inputs)",
+                lbl_iout: "希望的电流值 (Iout):", lbl_ptot: "Q1耗散功率 (Ptot):", lbl_e1: "电源电压 (E1):",
+                btn_calc: "计算",
+                h_result: "2. 电路图 & 3. 输出结果",
+                guide_title: "设计原理",
+                desc_p1: "这是一个经典的**分压偏置式恒流源**。通过 R1 和 R2 设定基极电压 VB，进而固定发射极电压 VE = VB - 0.7V。由于 VE 固定，流过 R3 的电流 IE = VE / R3 也就恒定。因为 IC ≈ IE，所以流过负载的电流 Iout 保持恒定。",
+                h_formula: "计算逻辑", h_power: "功耗分析",
+                desc_power_p: "<strong>Px (Q1 Power):</strong> 计算的是在<strong>最坏情况</strong>（负载短路）下晶体管的功耗。<br>$$ P_x = (E1 - V_{R3}) \cdot I_{out} $$<br>如果实际负载有电阻，Q1 的压降会减小，实际功耗会低于此值。"
+            },
+            'en': {
+                title: "Constant Current Calculator", subtitle: "BJT Current Source Design",
+                h_inputs: "1. Inputs",
+                lbl_iout: "Target Current (Iout):", lbl_ptot: "Q1 Max Power (Ptot):", lbl_e1: "Supply Voltage (E1):",
+                btn_calc: "Calculate",
+                h_result: "2. Circuit & 3. Results",
+                guide_title: "Design Theory",
+                desc_p1: "This is a classic **Voltage Divider Biased Current Sink**. R1 and R2 set the Base voltage VB, fixing the Emitter voltage VE = VB - 0.7V. Since VE is fixed, current through R3 is constant. As IC ≈ IE, the output current Iout remains constant regardless of load changes.",
+                h_formula: "Calculation Logic", h_power: "Power Analysis",
+                desc_power_p: "<strong>Px (Q1 Power):</strong> Calculates the transistor power dissipation in the **worst-case scenario** (shorted load).<br>$$ P_x = (E1 - V_{R3}) \cdot I_{out} $$<br>If the actual load has resistance, the voltage drop across Q1 will decrease, and actual power dissipation will be lower than this value."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                this.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            calculate() {
+                const Iout_mA = parseFloat(document.getElementById('inp-iout').value) || 0;
+                const Ptot_mW = parseFloat(document.getElementById('inp-ptot').value) || 0;
+                const E1 = parseFloat(document.getElementById('inp-e1').value) || 0;
+
+                const resR1 = document.getElementById('res-r1');
+                const resR2 = document.getElementById('res-r2');
+                const resR3 = document.getElementById('res-r3');
+                const resRo = document.getElementById('res-ro');
+                const resPx = document.getElementById('res-px');
+                const badge = document.getElementById('status-badge');
+                const warn = document.getElementById('warning-msg');
+
+                if (Iout_mA <= 0 || E1 <= 0) {
+                    return;
+                }
+
+                // Logic
+                const I_target = Iout_mA / 1000; // A
+                
+                // Design Choice: V_R3 (Emitter Voltage)
+                // Rule of thumb: V_R3 approx 10% of Vcc or ~1-2V for thermal stability
+                // Let's use V_R3 = 1.2V (enough to overcome Vbe changes) or 0.1*E1 if E1 is small.
+                // Let's stick to a robust 1.2V base.
+                let V_R3 = 1.2;
+                if (E1 < 3) V_R3 = 0.5; // Low voltage adjustment
+
+                // 1. Calculate R3
+                const R3 = V_R3 / I_target; // Ohms
+
+                // 2. Base Voltage
+                const V_B = V_R3 + 0.7; // Vbe approx 0.7V
+
+                // 3. Divider Current
+                // Rule of thumb: I_div = 10 * I_Base. 
+                // I_Base = I_out / Beta. Assume Beta = 100.
+                const Beta = 100;
+                const I_B = I_target / Beta;
+                const I_div = 10 * I_B;
+
+                // 4. Calculate R1, R2
+                // R2 = V_B / I_div
+                const R2 = V_B / I_div;
+                // R1 = (E1 - V_B) / I_div
+                const R1 = (E1 - V_B) / I_div;
+
+                // 5. Power Dissipation Px (Worst Case: Short Load)
+                // V_CE = E1 - V_R3 (Load = 0 Ohm)
+                const V_CE_max = E1 - V_R3;
+                const Px_W = V_CE_max * I_target;
+                const Px_mW = Px_W * 1000;
+
+                // 6. Ro (Output Impedance)
+                // Simple approx: ro = Va / Ic. Va (Early Voltage) approx 100V.
+                const Va = 100; 
+                const Ro = Va / I_target; // Ohms
+
+                // Update UI
+                resR1.textContent = (R1 / 1000).toFixed(2) + ' kΩ';
+                resR2.textContent = (R2 / 1000).toFixed(2) + ' kΩ';
+                resR3.textContent = (R3 / 1000).toFixed(3) + ' kΩ'; // R3 is often small, show more decimals
+                resRo.textContent = (Ro / 1000).toFixed(1) + ' kΩ';
+                resPx.textContent = Px_mW.toFixed(1) + ' mW';
+
+                // Checks
+                if (Px_mW > Ptot_mW) {
+                    badge.textContent = "WARNING";
+                    badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700";
+                    badge.classList.remove('hidden');
+                    warn.classList.remove('hidden');
+                    resPx.classList.add('text-red-600');
+                } else {
+                    badge.textContent = "OK";
+                    badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700";
+                    badge.classList.remove('hidden');
+                    warn.classList.add('hidden');
+                    resPx.classList.remove('text-red-600');
+                }
+            },
+
+            reset() {
+                document.getElementById('inp-iout').value = 10;
+                document.getElementById('inp-ptot').value = 300;
+                document.getElementById('inp-e1').value = 12;
+                this.calculate();
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="fun">
+    <meta name="icon" content="🎲">
+    <meta name="description" content="Lucky Wheel Pro - A customizable random picker wheel with probability control.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎡</text></svg>">
+    
+    <title>Lucky Wheel Pro | 幸运大转盘专业版</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#3b82f6', hover: '#2563eb' },
+                        secondary: { DEFAULT: '#8b5cf6', hover: '#7c3aed' },
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f0f9ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-field {
+                @apply w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm;
+            }
+            .label-text {
+                @apply text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wide;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all;
+            }
+        }
+        
+        /* Custom Wheel Styles */
+        #wheel-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            aspect-ratio: 1/1;
+        }
+        #canvas {
+            width: 100%;
+            height: 100%;
+            transition: transform 4s cubic-bezier(0.2, 0.8, 0.2, 0.99);
+            border-radius: 50%;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.2);
+        }
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 50px;
+            z-index: 20;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-violet-300 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20">
+                    <i class="fa fa-futbol-o"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">Lucky Wheel Pro</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">自定义概率抽奖工具</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <!-- Language Selector -->
+                <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文</option>
+                    <option value="en">🇺🇸 English</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <!-- Left Column: Inputs & Config -->
+            <main class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-lg overflow-hidden border-t-4 border-t-blue-500 p-6 space-y-5 h-full">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                            <i class="fa fa-sliders text-blue-500"></i> <span data-i18n="h2_config">概率配置</span>
+                        </h2>
+                        <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300" id="total-prob-badge">Total: 100</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-12 gap-2 text-xs font-semibold text-slate-500 uppercase">
+                            <div class="col-span-7" data-i18n="th_name">奖项名称</div>
+                            <div class="col-span-3" data-i18n="th_weight">权重</div>
+                            <div class="col-span-2 text-center" data-i18n="th_action">操作</div>
+                        </div>
+
+                        <!-- Options List Container -->
+                        <div id="options-container" class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                            <!-- Dynamic Options generated by JS -->
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                        <button onclick="App.addOption()" class="btn-secondary w-full text-xs">
+                            <i class="fa fa-plus"></i> <span data-i18n="btn_add">添加选项</span>
+                        </button>
+                        <button onclick="App.resetOptions()" class="btn-secondary w-auto text-xs text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20">
+                            <i class="fa fa-refresh"></i> <span data-i18n="btn_reset">重置</span>
+                        </button>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30">
+                        <h3 class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-3" data-i18n="h3_advanced">高级设置</h3>
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm text-slate-600 dark:text-slate-300" data-i18n="lbl_duration">旋转时长 (秒)</label>
+                            <input type="range" id="duration-range" min="2" max="10" value="4" class="w-24 accent-indigo-500" oninput="document.getElementById('duration-val').textContent = this.value + 's'">
+                            <span id="duration-val" class="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">4s</span>
+                        </div>
+                        <div class="flex items-center justify-between mt-2">
+                             <label class="text-sm text-slate-600 dark:text-slate-300" data-i18n="lbl_spins">转动圈数</label>
+                             <select id="spins-select" class="bg-transparent text-xs font-bold text-indigo-600 dark:text-indigo-400 focus:outline-none text-right">
+                                 <option value="3">3</option>
+                                 <option value="5" selected>5</option>
+                                 <option value="8">8</option>
+                                 <option value="10">10</option>
+                             </select>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right Column: Wheel & Results -->
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-3xl shadow-xl overflow-hidden min-h-[500px] flex flex-col items-center justify-center p-8 relative">
+                    
+                    <!-- Result Modal / Overlay -->
+                    <div id="result-overlay" class="absolute inset-0 z-30 bg-white/95 dark:bg-slate-900/95 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300">
+                         <div class="text-center animate-fade-in p-6">
+                            <div class="text-6xl mb-4">🎉</div>
+                            <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2" data-i18n="res_congrats">恭喜获得</h2>
+                            <div id="winner-name" class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 mb-8">
+                                WINNER
+                            </div>
+                            <button onclick="App.closeResult()" class="btn-primary px-8" data-i18n="btn_again">
+                                再抽一次
+                            </button>
+                         </div>
+                    </div>
+
+                    <!-- Wheel Display -->
+                    <div class="relative w-full flex flex-col items-center justify-center gap-8">
+                        
+                        <div id="wheel-container">
+                            <!-- CSS Arrow Pointer -->
+                            <div class="pointer">
+                                <svg viewBox="0 0 40 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20 50L0 0H40L20 50Z" fill="#ef4444" stroke="white" stroke-width="2"/>
+                                    <circle cx="20" cy="5" r="3" fill="white"/>
+                                </svg>
+                            </div>
+                            
+                            <!-- Canvas Wheel -->
+                            <canvas id="canvas" width="800" height="800"></canvas>
+                            
+                            <!-- Center Decoration -->
+                            <div class="center-circle shadow-inner dark:bg-slate-800 dark:text-white">
+                                <i class="fa fa-star text-yellow-400"></i>
+                            </div>
+                        </div>
+
+                        <!-- Action Area -->
+                        <div class="flex flex-col items-center gap-4 w-full max-w-xs">
+                            <button id="spin-btn" onclick="App.spin()" class="btn-primary w-full text-lg py-3 rounded-2xl shadow-blue-500/40 hover:shadow-blue-500/50">
+                                <span class="tracking-wider" data-i18n="btn_start">开始抽奖</span>
+                            </button>
+                            <p class="text-xs text-slate-400 text-center">
+                                <i class="fa fa-info-circle mr-1"></i> <span data-i18n="hint_click">点击上方按钮开始，结果由概率决定</span>
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+                
+                <!-- History Log -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 px-2" data-i18n="h4_history">最近中奖记录</h4>
+                    <div id="history-list" class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                        <div class="flex-shrink-0 text-xs text-slate-400 italic px-2" data-i18n="no_history">暂无记录...</div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Guide Section (Replicated & Adapted) -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Feature Introduction -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">功能使用指南</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_prob">🎯 概率权重设置</h3>
+                                <p data-i18n="guide_p_prob">通过设置“权重”数值来控制中奖概率。数值越大，扇区面积越大，中奖几率越高。例如：选项A权重为1，选项B权重为9，则B的中奖概率是90%。</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_custom">✏️ 自定义选项</h3>
+                                <p data-i18n="guide_p_custom">您可以无限添加奖品选项。点击“添加选项”即可新增条目，所有颜色会自动循环分配。不需要的选项可以随时点击右侧的“X”删除。</p>
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_fair">🛡️ 随机算法</h3>
+                                <p data-i18n="guide_p_fair">本工具使用浏览器原生的加密级随机数生成器，确保每次点击“开始抽奖”的结果都是完全随机且不可预测的。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tips / Q&A -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-lightbulb-o text-primary"></i> <span data-i18n="tips_title">常见问题与技巧</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30">
+                                <h4 class="font-bold text-indigo-800 dark:text-indigo-300 mb-2" data-i18n="tip_h_party">🎉 聚会游戏推荐</h4>
+                                <p class="text-sm text-indigo-700 dark:text-indigo-400" data-i18n="tip_p_party">将选项设置为“真心话”、“大冒险”、“罚酒一杯”等，让转盘成为聚会气氛的助推器。配合“高级设置”中的旋转时长，增加悬念感。</p>
+                            </div>
+
+                            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/30">
+                                <h4 class="font-bold text-blue-800 dark:text-blue-300 mb-2" data-i18n="tip_h_decision">🤔 决策困难症</h4>
+                                <p class="text-sm text-blue-700 dark:text-blue-400" data-i18n="tip_p_decision">中午吃什么？周末去哪玩？将所有候选方案输入转盘，并将权重设为相同（例如都设为1），把决定权交给命运。</p>
+                            </div>
+                            
+                            <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-100 dark:border-emerald-800/30">
+                                <h4 class="font-bold text-emerald-800 dark:text-emerald-300 mb-2" data-i18n="tip_h_save">💾 保存设置</h4>
+                                <p class="text-sm text-emerald-700 dark:text-emerald-400" data-i18n="tip_p_save">目前的配置会在页面刷新后重置。建议在配置好复杂的奖项列表后，保持页面开启，或截屏保存权重配比。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-slate-400 py-6">
+            <p>&copy; <span id="year"></span> Lucky Wheel Pro. Generated for Educational Purposes.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "Lucky Wheel Pro", subtitle: "自定义概率抽奖工具",
+                h2_config: "概率配置",
+                th_name: "奖项名称", th_weight: "权重", th_action: "操作",
+                btn_add: "添加选项", btn_reset: "重置",
+                h3_advanced: "高级设置", lbl_duration: "旋转时长 (秒)", lbl_spins: "转动圈数",
+                res_congrats: "恭喜获得", btn_again: "再抽一次",
+                btn_start: "开始抽奖", hint_click: "点击上方按钮开始，结果由概率决定",
+                h4_history: "最近中奖记录", no_history: "暂无记录...",
+                guide_title: "功能使用指南",
+                guide_h_prob: "🎯 概率权重设置", guide_p_prob: "通过设置“权重”数值来控制中奖概率。数值越大，扇区面积越大，中奖几率越高。",
+                guide_h_custom: "✏️ 自定义选项", guide_p_custom: "您可以无限添加奖品选项。点击“添加选项”即可新增条目，颜色自动分配。",
+                guide_h_fair: "🛡️ 随机算法", guide_p_fair: "本工具使用浏览器原生的加密级随机数生成器，确保结果完全随机不可预测。",
+                tips_title: "常见问题与技巧",
+                tip_h_party: "🎉 聚会游戏推荐", tip_p_party: "将选项设置为“真心话”、“大冒险”等，配合长旋转时间增加悬念。",
+                tip_h_decision: "🤔 决策困难症", tip_p_decision: "将所有候选方案（如午餐吃什么）权重设为相同，把决定权交给命运。",
+                tip_h_save: "💾 保存设置", tip_p_save: "目前的配置在刷新后会重置，建议保持页面开启。",
+                spin_loading: "抽奖中...",
+                alert_weight: "请至少设置一个有效的选项权重",
+                total_prefix: "总权重: "
+            },
+            'en': {
+                title: "Lucky Wheel Pro", subtitle: "Custom Probability Spinner",
+                h2_config: "Configuration",
+                th_name: "Option Name", th_weight: "Weight", th_action: "Action",
+                btn_add: "Add Option", btn_reset: "Reset",
+                h3_advanced: "Advanced", lbl_duration: "Duration (s)", lbl_spins: "Spin Count",
+                res_congrats: "Winner Is", btn_again: "Spin Again",
+                btn_start: "Spin Now", hint_click: "Click button to start. Result based on probability.",
+                h4_history: "Recent History", no_history: "No history yet...",
+                guide_title: "User Guide",
+                guide_h_prob: "🎯 Probability Weights", guide_p_prob: "Adjust 'Weight' to control winning chances. Higher weight means a larger slice and higher probability.",
+                guide_h_custom: "✏️ Custom Options", guide_p_custom: "Add unlimited options. Click 'Add Option' to insert new items. Colors are assigned automatically.",
+                guide_h_fair: "🛡️ Random Algorithm", guide_p_fair: "Uses browser native cryptographic random number generation for fair and unpredictable results.",
+                tips_title: "Tips & Tricks",
+                tip_h_party: "🎉 Party Games", tip_p_party: "Set options like 'Truth', 'Dare', or 'Drink'. Use longer spin durations for suspense.",
+                tip_h_decision: "🤔 Decision Making", tip_p_decision: "Can't decide what to eat? List all options with equal weight (e.g., 1) and let fate decide.",
+                tip_h_save: "💾 Saving Settings", tip_p_save: "Settings reset on refresh. Keep the tab open if you have a complex list.",
+                spin_loading: "Spinning...",
+                alert_weight: "Please set at least one valid weight.",
+                total_prefix: "Total Weight: "
+            }
+        };
+
+        // --- Configuration & State ---
+        const App = {
+            currentLang: 'zh-CN',
+            options: [
+                { id: 1, name: '特等奖', weight: 1, color: '#ef4444' }, 
+                { id: 2, name: '一等奖', weight: 5, color: '#f97316' }, 
+                { id: 3, name: '二等奖', weight: 10, color: '#f59e0b' },
+                { id: 4, name: '三等奖', weight: 20, color: '#3b82f6' },
+                { id: 5, name: '谢谢参与', weight: 50, color: '#94a3b8' }, 
+                { id: 6, name: '再来一次', weight: 14, color: '#8b5cf6' } 
+            ],
+            isSpinning: false,
+            currentRotation: 0,
+            colors: ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'],
+            
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                this.currentLang = urlParams.get('lang') || 'zh-CN';
+                
+                // Ensure valid lang
+                if (!i18nData[this.currentLang]) this.currentLang = 'zh-CN';
+                
+                const langSelector = document.getElementById('lang-selector');
+                if(langSelector) {
+                    langSelector.value = this.currentLang;
+                    langSelector.addEventListener('change', (e) => {
+                        this.currentLang = e.target.value;
+                        this.updateUrl(this.currentLang);
+                        this.translateUI(this.currentLang);
+                        // Also update option placeholders if needed, or re-render
+                        this.renderOptions(); 
+                    });
+                }
+                
+                // If URL param is missing, set it
+                if (!urlParams.has('lang')) {
+                    this.updateUrl(this.currentLang);
+                }
+
+                this.translateUI(this.currentLang);
+                this.renderOptions();
+                this.drawWheel();
+                this.handleTheme();
+                this.updateYear();
+                
+                window.addEventListener('resize', () => this.drawWheel());
+            },
+
+            updateUrl(lang) {
+                try {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', lang);
+                    window.history.pushState({}, '', newUrl);
+                } catch (e) {
+                    console.log('URL update failed:', e);
+                }
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en'];
+                document.documentElement.lang = lang;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) el.innerHTML = data[key];
+                });
+
+                // Update dynamic texts
+                const totalWeight = this.options.reduce((sum, opt) => sum + opt.weight, 0);
+                document.getElementById('total-prob-badge').textContent = data.total_prefix + totalWeight;
+                
+                // Update specific inputs placeholders if necessary
+                const nameInputs = document.querySelectorAll('input[placeholder="奖品名称"], input[placeholder="Option Name"]');
+                nameInputs.forEach(input => {
+                    input.placeholder = data.th_name;
+                });
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            // --- Option Management ---
+            renderOptions() {
+                const container = document.getElementById('options-container');
+                container.innerHTML = '';
+                
+                const langData = i18nData[this.currentLang];
+                let totalWeight = 0;
+                
+                this.options.forEach((opt, index) => {
+                    totalWeight += opt.weight;
+                    
+                    const div = document.createElement('div');
+                    div.className = 'grid grid-cols-12 gap-2 items-center animate-slide-up';
+                    div.innerHTML = `
+                        <div class="col-span-7">
+                            <input type="text" value="${opt.name}" 
+                                class="input-field text-xs h-8"
+                                onchange="App.updateOption(${index}, 'name', this.value)"
+                                placeholder="${langData.th_name}">
+                        </div>
+                        <div class="col-span-3">
+                            <input type="number" value="${opt.weight}" min="0"
+                                class="input-field text-xs h-8 font-mono text-center"
+                                onchange="App.updateOption(${index}, 'weight', this.value)">
+                        </div>
+                        <div class="col-span-2 flex justify-center">
+                            <button onclick="App.removeOption(${index})" 
+                                class="w-6 h-6 rounded-full bg-red-100 text-red-500 hover:bg-red-200 flex items-center justify-center transition"
+                                ${this.options.length <= 2 ? 'disabled style="opacity:0.3;cursor:not-allowed"' : ''}>
+                                <i class="fa fa-times text-[10px]"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+
+                document.getElementById('total-prob-badge').textContent = langData.total_prefix + totalWeight;
+                this.drawWheel();
+            },
+
+            addOption() {
+                const nextId = this.options.length > 0 ? Math.max(...this.options.map(o => o.id)) + 1 : 1;
+                const nextColor = this.colors[this.options.length % this.colors.length];
+                const langData = i18nData[this.currentLang];
+                const defaultName = this.currentLang === 'zh-CN' ? `选项 ${this.options.length + 1}` : `Option ${this.options.length + 1}`;
+                
+                this.options.push({
+                    id: nextId,
+                    name: defaultName,
+                    weight: 10,
+                    color: nextColor
+                });
+                this.renderOptions();
+            },
+
+            removeOption(index) {
+                if (this.options.length <= 2) return;
+                this.options.splice(index, 1);
+                this.renderOptions();
+            },
+
+            updateOption(index, field, value) {
+                if (field === 'weight') {
+                    value = parseFloat(value);
+                    if (isNaN(value) || value < 0) value = 0;
+                }
+                this.options[index][field] = value;
+                this.renderOptions();
+            },
+
+            resetOptions() {
+                const isCN = this.currentLang === 'zh-CN';
+                if(confirm(isCN ? '确定重置所有选项吗？' : 'Reset all options?')) {
+                    if(isCN) {
+                        this.options = [
+                            { id: 1, name: '特等奖', weight: 1, color: '#ef4444' },
+                            { id: 2, name: '幸运奖', weight: 10, color: '#3b82f6' },
+                            { id: 3, name: '参与奖', weight: 89, color: '#94a3b8' }
+                        ];
+                    } else {
+                        this.options = [
+                            { id: 1, name: 'Grand Prize', weight: 1, color: '#ef4444' },
+                            { id: 2, name: 'Lucky Prize', weight: 10, color: '#3b82f6' },
+                            { id: 3, name: 'Participant', weight: 89, color: '#94a3b8' }
+                        ];
+                    }
+                    this.renderOptions();
+                }
+            },
+
+            // --- Canvas & Logic ---
+            drawWheel() {
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width;
+                const height = canvas.height;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const radius = width / 2 - 10; 
+
+                ctx.clearRect(0, 0, width, height);
+                
+                const totalWeight = this.options.reduce((sum, opt) => sum + opt.weight, 0);
+                if (totalWeight === 0) return;
+
+                let startAngle = -Math.PI / 2; 
+
+                this.options.forEach((opt, i) => {
+                    const sliceAngle = (opt.weight / totalWeight) * 2 * Math.PI;
+                    const endAngle = startAngle + sliceAngle;
+
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                    ctx.closePath();
+                    
+                    ctx.fillStyle = this.options[i].color || this.colors[i % this.colors.length];
+                    ctx.fill();
+                    
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.stroke();
+
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(startAngle + sliceAngle / 2);
+                    ctx.textAlign = 'right';
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 36px "Inter", sans-serif';
+                    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(opt.name, radius - 40, 10);
+                    
+                    if (sliceAngle > 0.2) { 
+                        ctx.font = '24px "JetBrains Mono"';
+                        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                        ctx.fillText(((opt.weight / totalWeight) * 100).toFixed(1) + '%', radius - 40, 45);
+                    }
+                    
+                    ctx.restore();
+
+                    startAngle = endAngle;
+                });
+            },
+
+            spin() {
+                if (this.isSpinning) return;
+                
+                const langData = i18nData[this.currentLang];
+                const totalWeight = this.options.reduce((sum, opt) => sum + opt.weight, 0);
+                if (totalWeight <= 0) {
+                    alert(langData.alert_weight);
+                    return;
+                }
+
+                this.isSpinning = true;
+                const btn = document.getElementById('spin-btn');
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.innerHTML = `<i class="fa fa-spinner fa-spin"></i> ${langData.spin_loading}`;
+
+                const random = Math.random() * totalWeight;
+                let currentWeight = 0;
+                let winnerIndex = -1;
+                
+                for (let i = 0; i < this.options.length; i++) {
+                    currentWeight += this.options[i].weight;
+                    if (random <= currentWeight) {
+                        winnerIndex = i;
+                        break;
+                    }
+                }
+
+                let startAngle = 0;
+                for (let i = 0; i < winnerIndex; i++) {
+                    startAngle += (this.options[i].weight / totalWeight) * 360;
+                }
+                const sliceSize = (this.options[winnerIndex].weight / totalWeight) * 360;
+                const winnerCenterAngle = startAngle + (sliceSize / 2);
+                
+                const spins = parseInt(document.getElementById('spins-select').value) || 5;
+                const duration = document.getElementById('duration-range').value;
+                const randomOffset = (Math.random() - 0.5) * (sliceSize * 0.8); 
+                const targetRotation = (360 * spins) + (360 - winnerCenterAngle) + randomOffset;
+                
+                this.currentRotation += targetRotation;
+
+                const wheel = document.getElementById('canvas');
+                wheel.style.transition = `transform ${duration}s cubic-bezier(0.2, 0.8, 0.2, 0.99)`;
+                wheel.style.transform = `rotate(${this.currentRotation}deg)`;
+
+                setTimeout(() => {
+                    this.isSpinning = false;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btn.innerHTML = `<span class="tracking-wider">${langData.btn_start}</span>`;
+                    
+                    this.showResult(this.options[winnerIndex]);
+                }, duration * 1000);
+            },
+
+            showResult(winner) {
+                const overlay = document.getElementById('result-overlay');
+                const nameEl = document.getElementById('winner-name');
+                
+                nameEl.textContent = winner.name;
+                overlay.classList.remove('hidden');
+                void overlay.offsetWidth; 
+                overlay.classList.remove('opacity-0');
+                
+                this.addToHistory(winner);
+            },
+
+            closeResult() {
+                const overlay = document.getElementById('result-overlay');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 300);
+            },
+
+            addToHistory(winner) {
+                const list = document.getElementById('history-list');
+                const langData = i18nData[this.currentLang];
+                
+                if (list.children[0] && list.children[0].textContent === langData.no_history) {
+                    list.innerHTML = '';
+                }
+                // Also check English placeholder just in case
+                if (list.children[0] && list.children[0].textContent === i18nData['en'].no_history) {
+                    list.innerHTML = '';
+                }
+
+                const item = document.createElement('div');
+                item.className = 'flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm whitespace-nowrap animate-fade-in';
+                item.style.backgroundColor = winner.color || '#3b82f6';
+                
+                const time = new Date().toLocaleTimeString(this.currentLang === 'zh-CN' ? 'zh-CN' : 'en-US', {hour: '2-digit', minute:'2-digit', second: '2-digit'});
+                item.textContent = `${time} - ${winner.name}`;
+                
+                list.prepend(item);
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+</body>
+</html>

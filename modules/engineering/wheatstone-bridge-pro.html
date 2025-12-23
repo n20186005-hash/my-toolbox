@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Wheatstone Bridge Calculator - Calculate unknown resistance (Rx) or bridge voltage (VB).">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M50,10 L90,50 L50,90 L10,50 Z%22 fill=%22none%22 stroke=%22%23f59e0b%22 stroke-width=%225%22/></svg>">
+    
+    <title>惠斯通电桥计算器 | Wheatstone Bridge Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#f59e0b', hover: '#d97706' }, /* Amber */
+                        secondary: { DEFAULT: '#64748b', hover: '#475569' }, /* Slate */
+                        bg: { light: '#fffbeb', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-amber-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-12 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all text-sm;
+            }
+            .mode-switch {
+                @apply flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg mb-4;
+            }
+            .mode-btn {
+                @apply flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-center text-slate-500 dark:text-slate-400 cursor-pointer;
+            }
+            .mode-btn.active {
+                @apply bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm border border-slate-200 dark:border-slate-600;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .circuit-text { font-family: monospace; font-size: 11px; fill: currentColor; }
+            .component-fill { fill: currentColor; }
+            .resistor-path { stroke-linecap: round; stroke-linejoin: round; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    <i class="fa fa-diamond"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">惠斯通电桥计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Wheatstone Bridge Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="glass rounded-2xl p-5 shadow-sm space-y-4 border-t-4 border-t-amber-500">
+                
+                <h3 class="text-sm font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                    <i class="fa fa-sliders"></i> <span data-i18n="h_inputs">输入参数</span>
+                </h3>
+
+                <!-- Mode Switch -->
+                <div class="mode-switch">
+                    <div class="mode-btn active" id="mode-rx" onclick="App.setMode('rx')">
+                        <span data-i18n="mode_find_rx">计算 Rx</span>
+                    </div>
+                    <div class="mode-btn" id="mode-vb" onclick="App.setMode('vb')">
+                        <span data-i18n="mode_find_vb">计算 VB</span>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- Common Inputs -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_vin">Vin 输入电压:</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vin" class="input-field" value="5" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">R1:</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-r1" class="input-field" value="1000" oninput="App.calculate()">
+                            <span class="unit-label">Ω</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">R2:</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-r2" class="input-field" value="1000" oninput="App.calculate()">
+                            <span class="unit-label">Ω</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">R3:</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-r3" class="input-field" value="1000" oninput="App.calculate()">
+                            <span class="unit-label">Ω</span>
+                        </div>
+                    </div>
+
+                    <!-- Conditional Inputs -->
+                    <div id="field-vb-input">
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_target_vb">目标桥电压 VB (平衡时为0):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vb-target" class="input-field border-amber-200 focus:border-amber-500" value="0" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+
+                    <div id="field-rx-input" class="hidden">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Rx (Unknown):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-rx-known" class="input-field border-amber-200 focus:border-amber-500" value="1000" oninput="App.calculate()">
+                            <span class="unit-label">Ω</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button onclick="App.calculate()" class="btn-primary flex-1">
+                        <span data-i18n="btn_calc">计算</span>
+                    </button>
+                    <button onclick="App.reset()" class="btn-secondary text-red-500">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="lg:col-span-8 space-y-6">
+            
+            <!-- Results & Diagram -->
+            <div class="glass rounded-2xl shadow-sm border-t-4 border-t-slate-500 overflow-hidden flex flex-col h-full">
+                <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 p-4">
+                    <h3 class="font-bold text-slate-800 dark:text-white text-sm" data-i18n="h_result">结果与电路</h3>
+                </div>
+                
+                <div class="p-6 grid md:grid-cols-2 gap-8 items-center flex-grow">
+                    
+                    <!-- Result Display -->
+                    <div class="flex flex-col items-center justify-center space-y-6">
+                        <!-- Mode Rx Result -->
+                        <div id="res-box-rx" class="text-center w-full">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-2" data-i18n="lbl_res_rx">未知电阻 Rx</label>
+                            <div class="relative inline-block">
+                                <div id="res-rx" class="text-4xl md:text-5xl font-mono font-bold text-amber-600 dark:text-amber-400 break-all">
+                                    -
+                                </div>
+                                <div class="text-xs text-slate-400 mt-1 font-mono">Ohms (Ω)</div>
+                            </div>
+                        </div>
+
+                        <!-- Mode VB Result -->
+                        <div id="res-box-vb" class="text-center w-full hidden">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-2" data-i18n="lbl_res_vb">桥电压 VB (Bridge Voltage)</label>
+                            <div class="relative inline-block">
+                                <div id="res-vb" class="text-4xl md:text-5xl font-mono font-bold text-slate-700 dark:text-slate-300 break-all">
+                                    -
+                                </div>
+                                <div class="text-xs text-slate-400 mt-1 font-mono">Volts (V)</div>
+                            </div>
+                        </div>
+
+                        <div id="error-msg" class="text-red-500 font-bold text-sm hidden">Error</div>
+                    </div>
+
+                    <!-- Circuit SVG -->
+                    <div class="flex items-center justify-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 aspect-square max-h-[300px] w-full" id="circuit-container">
+                        <svg viewBox="0 0 300 300" class="w-full h-full text-slate-600 dark:text-slate-300">
+                            <!-- Diamond Shape -->
+                            <!-- Top (Vin+) to Left (A) -->
+                            <line x1="150" y1="20" x2="50" y2="150" class="circuit-line" />
+                            <!-- Top (Vin+) to Right (B) -->
+                            <line x1="150" y1="20" x2="250" y2="150" class="circuit-line" />
+                            <!-- Left (A) to Bottom (Gnd) -->
+                            <line x1="50" y1="150" x2="150" y2="280" class="circuit-line" />
+                            <!-- Right (B) to Bottom (Gnd) -->
+                            <line x1="250" y1="150" x2="150" y2="280" class="circuit-line" />
+
+                            <!-- Vin Source -->
+                            <circle cx="150" cy="20" r="4" class="component-fill" />
+                            <text x="150" y="12" class="circuit-text font-bold" text-anchor="middle">Vin+</text>
+                            
+                            <circle cx="150" cy="280" r="4" class="component-fill" />
+                            <text x="150" y="295" class="circuit-text font-bold" text-anchor="middle">Vin-</text>
+
+                            <!-- Resistors (Visual Boxes) -->
+                            <!-- R1 (Top Left) -->
+                            <rect x="80" y="65" width="40" height="20" transform="rotate(-53 100 75)" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                            <text x="75" y="70" class="circuit-text font-bold text-amber-600 dark:text-amber-400">R1</text>
+
+                            <!-- R3 (Top Right) -->
+                            <rect x="180" y="65" width="40" height="20" transform="rotate(53 200 75)" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                            <text x="225" y="70" class="circuit-text font-bold text-amber-600 dark:text-amber-400">R3</text>
+
+                            <!-- R2 (Bottom Left) -->
+                            <rect x="80" y="215" width="40" height="20" transform="rotate(53 100 225)" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                            <text x="75" y="240" class="circuit-text font-bold text-amber-600 dark:text-amber-400">R2</text>
+
+                            <!-- Rx (Bottom Right) -->
+                            <rect x="180" y="215" width="40" height="20" transform="rotate(-53 200 225)" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                            <text x="225" y="240" class="circuit-text font-bold text-red-500" id="svg-rx-label">Rx</text>
+
+                            <!-- Galvanometer / Bridge Center -->
+                            <line x1="50" y1="150" x2="250" y2="150" class="circuit-line" stroke-dasharray="4" opacity="0.5" />
+                            <circle cx="150" cy="150" r="15" class="circuit-line bg-white fill-white dark:fill-slate-900" />
+                            <text x="150" y="154" class="circuit-text font-bold" text-anchor="middle">VB</text>
+                            <text x="150" y="170" class="circuit-text text-[8px]" text-anchor="middle">G</text>
+
+                            <!-- Nodes -->
+                            <circle cx="50" cy="150" r="3" class="component-fill" /> <!-- A -->
+                            <circle cx="250" cy="150" r="3" class="component-fill" /> <!-- B -->
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">惠斯通电桥原理</span>
+            </h2>
+            
+            <div class="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 space-y-6 leading-relaxed text-sm">
+                <p data-i18n="desc_p1">
+                    惠斯通电桥（Wheatstone Bridge）是一种用于精确测量未知电阻的电路。它由四个电阻组成电桥的四个臂。当中间的检流计（或电压表 VB）读数为零时，称电桥达到<strong>平衡</strong>。此时满足关系式：$R_1 / R_2 = R_3 / R_x$。
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Formulas -->
+                    <div class="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-amber-800 dark:text-amber-200 mb-2 text-sm uppercase" data-i18n="h_formula_vb">电桥电压计算 (Unbalanced)</h3>
+                        <div class="font-mono text-amber-700 dark:text-amber-300 text-xs md:text-sm space-y-2 overflow-x-auto">
+                            <p>$$ V_B = V_{in} \cdot \left( \frac{R_x}{R_3 + R_x} - \frac{R_2}{R_1 + R_2} \right) $$</p>
+                        </div>
+                        <p class="text-[10px] mt-2 text-amber-600/80 dark:text-amber-400/80" data-i18n="note_formula">
+                            *注：当 VB=0 时，电桥平衡。此时 $R_x = R_3 \cdot (R_2 / R_1)$。
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-100 dark:bg-slate-800 border-l-4 border-slate-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm uppercase" data-i18n="h_formula_rx">反推电阻计算 (Rx)</h3>
+                        <div class="font-mono text-slate-700 dark:text-slate-300 text-xs md:text-sm space-y-2 overflow-x-auto">
+                            <p>$$ R_x = \frac{R_2 R_3 + R_3(R_1+R_2)\frac{V_B}{V_{in}}}{R_1 - (R_1+R_2)\frac{V_B}{V_{in}}} $$</p>
+                        </div>
+                        <p class="text-[10px] mt-2 text-slate-500 dark:text-slate-400">
+                            *此公式用于在非平衡状态下，根据测得的桥电压 VB 计算未知电阻 Rx。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-4 rounded-lg bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm" data-i18n="h_approx">小偏差近似计算</h4>
+                    <p class="text-xs" data-i18n="p_approx">
+                        如果 $R_3=R_1$ 且 $R_x = R_2 + \delta$（其中 $\delta$ 为微小偏差），则桥电压近似为：<br>
+                        <span class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">VB ≈ Vin * [ δ / (R1 + R2) ]</span><br>
+                        这表明在接近平衡时，桥电压与电阻偏差成正比，常用于应变片传感器测量。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Wheatstone Bridge Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "惠斯通电桥计算器", subtitle: "Wheatstone Bridge Calculator",
+                h_inputs: "输入参数", lbl_vin: "Vin 输入电压:",
+                mode_find_rx: "计算 Rx", mode_find_vb: "计算 VB",
+                lbl_target_vb: "目标桥电压 VB (平衡时为0):",
+                btn_calc: "计算",
+                h_result: "结果与电路",
+                lbl_res_rx: "未知电阻 Rx", lbl_res_vb: "桥电压 VB (Bridge Voltage)",
+                
+                guide_title: "惠斯通电桥原理",
+                desc_p1: "惠斯通电桥（Wheatstone Bridge）是一种用于精确测量未知电阻的电路。它由四个电阻组成电桥的四个臂。当中间的检流计（或电压表 VB）读数为零时，称电桥达到<strong>平衡</strong>。此时满足关系式：R1 / R2 = R3 / Rx。",
+                h_formula_vb: "电桥电压计算 (Unbalanced)",
+                note_formula: "*注：当 VB=0 时，电桥平衡。此时 Rx = R3 * (R2 / R1)。",
+                h_formula_rx: "反推电阻计算 (Rx)",
+                h_approx: "小偏差近似计算",
+                p_approx: "如果 R3=R1 且 Rx = R2 + delta（其中 delta 为微小偏差），则桥电压近似为：VB ≈ Vin * [ delta / (R1 + R2) ]。这表明在接近平衡时，桥电压与电阻偏差成正比。"
+            },
+            'en': {
+                title: "Wheatstone Bridge Calculator", subtitle: "Resistance Measurement Tool",
+                h_inputs: "Inputs", lbl_vin: "Input Voltage (Vin):",
+                mode_find_rx: "Find Rx", mode_find_vb: "Find VB",
+                lbl_target_vb: "Target VB (0 for Balanced):",
+                btn_calc: "Calculate",
+                h_result: "Results & Circuit",
+                lbl_res_rx: "Unknown Resistor Rx", lbl_res_vb: "Bridge Voltage VB",
+                
+                guide_title: "Wheatstone Bridge Theory",
+                desc_p1: "A Wheatstone Bridge is an electrical circuit used to measure an unknown electrical resistance. The bridge is <strong>balanced</strong> when the voltmeter (VB) reads zero, satisfying: R1 / R2 = R3 / Rx.",
+                h_formula_vb: "Bridge Voltage Formula",
+                note_formula: "*Note: When VB=0, bridge is balanced. Rx = R3 * (R2 / R1).",
+                h_formula_rx: "Unknown Resistance Formula",
+                h_approx: "Small Deviation Approx",
+                p_approx: "If R3=R1 and Rx = R2 + delta (where delta is small), then VB ≈ Vin * [ delta / (R1 + R2) ]. This shows VB is proportional to the resistance change, useful for strain gauges."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            mode: 'rx', // 'rx' or 'vb'
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                this.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            setMode(m) {
+                this.mode = m;
+                // UI Toggle
+                const btnRx = document.getElementById('mode-rx');
+                const btnVb = document.getElementById('mode-vb');
+                const fieldVb = document.getElementById('field-vb-input');
+                const fieldRx = document.getElementById('field-rx-input');
+                const resBoxRx = document.getElementById('res-box-rx');
+                const resBoxVb = document.getElementById('res-box-vb');
+
+                if (m === 'rx') {
+                    btnRx.className = 'mode-btn active';
+                    btnVb.className = 'mode-btn';
+                    fieldVb.classList.remove('hidden');
+                    fieldRx.classList.add('hidden');
+                    resBoxRx.classList.remove('hidden');
+                    resBoxVb.classList.add('hidden');
+                } else {
+                    btnRx.className = 'mode-btn';
+                    btnVb.className = 'mode-btn active';
+                    fieldVb.classList.add('hidden');
+                    fieldRx.classList.remove('hidden');
+                    resBoxRx.classList.add('hidden');
+                    resBoxVb.classList.remove('hidden');
+                }
+                this.calculate();
+            },
+
+            calculate() {
+                const Vin = parseFloat(document.getElementById('inp-vin').value) || 0;
+                const R1 = parseFloat(document.getElementById('inp-r1').value) || 0;
+                const R2 = parseFloat(document.getElementById('inp-r2').value) || 0;
+                const R3 = parseFloat(document.getElementById('inp-r3').value) || 0;
+                
+                const resRxEl = document.getElementById('res-rx');
+                const resVbEl = document.getElementById('res-vb');
+                const errEl = document.getElementById('error-msg');
+                errEl.classList.add('hidden');
+
+                if (this.mode === 'rx') {
+                    // Solve for Rx given VB
+                    const VB = parseFloat(document.getElementById('inp-vb-target').value) || 0;
+                    
+                    if (R1 === 0 || Vin === 0) {
+                        resRxEl.textContent = '-';
+                        return;
+                    }
+
+                    // Formula: Rx = (R2*R3 + R3*(R1+R2)*VB/Vin ) / (R1 - (R1+R2)*VB/Vin)
+                    // Let term K = (R1+R2) * (VB/Vin)
+                    // Rx = (R2*R3 + R3*K) / (R1 - K)
+                    
+                    const K = (R1 + R2) * (VB / Vin);
+                    const numerator = (R2 * R3) + (R3 * K);
+                    const denominator = R1 - K;
+
+                    if (denominator === 0) {
+                        resRxEl.textContent = '∞';
+                    } else {
+                        const Rx = numerator / denominator;
+                        if (Rx < 0) {
+                            resRxEl.textContent = 'Error';
+                            errEl.textContent = 'Impossible VB for given resistors';
+                            errEl.classList.remove('hidden');
+                        } else {
+                            resRxEl.textContent = this.formatNum(Rx);
+                        }
+                    }
+
+                } else {
+                    // Solve for VB given Rx
+                    const Rx = parseFloat(document.getElementById('inp-rx-known').value) || 0;
+                    
+                    // Formula: VB = Vin * [ Rx/(R3+Rx) - R2/(R1+R2) ]
+                    if ((R3 + Rx) === 0 || (R1 + R2) === 0) {
+                        resVbEl.textContent = '-';
+                        return;
+                    }
+
+                    const term1 = Rx / (R3 + Rx);
+                    const term2 = R2 / (R1 + R2);
+                    const VB = Vin * (term1 - term2);
+                    
+                    resVbEl.textContent = this.formatNum(VB);
+                }
+            },
+
+            formatNum(n) {
+                if (Math.abs(n) < 1e-9) return '0';
+                if (Math.abs(n) > 1e6 || Math.abs(n) < 1e-3) return n.toPrecision(5);
+                return n.toLocaleString(undefined, {maximumFractionDigits: 5});
+            },
+
+            reset() {
+                document.getElementById('inp-vin').value = 5;
+                document.getElementById('inp-r1').value = 1000;
+                document.getElementById('inp-r2').value = 1000;
+                document.getElementById('inp-r3').value = 1000;
+                document.getElementById('inp-vb-target').value = 0;
+                document.getElementById('inp-rx-known').value = 1000;
+                this.calculate();
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

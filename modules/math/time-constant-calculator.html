@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Capacitor Time Constant & Energy Calculator - Calculate Tau, Joules, and BTU.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2220%22 y=%2230%22 width=%2260%22 height=%2240%22 rx=%225%22 fill=%22none%22 stroke=%22%2306b6d4%22 stroke-width=%226%22/><path d=%22M50,30 L50,70%22 stroke=%22%2306b6d4%22 stroke-width=%224%22/></svg>">
+    
+    <title>电容时间常数计算器 | Time Constant Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#06b6d4', hover: '#0891b2' }, /* Cyan */
+                        secondary: { DEFAULT: '#f43f5e', hover: '#e11d48' }, /* Rose */
+                        bg: { light: '#ecfeff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-cyan-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-12 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all text-lg font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-sm font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-base;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-3 px-6 rounded-xl transition-all text-base;
+            }
+            .res-card {
+                @apply p-4 rounded-xl border flex flex-col items-center justify-center text-center transition-all hover:scale-[1.02];
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    τ
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">电容时间常数计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Capacitor Time Constant & Energy</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="glass rounded-2xl p-6 shadow-sm space-y-5 border-t-4 border-t-cyan-500">
+                
+                <h3 class="text-sm font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                    <i class="fa fa-sliders"></i> <span data-i18n="h_inputs">输入数值</span>
+                </h3>
+
+                <div class="space-y-4">
+                    <!-- Voltage -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_v">电容器两端的电压 (V):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-v" class="input-field" placeholder="12" value="12" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Capacitance -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_c">电容容量 (C):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-c" class="input-field" placeholder="100" value="100" oninput="App.calculate()">
+                            <span class="unit-label">μF</span>
+                        </div>
+                    </div>
+
+                    <!-- Resistance -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_r">负载电阻 (R):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-r" class="input-field" placeholder="1000" value="1000" oninput="App.calculate()">
+                            <span class="unit-label">Ω</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button onclick="App.calculate()" class="btn-primary flex-1">
+                        <span data-i18n="btn_calc">计算</span>
+                    </button>
+                    <button onclick="App.reset()" class="btn-secondary text-red-500">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="lg:col-span-8 space-y-6">
+            
+            <!-- Results Cards -->
+            <div class="grid md:grid-cols-3 gap-4">
+                
+                <!-- Time Constant -->
+                <div class="res-card bg-cyan-50 dark:bg-cyan-900/20 border-cyan-100 dark:border-cyan-800/30">
+                    <div class="text-xs text-cyan-600 dark:text-cyan-400 uppercase font-bold mb-1" data-i18n="res_tau">时间常数 (τ)</div>
+                    <div id="val-tau" class="text-2xl font-mono font-bold text-cyan-700 dark:text-cyan-300">- s</div>
+                    <div class="text-[10px] text-cyan-600/70 mt-1">Seconds</div>
+                </div>
+
+                <!-- Energy Joules -->
+                <div class="res-card bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800/30">
+                    <div class="text-xs text-rose-600 dark:text-rose-400 uppercase font-bold mb-1" data-i18n="res_j">能量 (Energy)</div>
+                    <div id="val-j" class="text-2xl font-mono font-bold text-rose-700 dark:text-rose-300">- J</div>
+                    <div class="text-[10px] text-rose-600/70 mt-1">Joules</div>
+                </div>
+
+                <!-- Energy BTU -->
+                <div class="res-card bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
+                    <div class="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1" data-i18n="res_btu">能量 (BTU)</div>
+                    <div id="val-btu" class="text-2xl font-mono font-bold text-slate-700 dark:text-slate-200">-</div>
+                    <div class="text-[10px] text-slate-500/70 mt-1">BTU</div>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="glass rounded-2xl p-6 shadow-sm border-t-4 border-t-slate-500 flex flex-col h-[350px]">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                        <i class="fa fa-line-chart"></i> <span data-i18n="h_chart">充电曲线 (Voltage vs Time)</span>
+                    </h3>
+                    <div class="flex gap-4 text-[10px]">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-cyan-500"></span> 1τ (63.2%)</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span> 5τ (99.3%)</span>
+                    </div>
+                </div>
+                <div class="relative w-full flex-grow bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <canvas id="charge-chart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">原理与公式</span>
+            </h2>
+            
+            <div class="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 space-y-6 leading-relaxed text-sm">
+                <p data-i18n="desc_p1">
+                    时间常数（$\tau$）是衡量 RC 电路充放电速度的重要指标。它表示电容两端电压从 0V 充到约 63.2% 的电源电压所需的时间，或从满电放电到 36.8% 所需的时间。
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-cyan-50 dark:bg-cyan-900/20 border-l-4 border-cyan-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-cyan-800 dark:text-cyan-200 mb-2 text-sm uppercase" data-i18n="h_formula">计算公式</h3>
+                        <div class="space-y-3 font-mono text-cyan-900 dark:text-cyan-100 text-xs md:text-sm">
+                            <p data-i18n="formula_tau">1. 时间常数: $$ \tau = R \times C $$</p>
+                            <p data-i18n="formula_energy">2. 存储能量: $$ E = \frac{1}{2} C V^2 $$</p>
+                            <p class="text-[10px] opacity-70" data-i18n="formula_note">
+                                *注：C 单位需换算为法拉 (F)，R 单位为欧姆 (Ω)。<br>
+                                1 Joule ≈ 0.0009478 BTU。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm uppercase" data-i18n="h_rule">5τ 规则</h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-400" data-i18n="desc_rule">
+                            在工程上，通常认为经过 <strong>5个时间常数 (5τ)</strong> 后，电容已经完成了充电或放电过程（电压达到 99.3% 或降至 0.7%）。此时电路处于稳态。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Time Constant Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "电容时间常数计算器", subtitle: "电容充电时间与能量计算",
+                h_inputs: "输入数值",
+                lbl_v: "电容器两端的电压 (V):", lbl_c: "电容容量 (C):", lbl_r: "负载电阻 (R):",
+                btn_calc: "计算",
+                res_tau: "时间常数 (τ)", res_j: "能量 (Joules)", res_btu: "能量 (BTU)",
+                h_chart: "充电曲线 (Voltage vs Time)",
+                guide_title: "原理与公式",
+                desc_p1: "时间常数（τ）是衡量 RC 电路充放电速度的重要指标。它表示电容两端电压从 0V 充到约 63.2% 的电源电压所需的时间，或从满电放电到 36.8% 所需的时间。",
+                h_formula: "计算公式",
+                formula_tau: "1. 时间常数: $$ \\tau = R \\times C $$",
+                formula_energy: "2. 存储能量: $$ E = \\frac{1}{2} C V^2 $$",
+                formula_note: "*注：C 单位需换算为法拉 (F)，R 单位为欧姆 (Ω)。<br>1 Joule ≈ 0.0009478 BTU。",
+                h_rule: "5τ 规则",
+                desc_rule: "在工程上，通常认为经过 5个时间常数 (5τ) 后，电容已经完成了充电或放电过程（电压达到 99.3% 或降至 0.7%）。"
+            },
+            'en': {
+                title: "Time Constant Calculator", subtitle: "RC Time Constant & Energy",
+                h_inputs: "Inputs",
+                lbl_v: "Voltage (V):", lbl_c: "Capacitance (C):", lbl_r: "Load Resistance (R):",
+                btn_calc: "Calculate",
+                res_tau: "Time Constant (τ)", res_j: "Energy (Joules)", res_btu: "Energy (BTU)",
+                h_chart: "Charging Curve",
+                guide_title: "Theory & Formulas",
+                desc_p1: "The Time Constant (τ) represents the speed of charging/discharging in an RC circuit. It is the time required to charge the capacitor to ~63.2% of full voltage, or discharge to 36.8%.",
+                h_formula: "Formulas",
+                formula_tau: "1. Time Constant: $$ \\tau = R \\times C $$",
+                formula_energy: "2. Energy: $$ E = \\frac{1}{2} C V^2 $$",
+                formula_note: "*Note: Convert C to Farads (F) and R to Ohms (Ω).<br>1 Joule ≈ 0.0009478 BTU.",
+                h_rule: "5τ Rule",
+                desc_rule: "In engineering, a capacitor is considered fully charged or discharged after 5 Time Constants (5τ), reaching 99.3% or dropping to 0.7% respectively."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            chartCtx: null,
+            canvas: null,
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                
+                // Canvas Init
+                this.canvas = document.getElementById('charge-chart');
+                this.chartCtx = this.canvas.getContext('2d');
+                this.resizeCanvas();
+                window.addEventListener('resize', () => {
+                    this.resizeCanvas();
+                    this.calculate(); // Redraw
+                });
+
+                this.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            calculate() {
+                const v = parseFloat(document.getElementById('inp-v').value);
+                const c_uF = parseFloat(document.getElementById('inp-c').value);
+                const r = parseFloat(document.getElementById('inp-r').value);
+
+                const resTau = document.getElementById('val-tau');
+                const resJ = document.getElementById('val-j');
+                const resBtu = document.getElementById('val-btu');
+
+                if (isNaN(v) || isNaN(c_uF) || isNaN(r) || c_uF < 0 || r < 0) {
+                    resTau.textContent = '-';
+                    resJ.textContent = '-';
+                    resBtu.textContent = '-';
+                    this.drawEmptyChart();
+                    return;
+                }
+
+                // 1. Calculate Tau
+                const C = c_uF * 1e-6; // Farads
+                const tau = r * C; // Seconds
+
+                // 2. Calculate Energy
+                const energyJ = 0.5 * C * v * v;
+                const energyBTU = energyJ * 0.00094781712;
+
+                // 3. Update UI
+                resTau.textContent = this.formatTime(tau);
+                resJ.textContent = this.formatNum(energyJ) + ' J';
+                resBtu.textContent = this.formatNum(energyBTU);
+
+                // 4. Draw Chart
+                this.drawChart(v, tau);
+            },
+
+            formatTime(t) {
+                if (t < 1e-6) return (t * 1e9).toFixed(2) + ' ns';
+                if (t < 1e-3) return (t * 1e6).toFixed(2) + ' μs';
+                if (t < 1) return (t * 1000).toFixed(2) + ' ms';
+                return t.toFixed(4) + ' s';
+            },
+
+            formatNum(n) {
+                if (n === 0) return '0';
+                if (n < 0.0001 || n > 10000) return n.toPrecision(4);
+                return n.toFixed(4);
+            },
+
+            reset() {
+                document.getElementById('inp-v').value = 12;
+                document.getElementById('inp-c').value = 100;
+                document.getElementById('inp-r').value = 1000;
+                this.calculate();
+            },
+
+            // --- Canvas Chart ---
+            resizeCanvas() {
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
+                this.chartCtx.scale(dpr, dpr);
+                this.canvas.cssWidth = rect.width;
+                this.canvas.cssHeight = rect.height;
+            },
+
+            drawEmptyChart() {
+                const w = this.canvas.cssWidth;
+                const h = this.canvas.cssHeight;
+                this.chartCtx.clearRect(0, 0, w, h);
+            },
+
+            drawChart(vMax, tau) {
+                if (!this.chartCtx) return;
+                const ctx = this.chartCtx;
+                const w = this.canvas.cssWidth;
+                const h = this.canvas.cssHeight;
+                
+                // Clear
+                ctx.clearRect(0, 0, w, h);
+
+                // Margins
+                const padL = 40, padR = 20, padB = 30, padT = 20;
+                const graphW = w - padL - padR;
+                const graphH = h - padT - padB;
+
+                // Time Range: 0 to 5*tau
+                const tMax = 5 * tau;
+                
+                // --- Grid & Axes ---
+                ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                
+                // Horizontal Lines (0%, 63.2%, 100%)
+                const y0 = h - padB;
+                const yMax = padT;
+                const yTau = y0 - (graphH * 0.632);
+                
+                // 0 line
+                ctx.moveTo(padL, y0); ctx.lineTo(w-padR, y0);
+                // Max line
+                ctx.moveTo(padL, yMax); ctx.lineTo(w-padR, yMax);
+                ctx.stroke();
+
+                // Dashed Tau Line
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = '#06b6d4'; // Cyan
+                ctx.beginPath();
+                ctx.moveTo(padL, yTau); ctx.lineTo(w-padR, yTau);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Axis Labels
+                ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b';
+                ctx.font = '10px monospace';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('0 V', padL - 5, y0);
+                ctx.fillText(vMax + ' V', padL - 5, yMax);
+                ctx.fillStyle = '#06b6d4';
+                ctx.fillText('63%', padL - 5, yTau);
+
+                // --- Curve V(t) = Vmax * (1 - e^(-t/tau)) ---
+                ctx.beginPath();
+                ctx.strokeStyle = '#f43f5e'; // Rose
+                ctx.lineWidth = 2;
+
+                for (let px = 0; px <= graphW; px++) {
+                    const t = (px / graphW) * tMax;
+                    const v = vMax * (1 - Math.exp(-t / tau));
+                    
+                    const x = padL + px;
+                    const y = y0 - (v / vMax) * graphH;
+                    
+                    if (px === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // --- Time Markers ---
+                // 1 Tau
+                const xTau1 = padL + (1 * tau / tMax) * graphW;
+                const yTau1 = y0 - (0.632 * graphH);
+                ctx.fillStyle = '#06b6d4'; // Cyan
+                ctx.beginPath(); ctx.arc(xTau1, yTau1, 4, 0, Math.PI*2); ctx.fill();
+                
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText('1τ', xTau1, y0 + 5);
+
+                // 5 Tau
+                const xTau5 = padL + graphW;
+                ctx.fillStyle = '#3b82f6'; // Blue
+                ctx.beginPath(); ctx.arc(xTau5, padT + (graphH * (1-0.993)), 4, 0, Math.PI*2); ctx.fill();
+                ctx.fillText('5τ', xTau5, y0 + 5);
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                    this.calculate(); // Redraw chart
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

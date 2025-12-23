@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Hysteresis Comparator (Schmitt Trigger) Calculator - Calculate resistor ratios and reference voltage for custom thresholds.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M20,50 L40,50 L40,20 L80,20 L80,80 L40,80 L40,50%22 fill=%22none%22 stroke=%22%23f43f5e%22 stroke-width=%228%22/></svg>">
+    
+    <title>迟滞比较器计算器 | Schmitt Trigger Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#f43f5e', hover: '#e11d48' }, /* Rose */
+                        secondary: { DEFAULT: '#6366f1', hover: '#4f46e5' }, /* Indigo */
+                        bg: { light: '#fff1f2', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-rose-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-8 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all text-base font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-rose-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2 text-base;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-3 px-6 rounded-xl transition-all text-base;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .circuit-text { font-family: monospace; font-size: 11px; fill: currentColor; }
+            .component-fill { fill: currentColor; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-rose-200 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-300 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-5xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 text-white flex items-center justify-center text-xl shadow-lg shadow-rose-500/20 font-bold border-2 border-white/20">
+                    <i class="fa fa-exchange"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">迟滞比较器计算器</h1>
+                    <p class="text-xs text-slate-500 font-medium" data-i18n="subtitle">反相施密特触发器设计 (Inverting Schmitt Trigger)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                 <select id="lang-selector" class="bg-transparent text-sm font-medium px-2 py-1 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文</option>
+                    <option value="en">🇺🇸 English</option>
+                </select>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid md:grid-cols-12 gap-6 mb-8">
+            
+            <!-- Input Section -->
+            <div class="md:col-span-5 glass rounded-3xl shadow-lg p-6 flex flex-col border-t-4 border-t-rose-500">
+                <h3 class="text-sm font-bold text-slate-500 uppercase mb-4 flex items-center gap-2">
+                    <i class="fa fa-sliders"></i> <span data-i18n="h_input">参数输入</span>
+                </h3>
+                
+                <div class="space-y-4">
+                    <!-- Supply Voltages -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1" data-i18n="lbl_vpos">正电源 (V+):</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-vpos" class="input-field" placeholder="5" value="5" oninput="App.calculate()">
+                                <span class="unit-label">V</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1" data-i18n="lbl_vneg">负电源 (V-):</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-vneg" class="input-field" placeholder="0" value="0" oninput="App.calculate()">
+                                <span class="unit-label">V</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thresholds -->
+                    <div>
+                        <label class="block text-xs font-bold text-rose-500 dark:text-rose-400 mb-1" data-i18n="lbl_vth">高阈值 Vth (High Threshold):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vth" class="input-field border-rose-200 focus:border-rose-500 focus:ring-rose-200" placeholder="3.5" value="3.5" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-indigo-500 dark:text-indigo-400 mb-1" data-i18n="lbl_vtl">低阈值 Vtl (Low Threshold):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vtl" class="input-field border-indigo-200 focus:border-indigo-500 focus:ring-indigo-200" placeholder="1.5" value="1.5" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+
+                    <!-- Error Msg -->
+                    <div id="error-msg" class="text-xs text-red-500 font-bold min-h-[1.5em] opacity-0 transition-opacity">
+                        错误：Vth 必须大于 Vtl
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button onclick="App.calculate()" class="btn-primary">
+                            <i class="fa fa-calculator"></i> <span data-i18n="btn_calc">计算</span>
+                        </button>
+                        <button onclick="App.clearInput()" class="btn-secondary text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                            <i class="fa fa-eraser"></i> <span data-i18n="btn_clear">清除</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result & Diagram Section -->
+            <div class="md:col-span-7 flex flex-col gap-6">
+                
+                <!-- Result Display -->
+                <div class="glass rounded-3xl shadow-lg p-6 flex flex-col justify-center items-center text-center border-t-4 border-t-indigo-500 relative overflow-hidden min-h-[160px]">
+                    
+                    <div class="w-full grid grid-cols-2 gap-4 relative z-10">
+                        <!-- Ratio -->
+                        <div class="space-y-1">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wide" data-i18n="lbl_ratio">比例电阻 (R2/R1)</label>
+                            <div id="res-ratio" class="text-3xl font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                -
+                            </div>
+                            <div class="text-[10px] text-slate-400 flex justify-center items-center gap-1">
+                                <span data-i18n="lbl_ratio_note">如果 R1=10k, 则 R2 ≈ </span>
+                                <span id="res-r2-ex">-</span>
+                            </div>
+                        </div>
+
+                        <!-- Vref -->
+                        <div class="space-y-1">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wide" data-i18n="lbl_vref">参考电压 (Vr)</label>
+                            <div id="res-vref" class="text-3xl font-mono font-bold text-rose-600 dark:text-rose-400">
+                                -
+                            </div>
+                            <div class="text-[10px] text-slate-400">Volts</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Circuit Diagrams -->
+                <div class="glass rounded-3xl shadow-lg p-6 flex flex-col items-center justify-center border-t-4 border-t-slate-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                    <div class="w-full flex justify-center">
+                        
+                        <!-- Schematic SVG -->
+                        <svg viewBox="0 0 300 200" class="w-full max-w-[350px] h-auto text-slate-700 dark:text-slate-300">
+                            <!-- OpAmp -->
+                            <path d="M 120 60 L 120 140 L 220 100 Z" class="circuit-line" fill="none" stroke-linejoin="round"/>
+                            <text x="130" y="85" class="circuit-text font-bold text-lg">-</text>
+                            <text x="130" y="125" class="circuit-text font-bold text-lg">+</text>
+                            
+                            <!-- Inverting Input -->
+                            <line x1="50" y1="80" x2="120" y2="80" class="circuit-line"/>
+                            <circle cx="50" cy="80" r="3" class="component-fill"/>
+                            <text x="30" y="85" class="circuit-text font-bold">Vin</text>
+
+                            <!-- Non-Inverting Input Network -->
+                            <!-- R1 from Vref -->
+                            <line x1="50" y1="120" x2="80" y2="120" class="circuit-line"/>
+                            <rect x="80" y="112" width="30" height="16" class="circuit-line" /> <!-- R1 Body -->
+                            <text x="95" y="145" class="circuit-text font-bold text-xs" text-anchor="middle">R1</text>
+                            <line x1="110" y1="120" x2="120" y2="120" class="circuit-line"/>
+                            
+                            <!-- Vr Source -->
+                            <circle cx="50" cy="120" r="3" class="component-fill"/>
+                            <text x="30" y="125" class="circuit-text font-bold text-rose-500">Vr</text>
+
+                            <!-- R2 Feedback -->
+                            <line x1="115" y1="120" x2="115" y2="160" class="circuit-line"/>
+                            <line x1="115" y1="160" x2="150" y2="160" class="circuit-line"/>
+                            <rect x="150" y="152" width="30" height="16" class="circuit-line" /> <!-- R2 Body -->
+                            <text x="165" y="180" class="circuit-text font-bold text-xs" text-anchor="middle">R2</text>
+                            <line x1="180" y1="160" x2="240" y2="160" class="circuit-line"/>
+                            <line x1="240" y1="160" x2="240" y2="100" class="circuit-line"/>
+
+                            <!-- Output -->
+                            <line x1="220" y1="100" x2="270" y2="100" class="circuit-line"/>
+                            <circle cx="270" cy="100" r="3" class="component-fill"/>
+                            <text x="280" y="95" class="circuit-text font-bold">Vout</text>
+
+                            <!-- Power Rails -->
+                            <line x1="170" y1="80" x2="170" y2="60" class="circuit-line"/>
+                            <text x="170" y="55" class="circuit-text text-xs" text-anchor="middle">V+</text>
+                            <line x1="170" y1="120" x2="170" y2="140" class="circuit-line"/>
+                            <text x="170" y="150" class="circuit-text text-xs" text-anchor="middle">V-</text>
+                        </svg>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description Section -->
+        <section class="glass rounded-3xl p-8 shadow-xl mb-12">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="desc_title">迟滞比较器 (Schmitt Trigger)</span>
+            </h2>
+            
+            <div class="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 space-y-6 leading-relaxed text-sm">
+                <p data-i18n="desc_p1">
+                    迟滞比较器（施密特触发器）是一种具有两个不同阈值电压的比较器电路。输入电压上升时触发高阈值 ($V_{th}$)，下降时触发低阈值 ($V_{tl}$)。这种特性使其具有极强的抗噪声能力。
+                </p>
+                
+                <div class="bg-rose-50 dark:bg-rose-900/20 border-l-4 border-rose-500 p-4 rounded-r-lg">
+                    <h3 class="font-bold text-rose-800 dark:text-rose-200 mb-2 text-sm uppercase" data-i18n="formula_title">设计公式 (反相输入)</h3>
+                    <div class="font-mono text-rose-700 dark:text-rose-300 text-sm space-y-2">
+                        <p>$$ \frac{R2}{R1} = \frac{V_{OH} - V_{OL}}{V_{th} - V_{tl}} - 1 $$</p>
+                        <p>$$ V_{ref} = \frac{V_{th} \cdot (R1+R2) - V_{OH} \cdot R1}{R2} $$</p>
+                    </div>
+                    <p class="text-xs mt-2 text-rose-600/80 dark:text-rose-400/80">
+                        *假设运放输出摆幅为轨到轨 (Rail-to-Rail)，即 $V_{OH} \approx V+$，$V_{OL} \approx V-$。
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-2 text-sm" data-i18n="tip_h1">关于阈值电压</h4>
+                        <ul class="list-disc list-inside text-xs space-y-1">
+                            <li data-i18n="tip_l1"><strong>Vth (高阈值):</strong> 输出从高电平翻转到低电平时的输入电压点。</li>
+                            <li data-i18n="tip_l2"><strong>Vtl (低阈值):</strong> 输出从低电平翻转到高电平时的输入电压点。</li>
+                            <li class="text-red-500 font-bold">Vth 必须大于 Vtl。</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-2 text-sm" data-i18n="tip_h2">应用场景</h4>
+                        <p class="text-xs" data-i18n="tip_p2">
+                            消除输入信号的噪声抖动（如按键消抖）、波形整形（正弦波转方波）、以及简单的振荡器设计。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <footer class="text-center text-xs text-slate-400 py-6 mt-auto">
+            <p>&copy; <span id="year"></span> Hysteresis Comparator Calculator. Generated for Educational Purposes.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "迟滞比较器计算器", subtitle: "反相施密特触发器设计",
+                h_input: "参数输入",
+                lbl_vpos: "正电源电压 (V+):", lbl_vneg: "负电源电压 (V-):",
+                lbl_vth: "高阈值电压 (Vth):", lbl_vtl: "低阈值电压 (Vtl):",
+                btn_calc: "计算", btn_clear: "清除",
+                lbl_ratio: "比例电阻 (R2/R1)", lbl_vref: "参考电压 (Vr)",
+                lbl_ratio_note: "如果 R1=10k, 则 R2 ≈ ",
+                desc_title: "迟滞比较器 (Schmitt Trigger)",
+                desc_p1: "迟滞比较器（施密特触发器）通过正反馈引入迟滞特性，具有两个阈值电压。当输入电压上升超过 Vth 时输出翻转，下降低于 Vtl 时再次翻转。这能有效滤除输入信号中的噪声。",
+                formula_title: "计算公式 (基于反相配置)",
+                tip_h1: "关于阈值电压",
+                tip_l1: "Vth (高阈值): 输出从高变低时的输入点。",
+                tip_l2: "Vtl (低阈值): 输出从低变高时的输入点。",
+                tip_h2: "应用场景",
+                tip_p2: "常用于去抖动、波形整形（如将嘈杂的正弦波转换为干净的方波）。"
+            },
+            'en': {
+                title: "Hysteresis Calculator", subtitle: "Inverting Schmitt Trigger Design",
+                h_input: "Inputs",
+                lbl_vpos: "Pos. Supply (V+):", lbl_vneg: "Neg. Supply (V-):",
+                lbl_vth: "High Threshold (Vth):", lbl_vtl: "Low Threshold (Vtl):",
+                btn_calc: "Calculate", btn_clear: "Clear",
+                lbl_ratio: "Resistor Ratio (R2/R1)", lbl_vref: "Ref. Voltage (Vr)",
+                lbl_ratio_note: "If R1=10k, then R2 ≈ ",
+                desc_title: "Schmitt Trigger",
+                desc_p1: "A Hysteresis Comparator (Schmitt Trigger) uses positive feedback to create two switching thresholds. It switches when input rises above Vth or falls below Vtl, providing noise immunity.",
+                formula_title: "Formulas (Inverting Config)",
+                tip_h1: "About Thresholds",
+                tip_l1: "Vth: Input voltage where Output flips Low.",
+                tip_l2: "Vtl: Input voltage where Output flips High.",
+                tip_h2: "Applications",
+                tip_p2: "Used for debouncing switches, cleaning up noisy signals, and waveform shaping."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.calculate();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                
+                this.updateText();
+
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                    this.calculate();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.textContent = dict[key];
+                });
+            },
+
+            // --- Logic ---
+
+            calculate() {
+                const vposInput = document.getElementById('inp-vpos').value;
+                const vnegInput = document.getElementById('inp-vneg').value;
+                const vthInput = document.getElementById('inp-vth').value;
+                const vtlInput = document.getElementById('inp-vtl').value;
+                
+                const ratioDisplay = document.getElementById('res-ratio');
+                const vrefDisplay = document.getElementById('res-vref');
+                const r2Example = document.getElementById('res-r2-ex');
+                const errorMsg = document.getElementById('error-msg');
+
+                if (vposInput === '' || vnegInput === '' || vthInput === '' || vtlInput === '') {
+                    ratioDisplay.textContent = '-';
+                    vrefDisplay.textContent = '-';
+                    if(r2Example) r2Example.textContent = '-';
+                    return;
+                }
+
+                const vpos = parseFloat(vposInput);
+                const vneg = parseFloat(vnegInput);
+                const vth = parseFloat(vthInput);
+                const vtl = parseFloat(vtlInput);
+
+                // Validation
+                let err = '';
+                if (vth <= vtl) err = this.lang === 'zh-CN' ? '错误：Vth 必须大于 Vtl' : 'Error: Vth must be > Vtl';
+                else if (vth > vpos) err = this.lang === 'zh-CN' ? '错误：Vth 不能超过 V+' : 'Error: Vth > V+';
+                else if (vtl < vneg) err = this.lang === 'zh-CN' ? '错误：Vtl 不能低于 V-' : 'Error: Vtl < V-';
+
+                if (err) {
+                    errorMsg.textContent = err;
+                    errorMsg.style.opacity = '1';
+                    ratioDisplay.textContent = 'Error';
+                    vrefDisplay.textContent = '-';
+                    return;
+                }
+                errorMsg.style.opacity = '0';
+
+                // Calculation
+                // Assumptions: Rail-to-Rail Output. Voh = Vpos, Vol = Vneg.
+                const voh = vpos;
+                const vol = vneg;
+
+                // Formula: R2/R1 = (Voh - Vol) / (Vth - Vtl) - 1
+                const numerator = voh - vol;
+                const denominator = vth - vtl;
+                
+                if (denominator === 0) return; // Should be caught by vth > vtl check
+
+                const ratio = (numerator / denominator) - 1;
+
+                // Formula: Vref = (Vth * (R1+R2) - Voh * R1) / R2
+                // Divide top/bottom by R1 -> (Vth * (1 + R2/R1) - Voh) / (R2/R1)
+                // Let k = R2/R1. Vref = (Vth * (1 + k) - Voh) / k
+                // Wait, derivation:
+                // Vth = (Vref * R2 + Voh * R1) / (R1 + R2)
+                // Vth(R1+R2) = Vref*R2 + Voh*R1
+                // Vref*R2 = Vth(R1+R2) - Voh*R1
+                // Vref = Vth(R1/R2 + 1) - Voh(R1/R2)
+                // Let n = R1/R2 = 1/ratio
+                // Vref = Vth(n+1) - Voh*n
+                const n = 1 / ratio;
+                const vref = vth * (n + 1) - voh * n;
+
+                if (ratio <= 0) {
+                    // Happens if required hysteresis is wider than supply range
+                    ratioDisplay.textContent = 'N/A';
+                    errorMsg.textContent = this.lang === 'zh-CN' ? '无法实现：迟滞范围过大' : 'Impossible: Range too wide';
+                    errorMsg.style.opacity = '1';
+                    return;
+                }
+
+                ratioDisplay.textContent = ratio.toFixed(4);
+                vrefDisplay.textContent = vref.toFixed(4);
+                
+                // Example R2 if R1 = 10k
+                const r2_val = 10 * ratio; // kOhm
+                if(r2Example) r2Example.textContent = r2_val.toFixed(2) + ' kΩ';
+            },
+
+            clearInput() {
+                document.getElementById('inp-vth').value = '';
+                document.getElementById('inp-vtl').value = '';
+                document.getElementById('res-ratio').textContent = '-';
+                document.getElementById('res-vref').textContent = '-';
+                document.getElementById('error-msg').style.opacity = '0';
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

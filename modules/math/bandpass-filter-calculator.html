@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Bandpass Filter Design Calculator - Calculate LC values for Type 1 and Type 2 topologies.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M10,50 Q25,10 40,50 T70,50 T100,50%22 fill=%22none%22 stroke=%22%230ea5e9%22 stroke-width=%228%22/></svg>">
+    
+    <title>带通滤波器设计计算器 | BPF Design Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#0ea5e9', hover: '#0284c7' }, /* Sky */
+                        secondary: { DEFAULT: '#6366f1', hover: '#4f46e5' }, /* Indigo */
+                        bg: { light: '#f8fafc', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-10 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-sky-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all text-sm;
+            }
+            
+            /* Table Styles */
+            .result-table {
+                @apply w-full text-xs font-mono text-center border-collapse;
+            }
+            .result-table th {
+                @apply bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-600 p-2;
+            }
+            .result-table td {
+                @apply border border-slate-200 dark:border-slate-600 p-2 text-slate-700 dark:text-slate-200;
+            }
+            .result-table .header-col {
+                @apply bg-slate-50 dark:bg-slate-800 font-bold text-sky-600 dark:text-sky-400 w-16;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    BPF
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">带通滤波器设计计算</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">LC Chebyshev Bandpass Filter Design</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-3 space-y-6">
+            <div class="glass rounded-2xl p-5 shadow-sm space-y-4 border-t-4 border-t-sky-500">
+                <h2 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa fa-sliders text-sky-500"></i> <span data-i18n="lbl_params">参数设置</span>
+                </h2>
+                
+                <!-- Inputs -->
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_n">连接路数 (N):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-n" class="input-field" value="3" min="1" max="9" oninput="App.calculate()">
+                            <span class="unit-label">Max 9</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_fc">截止频率 (fc):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-fc" class="input-field" value="100" oninput="App.calculate()">
+                            <span class="unit-label">MHz</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_bw">通频带 (BW):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-bw" class="input-field" value="10" oninput="App.calculate()">
+                            <span class="unit-label">MHz</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_zo">阻抗 (Zo):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-zo" class="input-field" value="50" oninput="App.calculate()">
+                            <span class="unit-label">Ω</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_ripple">波纹 (Ripple):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-rip" class="input-field" value="0.1" step="0.1" oninput="App.calculate()">
+                            <span class="unit-label">dB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="App.calculate()" class="btn-primary w-full">
+                        <span data-i18n="btn_calc">计算</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30">
+                <h3 class="text-xs font-bold text-indigo-700 dark:text-indigo-300 mb-2 uppercase" data-i18n="lbl_info">设计说明</h3>
+                <p class="text-[10px] text-indigo-600/80 dark:text-indigo-400 leading-relaxed" data-i18n="desc_text">
+                    本工具使用切比雪夫(Chebyshev)原型设计带通滤波器。
+                    <br>• 1型：串联第一元件（适用于高阻源）
+                    <br>• 2型：并联第一元件（适用于低阻源）
+                </p>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="lg:col-span-9 space-y-6">
+            
+            <!-- Type 1 Result -->
+            <div class="glass rounded-2xl shadow-sm overflow-hidden border-t-4 border-t-sky-500">
+                <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 dark:text-white text-sm" data-i18n="h_type1">1型设计 (Type 1) - 串联开始</h3>
+                    <div class="flex gap-2">
+                        <span class="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-mono">Series-Parallel...</span>
+                    </div>
+                </div>
+                
+                <div class="p-4 overflow-x-auto">
+                    <!-- Circuit SVG Type 1 -->
+                    <div class="h-32 w-full flex items-center justify-center mb-4 border border-dashed border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900/50 relative" id="svg-container-1">
+                        <!-- SVG Injected via JS -->
+                    </div>
+
+                    <table class="result-table">
+                        <thead>
+                            <tr id="header-row-1">
+                                <!-- Dynamic Headers -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="row-l-1">
+                                <td class="header-col">L [nH]</td>
+                                <!-- Dynamic Data -->
+                            </tr>
+                            <tr id="row-c-1">
+                                <td class="header-col">C [pF]</td>
+                                <!-- Dynamic Data -->
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Type 2 Result -->
+            <div class="glass rounded-2xl shadow-sm overflow-hidden border-t-4 border-t-indigo-500">
+                <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 dark:text-white text-sm" data-i18n="h_type2">2型设计 (Type 2) - 并联开始</h3>
+                    <div class="flex gap-2">
+                        <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-mono">Parallel-Series...</span>
+                    </div>
+                </div>
+                
+                <div class="p-4 overflow-x-auto">
+                    <!-- Circuit SVG Type 2 -->
+                    <div class="h-32 w-full flex items-center justify-center mb-4 border border-dashed border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900/50 relative" id="svg-container-2">
+                        <!-- SVG Injected via JS -->
+                    </div>
+
+                    <table class="result-table">
+                        <thead>
+                            <tr id="header-row-2">
+                                <!-- Dynamic Headers -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="row-l-2">
+                                <td class="header-col">L [nH]</td>
+                                <!-- Dynamic Data -->
+                            </tr>
+                            <tr id="row-c-2">
+                                <td class="header-col">C [pF]</td>
+                                <!-- Dynamic Data -->
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "带通滤波器设计计算", subtitle: "LC Chebyshev Bandpass Design",
+                lbl_params: "参数设置", lbl_n: "连接路数 (N):", lbl_fc: "截止频率 (fc):", lbl_bw: "通频带 (BW):", lbl_zo: "阻抗 (Zo):", lbl_ripple: "波纹 (Ripple):",
+                btn_calc: "计算", lbl_info: "设计说明",
+                desc_text: "基于切比雪夫(Chebyshev)原型。1型为串联谐振臂开始，2型为并联谐振臂开始。",
+                h_type1: "1型设计 (Type 1)", h_type2: "2型设计 (Type 2)"
+            },
+            'en': {
+                title: "Bandpass Filter Calculator", subtitle: "LC Chebyshev Bandpass Design",
+                lbl_params: "Parameters", lbl_n: "Order (N):", lbl_fc: "Center Freq (fc):", lbl_bw: "Bandwidth (BW):", lbl_zo: "Impedance (Zo):", lbl_ripple: "Ripple:",
+                btn_calc: "Calculate", lbl_info: "Design Info",
+                desc_text: "Based on Chebyshev prototype. Type 1 starts with Series arm, Type 2 starts with Shunt arm.",
+                h_type1: "Type 1 (Series First)", h_type2: "Type 2 (Shunt First)"
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.calculate();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                
+                this.updateText();
+
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    // Fix: Wrapped in try-catch to prevent SecurityError in sandboxed environments
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {
+                        console.warn('Unable to update URL:', e);
+                    }
+                    this.updateText();
+                    this.calculate();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.textContent = dict[key];
+                });
+            },
+
+            // --- Calculation Engine ---
+            calculate() {
+                // Inputs
+                let n = parseInt(document.getElementById('inp-n').value) || 3;
+                if(n > 9) n = 9;
+                if(n < 1) n = 1;
+                
+                const fc = parseFloat(document.getElementById('inp-fc').value) || 100;
+                const bw = parseFloat(document.getElementById('inp-bw').value) || 10;
+                const zo = parseFloat(document.getElementById('inp-zo').value) || 50;
+                let rip = parseFloat(document.getElementById('inp-rip').value) || 0.1;
+                
+                if (rip <= 0) rip = 0.01; // Avoid divide by zero in chebyshev math
+
+                // 1. Calculate Low Pass Prototype (Chebyshev g-values)
+                const g = this.calcChebyshevG(n, rip);
+
+                // 2. Frequency Transformations
+                // w0 = 2*pi*fc, dw = 2*pi*bw
+                // But simplified formulas:
+                // For Series LC (from LP series L):
+                // L_bp = (g * Zo) / (2 * pi * BW)
+                // C_bp = (BW) / (2 * pi * g * Zo * fc^2)
+                
+                // For Parallel LC (from LP shunt C):
+                // C_bp = (g) / (2 * pi * BW * Zo)
+                // L_bp = (BW * Zo) / (2 * pi * g * fc^2)
+                
+                // Note units: MHz input -> Hz = *1e6. 
+                // Output: nH (*1e9), pF (*1e12).
+                
+                const w0_sq = Math.pow(fc * 1e6, 2); // fc^2
+                const delta_w = 2 * Math.PI * bw * 1e6; // Bandwidth in rad/s
+                const Z0 = zo;
+
+                const t1_L = [], t1_C = [];
+                const t2_L = [], t2_C = [];
+
+                // Type 1: Start with Series. 
+                // k odd = Series, k even = Shunt
+                for (let k = 1; k <= n; k++) {
+                    const gk = g[k-1];
+                    let L_val, C_val;
+
+                    if (k % 2 !== 0) {
+                        // Series Branch (Type 1)
+                        // Ls = (gk * Z0) / dw
+                        // Cs = dw / (gk * Z0 * w0^2) (Note: w0^2 = (2*pi*fc)^2)
+                        // Let's use direct formula:
+                        // L = (gk * Zo) / (2 * pi * BW)
+                        // C = BW / (2 * pi * fc^2 * gk * Zo)
+                        const L_base = (gk * Z0) / (2 * Math.PI * bw * 1e6);
+                        const C_base = (bw * 1e6) / (2 * Math.PI * w0_sq * gk * Z0); // Wait, w0_sq is just freq^2? No (2pi*f)^2.
+                        // Actually: w0^2 = (2*pi*fc)^2
+                        // C formula check: Resonant at w0. w0 = 1/sqrt(LC).
+                        // L*C = 1/w0^2.
+                        // L_base * C_base = (gk*Z0/dw) * (dw / (gk*Z0 * w0^2)) = 1/w0^2. Correct.
+                        
+                        L_val = L_base;
+                        C_val = (1 / (L_base * Math.pow(2 * Math.PI * fc * 1e6, 2))); // Ensure resonance
+                    } else {
+                        // Shunt Branch (Type 1)
+                        // Cp = gk / (dw * Z0)
+                        // Lp = (dw * Z0) / (gk * w0^2)
+                        const C_base = gk / (delta_w * Z0);
+                        const L_base = 1 / (C_base * Math.pow(2 * Math.PI * fc * 1e6, 2));
+                        
+                        L_val = L_base;
+                        C_val = C_base;
+                    }
+                    
+                    t1_L.push(L_val * 1e9); // to nH
+                    t1_C.push(C_val * 1e12); // to pF
+                }
+
+                // Type 2: Start with Shunt.
+                // k odd = Shunt, k even = Series
+                for (let k = 1; k <= n; k++) {
+                    const gk = g[k-1];
+                    let L_val, C_val;
+
+                    if (k % 2 !== 0) {
+                        // Shunt Branch (Type 2)
+                        const C_base = gk / (delta_w * Z0);
+                        const L_base = 1 / (C_base * Math.pow(2 * Math.PI * fc * 1e6, 2));
+                        L_val = L_base;
+                        C_val = C_base;
+                    } else {
+                        // Series Branch (Type 2)
+                        const L_base = (gk * Z0) / (delta_w);
+                        const C_base = 1 / (L_base * Math.pow(2 * Math.PI * fc * 1e6, 2));
+                        L_val = L_base;
+                        C_val = C_base;
+                    }
+
+                    t2_L.push(L_val * 1e9);
+                    t2_C.push(C_val * 1e12);
+                }
+
+                this.renderTable('1', n, t1_L, t1_C);
+                this.renderTable('2', n, t2_L, t2_C);
+                this.drawCircuit('svg-container-1', n, 1);
+                this.drawCircuit('svg-container-2', n, 2);
+            },
+
+            calcChebyshevG(n, rip_db) {
+                // Returns array g1...gn
+                const rip = Math.pow(10, rip_db/10) - 1; // epsilon^2 ? No.
+                // L_Ar = 10 log (1 + epsilon^2) -> epsilon^2 = 10^(Lar/10) - 1
+                // beta = ln( coth( Lar / 17.37 ) )
+                const beta = Math.log(1 / Math.tanh(rip_db / 17.37));
+                const gamma = Math.sinh(beta / (2 * n));
+                
+                const g = [];
+                for(let k=1; k<=n; k++) {
+                    const ak = Math.sin(((2*k - 1) * Math.PI) / (2 * n));
+                    const bk = Math.pow(gamma, 2) + Math.pow(Math.sin((k * Math.PI) / n), 2);
+                    
+                    if (k === 1) {
+                        g.push(2 * ak / gamma);
+                    } else {
+                        const ak_prev = Math.sin(((2*(k-1) - 1) * Math.PI) / (2 * n));
+                        const num = 4 * ak_prev * ak;
+                        const den = bk * g[k-2]; // g[k-2] is g_{k-1} because 0-indexed
+                        g.push(num / den);
+                    }
+                }
+                return g;
+            },
+
+            renderTable(idSuffix, n, Ls, Cs) {
+                const headerRow = document.getElementById(`header-row-${idSuffix}`);
+                const rowL = document.getElementById(`row-l-${idSuffix}`);
+                const rowC = document.getElementById(`row-c-${idSuffix}`);
+
+                // Clear
+                headerRow.innerHTML = '<th></th>';
+                rowL.innerHTML = '<td class="header-col">L [nH]</td>';
+                rowC.innerHTML = '<td class="header-col">C [pF]</td>';
+
+                for(let i=0; i<n; i++) {
+                    headerRow.innerHTML += `<th>#${i+1}</th>`;
+                    rowL.innerHTML += `<td>${Ls[i].toFixed(2)}</td>`;
+                    rowC.innerHTML += `<td>${Cs[i].toFixed(2)}</td>`;
+                }
+            },
+
+            drawCircuit(containerId, n, type) {
+                const container = document.getElementById(containerId);
+                const w = 800; // Virtual width
+                const h = 150;
+                
+                // Component drawing helpers
+                const drawInductor = (x, y, vertical) => {
+                    if (vertical) {
+                        // Spring shape vertical
+                        return `<path d="M${x},${y} q-10,5 0,10 q-10,5 0,10 q-10,5 0,10" fill="none" stroke="currentColor" stroke-width="2"/>`;
+                    } else {
+                        // Spring shape horizontal
+                        return `<path d="M${x},${y} q5,-10 10,0 q5,-10 10,0 q5,-10 10,0" fill="none" stroke="currentColor" stroke-width="2"/>`;
+                    }
+                };
+                const drawCapacitor = (x, y, vertical) => {
+                    if (vertical) {
+                        return `<line x1="${x-8}" y1="${y+15}" x2="${x+8}" y2="${y+15}" stroke="currentColor" stroke-width="2"/>
+                                <line x1="${x-8}" y1="${y+20}" x2="${x+8}" y2="${y+20}" stroke="currentColor" stroke-width="2"/>`;
+                    } else {
+                        return `<line x1="${x+15}" y1="${y-8}" x2="${x+15}" y2="${y+8}" stroke="currentColor" stroke-width="2"/>
+                                <line x1="${x+20}" y1="${y-8}" x2="${x+20}" y2="${y+8}" stroke="currentColor" stroke-width="2"/>`;
+                    }
+                };
+
+                let svg = `<svg viewBox="0 0 ${w} ${h}" class="w-full h-full text-slate-600 dark:text-slate-300">`;
+                
+                // Start
+                let x = 20;
+                const y_line = 60;
+                
+                // Input term
+                svg += `<circle cx="${x}" cy="${y_line}" r="3" fill="currentColor"/>`;
+                svg += `<text x="${x}" y="${y_line-10}" font-size="10" text-anchor="middle" fill="currentColor">In</text>`;
+                svg += `<line x1="${x}" y1="${y_line}" x2="${x+30}" y2="${y_line}" stroke="currentColor" stroke-width="2"/>`;
+                x += 30;
+
+                const step = 80;
+
+                for(let k=1; k<=n; k++) {
+                    const isSeries = (type === 1) ? (k % 2 !== 0) : (k % 2 === 0);
+                    
+                    if (isSeries) {
+                        // Series LC: Inductor and Capacitor in series on the top line
+                        // Simplified representation: Box or L+C symbols
+                        // Draw L
+                        svg += drawInductor(x, y_line, false);
+                        svg += `<line x1="${x+30}" y1="${y_line}" x2="${x+40}" y2="${y_line}" stroke="currentColor" stroke-width="2"/>`;
+                        // Draw C
+                        svg += drawCapacitor(x+40, y_line, false);
+                        svg += `<line x1="${x+75}" y1="${y_line}" x2="${x+step}" y2="${y_line}" stroke="currentColor" stroke-width="2"/>`;
+                        
+                        // Labels
+                        svg += `<text x="${x+15}" y="${y_line-15}" font-size="10" text-anchor="middle" fill="currentColor">L${k}</text>`;
+                        svg += `<text x="${x+50}" y="${y_line-15}" font-size="10" text-anchor="middle" fill="currentColor">C${k}</text>`;
+                    } else {
+                        // Shunt LC: Parallel L and C to ground
+                        // Line continuing top
+                        svg += `<line x1="${x}" y1="${y_line}" x2="${x+step}" y2="${y_line}" stroke="currentColor" stroke-width="2"/>`;
+                        
+                        const centerX = x + step/2;
+                        // Connection down
+                        svg += `<line x1="${centerX}" y1="${y_line}" x2="${centerX}" y2="${y_line+20}" stroke="currentColor" stroke-width="2"/>`;
+                        
+                        // Split for Parallel L and C
+                        // L path
+                        svg += `<line x1="${centerX}" y1="${y_line+20}" x2="${centerX-15}" y2="${y_line+20}" stroke="currentColor" stroke-width="2"/>`;
+                        svg += `<line x1="${centerX-15}" y1="${y_line+20}" x2="${centerX-15}" y2="${y_line+30}" stroke="currentColor" stroke-width="2"/>`;
+                        svg += drawInductor(centerX-15, y_line+30, true);
+                        svg += `<line x1="${centerX-15}" y1="${y_line+60}" x2="${centerX-15}" y2="${y_line+70}" stroke="currentColor" stroke-width="2"/>`;
+                        
+                        // C path
+                        svg += `<line x1="${centerX}" y1="${y_line+20}" x2="${centerX+15}" y2="${y_line+20}" stroke="currentColor" stroke-width="2"/>`;
+                        svg += `<line x1="${centerX+15}" y1="${y_line+20}" x2="${centerX+15}" y2="${y_line+30}" stroke="currentColor" stroke-width="2"/>`;
+                        svg += drawCapacitor(centerX+15, y_line+30, true);
+                        svg += `<line x1="${centerX+15}" y1="${y_line+65}" x2="${centerX+15}" y2="${y_line+70}" stroke="currentColor" stroke-width="2"/>`;
+
+                        // Rejoin
+                        svg += `<line x1="${centerX-15}" y1="${y_line+70}" x2="${centerX+15}" y2="${y_line+70}" stroke="currentColor" stroke-width="2"/>`;
+                        svg += `<line x1="${centerX}" y1="${y_line+70}" x2="${centerX}" y2="${y_line+80}" stroke="currentColor" stroke-width="2"/>`;
+                        
+                        // Ground
+                        svg += `<line x1="${centerX-10}" y1="${y_line+80}" x2="${centerX+10}" y2="${y_line+80}" stroke="currentColor" stroke-width="2"/>`;
+                        svg += `<line x1="${centerX-6}" y1="${y_line+84}" x2="${centerX+6}" y2="${y_line+84}" stroke="currentColor" stroke-width="2"/>`;
+                        
+                        // Labels
+                        svg += `<text x="${centerX-25}" y="${y_line+50}" font-size="10" text-anchor="end" fill="currentColor">L${k}</text>`;
+                        svg += `<text x="${centerX+25}" y="${y_line+50}" font-size="10" text-anchor="start" fill="currentColor">C${k}</text>`;
+                    }
+                    x += step;
+                }
+                
+                // End
+                svg += `<line x1="${x}" y1="${y_line}" x2="${x+20}" y2="${y_line}" stroke="currentColor" stroke-width="2"/>`;
+                svg += `<circle cx="${x+20}" cy="${y_line}" r="3" fill="currentColor"/>`;
+                svg += `<text x="${x+20}" y="${y_line-10}" font-size="10" text-anchor="middle" fill="currentColor">Out</text>`;
+
+                svg += `</svg>`;
+                container.innerHTML = svg;
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                    this.calculate(); // Re-render svg colors
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Zener Diode Calculator - Calculate limiting resistor and power dissipation for voltage regulator circuits.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M50,20 L50,40 M20,40 L80,40 M50,40 L50,60 L20,80 L80,80 L50,60 M50,80 L50,90%22 stroke=%22%23ec4899%22 stroke-width=%226%22 fill=%22none%22/></svg>">
+    
+    <title>稳压管限流电阻计算器 | Zener Calc Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#ec4899', hover: '#db2777' }, /* Pink */
+                        secondary: { DEFAULT: '#6366f1', hover: '#4f46e5' }, /* Indigo */
+                        bg: { light: '#fdf2f8', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-pink-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-12 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-pink-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all text-sm;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .circuit-text { font-family: monospace; font-size: 10px; fill: currentColor; }
+            .component-fill { fill: currentColor; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    Z
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">稳压管限流电阻计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Zener Diode Resistor Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="glass rounded-2xl p-5 shadow-sm space-y-4 border-t-4 border-t-pink-500">
+                
+                <h3 class="text-sm font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                    <i class="fa fa-sliders"></i> <span data-i18n="h_inputs">输入数值</span>
+                </h3>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_vin_max">最大输入电压 (Vin Max):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vin-max" class="input-field" value="12" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_vin_min">最小输入电压 (Vin Min):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vin-min" class="input-field" value="10" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_vout">输出电压/稳压值 (Vout):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vout" class="input-field" value="5.1" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_iload">负载电流 (Iload):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-iload" class="input-field" value="20" oninput="App.calculate()">
+                            <span class="unit-label">mA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button onclick="App.calculate()" class="btn-primary flex-1">
+                        <span data-i18n="btn_calc">计算</span>
+                    </button>
+                    <button onclick="App.reset()" class="btn-secondary text-red-500">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="lg:col-span-8 space-y-6">
+            
+            <!-- Result Box -->
+            <div class="glass rounded-2xl shadow-sm border-t-4 border-t-slate-500 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-slate-800 dark:text-white text-sm" data-i18n="h_result">计算结果</h3>
+                    <div id="status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 hidden">Valid</div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Text Results -->
+                    <div class="space-y-4">
+                        <div class="bg-pink-50 dark:bg-pink-900/20 rounded-xl p-4 border border-pink-100 dark:border-pink-800/30">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-xs text-slate-500 font-bold uppercase" data-i18n="res_r">限流电阻 (R)</span>
+                                <span id="val-r" class="text-2xl font-mono font-bold text-pink-600 dark:text-pink-400">- Ω</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-slate-400">
+                                <span data-i18n="res_pr">功率 (Power):</span>
+                                <span id="val-pr" class="font-bold">- W</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-xs text-slate-500 font-bold uppercase" data-i18n="res_vz">稳压二极管 (Zener)</span>
+                                <span id="val-vz" class="text-2xl font-mono font-bold text-indigo-600 dark:text-indigo-400">- V</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-slate-400">
+                                <span data-i18n="res_pz">最大功率 (Max Power):</span>
+                                <span id="val-pz" class="font-bold">- W</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Circuit SVG -->
+                    <div class="flex items-center justify-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 relative">
+                        <svg viewBox="0 0 200 150" class="w-full h-full max-w-[250px] text-slate-600 dark:text-slate-300">
+                            <!-- Input -->
+                            <circle cx="20" cy="40" r="3" class="component-fill"/>
+                            <text x="20" y="30" class="circuit-text" text-anchor="middle">Vin</text>
+                            <line x1="20" y1="40" x2="60" y2="40" class="circuit-line"/>
+                            
+                            <!-- Resistor -->
+                            <rect x="60" y="32" width="40" height="16" class="circuit-line bg-white fill-white dark:fill-slate-800"/>
+                            <text x="80" y="62" class="circuit-text font-bold text-pink-500" text-anchor="middle">R</text>
+                            <line x1="100" y1="40" x2="140" y2="40" class="circuit-line"/>
+
+                            <!-- Output Node -->
+                            <circle cx="140" cy="40" r="2" class="component-fill"/>
+                            <line x1="140" y1="40" x2="180" y2="40" class="circuit-line"/>
+                            <circle cx="180" cy="40" r="3" class="component-fill"/>
+                            <text x="180" y="30" class="circuit-text" text-anchor="middle">Vout</text>
+
+                            <!-- Zener Diode Branch -->
+                            <line x1="120" y1="40" x2="120" y2="60" class="circuit-line"/>
+                            <!-- Zener Symbol -->
+                            <line x1="110" y1="60" x2="130" y2="60" class="circuit-line" stroke-width="2"/> <!-- Cathode Line -->
+                            <line x1="110" y1="60" x2="110" y2="65" class="circuit-line"/> <!-- Wing L -->
+                            <line x1="130" y1="60" x2="130" y2="55" class="circuit-line"/> <!-- Wing R -->
+                            <path d="M120,80 L110,60 L130,60 Z" class="circuit-line bg-white fill-white dark:fill-slate-800"/> <!-- Triangle -->
+                            <line x1="120" y1="80" x2="120" y2="110" class="circuit-line"/>
+                            
+                            <text x="135" y="75" class="circuit-text font-bold text-indigo-500">Dz</text>
+
+                            <!-- Ground -->
+                            <line x1="20" y1="110" x2="180" y2="110" class="circuit-line"/>
+                            <text x="100" y="125" class="circuit-text" text-anchor="middle">GND</text>
+                            
+                            <!-- Load (Phantom) -->
+                            <rect x="160" y="60" width="20" height="30" stroke-dasharray="2" class="circuit-line bg-transparent fill-none"/>
+                            <line x1="170" y1="40" x2="170" y2="60" class="circuit-line" stroke-dasharray="2"/>
+                            <line x1="170" y1="90" x2="170" y2="110" class="circuit-line" stroke-dasharray="2"/>
+                            <text x="195" y="80" class="circuit-text text-[8px]" text-anchor="middle">Load</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">设计原理与公式</span>
+            </h2>
+            
+            <div class="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 space-y-6 leading-relaxed text-sm">
+                <p data-i18n="desc_p1">
+                    稳压二极管（齐纳二极管）利用其反向击穿特性来稳定电压。限流电阻 R 的作用是限制流过二极管的电流，防止其烧毁，同时在输入电压波动时调节压降以保持输出电压稳定。
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-pink-50 dark:bg-pink-900/20 border-l-4 border-pink-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-pink-800 dark:text-pink-200 mb-2 text-sm uppercase" data-i18n="h_formula">计算公式</h3>
+                        <div class="space-y-3 font-mono text-pink-900 dark:text-pink-100 text-xs md:text-sm">
+                            <div>
+                                <p class="font-bold mb-1" data-i18n="formula_r_title">1. 限流电阻 R</p>
+                                <p>$$ R = \frac{V_{in(min)} - V_{out}}{I_{load(max)} + I_{z(min)}} $$</p>
+                                <p class="text-[10px] opacity-70" data-i18n="formula_r_note">*为了保证稳压，即便在输入电压最低、负载电流最大时，流过稳压管的电流 $I_z$ 也不能小于维持电流 $I_{z(min)}$（本工具默认取 5mA）。</p>
+                            </div>
+                            <div>
+                                <p class="font-bold mb-1" data-i18n="formula_pr_title">2. 电阻功率 $P_R$</p>
+                                <p>$$ P_R = \frac{(V_{in(max)} - V_{out})^2}{R} $$</p>
+                            </div>
+                            <div>
+                                <p class="font-bold mb-1" data-i18n="formula_pz_title">3. 稳压管最大功率 $P_Z$</p>
+                                <p>$$ P_Z = V_{out} \times \frac{V_{in(max)} - V_{out}}{R} $$</p>
+                                <p class="text-[10px] opacity-70" data-i18n="formula_pz_note">*最坏情况：负载开路 ($I_{load}=0$)，所有电流流经稳压管。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm uppercase" data-i18n="h_design_tips">设计提示</h3>
+                        <ul class="list-disc list-inside space-y-2 text-xs">
+                            <li data-i18n="tip_1"><strong>电阻选型：</strong> 计算出的功率是理论最大值。实际选择电阻时，建议额定功率留有 2倍 以上的余量（例如计算出 0.4W，应选 1W 电阻）。</li>
+                            <li data-i18n="tip_2"><strong>稳压管选型：</strong> 同样，稳压管的功率也应留有余量。如果负载可能开路，必须按 $P_Z$ 最大值选型。</li>
+                            <li data-i18n="tip_3"><strong>输入电压波动：</strong> 输入电压范围 ($V_{in(min)}$ 到 $V_{in(max)}$) 越宽，效率越低，且对元件功率要求越高。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Zener Diode Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "稳压管限流电阻计算器", subtitle: "Zener Diode Resistor Calculator",
+                h_inputs: "输入数值",
+                lbl_vin_max: "最大输入电压 (Vin Max):", lbl_vin_min: "最小输入电压 (Vin Min):",
+                lbl_vout: "输出电压/稳压值 (Vout):", lbl_iload: "负载电流 (Iload):",
+                btn_calc: "计算",
+                h_result: "计算结果",
+                res_r: "限流电阻 (R)", res_pr: "电阻功率 (Power):",
+                res_vz: "稳压二极管 (Zener)", res_pz: "最大功率 (Max Power):",
+                guide_title: "设计原理与公式",
+                desc_p1: "稳压二极管（齐纳二极管）利用其反向击穿特性来稳定电压。限流电阻 R 的作用是限制流过二极管的电流，防止其烧毁，同时在输入电压波动时调节压降以保持输出电压稳定。",
+                h_formula: "计算公式",
+                formula_r_title: "1. 限流电阻 R",
+                formula_r_note: "*为了保证稳压，即便在输入电压最低、负载电流最大时，流过稳压管的电流 $I_z$ 也不能小于维持电流 $I_{z(min)}$（本工具默认取 5mA）。",
+                formula_pr_title: "2. 电阻功率 $P_R$",
+                formula_pz_title: "3. 稳压管最大功率 $P_Z$",
+                formula_pz_note: "*最坏情况：负载开路 ($I_{load}=0$)，所有电流流经稳压管。",
+                h_design_tips: "设计提示",
+                tip_1: "<strong>电阻选型：</strong> 计算出的功率是理论最大值。实际选择电阻时，建议额定功率留有 2倍 以上的余量（例如计算出 0.4W，应选 1W 电阻）。",
+                tip_2: "<strong>稳压管选型：</strong> 同样，稳压管的功率也应留有余量。如果负载可能开路，必须按 PZ 最大值选型。",
+                tip_3: "<strong>输入电压波动：</strong> 输入电压范围越宽，效率越低，且对元件功率要求越高。"
+            },
+            'en': {
+                title: "Zener Diode Calculator", subtitle: "Limiting Resistor Design Tool",
+                h_inputs: "Inputs",
+                lbl_vin_max: "Max Input Voltage (Vin Max):", lbl_vin_min: "Min Input Voltage (Vin Min):",
+                lbl_vout: "Output Voltage (Vout):", lbl_iload: "Load Current (Iload):",
+                btn_calc: "Calculate",
+                h_result: "Results",
+                res_r: "Limiting Resistor (R)", res_pr: "Resistor Power:",
+                res_vz: "Zener Voltage", res_pz: "Zener Max Power:",
+                guide_title: "Theory & Formulas",
+                desc_p1: "A Zener diode regulates voltage by operating in its reverse breakdown region. The resistor R limits current to prevent damage and drops the excess voltage.",
+                h_formula: "Formulas",
+                formula_r_title: "1. Limiting Resistor R",
+                formula_r_note: "*To ensure regulation, even at minimum input voltage and maximum load current, the Zener current $I_z$ must not fall below the holding current $I_{z(min)}$ (default 5mA).",
+                formula_pr_title: "2. Resistor Power $P_R$",
+                formula_pz_title: "3. Zener Max Power $P_Z$",
+                formula_pz_note: "*Worst case: Load open ($I_{load}=0$), all current flows through the Zener.",
+                h_design_tips: "Design Tips",
+                tip_1: "<strong>Resistor Selection:</strong> The calculated power is the theoretical max. Choose a resistor with a rating at least 2x the calculated value (e.g., if 0.4W, use 1W).",
+                tip_2: "<strong>Zener Selection:</strong> Ensure the Zener power rating handles the 'Max Power' case, which occurs if the load is disconnected.",
+                tip_3: "<strong>Input Range:</strong> A wider input voltage range results in lower efficiency and higher power requirements for components."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                this.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            calculate() {
+                const vinMax = parseFloat(document.getElementById('inp-vin-max').value);
+                const vinMin = parseFloat(document.getElementById('inp-vin-min').value);
+                const vout = parseFloat(document.getElementById('inp-vout').value);
+                const iload = parseFloat(document.getElementById('inp-iload').value);
+
+                const resR = document.getElementById('val-r');
+                const resPr = document.getElementById('val-pr');
+                const resVz = document.getElementById('val-vz');
+                const resPz = document.getElementById('val-pz');
+                const badge = document.getElementById('status-badge');
+
+                if (isNaN(vinMax) || isNaN(vinMin) || isNaN(vout) || isNaN(iload)) {
+                    return;
+                }
+
+                if (vinMin <= vout) {
+                    resR.textContent = "Error";
+                    resPr.textContent = "-";
+                    badge.textContent = "Vin < Vout";
+                    badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700";
+                    badge.classList.remove('hidden');
+                    return;
+                }
+
+                // 1. Calculate Resistor R based on Minimum Input Voltage
+                // We need enough current for Load + Zener Min Current (Iz_min).
+                // Assume Iz_min = 5mA (common rule of thumb for stability)
+                const Iz_min = 0.005; // 5mA
+                const Iload_A = iload / 1000;
+                
+                // R = (Vin_min - Vout) / (Iload + Iz_min)
+                const R = (vinMin - vout) / (Iload_A + Iz_min);
+
+                // 2. Calculate Power of Resistor (Pr) at Maximum Input Voltage
+                // Current is max when Vin is max.
+                // I_max_total = (Vin_max - Vout) / R
+                const I_max_total = (vinMax - vout) / R;
+                const Pr = (vinMax - vout) * I_max_total; // or V^2/R
+
+                // 3. Calculate Zener Power (Pz) at Max Input
+                // Worst case: Load is open (0 current), so all I_max_total goes through Zener.
+                const Pz = vout * I_max_total;
+
+                // Update UI
+                resR.textContent = R.toFixed(1) + " Ω";
+                resPr.textContent = Pr.toFixed(2) + " W";
+                resVz.textContent = vout + " V";
+                resPz.textContent = Pz.toFixed(2) + " W";
+
+                badge.textContent = "OK";
+                badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700";
+                badge.classList.remove('hidden');
+            },
+
+            reset() {
+                document.getElementById('inp-vin-max').value = 12;
+                document.getElementById('inp-vin-min').value = 10;
+                document.getElementById('inp-vout').value = 5.1;
+                document.getElementById('inp-iload').value = 20;
+                this.calculate();
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

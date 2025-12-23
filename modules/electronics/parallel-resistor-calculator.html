@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Parallel Resistor Calculator - Calculate equivalent resistance for up to 10 resistors in parallel.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M10,20 L10,80 M20,20 L20,80 M10,50 L0,50 M20,50 L30,50%22 stroke=%22%230ea5e9%22 stroke-width=%228%22 fill=%22none%22/></svg>">
+    
+    <title>并联电阻计算器 | Parallel Resistor Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#0ea5e9', hover: '#0284c7' }, /* Sky Blue */
+                        secondary: { DEFAULT: '#64748b', hover: '#475569' }, /* Slate */
+                        bg: { light: '#f0f9ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-sky-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-10 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-sky-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all text-sm;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .circuit-text { font-family: monospace; font-size: 10px; fill: currentColor; }
+            .component-fill { fill: currentColor; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    //
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">并联电阻计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Parallel Resistor Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-5 space-y-4">
+            <div class="glass rounded-2xl p-5 shadow-sm space-y-4 border-t-4 border-t-sky-500">
+                
+                <h3 class="text-sm font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                    <i class="fa fa-sliders"></i> <span data-i18n="h_inputs">输入电阻值 (R1-R10)</span>
+                </h3>
+
+                <!-- Resistor Inputs Grid -->
+                <div class="grid grid-cols-2 gap-3" id="resistor-inputs">
+                    <!-- Generated by JS -->
+                </div>
+
+                <div class="pt-2 flex gap-3 border-t border-slate-100 dark:border-slate-700/50">
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1" data-i18n="lbl_precision">有效数字 (Precision)</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-precision" class="input-field h-9" value="5" min="1" max="10" oninput="App.calculate()">
+                        </div>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="App.reset()" class="btn-secondary text-red-500 h-9 flex items-center">
+                            <i class="fa fa-trash-o mr-1"></i> <span data-i18n="btn_clear">清空</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Result Display -->
+            <div class="glass rounded-2xl shadow-sm border-t-4 border-t-indigo-500 p-6 flex flex-col justify-center items-center min-h-[200px]">
+                <div class="text-center space-y-2">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide" data-i18n="lbl_result">等效并联电阻 (Req)</h3>
+                    <div class="relative inline-block">
+                        <div id="res-total" class="text-5xl md:text-6xl font-mono font-bold text-sky-600 dark:text-sky-400 break-all">
+                            -
+                        </div>
+                        <div class="text-sm text-slate-400 mt-2 font-mono">Ohms (Ω)</div>
+                    </div>
+                </div>
+
+                <div class="mt-6 w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs text-slate-500">
+                    <span data-i18n="lbl_conductance">总电导 (G = 1/R):</span>
+                    <span id="res-conductance" class="font-mono font-bold text-slate-700 dark:text-slate-300">- S</span>
+                </div>
+            </div>
+
+            <!-- Circuit Diagram -->
+            <div class="glass rounded-2xl p-6 flex justify-center items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 h-[220px]">
+                <svg viewBox="0 0 300 150" class="w-full h-full max-w-[400px] text-slate-600 dark:text-slate-300">
+                    <!-- Main Rails -->
+                    <line x1="20" y1="20" x2="280" y2="20" class="circuit-line" />
+                    <line x1="20" y1="130" x2="280" y2="130" class="circuit-line" />
+                    
+                    <!-- Terminals -->
+                    <circle cx="20" cy="20" r="3" class="component-fill" />
+                    <circle cx="20" cy="130" r="3" class="component-fill" />
+                    <text x="15" y="15" class="circuit-text" text-anchor="end">A</text>
+                    <text x="15" y="140" class="circuit-text" text-anchor="end">B</text>
+
+                    <!-- R1 -->
+                    <line x1="60" y1="20" x2="60" y2="40" class="circuit-line" />
+                    <rect x="50" y="40" width="20" height="70" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                    <text x="60" y="80" class="circuit-text font-bold" text-anchor="middle">R1</text>
+                    <line x1="60" y1="110" x2="60" y2="130" class="circuit-line" />
+
+                    <!-- R2 -->
+                    <line x1="120" y1="20" x2="120" y2="40" class="circuit-line" />
+                    <rect x="110" y="40" width="20" height="70" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                    <text x="120" y="80" class="circuit-text font-bold" text-anchor="middle">R2</text>
+                    <line x1="120" y1="110" x2="120" y2="130" class="circuit-line" />
+
+                    <!-- Dots -->
+                    <circle cx="170" cy="75" r="1.5" class="component-fill opacity-50" />
+                    <circle cx="180" cy="75" r="1.5" class="component-fill opacity-50" />
+                    <circle cx="190" cy="75" r="1.5" class="component-fill opacity-50" />
+
+                    <!-- Rn -->
+                    <line x1="240" y1="20" x2="240" y2="40" class="circuit-line" />
+                    <rect x="230" y="40" width="20" height="70" class="circuit-line bg-white fill-white dark:fill-slate-800" />
+                    <text x="240" y="80" class="circuit-text font-bold" text-anchor="middle">Rn</text>
+                    <line x1="240" y1="110" x2="240" y2="130" class="circuit-line" />
+                </svg>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">计算公式与原理</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <div class="bg-sky-50 dark:bg-sky-900/20 border-l-4 border-sky-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-sky-800 dark:text-sky-200 mb-2 text-sm uppercase" data-i18n="h_formula_basic">基本公式</h3>
+                        <p class="text-xs mb-2" data-i18n="p_formula_desc">并联电路的总电阻的倒数等于各分电阻的倒数之和。</p>
+                        <div class="font-mono text-sky-900 dark:text-sky-100 text-sm overflow-x-auto">
+                            $$ \frac{1}{R_{eq}} = \frac{1}{R_1} + \frac{1}{R_2} + \cdots + \frac{1}{R_n} $$
+                        </div>
+                        <div class="font-mono text-sky-900 dark:text-sky-100 text-sm mt-2 overflow-x-auto">
+                            $$ R_{eq} = \frac{1}{\frac{1}{R_1} + \frac{1}{R_2} + \cdots + \frac{1}{R_n}} $$
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <div class="bg-slate-100 dark:bg-slate-800 border-l-4 border-slate-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm uppercase" data-i18n="h_special">特殊情况</h3>
+                        <ul class="list-disc list-inside space-y-2 text-xs">
+                            <li data-i18n="li_two">
+                                <strong>两个电阻并联：</strong> $R_{eq} = \frac{R_1 \times R_2}{R_1 + R_2}$
+                            </li>
+                            <li data-i18n="li_equal">
+                                <strong>n 个相同电阻 (R) 并联：</strong> $R_{eq} = \frac{R}{n}$
+                            </li>
+                            <li data-i18n="li_rule">
+                                <strong>规律：</strong> 并联后的总电阻一定小于其中最小的那个电阻值。
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Parallel Resistor Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "并联电阻计算器", subtitle: "多路电阻并联总阻值计算",
+                h_inputs: "输入电阻值 (R1-R10)", lbl_precision: "有效数字 (有效位数)",
+                btn_clear: "清空", lbl_result: "等效并联电阻 (Req)",
+                lbl_conductance: "总电导 (G = 1/R):",
+                
+                guide_title: "计算公式与原理",
+                h_formula_basic: "基本公式",
+                p_formula_desc: "并联电路的总电阻的倒数等于各分电阻的倒数之和。",
+                h_special: "特殊情况",
+                li_two: "<strong>两个电阻并联：</strong> Req = (R1 × R2) / (R1 + R2)",
+                li_equal: "<strong>n 个相同电阻 (R) 并联：</strong> Req = R / n",
+                li_rule: "<strong>规律：</strong> 并联后的总电阻一定小于其中最小的那个电阻值。"
+            },
+            'en': {
+                title: "Parallel Resistor Calculator", subtitle: "Calculate Equivalent Resistance",
+                h_inputs: "Enter Resistance (R1-R10)", lbl_precision: "Significant Digits",
+                btn_clear: "Clear", lbl_result: "Equivalent Resistance (Req)",
+                lbl_conductance: "Total Conductance (G = 1/R):",
+                
+                guide_title: "Formulas & Theory",
+                h_formula_basic: "Basic Formula",
+                p_formula_desc: "The reciprocal of the equivalent resistance equals the sum of the reciprocals of individual resistances.",
+                h_special: "Special Cases",
+                li_two: "<strong>Two Resistors:</strong> Req = (R1 × R2) / (R1 + R2)",
+                li_equal: "<strong>n Equal Resistors (R):</strong> Req = R / n",
+                li_rule: "<strong>Rule of Thumb:</strong> The equivalent resistance is always smaller than the smallest resistor in the parallel network."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            
+            init() {
+                this.renderInputs();
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                this.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            renderInputs() {
+                const container = document.getElementById('resistor-inputs');
+                let html = '';
+                for(let i=1; i<=10; i++) {
+                    html += `
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 mb-1">R${i}</label>
+                            <div class="input-group">
+                                <input type="number" id="r${i}" class="input-field h-9" placeholder="-" oninput="App.calculate()">
+                                <span class="unit-label">Ω</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            calculate() {
+                const precision = parseInt(document.getElementById('inp-precision').value) || 5;
+                let sumInv = 0;
+                let count = 0;
+
+                for(let i=1; i<=10; i++) {
+                    const val = parseFloat(document.getElementById(`r${i}`).value);
+                    if (!isNaN(val) && val !== 0) {
+                        sumInv += 1.0 / val;
+                        count++;
+                    }
+                }
+
+                const resTotal = document.getElementById('res-total');
+                const resCond = document.getElementById('res-conductance');
+
+                if (count === 0) {
+                    resTotal.textContent = '-';
+                    resCond.textContent = '- S';
+                    return;
+                }
+
+                const req = 1.0 / sumInv;
+                
+                // Format
+                const format = (n) => {
+                    // Handle precision
+                    if (Math.abs(n) < 1e-9) return '0';
+                    return n.toPrecision(precision);
+                };
+
+                resTotal.textContent = format(req);
+                resCond.textContent = format(sumInv) + ' S';
+            },
+
+            reset() {
+                for(let i=1; i<=10; i++) {
+                    document.getElementById(`r${i}`).value = '';
+                }
+                this.calculate();
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

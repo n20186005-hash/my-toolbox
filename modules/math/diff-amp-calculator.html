@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Differential Amplifier Calculator - BJT Differential Pair DC Bias, AC Gain, and Frequency Response analysis.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M30,30 L30,70 M70,30 L70,70 M30,70 L50,90 L70,70%22 fill=%22none%22 stroke=%22%233b82f6%22 stroke-width=%228%22/></svg>">
+    
+    <title>差动放大器计算器 | Diff Amp Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#3b82f6', hover: '#2563eb' }, /* Blue */
+                        secondary: { DEFAULT: '#8b5cf6', hover: '#7c3aed' }, /* Violet */
+                        bg: { light: '#f1f5f9', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-10 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .section-title {
+                @apply text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all text-sm;
+            }
+            .result-card {
+                @apply bg-slate-50 dark:bg-slate-700/30 rounded-lg p-3 border border-slate-100 dark:border-slate-700 flex justify-between items-center;
+            }
+            .result-label {
+                @apply text-xs text-slate-500 dark:text-slate-400 font-medium;
+            }
+            .result-val {
+                @apply text-sm font-mono font-bold text-slate-800 dark:text-white;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    BJT
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">差动放大器计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">BJT Differential Pair Analysis</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="glass rounded-2xl p-5 shadow-sm space-y-4 border-t-4 border-t-blue-500">
+                
+                <!-- Circuit Params -->
+                <div>
+                    <h3 class="section-title"><i class="fa fa-microchip"></i> <span data-i18n="sec_circuit">电路参数</span></h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">R1</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-r1" class="input-field" value="18" oninput="App.calculate()">
+                                <span class="unit-label">KΩ</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">R2</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-r2" class="input-field" value="3.9" oninput="App.calculate()">
+                                <span class="unit-label">KΩ</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">RC (Collector)</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-rc" class="input-field" value="3" oninput="App.calculate()">
+                                <span class="unit-label">KΩ</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">RE (Emitter)</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-re" class="input-field" value="3.4" oninput="App.calculate()">
+                                <span class="unit-label">KΩ</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">VP (Supply)</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-vp" class="input-field" value="25" oninput="App.calculate()">
+                                <span class="unit-label">V</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">Rs (Source)</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-rs" class="input-field" value="50" oninput="App.calculate()">
+                                <span class="unit-label">Ω</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BJT Params -->
+                <div>
+                    <h3 class="section-title"><i class="fa fa-transgender-alt"></i> <span data-i18n="sec_bjt">晶体管参数</span></h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">Beta (β)</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-beta" class="input-field" value="100" oninput="App.calculate()">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">VBE (Drop)</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-vbe" class="input-field" value="0.6" oninput="App.calculate()">
+                                <span class="unit-label">V</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">fT (BW Product)</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-ft" class="input-field" value="400" oninput="App.calculate()">
+                                <span class="unit-label">MHz</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">CCB (Cu/Cμ)</label>
+                            <div class="input-group">
+                                <input type="number" id="inp-ccb" class="input-field" value="2" oninput="App.calculate()">
+                                <span class="unit-label">pF</span>
+                            </div>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">CBE (Cπ) <span class="font-normal text-slate-300 ml-1 italic" data-i18n="lbl_optional">(可选/自动)</span></label>
+                            <div class="input-group">
+                                <input type="number" id="inp-cbe" class="input-field" placeholder="Auto Calc" oninput="App.calculate()">
+                                <span class="unit-label">pF</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button onclick="App.calculate()" class="btn-primary flex-1">
+                        <span data-i18n="btn_calc">计算</span>
+                    </button>
+                    <button onclick="App.reset()" class="btn-secondary text-red-500">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="lg:col-span-8 space-y-6">
+            
+            <!-- DC Analysis -->
+            <div class="glass rounded-2xl shadow-sm overflow-hidden border-t-4 border-t-emerald-500">
+                <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 p-3">
+                    <h3 class="font-bold text-slate-800 dark:text-white text-sm flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span data-i18n="h_dc">直流工作点 (DC Operating Point)</span>
+                    </h3>
+                </div>
+                <div class="p-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="result-card">
+                        <span class="result-label">VB (Base)</span>
+                        <span id="res-vb" class="result-val">- V</span>
+                    </div>
+                    <div class="result-card">
+                        <span class="result-label">VE (Emitter)</span>
+                        <span id="res-ve" class="result-val">- V</span>
+                    </div>
+                    <div class="result-card">
+                        <span class="result-label">VC (Collector)</span>
+                        <span id="res-vc" class="result-val">- V</span>
+                    </div>
+                    <div class="result-card">
+                        <span class="result-label">IE (Tail Total)</span>
+                        <span id="res-ie" class="result-val">- mA</span>
+                    </div>
+                    <div class="result-card">
+                        <span class="result-label">IC (Total)</span>
+                        <span id="res-ic" class="result-val">- mA</span>
+                    </div>
+                    <div class="result-card">
+                        <span class="result-label">IB (Total)</span>
+                        <span id="res-ib" class="result-val">- mA</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AC Parameters -->
+            <div class="glass rounded-2xl shadow-sm overflow-hidden border-t-4 border-t-indigo-500">
+                <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 p-3">
+                    <h3 class="font-bold text-slate-800 dark:text-white text-sm flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span data-i18n="h_ac">交流小信号参数 (AC Small Signal)</span>
+                    </h3>
+                </div>
+                <div class="p-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="result-card border-indigo-200/50 dark:border-indigo-800/50 bg-indigo-50/50 dark:bg-indigo-900/10">
+                        <span class="result-label">Gain (A)</span>
+                        <span id="res-gain" class="result-val text-indigo-600 dark:text-indigo-400 text-lg">-</span>
+                    </div>
+                    <div class="result-card">
+                        <span class="result-label">gm</span>
+                        <span id="res-gm" class="result-val">- S</span>
+                    </div>
+                    <div class="result-card">
+                        <span class="result-label">rπ (Input Z)</span>
+                        <span id="res-rpi" class="result-val">- Ω</span>
+                    </div>
+                    <div class="result-card">
+                        <span class="result-label">re (Intrinsic)</span>
+                        <span id="res-re" class="result-val">- Ω</span>
+                    </div>
+                    <div class="result-card">
+                        <span class="result-label">RIN (Amp)</span>
+                        <span id="res-rin" class="result-val">- KΩ</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Frequency Response -->
+            <div class="glass rounded-2xl shadow-sm overflow-hidden border-t-4 border-t-rose-500">
+                <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 p-3">
+                    <h3 class="font-bold text-slate-800 dark:text-white text-sm flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> <span data-i18n="h_freq">频率响应 (Frequency Response)</span>
+                    </h3>
+                </div>
+                <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-500">fP1 (Input Pole)</span>
+                            <span id="res-fp1" class="font-mono font-bold text-rose-600 dark:text-rose-400">- MHz</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-500">fP2 (Output Pole)</span>
+                            <span id="res-fp2" class="font-mono font-bold text-slate-700 dark:text-slate-300">- MHz</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-2 italic" data-i18n="note_pole">
+                            *The lower pole dominates the bandwidth.
+                        </div>
+                    </div>
+                    <div class="bg-slate-100 dark:bg-slate-900/50 rounded-lg p-3 text-xs font-mono text-slate-500 space-y-1">
+                        <div class="flex justify-between"><span>Derived CBE:</span> <span id="res-cbe-calc">- pF</span></div>
+                        <div class="flex justify-between"><span>Alpha:</span> <span id="res-alpha">-</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <div class="grid md:grid-cols-2 gap-12">
+                <!-- Feature Introduction -->
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                        <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">功能详解</span>
+                    </h2>
+                    <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 mb-1" data-i18n="guide_h_dc">直流偏置分析</h3>
+                            <p data-i18n="guide_p_dc">计算基极(VB)、发射极(VE)、集电极(VC)的静态电压及各支路电流，验证晶体管是否处于线性放大区。使用尾电流源(由 RE 设定)来偏置差分对。</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 mb-1" data-i18n="guide_h_ac">交流小信号分析</h3>
+                            <p data-i18n="guide_p_ac">基于混合-π模型，计算跨导 (gm)、输入电阻 (rπ)、本征发射极电阻 (re) 及差模电压增益 (Av)。考虑了源电阻 (Rs) 对增益的衰减作用。</p>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 mb-1" data-i18n="guide_h_freq">频率响应</h3>
+                            <p data-i18n="guide_p_freq">估算输入极点 (fP1) 和输出极点 (fP2)，确定放大器的 -3dB 带宽。计算考虑了密勒效应(Miller Effect)对输入电容的影响。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q&A / Tips -->
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                        <i class="fa fa-question-circle text-primary"></i> <span data-i18n="qa_title">常见问题与技巧</span>
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30">
+                            <h4 class="font-bold text-indigo-800 dark:text-indigo-300 mb-1 text-sm" data-i18n="qa_h_gain">如何提高电压增益?</h4>
+                            <p class="text-xs text-indigo-700 dark:text-indigo-400" data-i18n="qa_p_gain">增加集电极电阻 RC 或减小发射极电阻 RE（从而增加尾电流）可以提高增益。注意这可能会影响输出摆幅线性度和带宽。</p>
+                        </div>
+
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/30">
+                            <h4 class="font-bold text-blue-800 dark:text-blue-300 mb-1 text-sm" data-i18n="qa_h_ft">什么是 fT?</h4>
+                            <p class="text-xs text-blue-700 dark:text-blue-400" data-i18n="qa_p_ft">fT 是晶体管的特征频率（电流增益带宽积）。当工作频率接近 fT 时，晶体管的增益能力将显著下降。通常设计频率应远低于 fT。</p>
+                        </div>
+                        
+                        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                            <h4 class="font-bold text-slate-700 dark:text-slate-300 mb-1 text-sm" data-i18n="qa_h_pole">输入极点 fP1 是如何计算的?</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400" data-i18n="qa_p_pole">由源内阻 Rs、放大器输入阻抗 RIN 以及等效输入电容决定。等效输入电容包含了 CBE 和经密勒效应放大的 CCB。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Diff Amp Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "差动放大器计算器", subtitle: "BJT差分对直流偏置、增益及频响分析",
+                sec_circuit: "电路参数", sec_bjt: "晶体管参数",
+                btn_calc: "计算", lbl_optional: "(可选/自动)",
+                h_dc: "直流工作点 (DC Operating Point)",
+                h_ac: "交流小信号参数 (AC Small Signal)",
+                h_freq: "频率响应 (Frequency Response)",
+                note_pole: "*带宽通常由较低频率的极点决定。",
+                guide_title: "功能详解",
+                guide_h_dc: "直流偏置分析", guide_p_dc: "计算基极(VB)、发射极(VE)、集电极(VC)的静态电压及各支路电流，验证晶体管是否处于线性放大区。使用尾电流源(由 RE 设定)来偏置差分对。",
+                guide_h_ac: "交流小信号分析", guide_p_ac: "基于混合-π模型，计算跨导 (gm)、输入电阻 (rπ)、本征发射极电阻 (re) 及差模电压增益 (Av)。考虑了源电阻 (Rs) 对增益的衰减作用。",
+                guide_h_freq: "频率响应", guide_p_freq: "估算输入极点 (fP1) 和输出极点 (fP2)，确定放大器的 -3dB 带宽。计算考虑了密勒效应(Miller Effect)对输入电容的影响。",
+                qa_title: "常见问题与技巧",
+                qa_h_gain: "如何提高电压增益?", qa_p_gain: "增加集电极电阻 RC 或减小发射极电阻 RE（从而增加尾电流）可以提高增益。注意这可能会影响输出摆幅线性度和带宽。",
+                qa_h_ft: "什么是 fT?", qa_p_ft: "fT 是晶体管的特征频率（电流增益带宽积）。当工作频率接近 fT 时，晶体管的增益能力将显著下降。通常设计频率应远低于 fT。",
+                qa_h_pole: "输入极点 fP1 是如何计算的?", qa_p_pole: "由源内阻 Rs、放大器输入阻抗 RIN 以及等效输入电容决定。等效输入电容包含了 CBE 和经密勒效应放大的 CCB。"
+            },
+            'en': {
+                title: "Diff Amp Calculator", subtitle: "BJT Differential Pair Analysis",
+                sec_circuit: "Circuit Parameters", sec_bjt: "Transistor Parameters (BJT)",
+                btn_calc: "Calculate", lbl_optional: "(Optional/Auto)",
+                h_dc: "DC Operating Point",
+                h_ac: "AC Small Signal Parameters",
+                h_freq: "Frequency Response",
+                note_pole: "*The lower pole dominates the bandwidth.",
+                guide_title: "Detailed Features",
+                guide_h_dc: "DC Bias Analysis", guide_p_dc: "Calculates static voltages (VB, VE, VC) and currents, verifying the BJT is in the active region. Uses a tail current source (set by RE) to bias the pair.",
+                guide_h_ac: "AC Small Signal", guide_p_ac: "Calculates transconductance (gm), input resistance (rπ), intrinsic emitter resistance (re), and differential voltage gain (Av) based on the hybrid-π model.",
+                guide_h_freq: "Frequency Response", guide_p_freq: "Estimates input pole (fP1) and output pole (fP2) to determine -3dB bandwidth, accounting for Miller effect and source resistance.",
+                qa_title: "FAQ & Tips",
+                qa_h_gain: "How to increase Gain?", qa_p_gain: "Increasing Collector Resistor RC or increasing tail current (reducing RE) increases gain but may trade off linearity or bandwidth.",
+                qa_h_ft: "What is fT?", qa_p_ft: "fT is the Transition Frequency (Current Gain Bandwidth Product). Gain drops significantly near fT. Design frequency should be well below fT.",
+                qa_h_pole: "How is fP1 calculated?", qa_p_pole: "It is determined by source resistance Rs, input impedance RIN, and equivalent input capacitance (including CBE and Miller-multiplied CCB)."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                this.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                
+                this.updateText();
+
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.textContent = dict[key];
+                });
+            },
+
+            calculate() {
+                // 1. Get Inputs
+                const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
+                
+                const R1 = getVal('inp-r1') * 1000; // to Ohms
+                const R2 = getVal('inp-r2') * 1000;
+                const RC = getVal('inp-rc') * 1000;
+                const RE = getVal('inp-re') * 1000;
+                const VP = getVal('inp-vp');
+                const RS = getVal('inp-rs');
+                
+                const Beta = getVal('inp-beta');
+                const VBE = getVal('inp-vbe');
+                const fT = getVal('inp-ft') * 1e6; // to Hz
+                const CCB = getVal('inp-ccb') * 1e-12; // to F
+                
+                const inpCBE = document.getElementById('inp-cbe').value;
+                let CBE = 0;
+
+                // 2. DC Calculations
+                // VB = VP * R2 / (R1 + R2)
+                const VB = VP * R2 / (R1 + R2);
+                
+                // VE = VB - VBE
+                const VE = VB - VBE;
+                
+                // IE (Total Tail Current) = VE / RE
+                const IE_total = VE / RE; // Amps
+                
+                // Alpha
+                const Alpha = Beta / (Beta + 1);
+                
+                // IC (Total) = Alpha * IE
+                const IC_total = Alpha * IE_total; // Amps
+                
+                // VC = VP - IC_total * RC / 2 (Assuming drop per branch)
+                // Wait, IC_total is sum of both branches. Each branch has IC/2.
+                // Drop on single RC is (IC/2) * RC.
+                const VC = VP - (IC_total / 2) * RC;
+                
+                // IB (Total) = IC_total / Beta
+                const IB_total = IC_total / Beta;
+
+                // 3. AC Parameters (Single Transistor)
+                // Use single transistor current for gm, re, rpi
+                const IC_single = IC_total / 2;
+                
+                // gm = Ic / 25mV
+                const VT = 0.025; // 25mV
+                const gm = IC_single / VT; // Siemens
+                
+                // re = Alpha / gm
+                const re = Alpha / gm; // Ohms
+                
+                // rpi = Beta / gm
+                const rpi = Beta / gm; // Ohms
+                
+                // RIN (Amp) = 2 * rpi (Differential Input Resistance)
+                const RIN = 2 * rpi; // Ohms
+                
+                // Gain A = Alpha * rpi * RC / (Rs + 2*rpi) / re
+                // Note: user formula `... / re`.
+                const gain = (Alpha * rpi * RC) / (RS + 2 * rpi) / re;
+
+                // 4. Frequency Response
+                // Calculate CBE if not provided
+                if (inpCBE && inpCBE.trim() !== "") {
+                    CBE = parseFloat(inpCBE) * 1e-12;
+                } else {
+                    // fT = gm / (2pi * (CBE + CBC))
+                    // CBE + CBC = gm / (2pi * fT)
+                    // CBE = (gm / (2pi * fT)) - CBC
+                    if (fT > 0) {
+                        CBE = (gm / (2 * Math.PI * fT)) - CCB;
+                        if (CBE < 0) CBE = 0; // Physics check
+                    }
+                }
+
+                // fP1 = 1 / (2*pi * (Rs || 2*rpi) * (CBE/2 + CBC))
+                // Parallel resistance: (Rs * 2rpi) / (Rs + 2rpi)
+                const R_in_eff = (RS * RIN) / (RS + RIN);
+                const C_in_eff = (CBE / 2) + CCB;
+                const fP1 = 1 / (2 * Math.PI * R_in_eff * C_in_eff); // Hz
+
+                // fP2 = 1 / (2*pi * RC * CBC)
+                const fP2 = 1 / (2 * Math.PI * RC * CCB); // Hz
+
+                // 5. Rendering
+                const setTxt = (id, val, unit='', fixed=2) => {
+                    const el = document.getElementById(id);
+                    if(el) el.textContent = isNaN(val) ? '-' : (val.toFixed(fixed) + ' ' + unit);
+                };
+
+                setTxt('res-vb', VB, 'V');
+                setTxt('res-ve', VE, 'V');
+                setTxt('res-vc', VC, 'V');
+                setTxt('res-ie', IE_total * 1000, 'mA', 3);
+                setTxt('res-ic', IC_total * 1000, 'mA', 3);
+                setTxt('res-ib', IB_total * 1000, 'mA', 4);
+
+                setTxt('res-gain', gain, 'V/V');
+                setTxt('res-gm', gm, 'S', 4);
+                setTxt('res-rpi', rpi, 'Ω');
+                setTxt('res-re', re, 'Ω');
+                setTxt('res-rin', RIN / 1000, 'KΩ');
+
+                setTxt('res-fp1', fP1 / 1e6, 'MHz');
+                setTxt('res-fp2', fP2 / 1e6, 'MHz');
+                
+                setTxt('res-cbe-calc', CBE * 1e12, 'pF');
+                setTxt('res-alpha', Alpha, '', 4);
+            },
+
+            reset() {
+                // Reload or clear inputs? Simple reload for now or default values
+                document.getElementById('inp-r1').value = 18;
+                document.getElementById('inp-r2').value = 3.9;
+                // ... reset others to defaults
+                this.calculate();
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

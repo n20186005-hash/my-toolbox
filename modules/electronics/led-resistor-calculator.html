@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="💡">
+    <meta name="description" content="LED Resistor Calculator - Calculate series resistor for Single, Series, and Parallel LED circuits.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22none%22 stroke=%22%2310b981%22 stroke-width=%228%22/><path d=%22M50,20 L50,80 M20,50 L80,50%22 stroke=%22%2310b981%22 stroke-width=%228%22/></svg>">
+    
+    <title>LED限流电阻计算器 | LED Calc Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#10b981', hover: '#059669' }, /* Emerald */
+                        secondary: { DEFAULT: '#f43f5e', hover: '#e11d48' }, /* Rose */
+                        bg: { light: '#ecfdf5', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-emerald-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-12 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .btn-secondary {
+                @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2 px-4 rounded-xl transition-all text-sm;
+            }
+            .tab-btn {
+                @apply flex-1 py-2 text-xs font-bold rounded-lg transition-colors text-center cursor-pointer select-none;
+            }
+            .tab-btn.active {
+                @apply bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50;
+            }
+            .tab-btn.inactive {
+                @apply text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800;
+            }
+            .color-btn {
+                @apply w-6 h-6 rounded-full border-2 border-slate-200 dark:border-slate-600 cursor-pointer hover:scale-110 transition-transform shadow-sm flex items-center justify-center text-[10px] text-black/50 font-bold;
+            }
+            
+            /* Circuit SVG Styling */
+            .circuit-line { stroke: currentColor; stroke-width: 2; fill: none; }
+            .circuit-text { font-family: monospace; font-size: 10px; fill: currentColor; }
+            .component-fill { fill: currentColor; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    LED
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">LED发光二极管限流电阻值计算</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">LED Series Resistor Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Input Panel -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="glass rounded-2xl p-5 shadow-sm border-t-4 border-t-emerald-500">
+                
+                <!-- Tabs -->
+                <div class="flex gap-2 p-1 bg-slate-50 dark:bg-slate-800 rounded-xl mb-6">
+                    <div class="tab-btn active" id="tab-single" onclick="App.setMode('single')">
+                        <i class="fa fa-circle-o mr-1"></i> <span data-i18n="mode_single">单只LED</span>
+                    </div>
+                    <div class="tab-btn inactive" id="tab-series" onclick="App.setMode('series')">
+                        <i class="fa fa-ellipsis-h mr-1"></i> <span data-i18n="mode_series">LED串联</span>
+                    </div>
+                    <div class="tab-btn inactive" id="tab-parallel" onclick="App.setMode('parallel')">
+                        <i class="fa fa-bars mr-1"></i> <span data-i18n="mode_parallel">LED并联</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Quick Select for Vf -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-2 uppercase" data-i18n="lbl_quick_vf">快速选择压降 (Vf Preset):</label>
+                        <div class="flex gap-3 justify-between px-2">
+                            <div class="color-btn bg-red-500" onclick="App.setVf(2.0, 20)" title="Red: 2.0V"></div>
+                            <div class="color-btn bg-yellow-400" onclick="App.setVf(2.0, 20)" title="Yellow: 2.0V"></div>
+                            <div class="color-btn bg-green-500" onclick="App.setVf(2.1, 20)" title="Green: 2.1V"></div>
+                            <div class="color-btn bg-blue-500" onclick="App.setVf(3.2, 20)" title="Blue: 3.2V"></div>
+                            <div class="color-btn bg-white border-slate-300" onclick="App.setVf(3.2, 20)" title="White: 3.2V"></div>
+                        </div>
+                    </div>
+
+                    <!-- Inputs -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_vin">电源电压 (Vin):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vin" class="input-field" value="5" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_vf">LED 压降 (Vf):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-vf" class="input-field" value="2.0" step="0.1" oninput="App.calculate()">
+                            <span class="unit-label">V</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_if">所需 LED 电流 (If):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-if" class="input-field" value="20" oninput="App.calculate()">
+                            <span class="unit-label">mA</span>
+                        </div>
+                    </div>
+
+                    <div id="field-count" class="hidden">
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_count">连接 LED 的数量 (N):</label>
+                        <div class="input-group">
+                            <input type="number" id="inp-n" class="input-field" value="2" min="1" step="1" oninput="App.calculate()">
+                            <span class="unit-label">pcs</span>
+                        </div>
+                    </div>
+
+                    <button onclick="App.calculate()" class="btn-primary w-full mt-2">
+                        <span data-i18n="btn_calc">计算电阻值</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result / Diagram -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Result Box -->
+            <div class="glass rounded-2xl shadow-sm border-t-4 border-t-indigo-500 p-6">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4 flex justify-between items-center">
+                    <span data-i18n="h_result">计算结果</span>
+                    <span id="status-badge" class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full hidden">OK</span>
+                </h3>
+                
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
+                        <div class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold mb-1 uppercase" data-i18n="lbl_res_calc">计算电阻值</div>
+                        <div id="res-r-calc" class="text-2xl md:text-3xl font-mono font-bold text-indigo-700 dark:text-indigo-300">- Ω</div>
+                    </div>
+                    <div class="text-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
+                        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mb-1 uppercase" data-i18n="lbl_res_std">推荐标准电阻 (E24)</div>
+                        <div id="res-r-std" class="text-2xl md:text-3xl font-mono font-bold text-emerald-700 dark:text-emerald-300">- Ω</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-xs">
+                    <div class="flex justify-between items-center p-2 rounded bg-slate-50 dark:bg-slate-800/50">
+                        <span class="text-slate-500" data-i18n="lbl_p_calc">电阻功率 (计算):</span>
+                        <span id="res-p-calc" class="font-mono font-bold text-slate-700 dark:text-slate-300">- W</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded bg-slate-50 dark:bg-slate-800/50">
+                        <span class="text-slate-500" data-i18n="lbl_p_safe">安全功率 (建议):</span>
+                        <span id="res-p-safe" class="font-mono font-bold text-rose-600 dark:text-rose-400">- W</span>
+                    </div>
+                </div>
+                
+                <div id="error-msg" class="mt-3 text-xs text-red-500 font-bold text-center hidden">
+                    Warning: Voltage too low!
+                </div>
+            </div>
+
+            <!-- Circuit Diagram -->
+            <div class="glass rounded-2xl p-6 flex justify-center items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 h-[220px]">
+                <div id="circuit-container" class="w-full h-full flex justify-center items-center">
+                    <!-- SVG Injected Here -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">LED 参数参考与计算公式</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <div class="bg-emerald-50 dark:bg-emerald-900/20 border-l-4 border-emerald-500 p-4 rounded-r-lg">
+                        <h3 class="font-bold text-emerald-800 dark:text-emerald-200 mb-2 text-sm uppercase" data-i18n="h_formula">计算公式</h3>
+                        <div class="space-y-2 font-mono text-emerald-900 dark:text-emerald-100 text-xs md:text-sm">
+                            <p><strong>R</strong> = (Vin - V_total) / I_led</p>
+                            <p><strong>P</strong> = (Vin - V_total) × I_led</p>
+                            <p class="text-[10px] opacity-70 mt-2 text-slate-500" data-i18n="formula_note">
+                                * V_total = Vf (单只) 或 N × Vf (串联)<br>
+                                * 并联模式下 I_led = N × I_single
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-rose-50 dark:bg-rose-900/20 p-3 rounded border border-rose-100 dark:border-rose-900/30 text-xs text-rose-600 dark:text-rose-400">
+                        <i class="fa fa-exclamation-triangle mr-1"></i> <strong data-i18n="warning_title">并联电路提示：</strong>
+                        <span data-i18n="warning_text">虽然可以只用一个限流电阻控制多个并联 LED，但由于 LED 制造差异，电流可能分配不均导致亮度不一或个别烧毁。最佳实践是每个并联支路单独串联一个电阻。</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                    <h3 class="font-bold text-slate-800 dark:text-slate-200 mb-2 uppercase" data-i18n="h_ref">常见颜色压降参考</h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500"></span> <span data-i18n="ref_red">红色: 2.0-2.2 V</span></div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-yellow-400"></span> <span data-i18n="ref_yellow">黄色: 1.8-2.0 V</span></div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500"></span> <span data-i18n="ref_green">绿色: 2.0-2.2 V / 3.0-3.2 V</span></div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span> <span data-i18n="ref_blue">蓝色: 3.0-4.0 V</span></div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-white border border-slate-300"></span> <span data-i18n="ref_white">白色: 3.0-4.0 V</span></div>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2 italic" data-i18n="note_ref">*注：不同厂家参数可能不同，以上仅供参考。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> LED Resistor Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "LED发光二极管限流电阻值计算", subtitle: "LED Resistor Calculator",
+                mode_single: "单只LED", mode_series: "LED串联", mode_parallel: "LED并联",
+                lbl_quick_vf: "快速选择压降 (Vf Preset):",
+                lbl_vin: "电源电压 (Vin):", lbl_vf: "发光二极管压降 (Vf):", lbl_if: "所需的LED电流 (If):", lbl_count: "连接LED的数量 (N):",
+                btn_calc: "计算电阻值",
+                h_result: "计算结果", lbl_res_calc: "计算限流电阻", lbl_res_std: "最接近的标准电阻 (E24)",
+                lbl_p_calc: "计算电阻功率:", lbl_p_safe: "安全的电阻功率:",
+                guide_title: "LED 参数参考与计算公式",
+                h_formula: "计算公式",
+                formula_note: "* V_total = Vf (单只) 或 N × Vf (串联)<br>* 并联模式下 I_led = N × I_single",
+                warning_title: "并联电路提示：",
+                warning_text: "虽然可以只用一个限流电阻控制多个并联 LED，但由于 LED 制造差异，电流可能分配不均导致亮度不一或个别烧毁。最佳实践是每个并联支路单独串联一个电阻。",
+                h_ref: "常见颜色压降参考",
+                ref_red: "红色: 2.0-2.2 V", ref_yellow: "黄色: 1.8-2.0 V", ref_green: "绿色: 2.0-2.2 V / 3.0-3.2 V",
+                ref_blue: "蓝色: 3.0-4.0 V", ref_white: "白色: 3.0-4.0 V",
+                note_ref: "*注：不同厂家参数可能不同，以上仅供参考。"
+            },
+            'en': {
+                title: "LED Resistor Calculator", subtitle: "Calculate Current Limiting Resistor",
+                mode_single: "Single LED", mode_series: "Series LEDs", mode_parallel: "Parallel LEDs",
+                lbl_quick_vf: "Quick Select Vf:",
+                lbl_vin: "Supply Voltage (Vin):", lbl_vf: "LED Voltage Drop (Vf):", lbl_if: "Desired LED Current (If):", lbl_count: "Number of LEDs (N):",
+                btn_calc: "Calculate Resistor",
+                h_result: "Results", lbl_res_calc: "Calculated Resistance", lbl_res_std: "Nearest Standard (E24)",
+                lbl_p_calc: "Resistor Power:", lbl_p_safe: "Safe Resistor Power:",
+                guide_title: "LED Reference & Formulas",
+                h_formula: "Formulas",
+                formula_note: "* V_total = Vf (Single) or N × Vf (Series)<br>* Parallel mode I_led = N × I_single",
+                warning_title: "Parallel Circuit Warning:",
+                warning_text: "Sharing one resistor for parallel LEDs is generally bad practice due to VF mismatch, which can lead to uneven brightness or thermal runaway. It is better to use a resistor for each LED branch.",
+                h_ref: "Reference Voltage Drops",
+                ref_red: "Red: 2.0-2.2 V", ref_yellow: "Yellow: 1.8-2.0 V", ref_green: "Green: 2.0-2.2 V / 3.0-3.2 V",
+                ref_blue: "Blue: 3.0-4.0 V", ref_white: "White: 3.0-4.0 V",
+                note_ref: "*Note: Exact values vary by manufacturer."
+            }
+        };
+
+        // Standard E24 Resistor Values (Decades will be generated)
+        const E24 = [1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1];
+
+        const App = {
+            lang: 'zh-CN',
+            mode: 'single', // single, series, parallel
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                this.calculate();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            setMode(m) {
+                this.mode = m;
+                // Update UI Tabs
+                ['single', 'series', 'parallel'].forEach(k => {
+                    const btn = document.getElementById('tab-' + k);
+                    if (k === m) {
+                        btn.className = 'tab-btn active';
+                    } else {
+                        btn.className = 'tab-btn inactive';
+                    }
+                });
+
+                // Toggle Count Input
+                const fieldCount = document.getElementById('field-count');
+                if (m === 'single') {
+                    fieldCount.classList.add('hidden');
+                    document.getElementById('inp-n').value = 1;
+                } else {
+                    fieldCount.classList.remove('hidden');
+                    // Reset to 2 if 1
+                    if(document.getElementById('inp-n').value == 1) document.getElementById('inp-n').value = 2;
+                }
+
+                this.calculate();
+            },
+
+            setVf(volts, current) {
+                document.getElementById('inp-vf').value = volts;
+                document.getElementById('inp-if').value = current;
+                this.calculate();
+            },
+
+            calculate() {
+                const vin = parseFloat(document.getElementById('inp-vin').value) || 0;
+                const vf = parseFloat(document.getElementById('inp-vf').value) || 0;
+                const if_mA = parseFloat(document.getElementById('inp-if').value) || 0;
+                let n = parseInt(document.getElementById('inp-n').value) || 1;
+                if (this.mode === 'single') n = 1;
+
+                const resRCalc = document.getElementById('res-r-calc');
+                const resRStd = document.getElementById('res-r-std');
+                const resPCalc = document.getElementById('res-p-calc');
+                const resPSafe = document.getElementById('res-p-safe');
+                const errBox = document.getElementById('error-msg');
+                const badge = document.getElementById('status-badge');
+
+                errBox.classList.add('hidden');
+                badge.classList.add('hidden');
+
+                if (vin <= 0 || vf <= 0 || if_mA <= 0 || n < 1) {
+                    resRCalc.textContent = '-';
+                    resRStd.textContent = '-';
+                    return;
+                }
+
+                const i_amps = if_mA / 1000;
+                let v_total_load = vf;
+                let i_total = i_amps;
+
+                if (this.mode === 'series') {
+                    v_total_load = vf * n;
+                } else if (this.mode === 'parallel') {
+                    // Parallel: V across resistor is Vin - Vf (assuming single resistor for bank)
+                    // Current is N * I_led
+                    v_total_load = vf;
+                    i_total = i_amps * n;
+                }
+
+                // Check Voltage
+                if (vin < v_total_load) {
+                    errBox.textContent = `Warning: Supply (${vin}V) < LED Load (${v_total_load.toFixed(1)}V)`;
+                    errBox.classList.remove('hidden');
+                    resRCalc.textContent = "Error";
+                    resRStd.textContent = "-";
+                    return;
+                }
+
+                // Resistance
+                const r_ohm = (vin - v_total_load) / i_total;
+                
+                // Power
+                const p_watts = (vin - v_total_load) * i_total;
+                const p_safe = p_watts * 2;
+
+                // Standard Value
+                const r_std = this.findStandardResistor(r_ohm);
+
+                // Update UI
+                resRCalc.textContent = r_ohm.toFixed(2) + ' Ω';
+                resRStd.textContent = this.formatResistor(r_std);
+                resPCalc.textContent = p_watts.toFixed(3) + ' W';
+                resPSafe.textContent = p_safe.toFixed(3) + ' W';
+                
+                badge.textContent = "OK";
+                badge.className = "px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold";
+                badge.classList.remove('hidden');
+
+                this.drawCircuit(vin, r_std, n);
+            },
+
+            findStandardResistor(val) {
+                if (val <= 0) return 0;
+                // Find decade
+                const logVal = Math.log10(val);
+                const exponent = Math.floor(logVal);
+                const mantissa = val / Math.pow(10, exponent);
+
+                // Find closest in E24
+                let closest = E24[0];
+                let minDiff = Math.abs(mantissa - E24[0]);
+
+                for (let i = 1; i < E24.length; i++) {
+                    const diff = Math.abs(mantissa - E24[i]);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = E24[i];
+                    }
+                }
+                
+                // If it rounds up to 10 (next decade), handle it? E24 covers up to 9.1
+                return closest * Math.pow(10, exponent);
+            },
+
+            formatResistor(val) {
+                if (val >= 1000000) return (val/1000000).toFixed(2) + ' MΩ';
+                if (val >= 1000) return (val/1000).toFixed(2) + ' kΩ';
+                return val.toFixed(1) + ' Ω';
+            },
+
+            drawCircuit(vin, rVal, n) {
+                const container = document.getElementById('circuit-container');
+                const w = 300;
+                const h = 200;
+                let svg = `<svg viewBox="0 0 ${w} ${h}" class="w-full h-full text-slate-600 dark:text-slate-300">`;
+                
+                // Helper
+                const drawLED = (x, y) => {
+                    let s = '';
+                    s += `<line x1="${x}" y1="${y-15}" x2="${x}" y2="${y+15}" class="circuit-line"/>`; // wire
+                    s += `<path d="M${x-10},${y-5} L${x+10},${y-5} L${x},${y+10} Z" class="component-fill circuit-line"/>`; // triangle
+                    s += `<line x1="${x-10},${y+10}" x2="${x+10},${y+10}" class="circuit-line"/>`; // bar
+                    // Arrows
+                    s += `<line x1="${x+12}" y1="${y}" x2="${x+18}" y2="${y-6}" class="circuit-line" stroke-width="1"/>`;
+                    s += `<line x1="${x+14}" y1="${y+4}" x2="${x+20}" y2="${y-2}" class="circuit-line" stroke-width="1"/>`;
+                    return s;
+                };
+
+                // Power
+                svg += `<circle cx="30" cy="${h/2}" r="3" class="component-fill"/>`;
+                svg += `<text x="30" y="${h/2 - 10}" class="circuit-text" text-anchor="middle">Vin +</text>`;
+                svg += `<line x1="30" y1="${h/2}" x2="60" y2="${h/2}" class="circuit-line"/>`;
+
+                // Resistor
+                svg += `<rect x="60" y="${h/2 - 8}" width="30" height="16" class="circuit-line bg-white fill-white dark:fill-slate-800"/>`;
+                svg += `<text x="75" y="${h/2 - 12}" class="circuit-text font-bold text-indigo-500" text-anchor="middle">R</text>`;
+                svg += `<line x1="90" y1="${h/2}" x2="120" y2="${h/2}" class="circuit-line"/>`;
+
+                // LEDs
+                if (this.mode === 'single') {
+                    svg += drawLED(140, h/2);
+                    svg += `<line x1="140" y1="${h/2-15}" x2="140" y2="${h/2}" class="circuit-line"/>`; // connect top
+                    svg += `<line x1="120" y1="${h/2}" x2="140" y2="${h/2-15}" class="circuit-line"/>`; // wire to led top
+                    svg += `<line x1="140" y1="${h/2+15}" x2="140" y2="${h/2+30}" class="circuit-line"/>`; // bottom
+                    svg += `<line x1="140" y1="${h/2+30}" x2="180" y2="${h/2+30}" class="circuit-line"/>`; // to gnd
+                } else if (this.mode === 'series') {
+                    // Draw 2 LEDs representing N
+                    svg += drawLED(140, h/2 - 30);
+                    svg += `<line x1="120" y1="${h/2}" x2="140" y2="${h/2-45}" class="circuit-line"/>`;
+                    svg += `<line x1="140" y1="${h/2-45}" x2="140" y2="${h/2-15}" class="circuit-line"/>`; // top LED in
+                    
+                    svg += `<line x1="140" y1="${h/2-15}" x2="140" y2="${h/2+15}" stroke-dasharray="2" class="circuit-line"/>`; // dotted link
+                    
+                    svg += drawLED(140, h/2 + 30);
+                    svg += `<line x1="140" y1="${h/2+15}" x2="140" y2="${h/2+45}" class="circuit-line"/>`; // bot LED
+                    
+                    svg += `<line x1="140" y1="${h/2+45}" x2="180" y2="${h/2+45}" class="circuit-line"/>`; // to gnd
+                } else {
+                    // Parallel
+                    // Draw 2 branches
+                    svg += `<line x1="120" y1="${h/2}" x2="120" y2="${h/2-40}" class="circuit-line"/>`;
+                    svg += `<line x1="120" y1="${h/2}" x2="120" y2="${h/2+40}" class="circuit-line"/>`;
+                    
+                    // Top Branch
+                    svg += `<line x1="120" y1="${h/2-40}" x2="140" y2="${h/2-40}" class="circuit-line"/>`;
+                    svg += drawLED(150, h/2-40);
+                    
+                    // Bot Branch
+                    svg += `<line x1="120" y1="${h/2+40}" x2="140" y2="${h/2+40}" class="circuit-line"/>`;
+                    svg += drawLED(150, h/2+40);
+                    
+                    // Rejoin
+                    svg += `<line x1="160" y1="${h/2-40}" x2="180" y2="${h/2-40}" class="circuit-line"/>`;
+                    svg += `<line x1="160" y1="${h/2+40}" x2="180" y2="${h/2+40}" class="circuit-line"/>`;
+                    svg += `<line x1="180" y1="${h/2-40}" x2="180" y2="${h/2+40}" class="circuit-line"/>`;
+                }
+
+                // Ground
+                svg += `<line x1="180" y1="${this.mode === 'single' ? h/2+30 : (this.mode === 'series' ? h/2+45 : h/2)}" x2="220" y2="${this.mode === 'single' ? h/2+30 : (this.mode === 'series' ? h/2+45 : h/2)}" class="circuit-line"/>`;
+                svg += `<text x="240" y="${this.mode === 'single' ? h/2+35 : (this.mode === 'series' ? h/2+50 : h/2+5)}" class="circuit-text" text-anchor="middle">GND</text>`;
+
+                svg += `</svg>`;
+                container.innerHTML = svg;
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

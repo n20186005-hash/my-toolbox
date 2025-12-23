@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="engineering">
+    <meta name="icon" content="⚡">
+    <meta name="description" content="Reactance Calculator - Calculate Inductive and Capacitive Reactance vs Frequency.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M10,50 Q25,20 40,50 T70,50 T100,50%22 fill=%22none%22 stroke=%22%2306b6d4%22 stroke-width=%228%22/></svg>">
+    
+    <title>感抗与容抗计算器 | Reactance Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#06b6d4', hover: '#0891b2' }, /* Cyan */
+                        secondary: { DEFAULT: '#d946ef', hover: '#c026d3' }, /* Fuchsia */
+                        bg: { light: '#ecfeff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-cyan-200 dark:border-slate-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-3 pr-12 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm font-mono placeholder:text-slate-400;
+            }
+            .unit-label {
+                @apply absolute right-3 text-slate-400 text-xs font-bold pointer-events-none;
+            }
+            .btn-primary {
+                @apply bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm;
+            }
+            .card-header {
+                @apply flex items-center gap-2 mb-3 text-sm font-bold uppercase tracking-wide;
+            }
+            .result-box {
+                @apply bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700 flex justify-between items-center;
+            }
+            .res-label { @apply text-xs text-slate-500 dark:text-slate-400 font-bold; }
+            .res-val { @apply font-mono font-bold text-slate-800 dark:text-white; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    XL/XC
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">感抗与容抗计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Reactance Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300">
+                    <option value="zh-CN">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl grid lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Calculators -->
+        <div class="lg:col-span-5 space-y-6">
+            
+            <!-- 1. Design Mode (Reactance -> L/C) -->
+            <div class="glass rounded-2xl p-5 shadow-sm border-t-4 border-t-cyan-500">
+                <div class="card-header text-cyan-600 dark:text-cyan-400">
+                    <i class="fa fa-pencil-square-o"></i> <span data-i18n="h_design">设计模式：反推元件值</span>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_freq">工作频率:</label>
+                        <div class="input-group">
+                            <input type="number" id="des-freq" class="input-field" value="35000" oninput="App.calcDesign()">
+                            <span class="unit-label">Hz</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_target_x">希望的电抗值:</label>
+                        <div class="input-group">
+                            <input type="number" id="des-x" class="input-field" value="13.5" oninput="App.calcDesign()">
+                            <span class="unit-label">Ω</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 italic" data-i18n="hint_x">
+                            (eg: approx. 8Ω for 1st order, 11.3Ω for 2nd order crossover)
+                        </p>
+                    </div>
+                    
+                    <div class="pt-2 space-y-2">
+                        <div class="result-box border-l-4 border-l-indigo-500">
+                            <span class="res-label" data-i18n="res_l_req">需要的电感量 L =</span>
+                            <span id="res-des-l" class="res-val text-indigo-600 dark:text-indigo-400">- mH</span>
+                        </div>
+                        <div class="result-box border-l-4 border-l-fuchsia-500">
+                            <span class="res-label" data-i18n="res_c_req">需要的电容量 C =</span>
+                            <span id="res-des-c" class="res-val text-fuchsia-600 dark:text-fuchsia-400">- μF</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Inductor Analysis -->
+            <div class="glass rounded-2xl p-5 shadow-sm border-t-4 border-t-indigo-500">
+                <div class="card-header text-indigo-600 dark:text-indigo-400">
+                    <i class="fa fa-magnet"></i> <span data-i18n="h_ind">电感抗计算 (XL)</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_freq">频率:</label>
+                        <div class="input-group">
+                            <input type="number" id="ind-freq" class="input-field" value="35000" oninput="App.calcInductor()">
+                            <span class="unit-label">Hz</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_l">电感量:</label>
+                        <div class="input-group">
+                            <input type="number" id="ind-l" class="input-field" value="1.4" oninput="App.calcInductor()">
+                            <span class="unit-label">mH</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="result-box bg-indigo-50/50 dark:bg-indigo-900/20">
+                    <span class="res-label" data-i18n="res_xl">电抗值 XL =</span>
+                    <span id="res-ind-xl" class="res-val text-indigo-600 dark:text-indigo-400">- Ω</span>
+                </div>
+            </div>
+
+            <!-- 3. Capacitor Analysis -->
+            <div class="glass rounded-2xl p-5 shadow-sm border-t-4 border-t-fuchsia-500">
+                <div class="card-header text-fuchsia-600 dark:text-fuchsia-400">
+                    <i class="fa fa-battery-half"></i> <span data-i18n="h_cap">电容抗计算 (XC)</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_freq">频率:</label>
+                        <div class="input-group">
+                            <input type="number" id="cap-freq" class="input-field" value="35000" oninput="App.calcCapacitor()">
+                            <span class="unit-label">Hz</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="lbl_c">电容量:</label>
+                        <div class="input-group">
+                            <input type="number" id="cap-c" class="input-field" value="0.01" oninput="App.calcCapacitor()">
+                            <span class="unit-label">μF</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="result-box bg-fuchsia-50/50 dark:bg-fuchsia-900/20">
+                    <span class="res-label" data-i18n="res_xc">电抗值 XC =</span>
+                    <span id="res-cap-xc" class="res-val text-fuchsia-600 dark:text-fuchsia-400">- Ω</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Graph & Theory -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Graph -->
+            <div class="glass rounded-2xl p-6 shadow-sm border-t-4 border-t-slate-500 flex flex-col h-full min-h-[400px]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase flex items-center gap-2">
+                        <i class="fa fa-line-chart text-cyan-500"></i> <span data-i18n="h_chart">电抗频率响应曲线</span>
+                    </h3>
+                    <div class="flex gap-4 text-xs font-bold">
+                        <span class="flex items-center gap-1 text-indigo-500"><span class="w-3 h-1 bg-indigo-500 rounded-full"></span> XL (Inductive)</span>
+                        <span class="flex items-center gap-1 text-fuchsia-500"><span class="w-3 h-1 bg-fuchsia-500 rounded-full"></span> XC (Capacitive)</span>
+                    </div>
+                </div>
+                
+                <div class="flex-grow bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 relative overflow-hidden" id="chart-container">
+                    <canvas id="reactance-chart" class="w-full h-full"></canvas>
+                    
+                    <!-- Current Point Indicator Overlay (Simplified) -->
+                    <div class="absolute top-2 right-2 text-[10px] text-slate-400 font-mono text-right pointer-events-none">
+                        Current Freq: <span id="chart-freq">35000</span> Hz
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Guide Section -->
+    <section class="container mx-auto px-4 mb-12 max-w-6xl">
+        <div class="glass rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">原理公式</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+                    <h3 class="font-bold text-indigo-800 dark:text-indigo-200 mb-2 text-sm uppercase" data-i18n="h_ind_theory">感抗 (Inductive Reactance)</h3>
+                    <p class="text-xs text-indigo-700 dark:text-indigo-300 mb-2" data-i18n="p_ind">
+                        感抗随频率升高而增大。电感器阻碍高频信号通过（低通特性）。
+                    </p>
+                    <div class="font-mono text-indigo-900 dark:text-indigo-100 text-sm">
+                        $$ X_L = 2 \pi f L $$
+                    </div>
+                </div>
+
+                <div class="bg-fuchsia-50 dark:bg-fuchsia-900/20 border-l-4 border-fuchsia-500 p-4 rounded-r-lg">
+                    <h3 class="font-bold text-fuchsia-800 dark:text-fuchsia-200 mb-2 text-sm uppercase" data-i18n="h_cap_theory">容抗 (Capacitive Reactance)</h3>
+                    <p class="text-xs text-fuchsia-700 dark:text-fuchsia-300 mb-2" data-i18n="p_cap">
+                        容抗随频率升高而减小。电容器允许高频信号通过（高通特性）。
+                    </p>
+                    <div class="font-mono text-fuchsia-900 dark:text-fuchsia-100 text-sm">
+                        $$ X_C = \frac{1}{2 \pi f C} $$
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 py-6">
+        <p>&copy; <span id="year"></span> Reactance Calculator. Generated for Educational Purposes.</p>
+    </footer>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "感抗与容抗计算器", subtitle: "Reactance Calculator",
+                h_design: "设计模式：反推元件值",
+                lbl_freq: "工作频率:", lbl_target_x: "希望的电抗值:",
+                hint_x: "(例如: 一阶分频约8Ω，二阶分频约11.3Ω)",
+                res_l_req: "需要的电感量 L =", res_c_req: "需要的电容量 C =",
+                
+                h_ind: "电感抗计算 (XL)", lbl_l: "电感量:", res_xl: "电抗值 XL =",
+                h_cap: "电容抗计算 (XC)", lbl_c: "电容量:", res_xc: "电抗值 XC =",
+                
+                h_chart: "电抗频率响应曲线",
+                guide_title: "原理公式",
+                h_ind_theory: "感抗 (Inductive Reactance)",
+                p_ind: "感抗随频率升高而增大。电感器阻碍高频信号通过（低通特性）。",
+                h_cap_theory: "容抗 (Capacitive Reactance)",
+                p_cap: "容抗随频率升高而减小。电容器允许高频信号通过（高通特性）。"
+            },
+            'en': {
+                title: "Reactance Calculator", subtitle: "L/C Reactance Tool",
+                h_design: "Design Mode: Find Component Values",
+                lbl_freq: "Frequency:", lbl_target_x: "Target Reactance:",
+                hint_x: "(eg: approx. 8Ω for 1st order, 11.3Ω for 2nd order crossover)",
+                res_l_req: "Required L =", res_c_req: "Required C =",
+                
+                h_ind: "Inductive Reactance (XL)", lbl_l: "Inductance:", res_xl: "Reactance XL =",
+                h_cap: "Capacitive Reactance (XC)", lbl_c: "Capacitance:", res_xc: "Reactance XC =",
+                
+                h_chart: "Reactance vs Frequency",
+                guide_title: "Formulas",
+                h_ind_theory: "Inductive Reactance",
+                p_ind: "XL increases with frequency. Inductors block high frequencies (Low Pass).",
+                h_cap_theory: "Capacitive Reactance",
+                p_cap: "XC decreases with frequency. Capacitors pass high frequencies (High Pass)."
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            chart: null,
+            ctx: null,
+            
+            init() {
+                this.setupLang();
+                this.handleTheme();
+                this.updateYear();
+                
+                // Canvas Init
+                this.canvas = document.getElementById('reactance-chart');
+                this.ctx = this.canvas.getContext('2d');
+                this.resizeCanvas();
+                window.addEventListener('resize', () => {
+                    this.resizeCanvas();
+                    this.drawChart();
+                });
+
+                // Initial Calc
+                this.calcDesign();
+                this.calcInductor();
+                this.calcCapacitor();
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                this.lang = urlParams.get('lang') || 'zh-CN';
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.textContent = dict[key];
+                });
+            },
+
+            // --- Logic ---
+
+            calcDesign() {
+                const f = parseFloat(document.getElementById('des-freq').value) || 0;
+                const x = parseFloat(document.getElementById('des-x').value) || 0;
+                
+                const lDisplay = document.getElementById('res-des-l');
+                const cDisplay = document.getElementById('res-des-c');
+
+                if (f <= 0 || x <= 0) {
+                    lDisplay.textContent = '-';
+                    cDisplay.textContent = '-';
+                    return;
+                }
+
+                // L = X / (2 * pi * f)
+                const L = x / (2 * Math.PI * f); // Henries
+                // C = 1 / (2 * pi * f * X)
+                const C = 1 / (2 * Math.PI * f * x); // Farads
+
+                lDisplay.textContent = (L * 1000).toFixed(4) + ' mH';
+                cDisplay.textContent = (C * 1e6).toFixed(4) + ' μF';
+
+                // Update Chart Reference freq
+                document.getElementById('chart-freq').textContent = f;
+                this.drawChart(f); // Draw based on design freq range
+            },
+
+            calcInductor() {
+                const f = parseFloat(document.getElementById('ind-freq').value) || 0;
+                const l_mH = parseFloat(document.getElementById('ind-l').value) || 0;
+                
+                const xlDisplay = document.getElementById('res-ind-xl');
+
+                if (f <= 0 || l_mH <= 0) {
+                    xlDisplay.textContent = '-';
+                    return;
+                }
+
+                const L = l_mH / 1000;
+                const XL = 2 * Math.PI * f * L;
+
+                xlDisplay.textContent = XL.toFixed(2) + ' Ω';
+            },
+
+            calcCapacitor() {
+                const f = parseFloat(document.getElementById('cap-freq').value) || 0;
+                const c_uF = parseFloat(document.getElementById('cap-c').value) || 0;
+                
+                const xcDisplay = document.getElementById('res-cap-xc');
+
+                if (f <= 0 || c_uF <= 0) {
+                    xcDisplay.textContent = '-';
+                    return;
+                }
+
+                const C = c_uF / 1e6;
+                const XC = 1 / (2 * Math.PI * f * C);
+
+                xcDisplay.textContent = XC.toFixed(2) + ' Ω';
+            },
+
+            // --- Chart Drawing ---
+            resizeCanvas() {
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                this.canvas.width = rect.width * 2; // HiDPI
+                this.canvas.height = rect.height * 2;
+                this.ctx.scale(2, 2);
+                this.canvas.cssWidth = rect.width;
+                this.canvas.cssHeight = rect.height;
+            },
+
+            drawChart(centerFreq) {
+                if(!this.ctx) return;
+                // Use Design Mode inputs for plotting ideal L and C curves that intersect at target X
+                const f_center = parseFloat(document.getElementById('des-freq').value) || 1000;
+                const x_target = parseFloat(document.getElementById('des-x').value) || 10;
+                
+                // Calculate ideal L and C for this intersection
+                const L_ideal = x_target / (2 * Math.PI * f_center);
+                const C_ideal = 1 / (2 * Math.PI * f_center * x_target);
+
+                const w = this.canvas.cssWidth;
+                const h = this.canvas.cssHeight;
+                const ctx = this.ctx;
+
+                ctx.clearRect(0, 0, w, h);
+
+                // Range: 0.1*f to 10*f (Log scale on X would be nice, but Linear is simpler for now)
+                // Let's do simple linear range 0 to 2*f_center to show crossing clearly
+                const f_max = f_center * 2;
+                const x_scale = w / f_max;
+                
+                // Y Scale: 0 to 2*x_target
+                const y_max = x_target * 2.5;
+                const y_scale = h / y_max;
+
+                // Grid
+                ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                // Vertical at center freq
+                const x_center_px = f_center * x_scale;
+                ctx.moveTo(x_center_px, 0);
+                ctx.lineTo(x_center_px, h);
+                // Horizontal at target X
+                const y_target_px = h - (x_target * y_scale);
+                ctx.moveTo(0, y_target_px);
+                ctx.lineTo(w, y_target_px);
+                ctx.stroke();
+
+                // Plot XL = 2*pi*f*L (Linear)
+                ctx.strokeStyle = '#6366f1'; // Indigo
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let px = 0; px <= w; px+=2) {
+                    const f = px / x_scale;
+                    const val = 2 * Math.PI * f * L_ideal;
+                    const py = h - (val * y_scale);
+                    if (px === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+
+                // Plot XC = 1/(2*pi*f*C) (Hyperbolic)
+                ctx.strokeStyle = '#d946ef'; // Fuchsia
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                let started = false;
+                for (let px = 1; px <= w; px+=2) {
+                    const f = px / x_scale;
+                    if(f < f_max*0.01) continue; // avoid infinity
+                    const val = 1 / (2 * Math.PI * f * C_ideal);
+                    const py = h - (val * y_scale);
+                    
+                    if (py < -10) { // Clip top
+                        if(started) ctx.lineTo(px, -10);
+                        continue; 
+                    }
+                    
+                    if (!started) {
+                        ctx.moveTo(px, py);
+                        started = true;
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+                ctx.stroke();
+
+                // Draw intersection dot
+                ctx.fillStyle = '#06b6d4'; // Cyan
+                ctx.beginPath();
+                ctx.arc(x_center_px, y_target_px, 5, 0, Math.PI*2);
+                ctx.fill();
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                    this.drawChart();
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>
