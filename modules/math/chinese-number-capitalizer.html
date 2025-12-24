@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="finance">
+    <meta name="icon" content="🏦">
+    <meta name="description" content="Number to Chinese Capital Converter - Convert numbers to Traditional Chinese uppercase for banking (NTD, RMB, HKD).">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>壹</text></svg>">
+    
+    <title>数字转国字大写转换器 | Number to Chinese Capital</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Google Fonts: Noto Serif TC for that "Official" look -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bank: { 
+                            red: '#991b1b',      /* Official Stamp Red */
+                            gold: '#b45309',     /* Currency Gold */
+                            paper: '#fffdf5',    /* Check Paper Off-white */
+                            dark: '#0f172a'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        serif: ['Noto Serif TC', 'serif'], 
+                        mono: ['monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border border-stone-200 dark:border-stone-700;
+            }
+            .input-group {
+                @apply relative flex items-center;
+            }
+            .input-field {
+                @apply w-full pl-4 pr-4 py-4 rounded-xl border-2 border-stone-200 dark:border-stone-600 bg-white dark:bg-slate-900 text-stone-800 dark:text-white focus:ring-4 focus:ring-bank-red/20 focus:border-bank-red outline-none transition-all text-2xl font-bold font-mono text-center placeholder:text-stone-300;
+            }
+            .currency-btn {
+                @apply px-4 py-2 rounded-lg border border-stone-200 dark:border-stone-600 text-sm font-bold text-stone-500 hover:bg-bank-red hover:text-white hover:border-bank-red transition-all;
+            }
+            .currency-btn.active {
+                @apply bg-bank-red text-white border-bank-red shadow-md;
+            }
+            /* Bank Slip Grid Styles */
+            .slip-grid {
+                @apply flex border-2 border-bank-red/50 rounded-lg overflow-hidden bg-white dark:bg-slate-800 shadow-inner;
+            }
+            .slip-col {
+                @apply flex-1 flex flex-col border-r border-bank-red/30 last:border-r-0 min-w-[32px];
+            }
+            .slip-header {
+                @apply bg-bank-paper dark:bg-slate-700 text-[10px] md:text-xs text-stone-500 dark:text-stone-400 text-center py-1 font-serif border-b border-bank-red/20 h-8 flex items-center justify-center;
+            }
+            .slip-cell {
+                @apply h-12 md:h-16 flex items-center justify-center text-xl md:text-3xl font-serif font-bold text-bank-red dark:text-red-400;
+            }
+            
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar { width: 8px; height: 8px; }
+            ::-webkit-scrollbar-track { background: #f1f1f1; }
+            ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: #555; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-stone-100 dark:bg-slate-900 min-h-screen font-sans text-stone-800 dark:text-stone-200 transition-colors duration-300 overflow-x-hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+
+    <!-- Header -->
+    <header class="bg-white/95 dark:bg-slate-800/95 border-b border-stone-200 dark:border-stone-700 sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded bg-bank-red text-white flex items-center justify-center font-serif font-bold text-2xl shadow-md border-2 border-white dark:border-slate-600">
+                    壹
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-stone-900 dark:text-white leading-tight" data-i18n="title">数字转国字大写</h1>
+                    <p class="text-[10px] text-stone-500 font-medium" data-i18n="subtitle">Financial Capital Number Converter</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-stone-50 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-stone-600 dark:text-stone-300 outline-none shadow-sm">
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="zh-CN">简体中文</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="ru">Русский</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="pl">Polski</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-stone-50 dark:bg-slate-700 flex items-center justify-center text-stone-500 hover:text-bank-red transition-colors shadow-sm">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+
+        <!-- Main Converter Card -->
+        <div class="glass rounded-2xl shadow-xl overflow-hidden mb-8 border-t-4 border-t-bank-red relative">
+            
+            <!-- Red Stamp Decor -->
+            <div class="absolute -top-6 -right-6 w-24 h-24 rounded-full border-4 border-bank-red/10 flex items-center justify-center rotate-12 pointer-events-none select-none">
+                <div class="w-20 h-20 rounded-full border border-bank-red/10 flex items-center justify-center">
+                    <span class="font-serif text-bank-red/10 text-xs font-bold">票据专用</span>
+                </div>
+            </div>
+
+            <div class="p-6 md:p-10">
+                
+                <!-- Currency Selector -->
+                <div class="flex justify-center gap-3 mb-6">
+                    <button class="currency-btn active" onclick="App.setCurrency('TWD')" id="btn-twd">
+                        <i class="fa fa-money mr-1"></i> 新台幣 (NTD)
+                    </button>
+                    <button class="currency-btn" onclick="App.setCurrency('CNY')" id="btn-cny">
+                        <i class="fa fa-jpy mr-1"></i> 人民幣 (RMB)
+                    </button>
+                    <button class="currency-btn" onclick="App.setCurrency('HKD')" id="btn-hkd">
+                        <i class="fa fa-dollar mr-1"></i> 港幣 (HKD)
+                    </button>
+                </div>
+
+                <!-- Input Area -->
+                <div class="space-y-6">
+                    <div class="text-center">
+                        <label class="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2" data-i18n="lbl_input">输入阿拉伯数字 (Input Number)</label>
+                        <div class="relative max-w-lg mx-auto">
+                            <input type="number" id="inp-num" class="input-field" placeholder="12345" oninput="App.convert()" onkeydown="return event.keyCode !== 69"> <!-- Prevent 'e' -->
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold pointer-events-none" id="unit-label">元</div>
+                        </div>
+                        <p class="text-[10px] text-stone-400 mt-2" id="hint-text">
+                            <i class="fa fa-info-circle"></i> 新台幣最小為1元 (Integers Only)
+                        </p>
+                    </div>
+                </div>
+
+                <hr class="border-stone-200 dark:border-stone-700 my-8">
+
+                <!-- Result 1: Standard String -->
+                <div class="space-y-2 mb-8">
+                    <div class="flex justify-between items-end">
+                        <label class="text-xs font-bold text-bank-red dark:text-red-400 uppercase tracking-widest" data-i18n="lbl_result_str">大写金额 (Standard Format)</label>
+                        <button onclick="App.copyResult()" class="text-xs text-stone-400 hover:text-bank-red transition-colors flex items-center gap-1">
+                            <i class="fa fa-clone"></i> <span data-i18n="btn_copy">复制</span>
+                        </button>
+                    </div>
+                    <div class="relative bg-bank-paper dark:bg-slate-900/50 p-6 rounded-xl border border-stone-200 dark:border-stone-600 shadow-inner group cursor-pointer" onclick="App.copyResult()">
+                        <div id="res-string" class="text-2xl md:text-3xl font-serif font-bold text-stone-800 dark:text-stone-100 break-all leading-relaxed">
+                            零元整
+                        </div>
+                        <div class="absolute inset-0 bg-bank-red/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                            <span class="text-bank-red font-bold text-sm bg-white px-3 py-1 rounded-full shadow-sm">Click to Copy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result 2: Bank Slip Grid -->
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-stone-400 uppercase tracking-widest" data-i18n="lbl_result_grid">银行填单模式 (Bank Slip)</label>
+                    <div class="overflow-x-auto pb-2 scrollbar-hide">
+                        <div class="min-w-[600px] slip-grid" id="grid-container">
+                            <!-- Grid Headers -->
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-center text-stone-400" data-i18n="hint_grid">
+                        * 此格式模拟常见汇款单据，自动填充对应栏位。
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="grid md:grid-cols-2 gap-4">
+            <!-- Reference Table -->
+            <div class="glass rounded-xl p-6 shadow-sm">
+                <h3 class="font-serif font-bold text-stone-800 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fa fa-table text-bank-red"></i> <span data-i18n="ref_title">数字对照表</span>
+                    <span id="current-currency-badge" class="ml-2 text-[10px] bg-bank-red text-white px-2 py-0.5 rounded-full uppercase">TWD</span>
+                </h3>
+                <div class="grid grid-cols-5 gap-2 text-center text-sm" id="ref-digit-grid">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="mt-2 grid grid-cols-5 gap-2 text-center text-sm" id="ref-unit-grid">
+                     <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- History/Usage -->
+            <div class="glass rounded-xl p-6 shadow-sm">
+                <h3 class="font-serif font-bold text-stone-800 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fa fa-book text-bank-red"></i> <span data-i18n="info_title">关于大写数字</span>
+                </h3>
+                <div class="text-sm text-stone-600 dark:text-stone-300 space-y-3 leading-relaxed" data-i18n="info_content">
+                    <p>国字大写数字主要用于金融和法律文件，目的是防止数字被涂改。</p>
+                    <p>相传这套系统由明太祖朱元璋在“郭桓案”后确立，将“一二三”改为笔画复杂的“壹貳參”，有效遏制了账册涂改的贪污行为。</p>
+                    <div class="bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded border border-yellow-200 dark:border-yellow-700/30 text-xs italic">
+                        注意：新台币汇款单通常要求从“元”位开始填写，不留空格，整数后需加“整”或“正”。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-xs text-stone-400 py-8 font-serif">
+            <p>&copy; <span id="cur-year"></span> Financial Toolset. Generated for Educational Purposes.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const i18nData = {
+            'zh-TW': {
+                title: "數字轉國字大寫", subtitle: "金融專用大寫轉換工具",
+                lbl_input: "輸入阿拉伯數字", lbl_result_str: "大寫金額", lbl_result_grid: "銀行填單模式",
+                btn_copy: "複製", hint_grid: "* 此格式模擬常見匯款單據，自動填充對應欄位。",
+                info_title: "關於大寫數字", ref_title: "數字對照表",
+                info_content: `<p>國字大寫數字主要用於金融和法律文件，目的是防止數字被塗改。</p><p>相傳這套系統由明太祖朱元璋在「郭桓案」後確立，將「一二三」改為筆畫複雜的「壹貳參」，有效遏制了帳冊塗改的貪污行為。</p><div class="bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded border border-yellow-200 dark:border-yellow-700/30 text-xs italic mt-2">注意：新台幣匯款單通常要求從「元」位開始填寫，不留空格，整數後需加「整」或「正」。</div>`,
+                twd_hint: "新台幣最小為1元 (四捨五入)", other_hint: "精確到小數點後兩位 (分)"
+            },
+            'zh-CN': {
+                title: "数字转国字大写", subtitle: "金融专用大写转换工具",
+                lbl_input: "输入阿拉伯数字", lbl_result_str: "大写金额", lbl_result_grid: "银行填单模式",
+                btn_copy: "复制", hint_grid: "* 此格式模拟常见汇款单据，自动填充对应栏位。",
+                info_title: "关于大写数字", ref_title: "数字对照表",
+                info_content: `<p>国字大写数字主要用于金融和法律文件，目的是防止数字被涂改。</p><p>相传这套系统由明太祖朱元璋在“郭桓案”后确立，将“一二三”改为笔画复杂的“壹貳參”，有效遏制了账册涂改的贪污行为。</p><div class="bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded border border-yellow-200 dark:border-yellow-700/30 text-xs italic mt-2">注意：新台币汇款单通常要求从“元”位开始填写，不留空格，整数后需加“整”或“正”。</div>`,
+                twd_hint: "新台币最小为1元 (四舍五入)", other_hint: "精确到小数点后两位 (分)"
+            },
+            'en': {
+                title: "Chinese Number Capitalizer", subtitle: "Financial Uppercase Converter",
+                lbl_input: "Input Number", lbl_result_str: "Capitalized String", lbl_result_grid: "Bank Slip View",
+                btn_copy: "Copy", hint_grid: "* Simulates a bank deposit slip layout.",
+                info_title: "About Capital Numbers", ref_title: "Reference",
+                info_content: `<p>Traditional Chinese capitals are used in finance to prevent forgery.</p><p>Originating from the Ming Dynasty, complex characters like '壹' replaced simple ones like '一' to stop alteration of ledgers.</p>`,
+                twd_hint: "NTD rounds to nearest Integer.", other_hint: "Supports up to 2 decimal places."
+            },
+            'es': {
+                title: "Mayúsculas Chinas", subtitle: "Conversor Financiero",
+                lbl_input: "Ingresar Número", lbl_result_str: "Resultado", lbl_result_grid: "Vista de Boleta",
+                btn_copy: "Copiar", hint_grid: "* Simula una boleta de depósito bancario.",
+                info_title: "Sobre Números", ref_title: "Referencia",
+                info_content: `<p>Se usan para prevenir falsificaciones en finanzas.</p>`,
+                twd_hint: "NTD redondea a entero.", other_hint: "Soporta 2 decimales."
+            },
+            'ru': {
+                title: "Китайские Числительные", subtitle: "Финансовый конвертер",
+                lbl_input: "Введите число", lbl_result_str: "Результат", lbl_result_grid: "Бланк банка",
+                btn_copy: "Копировать", hint_grid: "* Имитация банковского бланка.",
+                info_title: "О числах", ref_title: "Справка",
+                info_content: `<p>Используются в финансах для защиты от подделок.</p>`,
+                twd_hint: "NTD округляет до целого.", other_hint: "Поддержка 2 знаков после запятой."
+            },
+            'hi': {
+                title: "चीनी संख्या परिवर्तक", subtitle: "वित्तीय अपरकेस कनवर्टर",
+                lbl_input: "नंबर दर्ज करें", lbl_result_str: "परिणाम", lbl_result_grid: "बैंक पर्ची",
+                btn_copy: "कॉपी", hint_grid: "* बैंक जमा पर्ची का अनुकरण।",
+                info_title: "संख्याओं के बारे में", ref_title: "संदर्भ",
+                info_content: `<p>जालसाजी रोकने के लिए वित्त में उपयोग किया जाता है।</p>`,
+                twd_hint: "NTD पूर्णांक में गोल होता है।", other_hint: "2 दशमलव स्थानों का समर्थन करता है।"
+            },
+            'pl': {
+                title: "Chińskie Liczebniki", subtitle: "Konwerter Finansowy",
+                lbl_input: "Wprowadź liczbę", lbl_result_str: "Wynik", lbl_result_grid: "Druk Bankowy",
+                btn_copy: "Kopiuj", hint_grid: "* Symulacja druku bankowego.",
+                info_title: "O liczbach", ref_title: "Odniesienie",
+                info_content: `<p>Używane w finansach, aby zapobiec fałszerstwom.</p>`,
+                twd_hint: "NTD zaokrągla do całości.", other_hint: "Obsługuje 2 miejsca po przecinku."
+            }
+        };
+
+        const App = {
+            lang: 'zh-TW',
+            currency: 'TWD', // TWD, CNY, HKD
+            
+            // Character Sets
+            digitMaps: {
+                // TWD/HKD: Standard Traditional (參, 貳, 陸)
+                'TWD': ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖'],
+                'HKD': ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖'],
+                // CNY: Standard Simplified Capitals (叁, 贰, 陆)
+                'CNY': ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖']
+            },
+            
+            unitMaps: {
+                // TWD/HKD: Traditional (億, 萬, 佰)
+                'TWD': [['元', '萬', '億', '兆'], ['', '拾', '佰', '仟']],
+                'HKD': [['元', '萬', '億', '兆'], ['', '拾', '佰', '仟']],
+                // CNY: Simplified (亿, 万, 佰)
+                'CNY': [['元', '万', '亿', '兆'], ['', '拾', '佰', '仟']]
+            },
+            
+            init() {
+                this.setupTheme();
+                this.setupLang();
+                this.setCurrency('TWD');
+                document.getElementById('cur-year').innerText = new Date().getFullYear();
+            },
+
+            setupTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryLang = urlParams.get('lang');
+                
+                if (queryLang && i18nData[queryLang]) {
+                    this.lang = queryLang;
+                } else {
+                    this.lang = 'zh-TW';
+                }
+                
+                sel.value = this.lang;
+                this.updateText();
+
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                    this.updateHint();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) {
+                        if(key === 'info_content') el.innerHTML = dict[key];
+                        else el.textContent = dict[key];
+                    }
+                });
+            },
+
+            updateHint() {
+                const dict = i18nData[this.lang];
+                const hintEl = document.getElementById('hint-text');
+                if (this.currency === 'TWD') {
+                    hintEl.innerHTML = `<i class="fa fa-info-circle"></i> ${dict.twd_hint}`;
+                } else {
+                    hintEl.innerHTML = `<i class="fa fa-info-circle"></i> ${dict.other_hint}`;
+                }
+            },
+            
+            updateRefTable() {
+                const digits = this.digitMaps[this.currency];
+                const units = this.unitMaps[this.currency];
+                
+                // Update Digits Grid
+                const digitGrid = document.getElementById('ref-digit-grid');
+                let dHtml = '';
+                digits.forEach((d, i) => {
+                    dHtml += `
+                    <div class="bg-stone-50 dark:bg-slate-700 rounded py-2 border border-stone-100 dark:border-slate-600">
+                        <div class="text-xs text-stone-400">${i}</div>
+                        <div class="font-serif font-bold text-stone-700 dark:text-stone-200">${d}</div>
+                    </div>`;
+                });
+                digitGrid.innerHTML = dHtml;
+                
+                // Update Units Grid
+                // We show [10, 100, 1000, 10000, 100000000] i.e. 拾, 佰, 仟, 萬, 億
+                const unitGrid = document.getElementById('ref-unit-grid');
+                const displayUnits = [
+                    units[1][1], // 拾
+                    units[1][2], // 佰
+                    units[1][3], // 仟
+                    units[0][1], // 萬
+                    units[0][2]  // 億
+                ];
+                let uHtml = '';
+                displayUnits.forEach(u => {
+                    uHtml += `
+                    <div class="col-span-1 bg-stone-100 dark:bg-slate-600 rounded py-1 font-serif text-stone-600 dark:text-stone-300">
+                        ${u}
+                    </div>`;
+                });
+                unitGrid.innerHTML = uHtml;
+                
+                document.getElementById('current-currency-badge').innerText = this.currency;
+            },
+
+            setCurrency(c) {
+                this.currency = c;
+                // Update Buttons
+                ['twd','cny','hkd'].forEach(id => {
+                    const el = document.getElementById(`btn-${id}`);
+                    if(id === c.toLowerCase()) el.classList.add('active');
+                    else el.classList.remove('active');
+                });
+                
+                this.updateHint();
+                this.updateRefTable(); // Update table on switch
+                this.convert();
+            },
+
+            // Core Logic: Number to Chinese
+            n2c(numStr) {
+                if (!numStr || isNaN(numStr)) return "";
+                
+                let num = parseFloat(numStr);
+                const fraction = ['角', '分'];
+                
+                // Fetch dynamic maps based on currency
+                const digit = this.digitMaps[this.currency];
+                const unit = this.unitMaps[this.currency];
+                
+                let s = '';
+
+                // Handle Negative
+                if (num < 0) {
+                    num = Math.abs(num);
+                }
+
+                // Handle TWD rounding
+                if (this.currency === 'TWD') {
+                    num = Math.round(num);
+                }
+
+                // Decimal part (For CNY/HKD)
+                let decStr = '';
+                if (this.currency !== 'TWD') {
+                    let decimal = num - Math.floor(num);
+                    if (decimal > 0.009) { 
+                        decimal *= 10;
+                        let d1 = Math.floor(decimal);
+                        let d2 = Math.floor((decimal - d1) * 10 + 0.0001); 
+                        
+                        if (d1 > 0) decStr += digit[d1] + fraction[0];
+                        if (d2 > 0) decStr += digit[d2] + fraction[1];
+                    }
+                }
+
+                // Integer part
+                let n = Math.floor(num);
+                
+                if (n === 0 && decStr === '') return digit[0] + unit[0][0] + '整'; // 零元整
+                
+                if (n === 0) {
+                    return decStr; // e.g. "伍分"
+                }
+
+                let str = n.toString();
+                let len = str.length;
+                
+                for (let i = 0; i < len; i++) {
+                    let numChar = parseInt(str[i]);
+                    let p = len - i - 1; 
+                    let q = p / 4;
+                    let m = p % 4;
+                    
+                    if (numChar === 0) {
+                        if (m !== 0 && i < len - 1 && str[i+1] !== '0') {
+                            s += digit[0];
+                        }
+                    } else {
+                        s += digit[numChar] + unit[1][m];
+                    }
+                    
+                    if (m === 0 && q > 0) {
+                        s += unit[0][q]; 
+                    }
+                }
+                
+                s += unit[0][0]; // '元'
+                
+                // Final suffix
+                if (decStr === '' || this.currency === 'TWD') {
+                    s += '整';
+                } else {
+                    s += decStr;
+                }
+
+                // Cleanups for specific Unit Sets (Simplified/Traditional mix protection)
+                // Note: The unit array is dynamic now, so we need dynamic regex or logic
+                // The cleanest way is to reuse the 'digit' and 'unit' vars for replacement logic if needed
+                // But generally the loop construction above is robust.
+                // We just need to handle the "Zero" char which is consistent (index 0)
+                const ZERO = digit[0];
+                const YUAN = unit[0][0];
+                const WAN  = unit[0][1];
+                const YI   = unit[0][2];
+                
+                // e.g. Regex /零+/g
+                const reZero = new RegExp(`${ZERO}+`, 'g');
+                const reZeroYuan = new RegExp(`${ZERO}${YUAN}`, 'g');
+                const reZeroWan = new RegExp(`${ZERO}${WAN}`, 'g');
+                const reZeroYi = new RegExp(`${ZERO}${YI}`, 'g');
+                const reYiWan = new RegExp(`${YI}${WAN}`, 'g');
+                const reStartYuan = new RegExp(`^${YUAN}`);
+
+                s = s.replace(reZero, ZERO); 
+                s = s.replace(reZeroYuan, YUAN);
+                s = s.replace(reZeroWan, WAN);
+                s = s.replace(reZeroYi, YI);
+                s = s.replace(reYiWan, `${YI}${ZERO}`); // 100010000 -> 壹億零壹萬
+                s = s.replace(reStartYuan, ''); 
+
+                // Fix 100,000,000 -> 壹億元整 (Loop produces 壹億萬元 -> fix to 壹億元)
+                // This happens because q>0 check adds units. 10^8 is q=2 (Yi) m=0.
+                // But the inner loop for 10^4 (Wan) might trigger if not careful.
+                // Actually my loop logic adds unit at m=0.
+                // 1 0000 0000
+                // 1: Adds 壹 + 億
+                // 0000: Adds nothing (zeros skipped)
+                // But the loop adds Wan at m=0 for the 10^4 block.
+                // Since 0000 are skipped, Wan is NOT added by line `s += unit[0][q]` if all are zero?
+                // Wait, my loop adds unit[0][q] unconditionally if m===0 && q>0. 
+                // So 100000000 -> 1(Yi) ... (Wan) ... (Yuan).
+                // It becomes 壹億萬元. We need to strip 萬 if the 萬 section was empty.
+                // The regex `reYiWan` -> `YI + ZERO` handles cases like 1_0001_0000.
+                // But for 1_0000_0000, we want 壹億元.
+                // Let's refine:
+                // If standard logic produces 億萬, change to 億.
+                const reYiWanFix = new RegExp(`${YI}${WAN}`, 'g');
+                s = s.replace(reYiWanFix, YI); // 億萬 -> 億
+
+                return s;
+            },
+
+            // Grid Filler Logic
+            fillGrid(numStr) {
+                const grid = document.getElementById('grid-container');
+                grid.innerHTML = ''; 
+
+                if(!numStr) numStr = '0';
+                let num = parseFloat(numStr);
+                if (this.currency === 'TWD') num = Math.round(num);
+
+                let intVal = Math.floor(num);
+                let intStr = intVal.toString();
+                
+                // Fetch current digit/unit maps
+                const digitMap = this.digitMaps[this.currency];
+                const unitMap = this.unitMaps[this.currency];
+                
+                // Extract units for headers: [千, 百, 十, 億, 千, 百, 十, 萬, 千, 百, 十, 元]
+                // UnitMap structure: [['元', '萬', '億', '兆'], ['', '拾', '佰', '仟']]
+                // Headers need "Small Units" (仟佰拾) + "Big Units" (億萬元)
+                const Q = unitMap[1][3]; // 仟/千
+                const B = unitMap[1][2]; // 佰/百
+                const S = unitMap[1][1]; // 拾/十
+                const Y = unitMap[0][2]; // 億/亿
+                const W = unitMap[0][1]; // 萬/万
+                const U = unitMap[0][0]; // 元
+
+                const headers = [
+                    {t: Q, g: Y}, {t: B, g: Y}, {t: S, g: Y}, {t: Y, g: ''},
+                    {t: Q, g: W}, {t: B, g: W}, {t: S, g: W}, {t: W, g: ''},
+                    {t: Q, g: ''}, {t: B, g: ''}, {t: S, g: ''}, {t: U, g: ''}
+                ];
+
+                if (this.currency !== 'TWD') {
+                    headers.push({t: '角', g: ''}, {t: '分', g: ''});
+                }
+
+                // Render
+                let gridHtml = '';
+                const intHeaderCount = 12;
+                let decimalDigits = [];
+                
+                if (this.currency !== 'TWD') {
+                    let decimal = num - Math.floor(num);
+                    if (decimal > 0.009) {
+                        decimal *= 10;
+                        let d1 = Math.floor(decimal);
+                        let d2 = Math.floor((decimal - d1) * 10 + 0.0001);
+                        decimalDigits = [d1, d2];
+                    } else {
+                        decimalDigits = [0, 0];
+                    }
+                }
+
+                headers.forEach((h, index) => {
+                    let char = '';
+                    if (index >= intHeaderCount) {
+                        let decIdx = index - intHeaderCount;
+                        if (decimalDigits.length > decIdx) {
+                            char = digitMap[decimalDigits[decIdx]];
+                            if (intVal === 0 && decimalDigits[0] === 0 && decimalDigits[1] === 0) char = '';
+                        }
+                    } else {
+                        let pos = intStr.length - (intHeaderCount - index);
+                        if (pos >= 0) {
+                            let d = parseInt(intStr[pos]);
+                            char = digitMap[d];
+                        }
+                    }
+
+                    gridHtml += `
+                        <div class="slip-col">
+                            <div class="slip-header flex-col">
+                                <span class="leading-none text-xs">${h.t}</span>
+                                <span class="leading-none scale-75 opacity-70">${h.g}</span>
+                            </div>
+                            <div class="slip-cell">${char}</div>
+                        </div>
+                    `;
+                });
+
+                grid.innerHTML = gridHtml;
+            },
+
+            convert() {
+                const inp = document.getElementById('inp-num');
+                const resStr = document.getElementById('res-string');
+                
+                // Get zero char for current currency
+                const zeroChar = this.digitMaps[this.currency][0];
+                const yuanChar = this.unitMaps[this.currency][0][0];
+                
+                if (!inp.value) {
+                    resStr.innerText = `${zeroChar}${yuanChar}整`;
+                    this.fillGrid("0");
+                    return;
+                }
+
+                let val = inp.value;
+                const chineseStr = this.n2c(val);
+                resStr.innerText = chineseStr;
+                this.fillGrid(val);
+            },
+
+            copyResult() {
+                const text = document.getElementById('res-string').innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    const btnText = document.querySelector('[data-i18n="btn_copy"]');
+                    const original = btnText.innerText;
+                    btnText.innerText = "Copied!";
+                    setTimeout(() => btnText.innerText = original, 1500);
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

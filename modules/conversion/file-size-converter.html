@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="conversion">
+    <meta name="icon" content="💾">
+    <meta name="description" content="Online File Size Converter - Convert between Bits, Bytes, KB, MB, GB, TB. Supports both SI (Decimal) and IEC (Binary) standards.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>💾</text></svg>">
+    
+    <title>在线文件大小转换换算 | File Size Converter</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 
+                            light: '#60a5fa', 
+                            DEFAULT: '#3b82f6', 
+                            dark: '#2563eb' 
+                        },
+                        bg: { light: '#f0f9ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-label {
+                @apply block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1;
+            }
+            .custom-input {
+                @apply w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all font-medium;
+            }
+            .custom-select {
+                @apply w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all font-bold appearance-none cursor-pointer;
+            }
+            .result-card {
+                @apply p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 transition-all hover:border-brand/30;
+            }
+            .result-label {
+                @apply text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex justify-between;
+            }
+            .result-value {
+                @apply font-mono font-bold text-slate-700 dark:text-slate-200 break-all;
+            }
+            .result-unit {
+                @apply text-xs font-bold text-brand ml-1;
+            }
+            .section-title {
+                @apply font-bold text-lg text-slate-800 dark:text-white mb-4 flex items-center gap-2;
+            }
+            
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: transparent; }
+            ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+            .dark ::-webkit-scrollbar-thumb { background: #475569; }
+            .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden bg-[url('https://www.transparenttextures.com/patterns/graphy.png')]">
+
+    <!-- Header -->
+    <header class="bg-white/95 dark:bg-slate-800/95 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center text-xl shadow-lg shadow-brand/20">
+                    <i class="fa fa-database"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">文件大小转换</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Bit, Bytes, KB, MB, GB, TB Converter</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-2 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300 outline-none shadow-sm">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="ru">Русский</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="pl">Polski</option>
+                </select>
+                <button id="mode-toggle" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-brand transition-colors shadow-sm">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+
+        <!-- Main Calculator Card -->
+        <div class="glass rounded-2xl shadow-xl overflow-hidden mb-8 border-t-4 border-t-brand relative">
+            <div class="p-6 md:p-10">
+                
+                <!-- Input Section -->
+                <div class="grid md:grid-cols-3 gap-4 mb-8">
+                    <div class="md:col-span-2">
+                        <label class="input-label" data-i18n="lbl_input">输入数值</label>
+                        <input type="number" id="input-val" class="custom-input text-xl" value="1" placeholder="Enter value" oninput="App.convert()">
+                    </div>
+                    <div>
+                        <label class="input-label" data-i18n="lbl_unit">单位</label>
+                        <select id="input-unit" class="custom-select" onchange="App.convert()">
+                            <optgroup label="Common (Binary/Windows)">
+                                <option value="bit">Bit (b)</option>
+                                <option value="byte" selected>Byte (B)</option>
+                                <option value="kb_bin">KB (1024 B)</option>
+                                <option value="mb_bin">MB (1024 KB)</option>
+                                <option value="gb_bin">GB (1024 MB)</option>
+                                <option value="tb_bin">TB (1024 GB)</option>
+                            </optgroup>
+                            <optgroup label="Network (Decimal/SI)">
+                                <option value="kb_si">KB (1000 B)</option>
+                                <option value="mb_si">MB (1000 KB)</option>
+                                <option value="gb_si">GB (1000 MB)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Results Grid -->
+                <div class="grid md:grid-cols-2 gap-8">
+                    
+                    <!-- Binary / Windows Standard -->
+                    <div>
+                        <h3 class="section-title text-brand">
+                            <i class="fa fa-windows"></i>
+                            <span data-i18n="sec_binary">计算机/Windows标准 (Binary)</span>
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="result-card">
+                                <div class="result-label">Byte <span class="text-[10px] opacity-50">8 bits</span></div>
+                                <div class="result-value"><span id="res-byte">0</span> <span class="result-unit">B</span></div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">Kilobyte <span class="text-[10px] opacity-50">1024 B</span></div>
+                                <div class="result-value"><span id="res-kb-bin">0</span> <span class="result-unit">KiB / KB</span></div>
+                            </div>
+                            <div class="result-card bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-800">
+                                <div class="result-label text-blue-500">Megabyte <span class="text-[10px] opacity-50">1024 KiB</span></div>
+                                <div class="result-value text-blue-700 dark:text-blue-300"><span id="res-mb-bin">0</span> <span class="result-unit">MiB / MB</span></div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">Gigabyte <span class="text-[10px] opacity-50">1024 MiB</span></div>
+                                <div class="result-value"><span id="res-gb-bin">0</span> <span class="result-unit">GiB / GB</span></div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">Terabyte <span class="text-[10px] opacity-50">1024 GiB</span></div>
+                                <div class="result-value"><span id="res-tb-bin">0</span> <span class="result-unit">TiB / TB</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SI / Network Standard -->
+                    <div>
+                        <h3 class="section-title text-green-600 dark:text-green-400">
+                            <i class="fa fa-globe"></i>
+                            <span data-i18n="sec_decimal">国际标准/硬盘厂商 (SI)</span>
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="result-card">
+                                <div class="result-label">Bits <span class="text-[10px] opacity-50">Raw data</span></div>
+                                <div class="result-value"><span id="res-bit">0</span> <span class="result-unit">bits</span></div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">Kilobyte (SI) <span class="text-[10px] opacity-50">1000 B</span></div>
+                                <div class="result-value"><span id="res-kb-si">0</span> <span class="result-unit">KB</span></div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">Megabyte (SI) <span class="text-[10px] opacity-50">1000 KB</span></div>
+                                <div class="result-value"><span id="res-mb-si">0</span> <span class="result-unit">MB</span></div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">Gigabyte (SI) <span class="text-[10px] opacity-50">1000 MB</span></div>
+                                <div class="result-value"><span id="res-gb-si">0</span> <span class="result-unit">GB</span></div>
+                            </div>
+                            
+                            <!-- Network Speeds -->
+                            <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-3" data-i18n="sec_network">网络传输单位 (Network)</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="result-card py-2">
+                                        <div class="result-label">Megabit</div>
+                                        <div class="text-sm font-mono font-bold"><span id="res-mbit">0</span> <span class="text-xs text-brand">Mbit</span></div>
+                                    </div>
+                                    <div class="result-card py-2">
+                                        <div class="result-label">Gigabit</div>
+                                        <div class="text-sm font-mono font-bold"><span id="res-gbit">0</span> <span class="text-xs text-brand">Gbit</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Info / Knowledge Section -->
+        <div class="glass rounded-xl shadow-sm p-6 md:p-8 space-y-8">
+            <h3 class="font-bold text-lg text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-3" data-i18n="info_title">关于单位换算</h3>
+            
+            <div class="grid md:grid-cols-2 gap-8 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                <!-- Col 1 -->
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="font-bold text-brand mb-2"><i class="fa fa-info-circle"></i> <span data-i18n="info_h1">常用单位定义</span></h4>
+                        <ul class="list-disc pl-4 space-y-1">
+                            <li data-i18n="info_li1">1 Byte (字节) = 8 Bit (位)</li>
+                            <li data-i18n="info_li2">1 KB (Kilobyte) = 1024 Byte (Windows/Binary)</li>
+                            <li data-i18n="info_li3">1 MB (Megabyte) = 1024 KB</li>
+                            <li data-i18n="info_li4">1 GB (Gigabyte) = 1024 MB</li>
+                            <li data-i18n="info_li5">1 TB (Terabyte) = 1024 GB</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-brand mb-2"><i class="fa fa-hdd-o"></i> <span data-i18n="info_h2">为什么硬盘容量"缩水"?</span></h4>
+                        <p class="mb-2" data-i18n="info_p1">硬盘生产商通常使用十进制 (SI) 计算：</p>
+                        <p class="mb-2 font-mono text-xs">1 GB = 1000 MB = 1,000,000 KB</p>
+                        <p class="mb-2" data-i18n="info_p2">而电脑操作系统(Windows)使用二进制 计算：</p>
+                        <p class="mb-2 font-mono text-xs">1 GiB = 1024 MiB = 1,048,576 KiB</p>
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-100 dark:border-yellow-800 text-xs" data-i18n="info_tip1">
+                            例如：买了一个 160GB 的硬盘。<br>
+                            厂商：160 × 10^9 Bytes<br>
+                            电脑：160 × 10^9 / 1024 / 1024 / 1024 ≈ 149 GB
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Col 2 -->
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="font-bold text-brand mb-2"><i class="fa fa-wifi"></i> <span data-i18n="info_h3">宽带网络 Mbps vs MB/s</span></h4>
+                        <p data-i18n="info_p3">运营商说的 100M 宽带，单位是 Mbps (Megabits per second)。</p>
+                        <p data-i18n="info_p4">我们下载文件看到的速度是 MB/s (Megabytes per second)。</p>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 text-xs mt-2" data-i18n="info_tip2">
+                            换算公式：1 Byte = 8 bits<br>
+                            理论下载速度 = 带宽 / 8<br>
+                            100Mbps 宽带 ≈ 12.5 MB/s 下载速度
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-brand mb-2"><span data-i18n="info_h4">MiB 与 MB 的区别</span></h4>
+                        <p data-i18n="info_p5">为了区分，国际标准制定了新前缀：</p>
+                        <ul class="list-disc pl-4 mt-1 space-y-1">
+                            <li data-i18n="info_li6"><strong>MiB (Mebibyte):</strong> 2^20 (1,048,576) bytes - 严格二进制</li>
+                            <li data-i18n="info_li7"><strong>MB (Megabyte):</strong> 10^6 (1,000,000) bytes - 严格十进制</li>
+                        </ul>
+                        <p class="mt-2 text-xs italic opacity-75" data-i18n="info_note">注：但在 Windows 和日常口语中，我们通常说 "MB" 指的其实是 "MiB"。</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reference Table -->
+            <div class="border-t border-slate-200 dark:border-slate-700 pt-6">
+                <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-4" data-i18n="tbl_title">常见 MB 转 GB 换算表 (Binary 1024)</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600 dark:text-slate-300">
+                        <thead class="text-xs text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th class="px-4 py-2">MB (MiB)</th>
+                                <th class="px-4 py-2">GB (GiB)</th>
+                                <th class="px-4 py-2">MB (MiB)</th>
+                                <th class="px-4 py-2">GB (GiB)</th>
+                                <th class="px-4 py-2">MB (MiB)</th>
+                                <th class="px-4 py-2">GB (GiB)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ref-table-body">
+                            <!-- JS Generated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-xs text-slate-400 py-8 font-mono">
+            <p data-i18n="footer_text">本工具未使用数据库，不会记录任何数据，请放心使用！</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "文件大小转换", subtitle: "Bit, Bytes, KB, MB, GB, TB 换算",
+                lbl_input: "输入数值", lbl_unit: "单位",
+                sec_binary: "计算机/Windows标准 (Binary)", sec_decimal: "国际标准/硬盘厂商 (SI)", sec_network: "网络传输单位 (Network)",
+                info_title: "关于单位换算", tbl_title: "常见 MB 转 GB 换算表 (Binary 1024)",
+                info_h1: "常用单位定义", 
+                info_li1: "1 Byte (字节) = 8 Bit (位)", 
+                info_li2: "1 KB (Kilobyte) = 1024 Byte (Windows/Binary)",
+                info_li3: "1 MB (Megabyte) = 1024 KB",
+                info_li4: "1 GB (Gigabyte) = 1024 MB",
+                info_li5: "1 TB (Terabyte) = 1024 GB",
+                info_h2: "为什么硬盘容量\"缩水\"?",
+                info_p1: "硬盘生产商通常使用十进制 (SI) 计算：",
+                info_p2: "而电脑操作系统(Windows)使用二进制 计算：",
+                info_tip1: "例如：买了一个 160GB 的硬盘。<br>厂商：160 × 10^9 Bytes<br>电脑：160 × 10^9 / 1024 / 1024 / 1024 ≈ 149 GB",
+                info_h3: "宽带网络 Mbps vs MB/s",
+                info_p3: "运营商说的 100M 宽带，单位是 Mbps (Megabits per second)。",
+                info_p4: "我们下载文件看到的速度是 MB/s (Megabytes per second)。",
+                info_tip2: "换算公式：1 Byte = 8 bits<br>理论下载速度 = 带宽 / 8<br>100Mbps 宽带 ≈ 12.5 MB/s 下载速度",
+                info_h4: "MiB 与 MB 的区别",
+                info_p5: "为了区分，国际标准制定了新前缀：",
+                info_li6: "<strong>MiB (Mebibyte):</strong> 2^20 (1,048,576) bytes - 严格二进制",
+                info_li7: "<strong>MB (Megabyte):</strong> 10^6 (1,000,000) bytes - 严格十进制",
+                info_note: "注：但在 Windows 和日常口语中，我们通常说 \"MB\" 指的其实是 \"MiB\"。",
+                footer_text: "本工具未使用数据库，不会记录任何数据，请放心使用！"
+            },
+            'zh-TW': {
+                title: "文件大小轉換", subtitle: "Bit, Bytes, KB, MB, GB, TB 換算",
+                lbl_input: "輸入數值", lbl_unit: "單位",
+                sec_binary: "計算機/Windows標準 (Binary)", sec_decimal: "國際標準/硬碟廠商 (SI)", sec_network: "網路傳輸單位 (Network)",
+                info_title: "關於單位換算", tbl_title: "常見 MB 轉 GB 換算表 (Binary 1024)",
+                info_h1: "常用單位定義", 
+                info_li1: "1 Byte (位元組) = 8 Bit (位元)", 
+                info_li2: "1 KB (Kilobyte) = 1024 Byte (Windows/Binary)",
+                info_li3: "1 MB (Megabyte) = 1024 KB",
+                info_li4: "1 GB (Gigabyte) = 1024 MB",
+                info_li5: "1 TB (Terabyte) = 1024 GB",
+                info_h2: "為什麼硬碟容量\"縮水\"?",
+                info_p1: "硬碟生產商通常使用十進制 (SI) 計算：",
+                info_p2: "而電腦操作系統 (Windows) 使用二進制計算：",
+                info_tip1: "例如：買了一個 160GB 的硬碟。<br>廠商：160 × 10^9 Bytes<br>電腦：160 × 10^9 / 1024 / 1024 / 1024 ≈ 149 GB",
+                info_h3: "寬頻網路 Mbps vs MB/s",
+                info_p3: "營運商說的 100M 寬頻，單位是 Mbps (Megabits per second)。",
+                info_p4: "我們下載檔案看到的速度是 MB/s (Megabytes per second)。",
+                info_tip2: "換算公式：1 Byte = 8 bits<br>理論下載速度 = 頻寬 / 8<br>100Mbps 寬頻 ≈ 12.5 MB/s 下載速度",
+                info_h4: "MiB 與 MB 的區別",
+                info_p5: "為了區分，國際標準制定了新前綴：",
+                info_li6: "<strong>MiB (Mebibyte):</strong> 2^20 (1,048,576) bytes - 嚴格二進制",
+                info_li7: "<strong>MB (Megabyte):</strong> 10^6 (1,000,000) bytes - 嚴格十進制",
+                info_note: "註：但在 Windows 和日常口語中，我們通常說 \"MB\" 指的其實是 \"MiB\"。",
+                footer_text: "本工具未使用資料庫，不會記錄任何數據，請放心使用！"
+            },
+            'en': {
+                title: "File Size Converter", subtitle: "Bit, Bytes, KB, MB, GB, TB Conversion",
+                lbl_input: "Input Value", lbl_unit: "Unit",
+                sec_binary: "Binary Value (Windows/IEC)", sec_decimal: "Decimal Value (SI/Manufacturer)", sec_network: "Network Units",
+                info_title: "About File Sizes", tbl_title: "Common MB to GB Conversion Table (Binary)",
+                info_h1: "Unit Definitions",
+                info_li1: "1 Byte = 8 Bits",
+                info_li2: "1 KB (Kilobyte) = 1024 Bytes (Binary)",
+                info_li3: "1 MB (Megabyte) = 1024 KB",
+                info_li4: "1 GB (Gigabyte) = 1024 MB",
+                info_li5: "1 TB (Terabyte) = 1024 GB",
+                info_h2: "Why HDD capacity \"shrinks\"?",
+                info_p1: "HDD manufacturers use decimal (SI) calculation:",
+                info_p2: "While Windows uses binary calculation:",
+                info_tip1: "Example: Bought a 160GB drive.<br>Mfr: 160 × 10^9 Bytes<br>PC: 160 × 10^9 / 1024 / 1024 / 1024 ≈ 149 GB",
+                info_h3: "Network Mbps vs MB/s",
+                info_p3: "ISP speed (e.g. 100M) is Mbps (Megabits per second).",
+                info_p4: "Download speed we see is MB/s (Megabytes per second).",
+                info_tip2: "Formula: 1 Byte = 8 bits<br>Theor. Speed = Bandwidth / 8<br>100Mbps ≈ 12.5 MB/s download",
+                info_h4: "Difference: MiB vs MB",
+                info_p5: "IEC defined new prefixes for clarity:",
+                info_li6: "<strong>MiB (Mebibyte):</strong> 2^20 (1,048,576) bytes - Strict binary",
+                info_li7: "<strong>MB (Megabyte):</strong> 10^6 (1,000,000) bytes - Strict decimal",
+                info_note: "Note: In Windows and daily talk, \"MB\" usually means \"MiB\".",
+                footer_text: "This tool does not use a database and does not record any data. Use it with confidence!"
+            },
+            'es': {
+                title: "Calculadora de Tamaño", subtitle: "Conversión Bit, Bytes, KB, MB, GB, TB",
+                lbl_input: "Valor de entrada", lbl_unit: "Unidad",
+                sec_binary: "Valor Binario (Windows/IEC)", sec_decimal: "Valor Decimal (SI/Fabricante)", sec_network: "Unidades de Red",
+                info_title: "Sobre el Tamaño de Archivos", tbl_title: "Tabla de Conversión MB a GB (Binario)",
+                info_h1: "Definiciones de Unidades",
+                info_li1: "1 Byte = 8 Bits",
+                info_li2: "1 KB (Kilobyte) = 1024 Bytes (Binario)",
+                info_li3: "1 MB (Megabyte) = 1024 KB",
+                info_li4: "1 GB (Gigabyte) = 1024 MB",
+                info_li5: "1 TB (Terabyte) = 1024 GB",
+                info_h2: "¿Por qué la capacidad \"disminuye\"?",
+                info_p1: "Los fabricantes usan cálculo decimal (SI):",
+                info_p2: "Windows usa cálculo binario:",
+                info_tip1: "Ejemplo: Disco de 160GB.<br>Fabr: 160 × 10^9 Bytes<br>PC: 160 × 10^9 / 1024 / 1024 / 1024 ≈ 149 GB",
+                info_h3: "Red Mbps vs MB/s",
+                info_p3: "La velocidad de ISP es Mbps (Megabits por segundo).",
+                info_p4: "La velocidad de descarga es MB/s (Megabytes por segundo).",
+                info_tip2: "Fórmula: 1 Byte = 8 bits<br>Vel. Teórica = Ancho de banda / 8<br>100Mbps ≈ 12.5 MB/s",
+                info_h4: "Diferencia: MiB vs MB",
+                info_p5: "IEC definió nuevos prefijos para claridad:",
+                info_li6: "<strong>MiB (Mebibyte):</strong> 2^20 bytes - Binario estricto",
+                info_li7: "<strong>MB (Megabyte):</strong> 10^6 bytes - Decimal estricto",
+                info_note: "Nota: En Windows, \"MB\" suele significar \"MiB\".",
+                footer_text: "¡Esta herramienta no utiliza base de datos y no registra datos!"
+            },
+            'ru': {
+                title: "Конвертер Размера", subtitle: "Бит, Байты, КБ, МБ, ГБ, ТБ",
+                lbl_input: "Значение", lbl_unit: "Единица",
+                sec_binary: "Бинарное (Windows/IEC)", sec_decimal: "Десятичное (SI/Производитель)", sec_network: "Сетевые Единицы",
+                info_title: "О размерах файлов", tbl_title: "Таблица конвертации МБ в ГБ (Бинарная)",
+                info_h1: "Определения единиц",
+                info_li1: "1 Байт = 8 Бит",
+                info_li2: "1 КБ (Килобайт) = 1024 Байта (Бинарно)",
+                info_li3: "1 МБ (Мегабайт) = 1024 КБ",
+                info_li4: "1 ГБ (Гигабайт) = 1024 МБ",
+                info_li5: "1 ТБ (Терабайт) = 1024 ГБ",
+                info_h2: "Почему объем диска \"меньше\"?",
+                info_p1: "Производители используют десятичный расчет (SI):",
+                info_p2: "Windows использует бинарный расчет:",
+                info_tip1: "Пример: Диск 160ГБ.<br>Произв: 160 × 10^9 Байт<br>ПК: 160 × 10^9 / 1024 / 1024 / 1024 ≈ 149 ГБ",
+                info_h3: "Сеть Мбит/с vs МБ/с",
+                info_p3: "Скорость провайдера — Мбит/с (Мегабит в секунду).",
+                info_p4: "Скорость загрузки — МБ/с (Мегабайт в секунду).",
+                info_tip2: "Формула: 1 Байт = 8 бит<br>Теор. скорость = Канал / 8<br>100Мбит/с ≈ 12.5 МБ/с",
+                info_h4: "Разница: МиБ vs МБ",
+                info_p5: "IEC ввел новые префиксы для ясности:",
+                info_li6: "<strong>MiB (Мебибайт):</strong> 2^20 байт - Строго бинарно",
+                info_li7: "<strong>MB (Мегабайт):</strong> 10^6 байт - Строго десятично",
+                info_note: "Прим: В Windows \"МБ\" обычно означает \"МиБ\".",
+                footer_text: "Этот инструмент не использует базу данных и не записывает данные!"
+            },
+            'hi': {
+                title: "फ़ाइल आकार कनवर्टर", subtitle: "बिट, बाइट्स, KB, MB, GB, TB गणना",
+                lbl_input: "इनपुट मान", lbl_unit: "इकाई",
+                sec_binary: "बाइनरी मान (Windows/IEC)", sec_decimal: "दशमलव मान (SI/निर्माता)", sec_network: "नेटवर्क इकाइयां",
+                info_title: "फ़ाइल आकार के बारे में", tbl_title: "MB से GB रूपांतरण तालिका (Binary)",
+                info_h1: "इकाई परिभाषाएं",
+                info_li1: "1 Byte = 8 Bits",
+                info_li2: "1 KB (Kilobyte) = 1024 Bytes (Binary)",
+                info_li3: "1 MB (Megabyte) = 1024 KB",
+                info_li4: "1 GB (Gigabyte) = 1024 MB",
+                info_li5: "1 TB (Terabyte) = 1024 GB",
+                info_h2: "हार्ड डिस्क क्षमता कम क्यों दिखती है?",
+                info_p1: "निर्माता दशमलव (SI) गणना का उपयोग करते हैं:",
+                info_p2: "जबकि Windows बाइनरी गणना का उपयोग करता है:",
+                info_tip1: "उदाहरण: 160GB ड्राइव।<br>निर्माता: 160 × 10^9 Bytes<br>PC: 160 × 10^9 / 1024 / 1024 / 1024 ≈ 149 GB",
+                info_h3: "नेटवर्क Mbps vs MB/s",
+                info_p3: "ISP गति Mbps (मेगाबिट्स प्रति सेकंड) में होती है।",
+                info_p4: "डाउनलोड गति MB/s (मेगाबाइट्स प्रति सेकंड) में होती है।",
+                info_tip2: "फॉर्मूला: 1 Byte = 8 bits<br>सिद्धांत गति = बैंडविड्थ / 8<br>100Mbps ≈ 12.5 MB/s",
+                info_h4: "अंतर: MiB vs MB",
+                info_p5: "स्पष्टता के लिए IEC ने नए उपसर्ग परिभाषित किए:",
+                info_li6: "<strong>MiB (Mebibyte):</strong> 2^20 बाइट्स - बाइनरी",
+                info_li7: "<strong>MB (Megabyte):</strong> 10^6 बाइट्स - दशमलव",
+                info_note: "नोट: Windows में \"MB\" का अर्थ आमतौर पर \"MiB\" होता है।",
+                footer_text: "यह टूल डेटाबेस का उपयोग नहीं करता और कोई डेटा रिकॉर्ड नहीं करता है!"
+            },
+            'pl': {
+                title: "Konwerter Rozmiaru", subtitle: "Bit, Bajty, KB, MB, GB, TB",
+                lbl_input: "Wartość", lbl_unit: "Jednostka",
+                sec_binary: "Wartość Binarna (Windows/IEC)", sec_decimal: "Wartość Dziesiętna (SI/Producent)", sec_network: "Jednostki Sieciowe",
+                info_title: "O rozmiarach plików", tbl_title: "Tabela konwersji MB na GB (Binarna)",
+                info_h1: "Definicje Jednostek",
+                info_li1: "1 Bajt = 8 Bitów",
+                info_li2: "1 KB (Kilobajt) = 1024 Bajty (Binarnie)",
+                info_li3: "1 MB (Megabajt) = 1024 KB",
+                info_li4: "1 GB (Gigabajt) = 1024 MB",
+                info_li5: "1 TB (Terabajt) = 1024 GB",
+                info_h2: "Dlaczego pojemność dysku jest mniejsza?",
+                info_p1: "Producenci stosują zapis dziesiętny (SI):",
+                info_p2: "System Windows stosuje zapis binarny:",
+                info_tip1: "Przykład: Dysk 160GB.<br>Prod: 160 × 10^9 Bajtów<br>PC: 160 × 10^9 / 1024 / 1024 / 1024 ≈ 149 GB",
+                info_h3: "Sieć Mbps vs MB/s",
+                info_p3: "Szybkość ISP to Mbps (Megabity na sekundę).",
+                info_p4: "Prędkość pobierania to MB/s (Megabajty na sekundę).",
+                info_tip2: "Wzór: 1 Bajt = 8 bitów<br>Prędkość teor. = Łącze / 8<br>100Mbps ≈ 12.5 MB/s",
+                info_h4: "Różnica: MiB vs MB",
+                info_p5: "IEC zdefiniowało nowe przedrostki dla jasności:",
+                info_li6: "<strong>MiB (Mebibajt):</strong> 2^20 bajtów - Binarnie",
+                info_li7: "<strong>MB (Megabajt):</strong> 10^6 bajtów - Dziesiętnie",
+                info_note: "Uwaga: W Windows \"MB\" zazwyczaj oznacza \"MiB\".",
+                footer_text: "To narzędzie nie korzysta z bazy danych i nie zapisuje żadnych danych!"
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+
+            init() {
+                this.setupTheme();
+                this.setupLang();
+                this.generateRefTable();
+                this.convert(); // Initial calculation
+            },
+
+            setupTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryLang = urlParams.get('lang');
+                if (queryLang && i18nData[queryLang]) this.lang = queryLang;
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try { window.history.pushState({}, '', `?lang=${this.lang}`); } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+            },
+
+            convert() {
+                const valInput = document.getElementById('input-val');
+                const val = parseFloat(valInput.value);
+                const unit = document.getElementById('input-unit').value;
+                
+                if (isNaN(val)) {
+                    this.clearResults();
+                    return;
+                }
+
+                // 1. Convert everything to Bits first (Base Unit)
+                let bits = 0;
+                switch(unit) {
+                    case 'bit': bits = val; break;
+                    case 'byte': bits = val * 8; break;
+                    // Binary (1024)
+                    case 'kb_bin': bits = val * 1024 * 8; break;
+                    case 'mb_bin': bits = val * 1024 * 1024 * 8; break;
+                    case 'gb_bin': bits = val * 1024 * 1024 * 1024 * 8; break;
+                    case 'tb_bin': bits = val * 1024 * 1024 * 1024 * 1024 * 8; break;
+                    // SI (1000)
+                    case 'kb_si': bits = val * 1000 * 8; break;
+                    case 'mb_si': bits = val * 1000 * 1000 * 8; break;
+                    case 'gb_si': bits = val * 1000 * 1000 * 1000 * 8; break;
+                }
+
+                // 2. Calculate outputs from Bits
+                
+                // Binary (IEC)
+                const bytes = bits / 8;
+                this.setRes('res-byte', bytes, 0);
+                this.setRes('res-kb-bin', bytes / 1024);
+                this.setRes('res-mb-bin', bytes / (1024**2));
+                this.setRes('res-gb-bin', bytes / (1024**3));
+                this.setRes('res-tb-bin', bytes / (1024**4));
+
+                // Decimal (SI)
+                this.setRes('res-bit', bits, 0);
+                this.setRes('res-kb-si', bytes / 1000);
+                this.setRes('res-mb-si', bytes / (1000**2));
+                this.setRes('res-gb-si', bytes / (1000**3));
+
+                // Network
+                this.setRes('res-mbit', bits / 1000000); // Mbps (SI) usually
+                this.setRes('res-gbit', bits / 1000000000);
+            },
+
+            setRes(id, val, decimals = 4) {
+                let display = val;
+                
+                // Smart formatting
+                if (val === 0) display = "0";
+                else if (val >= 1 || val === 0) {
+                    // For integers or large numbers
+                    if (Number.isInteger(val)) {
+                        display = val.toLocaleString('en-US'); 
+                    } else {
+                        display = val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: decimals });
+                    }
+                } else {
+                    // For very small numbers (scientific notation or high precision)
+                    if (val < 0.000001) display = val.toExponential(4);
+                    else display = val.toFixed(decimals + 2).replace(/\.?0+$/, '');
+                }
+                
+                document.getElementById(id).innerText = display;
+            },
+
+            clearResults() {
+                const ids = ['res-byte','res-kb-bin','res-mb-bin','res-gb-bin','res-tb-bin',
+                           'res-bit','res-kb-si','res-mb-si','res-gb-si','res-mbit','res-gbit'];
+                ids.forEach(id => document.getElementById(id).innerText = "-");
+            },
+
+            generateRefTable() {
+                const tbody = document.getElementById('ref-table-body');
+                // Simple list of interesting MB values to GB
+                const mbs = [
+                    128, 256, 512, 
+                    1024, 2048, 4096,
+                    8192, 16384, 32768, 
+                    65536, 131072, 262144
+                ];
+
+                let html = '';
+                for(let i=0; i<mbs.length; i+=3) {
+                    html += `<tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">`;
+                    for(let j=0; j<3; j++) {
+                        if(i+j < mbs.length) {
+                            const mb = mbs[i+j];
+                            const gb = mb / 1024;
+                            let gbStr = gb < 1 ? gb.toFixed(4) : gb.toLocaleString();
+                            // Clean trailing zeros for neatness
+                            if(String(gbStr).includes('.')) gbStr = String(gbStr).replace(/\.?0+$/, '');
+                            
+                            html += `<td class="px-4 py-2 font-mono text-slate-500">${mb.toLocaleString()}</td>`;
+                            html += `<td class="px-4 py-2 font-mono font-bold text-brand">${gbStr}</td>`;
+                        } else {
+                            html += `<td></td><td></td>`;
+                        }
+                    }
+                    html += `</tr>`;
+                }
+                tbody.innerHTML = html;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

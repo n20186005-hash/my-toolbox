@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <!--  开头必须包含标签和图标的代码 -->
+    <meta name="category" content="date-time">
+    <meta name="icon" content="📅">
+    <meta name="description" content="Lunar Solar Converter - Convert between Chinese Lunar and Solar (Gregorian) calendars with Zodiac and Terms info.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>阴</text></svg>">
+    
+    <title>农历公历转换计算器 | Lunar Solar Converter</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入 Lunar-Javascript 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#e11d48', hover: '#be123c' }, /* Rose */
+                        secondary: { DEFAULT: '#6366f1', hover: '#4f46e5' }, /* Indigo */
+                        bg: { light: '#fff1f2', dark: '#0f172a' } /* Rose tint light, Slate dark */
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg border border-rose-200 dark:border-slate-700;
+            }
+            .select-field {
+                @apply w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all text-lg appearance-none cursor-pointer text-center font-medium;
+            }
+            .tab-btn {
+                @apply flex-1 py-3 text-sm md:text-base font-bold uppercase tracking-wider transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50;
+            }
+            .tab-btn.active {
+                @apply text-primary border-primary bg-rose-50 dark:bg-slate-700/50 dark:text-rose-400;
+            }
+            .info-item {
+                @apply flex flex-col p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/50 transition-all hover:shadow-sm;
+            }
+            .info-label {
+                @apply text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1;
+            }
+            .info-val {
+                @apply font-bold text-slate-700 dark:text-slate-200 text-sm md:text-base;
+            }
+            /* Custom Select Arrow */
+            .select-wrapper::after {
+                content: '\f107';
+                font-family: 'FontAwesome';
+                @apply absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none;
+            }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-rose-100 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-orange-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                    <span class="font-serif">农</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">农历公历转换器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Lunar / Solar Converter</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300 outline-none">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="en">English</option>
+                    <option value="ru">Русский</option>
+                    <option value="es">Español</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="pl">Polski</option>
+                </select>
+                <button id="mode-toggle" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+
+        <!-- Main Converter Card -->
+        <div class="glass rounded-3xl shadow-xl overflow-hidden mb-8 border-t-4 border-t-rose-500" id="main-card">
+            
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-200 dark:border-slate-700">
+                <button onclick="App.switchMode('solar2lunar')" id="tab-s2l" class="tab-btn active">
+                    <i class="fa fa-sun-o mr-2"></i> <span data-i18n="tab_s2l">公历 转 农历</span>
+                </button>
+                <button onclick="App.switchMode('lunar2solar')" id="tab-l2s" class="tab-btn">
+                    <i class="fa fa-moon-o mr-2"></i> <span data-i18n="tab_l2s">农历 转 公历</span>
+                </button>
+            </div>
+
+            <div class="p-6 md:p-8 bg-gradient-to-b from-rose-50/50 to-transparent dark:from-rose-900/10">
+                
+                <!-- Input Area -->
+                <div class="space-y-6">
+                    <div class="text-center mb-2">
+                        <h2 id="input-label" class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest" data-i18n="lbl_input_solar">选择公历日期</h2>
+                    </div>
+
+                    <!-- Date Selectors -->
+                    <div class="grid grid-cols-3 gap-3 md:gap-4">
+                        <!-- Year -->
+                        <div class="relative select-wrapper">
+                            <select id="sel-year" class="select-field pr-8" onchange="App.updateDays()">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        
+                        <!-- Month -->
+                        <div class="relative select-wrapper">
+                            <select id="sel-month" class="select-field pr-8" onchange="App.updateDays()">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        
+                        <!-- Day -->
+                        <div class="relative select-wrapper">
+                            <select id="sel-day" class="select-field pr-8" onchange="App.calculate()">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Leap Month Checkbox (Visible only in Lunar mode) -->
+                    <div id="leap-container" class="hidden flex justify-center mt-2 animate-fade-in">
+                        <label class="flex items-center gap-2 cursor-pointer select-none p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all">
+                            <input type="checkbox" id="chk-leap" class="w-5 h-5 text-primary rounded border-slate-300 focus:ring-primary" onchange="App.calculate()">
+                            <span class="text-sm font-medium text-slate-600 dark:text-slate-300" data-i18n="lbl_leap">闰月 (Leap Month)</span>
+                        </label>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button onclick="App.calculate()" class="w-full py-4 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-rose-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group">
+                        <i class="fa fa-refresh group-hover:rotate-180 transition-transform duration-500"></i> 
+                        <span data-i18n="btn_convert">转换 / Convert</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Result Area -->
+            <div class="bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 p-6 md:p-8">
+                <div id="result-container" class="opacity-0 transition-opacity duration-500">
+                    
+                    <div class="text-center mb-8">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2" id="res-subtitle" data-i18n="res_subtitle_lunar">对应的农历日期</div>
+                        <div class="text-3xl md:text-5xl font-mono font-bold text-slate-800 dark:text-white mb-2 tracking-tight" id="res-main">
+                            <!-- Main Result -->
+                        </div>
+                        <div class="text-lg text-primary font-medium font-serif" id="res-sub">
+                            <!-- Sub Result -->
+                        </div>
+                    </div>
+
+                    <!-- Detailed Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="info-item">
+                            <span class="info-label"><i class="fa fa-calendar-o"></i> <span data-i18n="lbl_zodiac">生肖</span></span>
+                            <span class="info-val text-xl" id="res-zodiac">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fa fa-tags"></i> <span data-i18n="lbl_ganzhi">干支</span></span>
+                            <span class="info-val" id="res-ganzhi">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fa fa-clock-o"></i> <span data-i18n="lbl_week">星期</span></span>
+                            <span class="info-val" id="res-week">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fa fa-leaf"></i> <span data-i18n="lbl_term">节气</span></span>
+                            <span class="info-val text-rose-500" id="res-term">-</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-4 rounded-xl bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 flex items-start gap-3">
+                        <i class="fa fa-info-circle text-orange-500 mt-1"></i>
+                        <div class="text-sm text-slate-600 dark:text-slate-300">
+                            <span class="font-bold text-orange-600 dark:text-orange-400" data-i18n="lbl_yi_ji">宜忌/节日：</span>
+                            <span id="res-yi-ji">...</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Reference Table (Quick Look) -->
+        <div class="glass rounded-2xl p-6 shadow-md">
+            <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                <i class="fa fa-list-ul text-primary"></i> <span data-i18n="ref_title">快速参考</span>
+            </h3>
+            <div class="text-sm text-slate-600 dark:text-slate-400 space-y-2" data-i18n="ref_txt">
+                <p>• 农历是中国传统历法，结合了阴历（月亮周期）和阳历（太阳周期）的特点。</p>
+                <p>• 闰月是为了协调农历年与回归年的长度，每2-3年置一闰。</p>
+                <p>• 本工具计算范围支持 1900 年至 2100 年。</p>
+            </div>
+        </div>
+
+        <footer class="text-center text-xs text-slate-400 py-8">
+            <p>&copy; <span id="cur-year"></span> <span data-i18n="footer_txt">Lunar Calendar Tool. Generated for Educational Purposes.</span></p>
+        </footer>
+
+    </div>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "农历公历转换器", subtitle: "公历 ↔ 农历 互转工具",
+                tab_s2l: "公历 转 农历", tab_l2s: "农历 转 公历",
+                lbl_input_solar: "选择公历日期", lbl_input_lunar: "选择农历日期",
+                lbl_leap: "闰月", btn_convert: "转换",
+                res_subtitle_lunar: "对应的农历日期", res_subtitle_solar: "对应的公历日期",
+                lbl_zodiac: "生肖", lbl_ganzhi: "干支", lbl_week: "星期", lbl_term: "节气", lbl_yi_ji: "节日/宜忌：",
+                ref_title: "快速参考",
+                ref_txt: "<p>• 农历是中国传统历法，结合了阴历（月亮周期）和阳历（太阳周期）的特点。</p><p>• 闰月是为了协调农历年与回归年的长度，每2-3年置一闰。</p><p>• 本工具计算范围支持 1900 年至 2100 年。</p>",
+                footer_txt: "农历转换工具. 供学习使用.",
+                unit_year: "年", unit_month: "月", unit_day: "日",
+                invalid_date: "日期无效", check_input: "请检查输入"
+            },
+            'zh-TW': {
+                title: "農曆公曆轉換器", subtitle: "公曆 ↔ 農曆 互轉工具",
+                tab_s2l: "公曆 轉 農曆", tab_l2s: "農曆 轉 公曆",
+                lbl_input_solar: "選擇公曆日期", lbl_input_lunar: "選擇農曆日期",
+                lbl_leap: "閏月", btn_convert: "轉換",
+                res_subtitle_lunar: "對應的農曆日期", res_subtitle_solar: "對應的公曆日期",
+                lbl_zodiac: "生肖", lbl_ganzhi: "干支", lbl_week: "星期", lbl_term: "節氣", lbl_yi_ji: "節日/宜忌：",
+                ref_title: "快速參考",
+                ref_txt: "<p>• 農曆是中國傳統曆法，結合了陰曆（月亮週期）和陽曆（太陽週期）的特點。</p><p>• 閏月是為了協調農曆年與回歸年的長度，每2-3年置一閏。</p><p>• 本工具計算範圍支持 1900 年至 2100 年。</p>",
+                footer_txt: "農曆轉換工具. 供學習使用.",
+                unit_year: "年", unit_month: "月", unit_day: "日",
+                invalid_date: "日期無效", check_input: "請檢查輸入"
+            },
+            'en': {
+                title: "Lunar Solar Converter", subtitle: "Convert between Solar & Lunar",
+                tab_s2l: "Solar to Lunar", tab_l2s: "Lunar to Solar",
+                lbl_input_solar: "Select Solar Date", lbl_input_lunar: "Select Lunar Date",
+                lbl_leap: "Leap Month", btn_convert: "Convert",
+                res_subtitle_lunar: "Corresponding Lunar Date", res_subtitle_solar: "Corresponding Solar Date",
+                lbl_zodiac: "Zodiac", lbl_ganzhi: "Gan-Zhi", lbl_week: "Week", lbl_term: "Solar Term", lbl_yi_ji: "Info/Festival:",
+                ref_title: "Quick Reference",
+                ref_txt: "<p>• The Chinese Lunar Calendar combines lunar (moon) and solar (sun) cycles.</p><p>• Leap months are added every 2-3 years to synchronize with the solar year.</p><p>• Supports years from 1900 to 2100.</p>",
+                footer_txt: "Lunar Calendar Tool. Educational Purpose.",
+                unit_year: "", unit_month: "", unit_day: "",
+                invalid_date: "Invalid Date", check_input: "Check Input"
+            },
+            'ru': {
+                title: "Лунный календарь", subtitle: "Конвертер лунного и солнечного календарей",
+                tab_s2l: "Солнечный → Лунный", tab_l2s: "Лунный → Солнечный",
+                lbl_input_solar: "Выберите солнечную дату", lbl_input_lunar: "Выберите лунную дату",
+                lbl_leap: "Високосный месяц", btn_convert: "Конвертировать",
+                res_subtitle_lunar: "Лунная дата", res_subtitle_solar: "Солнечная дата",
+                lbl_zodiac: "Зодиак", lbl_ganzhi: "Гань-Чжи", lbl_week: "День недели", lbl_term: "Сезон", lbl_yi_ji: "Инфо/Праздник:",
+                ref_title: "Справка",
+                ref_txt: "<p>• Китайский календарь сочетает лунные и солнечные циклы.</p><p>• Високосные месяцы добавляются каждые 2-3 года.</p><p>• Диапазон: 1900–2100 гг.</p>",
+                footer_txt: "Инструмент лунного календаря.",
+                unit_year: "г.", unit_month: ".", unit_day: "",
+                invalid_date: "Неверная дата", check_input: "Проверьте ввод"
+            },
+            'es': {
+                title: "Conversor Lunar Solar", subtitle: "Convertir entre Solar y Lunar",
+                tab_s2l: "Solar a Lunar", tab_l2s: "Lunar a Solar",
+                lbl_input_solar: "Seleccionar Fecha Solar", lbl_input_lunar: "Seleccionar Fecha Lunar",
+                lbl_leap: "Mes Bisiesto", btn_convert: "Convertir",
+                res_subtitle_lunar: "Fecha Lunar", res_subtitle_solar: "Fecha Solar",
+                lbl_zodiac: "Zodiaco", lbl_ganzhi: "Gan-Zhi", lbl_week: "Semana", lbl_term: "Término Solar", lbl_yi_ji: "Info/Festival:",
+                ref_title: "Referencia Rápida",
+                ref_txt: "<p>• El calendario chino combina ciclos lunares y solares.</p><p>• Se añaden meses bisiestos cada 2-3 años.</p><p>• Soporta años de 1900 a 2100.</p>",
+                footer_txt: "Herramienta de Calendario Lunar.",
+                unit_year: "", unit_month: "", unit_day: "",
+                invalid_date: "Fecha Inválida", check_input: "Verificar Entrada"
+            },
+            'hi': {
+                title: "चंद्र सौर परिवर्तक", subtitle: "चंद्र और सौर कैलेंडर कनवर्टर",
+                tab_s2l: "सौर से चंद्र", tab_l2s: "चंद्र से सौर",
+                lbl_input_solar: "सौर तिथि चुनें", lbl_input_lunar: "चंद्र तिथि चुनें",
+                lbl_leap: "अधिक मास (Leap)", btn_convert: "परिवर्तित करें",
+                res_subtitle_lunar: "चंद्र तिथि", res_subtitle_solar: "सौर तिथि",
+                lbl_zodiac: "राशि (Zodiac)", lbl_ganzhi: "गां-झी (Gan-Zhi)", lbl_week: "सप्ताह", lbl_term: "सौर शब्द", lbl_yi_ji: "जानकारी/त्योहार:",
+                ref_title: "त्वरित संदर्भ",
+                ref_txt: "<p>• चीनी कैलेंडर चंद्र और सौर चक्रों को जोड़ता है।</p><p>• हर 2-3 साल में एक अधिक मास जोड़ा जाता है।</p><p>• 1900 से 2100 तक का समर्थन करता है।</p>",
+                footer_txt: "चंद्र कैलेंडर उपकरण।",
+                unit_year: "", unit_month: "", unit_day: "",
+                invalid_date: "अमान्य तिथि", check_input: "इनपुट जांचें"
+            },
+            'pl': {
+                title: "Konwerter Kalendarza", subtitle: "Słoneczny <-> Księżycowy",
+                tab_s2l: "Słoneczny na Księżycowy", tab_l2s: "Księżycowy na Słoneczny",
+                lbl_input_solar: "Wybierz datę słoneczną", lbl_input_lunar: "Wybierz datę księżycową",
+                lbl_leap: "Miesiąc przęp.", btn_convert: "Konwertuj",
+                res_subtitle_lunar: "Data księżycowa", res_subtitle_solar: "Data słoneczna",
+                lbl_zodiac: "Zodiak", lbl_ganzhi: "Gan-Zhi", lbl_week: "Tydzień", lbl_term: "Termin solarny", lbl_yi_ji: "Info/Święto:",
+                ref_title: "Szybkie odniesienie",
+                ref_txt: "<p>• Kalendarz chiński łączy cykle księżycowe i słoneczne.</p><p>• Miesiące przestępne są dodawane co 2-3 lata.</p><p>• Obsługuje lata 1900-2100.</p>",
+                footer_txt: "Narzędzie kalendarza księżycowego.",
+                unit_year: "r.", unit_month: "", unit_day: "",
+                invalid_date: "Nieprawidłowa data", check_input: "Sprawdź dane"
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            mode: 'solar2lunar', // 'solar2lunar' or 'lunar2solar'
+            
+            // UI References
+            els: {
+                tabS2L: document.getElementById('tab-s2l'),
+                tabL2S: document.getElementById('tab-l2s'),
+                inputLabel: document.getElementById('input-label'),
+                selYear: document.getElementById('sel-year'),
+                selMonth: document.getElementById('sel-month'),
+                selDay: document.getElementById('sel-day'),
+                leapContainer: document.getElementById('leap-container'),
+                chkLeap: document.getElementById('chk-leap'),
+                resContainer: document.getElementById('result-container'),
+                resSubtitle: document.getElementById('res-subtitle'),
+                resMain: document.getElementById('res-main'),
+                resSub: document.getElementById('res-sub'),
+                resZodiac: document.getElementById('res-zodiac'),
+                resGanzhi: document.getElementById('res-ganzhi'),
+                resWeek: document.getElementById('res-week'),
+                resTerm: document.getElementById('res-term'),
+                resYiJi: document.getElementById('res-yi-ji')
+            },
+
+            init() {
+                this.setupTheme();
+                this.setupLang();
+                this.initSelectors();
+                
+                // Set default to today
+                const today = new Date();
+                this.els.selYear.value = today.getFullYear();
+                this.els.selMonth.value = today.getMonth() + 1;
+                this.updateDays(); // Fill days
+                this.els.selDay.value = today.getDate();
+                
+                // Initial calc
+                this.calculate();
+                
+                // Footer year
+                document.getElementById('cur-year').innerText = today.getFullYear();
+            },
+
+            setupTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryLang = urlParams.get('lang');
+                
+                // Priority: URL Param > LocalStorage (optional logic) > Default 'zh-CN'
+                if (queryLang && i18nData[queryLang]) {
+                    this.lang = queryLang;
+                } else {
+                    this.lang = 'zh-CN';
+                }
+                
+                sel.value = this.lang;
+                this.updateText();
+
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    
+                    // Update URL without reload
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    
+                    this.updateText();
+                    this.initSelectors(); // Re-render selectors (Month names)
+                    this.updateDays();    // Re-render days
+                    this.calculate();     // Re-calc result
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) {
+                        if(el.tagName === 'SPAN' || el.tagName === 'H1' || el.tagName === 'P' || el.tagName === 'DIV' || el.tagName === 'H2' || el.tagName === 'H3' || el.tagName === 'BUTTON') {
+                            el.innerHTML = dict[key]; // innerHTML to support <p> tags in ref_txt
+                        } else {
+                            el.textContent = dict[key];
+                        }
+                    }
+                });
+                
+                // Update dynamic label based on current mode
+                if (this.mode === 'solar2lunar') {
+                    this.els.inputLabel.innerText = dict.lbl_input_solar;
+                    this.els.resSubtitle.innerText = dict.res_subtitle_lunar;
+                } else {
+                    this.els.inputLabel.innerText = dict.lbl_input_lunar;
+                    this.els.resSubtitle.innerText = dict.res_subtitle_solar;
+                }
+            },
+
+            initSelectors() {
+                const dict = i18nData[this.lang];
+                
+                // Populate Year (1900 - 2100)
+                // Use stored value if exists to prevent reset on lang change
+                const currentYear = this.els.selYear.value;
+                let htmlYear = '';
+                for (let y = 1900; y <= 2100; y++) {
+                    const unit = dict.unit_year || "";
+                    htmlYear += `<option value="${y}">${y}${unit}</option>`;
+                }
+                this.els.selYear.innerHTML = htmlYear;
+                if(currentYear) this.els.selYear.value = currentYear;
+
+                // Populate Month
+                this.populateMonths();
+            },
+
+            populateMonths() {
+                const dict = i18nData[this.lang];
+                const currentMonth = this.els.selMonth.value;
+                
+                let htmlMonth = '';
+                const isLunar = this.mode === 'lunar2solar';
+                // Chinese Lunar Month Names are fixed in culture, but we can translate "Month 1" for others
+                const lunarMonths = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
+                
+                for (let m = 1; m <= 12; m++) {
+                    let name;
+                    if (isLunar) {
+                        // If language is Chinese-ish, use traditional names, else numeric
+                        if (this.lang.startsWith('zh')) {
+                            name = lunarMonths[m-1];
+                        } else {
+                            name = (dict.unit_month ? `${m}${dict.unit_month}` : `Lunar Month ${m}`);
+                        }
+                    } else {
+                        // Solar months
+                        name = (dict.unit_month ? `${m}${dict.unit_month}` : `${m}`);
+                        if (this.lang === 'en') {
+                             const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                             name = enMonths[m-1];
+                        }
+                    }
+                    htmlMonth += `<option value="${m}">${name}</option>`;
+                }
+                
+                this.els.selMonth.innerHTML = htmlMonth;
+                if(currentMonth) this.els.selMonth.value = currentMonth;
+            },
+
+            updateDays() {
+                const year = parseInt(this.els.selYear.value);
+                const month = parseInt(this.els.selMonth.value);
+                let daysCount = 31;
+
+                // Solar Logic
+                if (this.mode === 'solar2lunar') {
+                    daysCount = new Date(year, month, 0).getDate();
+                } else {
+                    // Lunar Logic
+                    try {
+                        const lunarMonthDays = LunarUtil.getDaysOfMonth(year, month);
+                        daysCount = lunarMonthDays;
+                        
+                        // Check Leap Month
+                        const leapMonth = LunarUtil.getLeapMonth(year);
+                        if (leapMonth === month) {
+                            this.els.leapContainer.classList.remove('hidden');
+                            if (this.els.chkLeap.checked) {
+                                daysCount = LunarUtil.getDaysOfLeapMonth(year);
+                            }
+                        } else {
+                            this.els.leapContainer.classList.add('hidden');
+                            this.els.chkLeap.checked = false;
+                        }
+                    } catch (e) {
+                        daysCount = 30; 
+                    }
+                }
+
+                // Populate Days
+                const dict = i18nData[this.lang];
+                const currentDay = parseInt(this.els.selDay.value);
+                
+                let htmlDay = '';
+                const isLunar = this.mode === 'lunar2solar';
+                const lunarDays = ["初一", "初二", "初三", "初四", "初五", "初六", "初七", "初八", "初九", "初十", 
+                                  "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "二十", 
+                                  "廿一", "廿二", "廿三", "廿四", "廿五", "廿六", "廿七", "廿八", "廿九", "三十"];
+
+                for (let d = 1; d <= daysCount; d++) {
+                    let name;
+                    if (isLunar && this.lang.startsWith('zh')) {
+                        name = lunarDays[d-1] || d;
+                    } else {
+                        name = `${d}${dict.unit_day || ''}`;
+                    }
+                    htmlDay += `<option value="${d}">${name}</option>`;
+                }
+                
+                this.els.selDay.innerHTML = htmlDay;
+                if (currentDay <= daysCount) {
+                    this.els.selDay.value = currentDay;
+                } else {
+                    this.els.selDay.value = 1;
+                }
+                
+                this.calculate();
+            },
+
+            switchMode(newMode) {
+                this.mode = newMode;
+                const dict = i18nData[this.lang];
+
+                if (newMode === 'solar2lunar') {
+                    this.els.tabS2L.classList.add('active');
+                    this.els.tabL2S.classList.remove('active');
+                    this.els.inputLabel.innerText = dict.lbl_input_solar;
+                    this.els.resSubtitle.innerText = dict.res_subtitle_lunar;
+                    this.els.leapContainer.classList.add('hidden');
+                } else {
+                    this.els.tabL2S.classList.add('active');
+                    this.els.tabS2L.classList.remove('active');
+                    this.els.inputLabel.innerText = dict.lbl_input_lunar;
+                    this.els.resSubtitle.innerText = dict.res_subtitle_solar;
+                }
+
+                this.populateMonths();
+                this.updateDays();
+            },
+
+            calculate() {
+                const year = parseInt(this.els.selYear.value);
+                const month = parseInt(this.els.selMonth.value);
+                const day = parseInt(this.els.selDay.value);
+                const dict = i18nData[this.lang];
+
+                if (!year || !month || !day) return;
+
+                let displayMain = '';
+                let displaySub = '';
+                let lunarObj = null;
+                let solarObj = null;
+                
+                // Helper for translated year/month/day
+                const fmtSolar = (s) => {
+                    if (this.lang === 'en') return s.toYmd(); // 2024-10-01
+                    return `${s.getYear()}${dict.unit_year} ${s.getMonth()}${dict.unit_month} ${s.getDay()}${dict.unit_day}`;
+                }
+
+                try {
+                    if (this.mode === 'solar2lunar') {
+                        solarObj = Solar.fromYmd(year, month, day);
+                        lunarObj = solarObj.getLunar();
+
+                        // Lunar result always looks better in Chinese characters even for other langs, 
+                        // but we can transliterate or simplify if needed. 
+                        // For now, keeping core lunar format standard but with local context labels.
+                        displayMain = `
+                            <span class="text-rose-600 dark:text-rose-400">${lunarObj.getMonthInChinese()}月${lunarObj.getDayInChinese()}</span>
+                        `;
+                        displaySub = fmtSolar(solarObj);
+
+                    } else {
+                        const isLeap = this.els.chkLeap.checked;
+                        lunarObj = Lunar.fromYmd(year, month, day, isLeap);
+                        solarObj = lunarObj.getSolar();
+
+                        displayMain = `
+                            <span class="text-sky-600 dark:text-sky-400">${fmtSolar(solarObj)}</span>
+                        `;
+                        displaySub = `${lunarObj.getYearInChinese()}年 ${lunarObj.getMonthInChinese()}月${lunarObj.getDayInChinese()} ${isLeap ? '(闰)' : ''}`;
+                    }
+
+                    // Update UI
+                    this.els.resMain.innerHTML = displayMain;
+                    this.els.resSub.innerHTML = displaySub;
+                    
+                    // Detailed Info
+                    // Zodiac
+                    let zodiac = lunarObj.getYearShengXiao();
+                    // Basic English mapping for Zodiac if not Chinese
+                    if (!this.lang.startsWith('zh')) {
+                        const zodiacEn = {
+                            '鼠': 'Rat 🐀', '牛': 'Ox 🐂', '虎': 'Tiger 🐅', '兔': 'Rabbit 🐇',
+                            '龙': 'Dragon 🐉', '蛇': 'Snake 🐍', '马': 'Horse 🐎', '羊': 'Goat 🐐',
+                            '猴': 'Monkey 🐒', '鸡': 'Rooster 🐓', '狗': 'Dog 🐕', '猪': 'Pig 🐖'
+                        };
+                        if(zodiacEn[zodiac]) zodiac = zodiacEn[zodiac];
+                    }
+                    this.els.resZodiac.innerText = zodiac;
+
+                    // Ganzhi (Keep Chinese, maybe add Pinyin? Keeping simple for now)
+                    this.els.resGanzhi.innerText = `${lunarObj.getYearInGanZhi()} ${lunarObj.getMonthInGanZhi()} ${lunarObj.getDayInGanZhi()}`;
+                    
+                    // Week
+                    let week = solarObj.getWeek(); // 0-6
+                    const weekMap = {
+                        'zh-CN': ["周日","周一","周二","周三","周四","周五","周六"],
+                        'zh-TW': ["週日","週一","週二","週三","週四","週五","週六"],
+                        'en': ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+                        'ru': ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"],
+                        'es': ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"],
+                        'pl': ["Niedz","Pon","Wt","Śr","Czw","Pt","Sob"],
+                        'hi': ["रवि","सोम","मंगल","बुध","गुरु","शुक्र","शनि"]
+                    };
+                    this.els.resWeek.innerText = (weekMap[this.lang] || weekMap['en'])[week];
+                    
+                    // Jieqi
+                    const term = lunarObj.getJieQi();
+                    this.els.resTerm.innerText = term ? term : '-';
+
+                    // Festivals
+                    const festivals = lunarObj.getFestivals().concat(solarObj.getFestivals());
+                    if (festivals.length > 0) {
+                        this.els.resYiJi.innerHTML = `<span class="text-rose-500 font-bold">${festivals.join('、')}</span>`;
+                    } else {
+                        this.els.resYiJi.innerText = "-";
+                    }
+
+                    this.els.resContainer.classList.remove('opacity-0');
+
+                } catch (e) {
+                    console.error(e);
+                    this.els.resMain.innerText = dict.invalid_date;
+                    this.els.resSub.innerText = dict.check_input;
+                }
+            }
+        };
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="date-time">
+    <meta name="icon" content="🗿">
+    <meta name="description" content="Maya Calendar Calculator - Convert Gregorian dates to Mayan Long Count, Tzolkin, Haab, and Lord of the Night.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🗿</text></svg>">
+    
+    <title>玛雅日历计算器 | Maya Calendar Calc</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        maya: { 
+                            gold: '#d4af37', 
+                            stone: '#5d6d7e', 
+                            jungle: '#1e5128', 
+                            dark: '#1a202c',
+                            accent: '#c0392b'
+                        },
+                        bg: { light: '#fdfbf7', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        serif: ['Cinzel', 'serif'], // Ancient looking font
+                        mono: ['monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/90 dark:bg-slate-800/95 backdrop-blur-lg border border-stone-300 dark:border-stone-700;
+            }
+            .select-field {
+                @apply w-full px-4 py-3 rounded-lg border-2 border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-slate-900 text-stone-700 dark:text-stone-200 focus:ring-2 focus:ring-maya-gold focus:border-maya-gold outline-none transition-all text-lg font-bold text-center appearance-none cursor-pointer;
+            }
+            .stone-card {
+                @apply bg-stone-100 dark:bg-slate-700/50 rounded-xl p-4 border border-stone-200 dark:border-slate-600 flex flex-col items-center justify-center text-center shadow-sm min-h-[140px];
+            }
+            .stone-label {
+                @apply text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest mb-1;
+            }
+            .stone-value {
+                @apply text-xl md:text-2xl font-serif font-bold text-maya-jungle dark:text-emerald-400;
+            }
+            .glyph-icon {
+                @apply text-3xl mb-2 opacity-80;
+            }
+            .qa-item {
+                @apply bg-stone-50 dark:bg-slate-700/30 p-4 rounded-lg border border-stone-200 dark:border-slate-600;
+            }
+            .qa-q {
+                @apply font-bold text-stone-800 dark:text-stone-200 text-sm mb-2 flex items-start gap-2;
+            }
+            .qa-a {
+                @apply text-xs md:text-sm text-stone-600 dark:text-stone-400 leading-relaxed pl-6;
+            }
+            
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: #f1f1f1; }
+            ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: #555; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-stone-200 dark:bg-slate-900 min-h-screen font-sans text-stone-800 dark:text-stone-200 transition-colors duration-300 overflow-x-hidden bg-[url('https://www.transparenttextures.com/patterns/concrete-wall.png')]">
+
+    <!-- Header -->
+    <header class="bg-white/95 dark:bg-slate-800/95 border-b-4 border-maya-gold sticky top-0 z-50 shadow-md">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded bg-maya-jungle text-maya-gold flex items-center justify-center font-bold text-2xl shadow border-2 border-maya-gold">
+                    🗿
+                </div>
+                <div>
+                    <h1 class="text-xl font-serif font-bold text-stone-800 dark:text-white leading-tight tracking-wide" data-i18n="title">玛雅日历计算器</h1>
+                    <p class="text-[10px] text-stone-500 font-bold uppercase tracking-widest">Maya Calendar Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-stone-100 dark:bg-slate-700 text-xs font-bold px-2 py-2 rounded-lg border-none focus:ring-0 cursor-pointer text-stone-600 dark:text-stone-300 outline-none">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="ru">Русский</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="pl">Polski</option>
+                </select>
+                <button id="mode-toggle" class="w-9 h-9 rounded-full bg-stone-100 dark:bg-slate-700 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-maya-gold transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+
+        <!-- Main Card -->
+        <div class="glass rounded-none md:rounded-lg shadow-2xl overflow-hidden mb-8 border-t-8 border-t-maya-jungle relative">
+            <!-- Decorative Corners -->
+            <div class="absolute top-0 left-0 w-4 h-4 border-l-4 border-t-4 border-maya-gold z-10"></div>
+            <div class="absolute top-0 right-0 w-4 h-4 border-r-4 border-t-4 border-maya-gold z-10"></div>
+
+            <div class="p-6 md:p-10">
+                
+                <!-- Inputs -->
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    
+                    <!-- Date Selection -->
+                    <div class="space-y-4">
+                        <label class="block text-sm font-bold text-stone-500 uppercase tracking-widest text-center md:text-left">
+                            <i class="fa fa-calendar-o mr-1"></i> <span data-i18n="lbl_date">选择日期</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <div class="relative w-24 flex-none">
+                                <select id="sel-year" class="select-field" onchange="App.updateDays()">
+                                    <!-- JS Populated -->
+                                </select>
+                            </div>
+                            <div class="relative flex-1">
+                                <select id="sel-month" class="select-field" onchange="App.updateDays()">
+                                    <!-- JS Populated -->
+                                </select>
+                            </div>
+                            <div class="relative w-20 flex-none">
+                                <select id="sel-day" class="select-field" onchange="App.calc()">
+                                    <!-- JS Populated -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-center md:text-left">
+                            <button onclick="App.setToday()" class="text-xs font-bold text-maya-jungle hover:underline uppercase" data-i18n="btn_today">回到今天</button>
+                        </div>
+                    </div>
+
+                    <!-- Correlation Constant -->
+                    <div class="space-y-4">
+                        <label class="block text-sm font-bold text-stone-500 uppercase tracking-widest text-center md:text-left">
+                            <i class="fa fa-cogs mr-1"></i> <span data-i18n="lbl_corr">相关数字</span>
+                        </label>
+                        <div class="relative">
+                            <select id="sel-correlation" class="select-field text-stone-600" onchange="App.calc()">
+                                <option value="584283">584,283 (GMT - Standard)</option>
+                                <option value="584285">584,285 (Astronomical)</option>
+                            </select>
+                            <i class="fa fa-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"></i>
+                        </div>
+                        <p class="text-[10px] text-stone-400 leading-tight" data-i18n="info_corr">
+                            "相关数字"用于将玛雅天数与公历儒略日对齐。最常用的是 GMT (584,283)。
+                        </p>
+                    </div>
+                </div>
+
+                <hr class="border-stone-200 dark:border-stone-700 mb-8">
+
+                <!-- Results -->
+                <div class="space-y-8">
+                    
+                    <!-- Long Count Display -->
+                    <div class="text-center">
+                        <h2 class="text-xs font-bold text-stone-400 uppercase tracking-[0.2em] mb-3" data-i18n="h_long">Long Count (长计历)</h2>
+                        <div class="inline-block bg-stone-800 text-maya-gold px-8 py-4 rounded-lg shadow-inner border-2 border-maya-gold/30">
+                            <span id="res-long-count" class="text-3xl md:text-5xl font-mono font-bold tracking-widest">0.0.0.0.0</span>
+                        </div>
+                        <div class="flex justify-center gap-4 mt-2 text-[10px] text-stone-400 font-mono uppercase">
+                            <span>Baktun</span><span>Katun</span><span>Tun</span><span>Winal</span><span>Kin</span>
+                        </div>
+                    </div>
+
+                    <!-- Calendar Round Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        
+                        <!-- Tzolkin -->
+                        <div class="stone-card border-t-4 border-t-emerald-600">
+                            <div class="glyph-icon">🌞</div>
+                            <span class="stone-label" data-i18n="h_tzolkin">Tzolkin (卓尔金历)</span>
+                            <div id="res-tzolkin" class="stone-value">-</div>
+                            <div id="res-tzolkin-en" class="text-xs text-stone-500 mt-1 italic">-</div>
+                        </div>
+
+                        <!-- Haab -->
+                        <div class="stone-card border-t-4 border-t-amber-600">
+                            <div class="glyph-icon">🌽</div>
+                            <span class="stone-label" data-i18n="h_haab">Haab (哈布历)</span>
+                            <div id="res-haab" class="stone-value">-</div>
+                            <div id="res-haab-en" class="text-xs text-stone-500 mt-1 italic">-</div>
+                        </div>
+
+                        <!-- Lord of the Night -->
+                        <div class="stone-card border-t-4 border-t-indigo-600 col-span-2 md:col-span-1">
+                            <div class="glyph-icon">🌚</div>
+                            <span class="stone-label" data-i18n="h_lord">Lord of the Night</span>
+                            <div id="res-lord" class="stone-value">-</div>
+                            <div class="text-xs text-stone-500 mt-1" data-i18n="lbl_lord_sub">夜神 (G1-G9)</div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Detailed Info & FAQ Section (New) -->
+        <section id="guide-faq" class="glass rounded-lg p-6 md:p-8 border-l-4 border-maya-gold space-y-8">
+            
+            <!-- Guide -->
+            <div>
+                <h3 class="font-serif font-bold text-xl text-stone-800 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fa fa-map-o text-maya-gold"></i> <span data-i18n="guide_title">使用指南</span>
+                </h3>
+                <ul class="space-y-3 text-sm text-stone-600 dark:text-stone-300">
+                    <li class="flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-maya-jungle text-white flex items-center justify-center text-xs font-bold flex-none">1</span>
+                        <span data-i18n="guide_step1">选择日期：在下拉菜单中选择您想要转换的公历日期。</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-maya-jungle text-white flex items-center justify-center text-xs font-bold flex-none">2</span>
+                        <span data-i18n="guide_step2">调整相关数字（可选）：通常使用默认的 GMT (584,283)。</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-maya-jungle text-white flex items-center justify-center text-xs font-bold flex-none">3</span>
+                        <span data-i18n="guide_step3">查看结果：下方会自动显示对应的长计历、卓尔金历等。</span>
+                    </li>
+                </ul>
+            </div>
+
+            <hr class="border-stone-200 dark:border-stone-700">
+
+            <!-- FAQ -->
+            <div>
+                <h3 class="font-serif font-bold text-xl text-stone-800 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fa fa-question-circle text-maya-gold"></i> <span data-i18n="faq_title">常见问题</span>
+                </h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="qa-item">
+                        <div class="qa-q"><i class="fa fa-info-circle text-maya-gold"></i> <span data-i18n="faq_q1">什么是长计历？</span></div>
+                        <div class="qa-a" data-i18n="faq_a1">长计历是玛雅人用于记录长时间跨度的线性历法，格式为 Baktun.Katun.Tun.Winal.Kin。</div>
+                    </div>
+                    <div class="qa-item">
+                        <div class="qa-q"><i class="fa fa-calendar-check-o text-maya-gold"></i> <span data-i18n="faq_q3">卓尔金历 vs 哈布历？</span></div>
+                        <div class="qa-a" data-i18n="faq_a3">卓尔金历是260天的神历；哈布历是365天的民历。</div>
+                    </div>
+                    <div class="qa-item md:col-span-2">
+                        <div class="qa-q"><i class="fa fa-exclamation-triangle text-maya-gold"></i> <span data-i18n="faq_q2">2012年是世界末日吗？</span></div>
+                        <div class="qa-a" data-i18n="faq_a2">不是。2012年12月21日（13.0.0.0.0）只是一个大周期的结束和新周期的开始，就像我们的日历翻过12月31日一样。</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Quote -->
+            <div class="bg-stone-100 dark:bg-slate-800 p-4 rounded border border-stone-200 dark:border-slate-700 italic text-xs text-stone-500 text-center" data-i18n="info_quote">
+                “2012年美国考古学家在危地马拉玛雅文化遗址中发现了最古老的玛雅天象表...推翻了‘2012年世界末日说’。”
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-stone-400 py-8 font-serif">
+            <p>&copy; <span id="cur-year"></span> Maya Calendar Calculator. Educational Purpose Only.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "玛雅日历计算器", lbl_date: "选择日期", btn_today: "回到今天",
+                lbl_corr: "相关数字 (Correlation)", 
+                info_corr: "\"相关数字\"用于将玛雅天数与公历儒略日对齐。最常用的是 GMT (584,283)。",
+                h_long: "Long Count (长计历)", h_tzolkin: "Tzolkin (卓尔金历)", h_haab: "Haab (哈布历)", h_lord: "Lord of the Night", lbl_lord_sub: "夜神 (G1-G9)",
+                // Guide & FAQ
+                guide_title: "使用指南",
+                guide_step1: "选择日期：在下拉菜单中选择您想要转换的公历日期。",
+                guide_step2: "调整相关数字（可选）：通常使用默认的 GMT (584,283)。",
+                guide_step3: "查看结果：下方会自动显示对应的长计历、卓尔金历等。",
+                faq_title: "常见问题与知识",
+                faq_q1: "什么是长计历 (Long Count)？",
+                faq_a1: "长计历是玛雅人用于记录长时间跨度的线性历法，格式为 Baktun.Katun.Tun.Winal.Kin。它是计算距离“创世日”天数的方法。",
+                faq_q2: "2012年是世界末日吗？",
+                faq_a2: "不是。玛雅历法的 13.0.0.0.0 (2012年12月21日) 只是一个大周期的结束，意味着新周期的开始，就像我们的日历翻过12月31日一样。考古发现也证实了历法在2012年后仍在延续。",
+                faq_q3: "卓尔金历和哈布历有什么区别？",
+                faq_a3: "卓尔金历是260天的神历，用于宗教占卜；哈布历是365天的民历，用于农业和日常生活。两者结合形成52年的“历法循环”。",
+                info_quote: "“2012年美国考古学家在危地马拉玛雅文化遗址中发现了最古老的玛雅天象表，记录着天象和日历。日历延续至今后7000余年，推翻了‘2012年世界末日说’。”",
+                unit_year: "年", unit_month: "月"
+            },
+            'zh-TW': {
+                title: "瑪雅日曆計算器", lbl_date: "選擇日期", btn_today: "回到今天",
+                lbl_corr: "相關數字 (Correlation)", 
+                info_corr: "\"相關數字\"用於將瑪雅天數與公曆儒略日對齊。最常用的是 GMT (584,283)。",
+                h_long: "Long Count (長計曆)", h_tzolkin: "Tzolkin (卓爾金曆)", h_haab: "Haab (哈布曆)", h_lord: "Lord of the Night", lbl_lord_sub: "夜神 (G1-G9)",
+                // Guide & FAQ
+                guide_title: "使用指南",
+                guide_step1: "選擇日期：在下拉菜單中選擇您想要轉換的公曆日期。",
+                guide_step2: "調整相關數字（可選）：通常使用默認的 GMT (584,283)。",
+                guide_step3: "查看結果：下方會自動顯示對應的長計曆、卓爾金曆等。",
+                faq_title: "常見問題與知識",
+                faq_q1: "什麼是長計曆 (Long Count)？",
+                faq_a1: "長計曆是瑪雅人用於記錄長時間跨度的線性曆法，格式為 Baktun.Katun.Tun.Winal.Kin。",
+                faq_q2: "2012年是世界末日嗎？",
+                faq_a2: "不是。瑪雅曆法的 13.0.0.0.0 (2012年12月21日) 只是一個大週期的結束，意味著新週期的開始。考古發現證實曆法在2012年後仍在延續。",
+                faq_q3: "卓爾金曆和哈布曆有什麼區別？",
+                faq_a3: "卓爾金曆是260天的神曆，用於宗教占卜；哈布曆是365天的民曆，用於農業和日常生活。",
+                info_quote: "“2012年美國考古學家在瓜地馬拉瑪雅文化遺址中發現了最古老的瑪雅天象表...推翻了‘2012年世界末日說’。”",
+                unit_year: "年", unit_month: "月"
+            },
+            'en': {
+                title: "Maya Calendar Calculator", lbl_date: "Select Date", btn_today: "Today",
+                lbl_corr: "Correlation", 
+                info_corr: "Aligns Mayan days with Julian Day Number. GMT (584,283) is standard.",
+                h_long: "Long Count", h_tzolkin: "Tzolkin", h_haab: "Haab", h_lord: "Lord of the Night", lbl_lord_sub: "Night Lord (G1-G9)",
+                // Guide & FAQ
+                guide_title: "How to Use",
+                guide_step1: "Select Date: Choose the Gregorian date to convert.",
+                guide_step2: "Correlation (Optional): Default is GMT (584,283).",
+                guide_step3: "View Results: The Long Count, Tzolkin, and Haab appear below.",
+                faq_title: "FAQ & Facts",
+                faq_q1: "What is the Long Count?",
+                faq_a1: "A linear calendar tracking long periods of time, formatted as Baktun.Katun.Tun.Winal.Kin.",
+                faq_q2: "Was 2012 the end of the world?",
+                faq_a2: "No. Dec 21, 2012 marked the end of a major cycle and the start of a new one, not the apocalypse.",
+                faq_q3: "Tzolkin vs Haab?",
+                faq_a3: "Tzolkin is the 260-day sacred calendar; Haab is the 365-day civil calendar. Together they form a 52-year cycle.",
+                info_quote: "\"In 2012, archaeologists found ancient tables in Guatemala, debunking the '2012 Doomsday' myth.\"",
+                unit_year: "", unit_month: ""
+            },
+            'es': {
+                title: "Calculadora Calendario Maya", lbl_date: "Seleccionar Fecha", btn_today: "Hoy",
+                lbl_corr: "Correlación", 
+                info_corr: "Alinea la cuenta maya con el Día Juliano. GMT (584,283) es estándar.",
+                h_long: "Cuenta Larga", h_tzolkin: "Tzolkin", h_haab: "Haab", h_lord: "Señor de la Noche", lbl_lord_sub: "Señor (G1-G9)",
+                // Guide & FAQ
+                guide_title: "Guía de Uso",
+                guide_step1: "Seleccionar Fecha: Elija la fecha gregoriana.",
+                guide_step2: "Correlación (Opcional): El valor predeterminado es GMT.",
+                guide_step3: "Ver Resultados: La Cuenta Larga, Tzolkin y Haab aparecen abajo.",
+                faq_title: "Preguntas Frecuentes",
+                faq_q1: "¿Qué es la Cuenta Larga?",
+                faq_a1: "Un calendario lineal para rastrear largos períodos (Baktun.Katun.Tun.Winal.Kin).",
+                faq_q2: "¿Fue 2012 el fin del mundo?",
+                faq_a2: "No. Solo marcó el fin de un ciclo mayor y el comienzo de uno nuevo.",
+                faq_q3: "¿Diferencia entre Tzolkin y Haab?",
+                faq_a3: "Tzolkin es el calendario sagrado (260 días); Haab es el civil (365 días).",
+                info_quote: "\"Hallazgos arqueológicos en Guatemala desmintieron el mito del 'Fin del Mundo 2012'.\"",
+                unit_year: "", unit_month: ""
+            },
+            'ru': {
+                title: "Калькулятор Майя", lbl_date: "Выбрать дату", btn_today: "Сегодня",
+                lbl_corr: "Корреляция", 
+                info_corr: "Выравнивает счет майя с Юлианским днем. GMT (584,283) - стандарт.",
+                h_long: "Долгий счет", h_tzolkin: "Цолькин", h_haab: "Хааб", h_lord: "Владыка Ночи", lbl_lord_sub: "Владыка (G1-G9)",
+                // Guide & FAQ
+                guide_title: "Как использовать",
+                guide_step1: "Выберите дату: Укажите григорианскую дату.",
+                guide_step2: "Корреляция (опц.): По умолчанию GMT (584,283).",
+                guide_step3: "Результат: Долгий счет, Цолькин и Хааб отобразятся ниже.",
+                faq_title: "Частые вопросы",
+                faq_q1: "Что такое Долгий счет?",
+                faq_a1: "Линейный календарь для отслеживания длительных периодов времени.",
+                faq_q2: "Был ли 2012 год концом света?",
+                faq_a2: "Нет. Это был просто конец большого цикла и начало нового.",
+                faq_q3: "Цолькин против Хааб?",
+                faq_a3: "Цолькин - священный календарь (260 дней), Хааб - гражданский (365 дней).",
+                info_quote: "\"Археологические находки опровергли миф о 'Конце света 2012'.\"",
+                unit_year: "г.", unit_month: ""
+            },
+            'hi': {
+                title: "माया कैलेंडर कैलकुलेटर", lbl_date: "तारीख चुनें", btn_today: "आज",
+                lbl_corr: "सहसंबंध (Correlation)", 
+                info_corr: "माया दिवस को जूलियन दिवस के साथ संरेखित करता है। GMT मानक है।",
+                h_long: "लॉन्ग काउंट", h_tzolkin: "ज़ोल्किन", h_haab: "हाब", h_lord: "रात का स्वामी", lbl_lord_sub: "स्वामी (G1-G9)",
+                // Guide & FAQ
+                guide_title: "उपयोग गाइड",
+                guide_step1: "तारीख चुनें: ग्रेगोरियन तारीख चुनें।",
+                guide_step2: "सहसंबंध (वैकल्पिक): डिफ़ॉल्ट GMT (584,283) है।",
+                guide_step3: "परिणाम: लॉन्ग काउंट, ज़ोल्किन और हाब नीचे दिखाई देंगे।",
+                faq_title: "सामान्य प्रश्न",
+                faq_q1: "लॉन्ग काउंट क्या है?",
+                faq_a1: "लंबे समय को ट्रैक करने के लिए एक रैखिक कैलेंडर।",
+                faq_q2: "क्या 2012 दुनिया का अंत था?",
+                faq_a2: "नहीं। यह सिर्फ एक बड़े चक्र का अंत और नए की शुरुआत थी।",
+                faq_q3: "ज़ोल्किन और हाब में अंतर?",
+                faq_a3: "ज़ोल्किन पवित्र कैलेंडर (260 दिन) है; हाब नागरिक कैलेंडर (365 दिन) है।",
+                info_quote: "\"पुरातत्व संबंधी खोजों ने '2012 प्रलय' के मिथक को तोड़ दिया।\"",
+                unit_year: "", unit_month: ""
+            },
+            'pl': {
+                title: "Kalkulator Kalendarza Majów", lbl_date: "Wybierz datę", btn_today: "Dzisiaj",
+                lbl_corr: "Korelacja", 
+                info_corr: "Wyrównuje dni Majów z datą juliańską. Standard to GMT.",
+                h_long: "Długa Rachuba", h_tzolkin: "Tzolkin", h_haab: "Haab", h_lord: "Władca Nocy", lbl_lord_sub: "Władca (G1-G9)",
+                // Guide & FAQ
+                guide_title: "Jak używać",
+                guide_step1: "Wybierz datę: Wybierz datę gregoriańską.",
+                guide_step2: "Korelacja (opcjonalne): Domyślnie GMT (584,283).",
+                guide_step3: "Wyniki: Długa Rachuba, Tzolkin i Haab pojawią się poniżej.",
+                faq_title: "Częste pytania",
+                faq_q1: "Czym jest Długa Rachuba?",
+                faq_a1: "Kalendarz liniowy do śledzenia długich okresów czasu.",
+                faq_q2: "Czy rok 2012 był końcem świata?",
+                faq_a2: "Nie. To był tylko koniec dużego cyklu i początek nowego.",
+                faq_q3: "Różnica między Tzolkin a Haab?",
+                faq_a3: "Tzolkin to kalendarz święty (260 dni), Haab to cywilny (365 dni).",
+                info_quote: "\"Odkrycia archeologiczne obaliły mit o 'Końcu Świata 2012'.\"",
+                unit_year: "r.", unit_month: ""
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            
+            // Arrays for Tzolkin
+            tzolkinDayNames: [
+                "Imix (海龙)", "Ik (风)", "Akbal (夜)", "Kan (玉米)", "Chicchan (蛇)", 
+                "Cimi (死)", "Manik (鹿)", "Lamat (兔)", "Muluc (水)", "Oc (狗)", 
+                "Chuen (猴)", "Eb (草)", "Ben (芦苇)", "Ix (豹)", "Men (鹰)", 
+                "Cib (鹫)", "Caban (地)", "Eznab (刀)", "Cauac (暴雨)", "Ahau (花/主)"
+            ],
+            
+            // Arrays for Haab
+            haabMonthNames: [
+                "Pop", "Uo", "Zip", "Zotz", "Tzec", "Xul", "Yaxkin", "Mol", "Chen", 
+                "Yax", "Zac", "Ceh", "Mac", "Kankin", "Muan", "Pax", "Kayab", "Cumku", "Uayeb"
+            ],
+
+            init() {
+                this.setupTheme();
+                this.setupLang();
+                this.initSelectors();
+                this.setToday();
+                document.getElementById('cur-year').textContent = new Date().getFullYear();
+            },
+
+            setupTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryLang = urlParams.get('lang');
+                
+                if (queryLang && i18nData[queryLang]) {
+                    this.lang = queryLang;
+                } else {
+                    this.lang = 'zh-CN';
+                }
+                
+                sel.value = this.lang;
+                this.updateText();
+
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    
+                    this.updateText();
+                    this.initSelectors(); // Re-populate month names
+                    this.calc();          // Re-calc
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) {
+                        el.textContent = dict[key];
+                    }
+                });
+            },
+
+            initSelectors() {
+                const selYear = document.getElementById('sel-year');
+                const selMonth = document.getElementById('sel-month');
+                const dict = i18nData[this.lang];
+                
+                const curYear = selYear.value;
+                const curMonth = selMonth.value;
+
+                // Year: 1900 - 2100 (extended range)
+                let yHtml = '';
+                for(let y=1900; y<=2100; y++) {
+                    const unit = dict.unit_year || "";
+                    yHtml += `<option value="${y}">${y}${unit}</option>`;
+                }
+                selYear.innerHTML = yHtml;
+                if(curYear) selYear.value = curYear;
+
+                // Month: 1 - 12
+                let mHtml = '';
+                const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                const monthsZh = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
+                
+                for(let i=0; i<12; i++) {
+                    let mName;
+                    if(this.lang.startsWith('zh')) {
+                        mName = monthsZh[i];
+                    } else if (this.lang === 'en') {
+                        mName = monthsEn[i];
+                    } else {
+                        mName = `${i+1}`; // Generic for others
+                    }
+                    mHtml += `<option value="${i+1}">${mName}</option>`;
+                }
+                selMonth.innerHTML = mHtml;
+                if(curMonth) selMonth.value = curMonth;
+
+                this.updateDays();
+            },
+
+            setToday() {
+                const today = new Date();
+                document.getElementById('sel-year').value = today.getFullYear();
+                document.getElementById('sel-month').value = today.getMonth() + 1;
+                this.updateDays();
+                document.getElementById('sel-day').value = today.getDate();
+                this.calc();
+            },
+
+            updateDays() {
+                const y = parseInt(document.getElementById('sel-year').value);
+                const m = parseInt(document.getElementById('sel-month').value);
+                const selDay = document.getElementById('sel-day');
+                const currentDay = selDay.value;
+
+                const daysInMonth = new Date(y, m, 0).getDate();
+                let dHtml = '';
+                for(let d=1; d<=daysInMonth; d++) {
+                    dHtml += `<option value="${d}">${d}</option>`;
+                }
+                selDay.innerHTML = dHtml;
+
+                if (currentDay && currentDay <= daysInMonth) {
+                    selDay.value = currentDay;
+                }
+                this.calc();
+            },
+
+            // Gregorian to Julian Day Number
+            getJDN(year, month, day) {
+                let y = year;
+                let m = month;
+                if (m <= 2) {
+                    y -= 1;
+                    m += 12;
+                }
+                const A = Math.floor(y / 100);
+                const B = 2 - A + Math.floor(A / 4);
+                return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + B - 1524.5;
+            },
+
+            calc() {
+                const y = parseInt(document.getElementById('sel-year').value);
+                const m = parseInt(document.getElementById('sel-month').value);
+                const d = parseInt(document.getElementById('sel-day').value);
+                const correlation = parseInt(document.getElementById('sel-correlation').value);
+
+                const jdn = Math.floor(this.getJDN(y, m, d) + 0.5);
+                const mayaDay = jdn - correlation;
+
+                // Long Count
+                let temp = mayaDay;
+                const baktun = Math.floor(temp / 144000);
+                temp %= 144000;
+                const katun = Math.floor(temp / 7200);
+                temp %= 7200;
+                const tun = Math.floor(temp / 360);
+                temp %= 360;
+                const winal = Math.floor(temp / 20);
+                const kin = temp % 20;
+
+                // Tzolkin
+                let tNum = (mayaDay + 4) % 13;
+                if (tNum === 0) tNum = 13;
+                if (tNum < 0) tNum += 13;
+
+                let tNameIdx = (mayaDay + 19) % 20;
+                if (tNameIdx < 0) tNameIdx += 20;
+
+                // Clean up Tzolkin name for non-Chinese
+                let tzolkinRaw = this.tzolkinDayNames[tNameIdx];
+                let tzolkinStr, tzolkinEn;
+
+                if (this.lang.startsWith('zh')) {
+                     tzolkinStr = `${tNum} ${tzolkinRaw.split(' ')[0]}`; // 4 Imix
+                     tzolkinEn = tzolkinRaw; // Full string with Chinese meaning
+                } else {
+                     // Remove Chinese part for other languages: "Imix (海龙)" -> "Imix"
+                     const onlyName = tzolkinRaw.split(' ')[0]; 
+                     tzolkinStr = `${tNum} ${onlyName}`;
+                     tzolkinEn = onlyName;
+                }
+
+                // Haab
+                let haabDayOfYear = (mayaDay + 348) % 365;
+                if (haabDayOfYear < 0) haabDayOfYear += 365;
+
+                const haabMonthIdx = Math.floor(haabDayOfYear / 20); 
+                const haabDay = haabDayOfYear % 20;
+                const haabMonthName = this.haabMonthNames[haabMonthIdx];
+                const haabStr = `${haabDay} ${haabMonthName}`;
+
+                // Lord of the Night
+                let lordNum = mayaDay % 9;
+                if (lordNum === 0) lordNum = 9;
+                if (lordNum < 0) lordNum += 9;
+                const lordStr = `G${lordNum}`;
+
+                // Update UI
+                document.getElementById('res-long-count').textContent = `${baktun}.${katun}.${tun}.${winal}.${kin}`;
+                
+                document.getElementById('res-tzolkin').textContent = tzolkinStr;
+                document.getElementById('res-tzolkin-en').textContent = tzolkinEn;
+                
+                document.getElementById('res-haab').textContent = haabStr;
+                document.getElementById('res-haab-en').textContent = haabMonthName; 
+                
+                document.getElementById('res-lord').textContent = lordStr;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

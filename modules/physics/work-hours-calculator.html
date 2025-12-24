@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="date-time">
+    <meta name="icon" content="⏱️">
+    <meta name="description" content="Online Work Hours Calculator - Calculate working hours, breaks, and payroll time easily.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>⏱️</text></svg>">
+    
+    <title>工时计算器 | Work Hours Calculator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 
+                            light: '#3b82f6', 
+                            DEFAULT: '#2563eb', 
+                            dark: '#1d4ed8' 
+                        },
+                        bg: { light: '#f3f4f6', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .time-input-group {
+                @apply relative flex flex-col gap-2;
+            }
+            .time-input {
+                @apply w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all text-2xl font-bold font-mono text-center appearance-none;
+            }
+            .quick-btn {
+                @apply px-3 py-1 rounded-full border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-brand hover:text-white hover:border-brand transition-all whitespace-nowrap;
+            }
+            .result-card {
+                @apply flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 transition-all hover:shadow-md;
+            }
+            .result-val {
+                @apply text-2xl md:text-3xl font-bold text-brand dark:text-blue-400 font-mono;
+            }
+            .result-label {
+                @apply text-xs font-bold text-slate-400 uppercase tracking-wider mt-1;
+            }
+            .share-tab {
+                @apply flex-1 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 border-b-2 border-transparent hover:text-brand transition-colors uppercase tracking-wider;
+            }
+            .share-tab.active {
+                @apply text-brand border-brand;
+            }
+            
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: transparent; }
+            ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+            .dark ::-webkit-scrollbar-thumb { background: #475569; }
+            .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden bg-[url('https://www.transparenttextures.com/patterns/graphy.png')]">
+
+    <!-- Header -->
+    <header class="bg-white/95 dark:bg-slate-800/95 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center text-2xl shadow-lg shadow-brand/30">
+                    <i class="fa fa-clock-o"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">工时计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Work Hours & Payroll Calculator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-2 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300 outline-none shadow-sm">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="ru">Русский</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="pl">Polski</option>
+                </select>
+                <button onclick="App.openShare()" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-brand transition-colors shadow-sm" title="Share Widget">
+                    <i class="fa fa-share-alt"></i>
+                </button>
+                <button id="mode-toggle" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-brand transition-colors shadow-sm">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+
+        <!-- Main Calculator Card -->
+        <div class="glass rounded-2xl shadow-xl overflow-hidden mb-8 border-t-4 border-t-brand relative">
+            
+            <div class="p-6 md:p-10">
+                
+                <!-- Time Inputs Grid -->
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    
+                    <!-- Start Time -->
+                    <div class="time-input-group">
+                        <label class="flex justify-between items-center text-sm font-bold text-slate-500 uppercase tracking-wider">
+                            <span data-i18n="lbl_start">开始时间</span>
+                            <i class="fa fa-play-circle text-green-500"></i>
+                        </label>
+                        <input type="time" id="start-time" class="time-input" oninput="App.calculate()">
+                        <div class="flex gap-2 mt-1 overflow-x-auto pb-1 scrollbar-hide">
+                            <button class="quick-btn" onclick="App.setStart('now')" data-i18n="btn_now">现在</button>
+                            <button class="quick-btn" onclick="App.setStart('08:00')">08:00</button>
+                            <button class="quick-btn" onclick="App.setStart('09:00')">09:00</button>
+                            <button class="quick-btn" onclick="App.setStart('12:00')" data-i18n="btn_noon">中午</button>
+                        </div>
+                    </div>
+
+                    <!-- End Time -->
+                    <div class="time-input-group">
+                        <label class="flex justify-between items-center text-sm font-bold text-slate-500 uppercase tracking-wider">
+                            <span data-i18n="lbl_end">结束时间</span>
+                            <i class="fa fa-stop-circle text-red-500"></i>
+                        </label>
+                        <input type="time" id="end-time" class="time-input" oninput="App.calculate()">
+                        <div class="flex gap-2 mt-1 overflow-x-auto pb-1 scrollbar-hide">
+                            <button class="quick-btn" onclick="App.setEnd('now')" data-i18n="btn_now">现在</button>
+                            <button class="quick-btn" onclick="App.setEnd('17:00')">17:00</button>
+                            <button class="quick-btn" onclick="App.setEnd('18:00')">18:00</button>
+                            <button class="quick-btn" onclick="App.setEnd('00:00')" data-i18n="btn_midnight">午夜</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Break Deduction -->
+                <div class="mb-8 p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <i class="fa fa-coffee text-amber-500"></i>
+                        <span data-i18n="lbl_break">休息时间扣除 (分钟)</span>
+                    </label>
+                    <div class="flex items-center gap-4">
+                        <input type="number" id="break-time" class="w-24 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-center font-mono font-bold focus:ring-2 focus:ring-brand outline-none" placeholder="0" min="0" oninput="App.calculate()">
+                        <div class="flex flex-wrap gap-2">
+                            <button class="quick-btn" onclick="App.setBreak(15)">15m</button>
+                            <button class="quick-btn" onclick="App.setBreak(30)">30m</button>
+                            <button class="quick-btn" onclick="App.setBreak(60)">1h</button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200 dark:border-slate-700 mb-8">
+
+                <!-- Results -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <label class="text-sm font-bold text-brand uppercase tracking-widest" data-i18n="lbl_total_hours">总工时</label>
+                        <span id="cross-day-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300">
+                            <i class="fa fa-moon-o"></i> <span data-i18n="tag_next_day">跨天 (Next Day)</span>
+                        </span>
+                    </div>
+
+                    <!-- Main Display -->
+                    <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-inner flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="text-center md:text-left">
+                            <div id="res-main" class="text-4xl md:text-5xl font-mono font-bold tracking-tight">0:00</div>
+                            <div class="text-xs text-slate-400 mt-1" data-i18n="lbl_hh_mm">小时:分钟</div>
+                        </div>
+                        <!-- Visual Bar -->
+                        <div class="w-full md:w-1/2 h-4 bg-slate-800 rounded-full overflow-hidden relative">
+                            <div id="progress-bar" class="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-500 to-cyan-400 w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sub Results Grid -->
+                    <div class="grid grid-cols-3 gap-3 md:gap-4">
+                        <div class="result-card">
+                            <div id="res-decimal" class="result-val">0.0</div>
+                            <div class="result-label" data-i18n="lbl_decimal">小时 (Decimal)</div>
+                        </div>
+                        <div class="result-card">
+                            <div id="res-minutes" class="result-val">0</div>
+                            <div class="result-label" data-i18n="lbl_minutes">分钟 (Minutes)</div>
+                        </div>
+                        <div class="result-card bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-900/30">
+                            <div id="res-workday" class="result-val text-amber-600 dark:text-amber-400">0%</div>
+                            <div class="result-label" data-i18n="lbl_percentage">8小时占比</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Guide & FAQ Section (Tabs) -->
+        <div class="glass rounded-xl shadow-sm overflow-hidden">
+            <div class="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                <button onclick="App.switchInfo('guide')" id="tab-guide" class="flex-1 py-4 text-sm font-bold text-slate-600 dark:text-slate-300 border-b-2 border-brand hover:bg-white dark:hover:bg-slate-800 transition-all">
+                    <i class="fa fa-book mr-2"></i> <span data-i18n="tab_guide">使用指南</span>
+                </button>
+                <button onclick="App.switchInfo('history')" id="tab-history" class="flex-1 py-4 text-sm font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all">
+                    <i class="fa fa-history mr-2"></i> <span data-i18n="tab_history">历史与知识</span>
+                </button>
+            </div>
+
+            <div class="p-6 md:p-8">
+                <!-- Guide Content -->
+                <div id="content-guide" class="animate-fade-in space-y-6">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800 dark:text-white mb-2" data-i18n="guide_h1">在线工作时间计算器</h3>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed" data-i18n="guide_p1">
+                            毫不夸张地说，准确计算工时对于确保工资支付至关重要。这款计算器就像一个电子考勤卡，帮助雇主和员工快速计算每日工时。
+                        </p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                            <h4 class="font-bold text-brand mb-2 text-sm uppercase" data-i18n="guide_h2">使用规则</h4>
+                            <ul class="text-xs md:text-sm text-slate-600 dark:text-slate-400 space-y-2 list-disc pl-4">
+                                <li data-i18n="rule_1">输入您的上班（开始）和下班（结束）时间。</li>
+                                <li data-i18n="rule_2">系统支持 24 小时制输入，自动处理上午/下午。</li>
+                                <li data-i18n="rule_3">如果在“休息时间扣除”栏输入分钟数，系统会自动减去该时间。</li>
+                                <li data-i18n="rule_4">如果结束时间早于开始时间（如 22:00 到 02:00），系统会自动判定为跨天工作。</li>
+                            </ul>
+                        </div>
+                        <div class="bg-green-50 dark:bg-green-900/10 p-4 rounded-lg border border-green-100 dark:border-green-900/30">
+                            <h4 class="font-bold text-green-600 dark:text-green-400 mb-2 text-sm uppercase" data-i18n="guide_h3">计算示例</h4>
+                            <p class="text-xs md:text-sm text-slate-600 dark:text-slate-400 leading-relaxed" data-i18n="example_txt">
+                                假设员工 08:12 到岗，15:33 下班，中间休息 30 分钟。<br>
+                                1. 输入开始: 08:12, 结束: 15:33<br>
+                                2. 输入休息: 30<br>
+                                3. 结果: 6小时51分钟 (6.85小时)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Content (Fully Internationalized) -->
+                <div id="content-history" class="hidden animate-fade-in space-y-6">
+                    <div class="prose dark:prose-invert max-w-none text-sm leading-relaxed">
+                        <h4 class="text-brand font-bold uppercase tracking-wider mb-2" data-i18n="hist_title">八小时工作制的历史</h4>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="text-slate-600 dark:text-slate-300">
+                                <p class="mb-2" data-i18n="hist_content">八小时工作制起源于16世纪的西班牙。现代运动的根源可追溯到英国工业革命。1817年，罗伯特·欧文提出了“8小时工作，8小时休息，8小时睡眠”的口号。1886年5月1日，美国爆发了争取八小时工作制的大规模劳工运动（五一劳动节的由来）。</p>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <h5 class="font-bold text-slate-800 dark:text-white mb-2" data-i18n="arr_title">各种工作安排</h5>
+                                <ul class="list-disc pl-4 space-y-1 text-xs" data-i18n="arr_list">
+                                    <li><strong>标准工时 (Standard):</strong> 9-to-5, 40 hours/week.</li>
+                                    <li><strong>弹性工作 (Flexitime):</strong> Allows flexible start/end times.</li>
+                                    <li><strong>缩短工作周 (Compressed Week):</strong> 4 days x 10 hours.</li>
+                                    <li><strong>轮班工作 (Shift Work):</strong> 24/7 operations, rotating schedules.</li>
+                                    <li><strong>自由职业 (Freelance):</strong> Result-based, flexible hours.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/10 border-l-4 border-amber-500 text-slate-600 dark:text-slate-400 italic text-xs" data-i18n="hist_quote">
+                            “世界卫生组织研究表明，过度劳累会导致健康问题。研究建议，专注工作约5小时后创造力开始下降，适当缩短工时可能提高效率。”
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-xs text-slate-400 py-8 font-mono">
+            <p>&copy; <span id="cur-year"></span> Work Hours Tool. Educational Purpose.</p>
+        </footer>
+
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all duration-300 scale-95" id="share-content">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa fa-share-alt text-brand"></i>
+                    <span data-i18n="share_title">分享此工具</span>
+                </h3>
+                <button onclick="App.closeShare()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex gap-1 mb-4 border-b border-slate-200 dark:border-slate-700 pb-1">
+                <button onclick="App.setShareType('link')" id="share-tab-link" class="share-tab active" data-i18n="share_link">关联</button>
+                <button onclick="App.setShareType('text')" id="share-tab-text" class="share-tab" data-i18n="share_text">文本</button>
+                <button onclick="App.setShareType('html')" id="share-tab-html" class="share-tab" data-i18n="share_html">HTML</button>
+            </div>
+
+            <!-- Input Area -->
+            <div class="relative mb-6">
+                <textarea id="share-input" class="w-full h-24 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 font-mono text-xs text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-brand focus:border-brand outline-none resize-none" readonly></textarea>
+            </div>
+
+            <!-- Widget Preview -->
+            <div class="mb-6">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" data-i18n="share_preview">预览工时计算器小部件</div>
+                <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 shadow-sm flex items-center gap-3 select-none">
+                    <div class="w-10 h-10 rounded-lg bg-brand text-white flex items-center justify-center text-xl shadow-md">
+                        <i class="fa fa-clock-o"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="h-2 w-24 bg-slate-200 dark:bg-slate-700 rounded mb-1.5"></div>
+                        <div class="h-1.5 w-16 bg-slate-100 dark:bg-slate-700 rounded"></div>
+                    </div>
+                    <div class="text-xs font-bold text-brand bg-brand/10 px-2 py-1 rounded">Calculator</div>
+                </div>
+            </div>
+
+            <!-- Copy Button -->
+            <button onclick="App.copyShare()" class="w-full py-3 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl shadow-lg shadow-brand/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group">
+                <i class="fa fa-clone group-hover:rotate-6 transition-transform"></i>
+                <span id="btn-copy-text" data-i18n="btn_copy">复制到剪贴板</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "工时计算器", subtitle: "工资与考勤时间计算工具",
+                lbl_start: "开始时间", lbl_end: "结束时间", lbl_break: "休息时间扣除 (分钟)",
+                btn_now: "现在", btn_noon: "中午", btn_midnight: "午夜",
+                lbl_total_hours: "总工时", tag_next_day: "跨天 (+1天)",
+                lbl_hh_mm: "小时 : 分钟", lbl_decimal: "小时 (十进制)", lbl_minutes: "总分钟数", lbl_percentage: "8小时工作制占比",
+                tab_guide: "使用指南", tab_history: "历史与知识",
+                guide_h1: "在线工作时间计算器", guide_p1: "准确计算工时对于确保工资支付至关重要。这款计算器就像一个电子考勤卡，帮助雇主和员工快速计算每日工时。",
+                guide_h2: "使用规则", guide_h3: "计算示例",
+                rule_1: "输入您的上班（开始）和下班（结束）时间。",
+                rule_2: "系统支持 24 小时制输入，自动处理上午/下午。",
+                rule_3: "如果在“休息时间扣除”栏输入分钟数，系统会自动减去该时间。",
+                rule_4: "如果结束时间早于开始时间（如 22:00 到 02:00），系统会自动判定为跨天工作。",
+                example_txt: "假设员工 08:12 到岗，15:33 下班，中间休息 30 分钟。结果: 6小时51分钟 (6.85小时)。",
+                // History Section
+                hist_title: "八小时工作制的历史",
+                hist_content: "八小时工作制起源于16世纪的西班牙。现代运动的根源可追溯到英国工业革命。1817年，罗伯特·欧文提出了“8小时工作，8小时休息，8小时睡眠”的口号。1886年5月1日，美国爆发了争取八小时工作制的大规模劳工运动（五一劳动节的由来）。",
+                arr_title: "各种工作安排",
+                arr_list: "<li><strong>标准工时:</strong> 朝九晚五，每周40小时。</li><li><strong>弹性工作:</strong> 允许灵活的上下班时间。</li><li><strong>缩短工作周:</strong> 4天 x 10小时。</li><li><strong>轮班工作:</strong> 24/7全天候运营，轮流排班。</li><li><strong>自由职业:</strong> 结果导向，工时灵活。</li>",
+                hist_quote: "“世界卫生组织研究表明，过度劳累会导致健康问题。研究建议，专注工作约5小时后创造力开始下降，适当缩短工时可能提高效率。”",
+                // Share
+                share_title: "分享此工具", share_link: "关联", share_text: "文本", share_html: "HTML",
+                share_preview: "预览工时计算器小部件", btn_copy: "复制到剪贴板", msg_copied: "已复制!"
+            },
+            'zh-TW': {
+                title: "工時計算器", subtitle: "工資與考勤時間計算工具",
+                lbl_start: "開始時間", lbl_end: "結束時間", lbl_break: "休息時間扣除 (分鐘)",
+                btn_now: "現在", btn_noon: "中午", btn_midnight: "午夜",
+                lbl_total_hours: "總工時", tag_next_day: "跨日 (+1天)",
+                lbl_hh_mm: "小時 : 分鐘", lbl_decimal: "小時 (十進制)", lbl_minutes: "總分鐘數", lbl_percentage: "8小時工作制佔比",
+                tab_guide: "使用指南", tab_history: "歷史與知識",
+                guide_h1: "在線工作時間計算器", guide_p1: "準確計算工時對於確保工資支付至關重要。這款計算器就像一個電子考勤卡，幫助雇主和員工快速計算每日工時。",
+                guide_h2: "使用規則", guide_h3: "計算示例",
+                rule_1: "輸入您的上班（開始）和下班（結束）時間。",
+                rule_2: "系統支持 24 小時制輸入，自動處理跨日計算。",
+                rule_3: "如果在「休息時間扣除」欄輸入分鐘數，系統會自動減去該時間。",
+                rule_4: "如果結束時間早於開始時間（如 22:00 到 02:00），系統會自動判定為跨日工作。",
+                example_txt: "假設員工 08:12 到崗，15:33 下班，中間休息 30 分鐘。結果: 6小時51分鐘 (6.85小時)。",
+                // History Section
+                hist_title: "八小時工作制的歷史",
+                hist_content: "八小時工作制起源於16世紀的西班牙。現代運動的根源可追溯到英國工業革命。1817年，羅伯特·歐文提出了“8小時工作，8小時休息，8小時睡眠”的口號。1886年5月1日，美國爆發了爭取八小時工作制的大規模勞工運動（五一勞動節的由來）。",
+                arr_title: "各種工作安排",
+                arr_list: "<li><strong>標準工時:</strong> 朝九晚五，每週40小時。</li><li><strong>彈性工作:</strong> 允許靈活的上下班時間。</li><li><strong>縮短工作週:</strong> 4天 x 10小時。</li><li><strong>輪班工作:</strong> 24/7全天候運營，輪流排班。</li><li><strong>自由職業:</strong> 結果導向，工時靈活。</li>",
+                hist_quote: "“世界衛生組織研究表明，過度勞累會導致健康問題。研究建議，專注工作約5小時後創造力開始下降，適當縮短工時可能提高效率。”",
+                // Share
+                share_title: "分享此工具", share_link: "關聯", share_text: "文本", share_html: "HTML",
+                share_preview: "預覽工時計算器小部件", btn_copy: "複製到剪貼板", msg_copied: "已複製!"
+            },
+            'en': {
+                title: "Work Hours Calculator", subtitle: "Payroll & Time Card Tool",
+                lbl_start: "Start Time", lbl_end: "End Time", lbl_break: "Break Deduction (Mins)",
+                btn_now: "Now", btn_noon: "Noon", btn_midnight: "Midnight",
+                lbl_total_hours: "Total Hours", tag_next_day: "Next Day (+24h)",
+                lbl_hh_mm: "Hours : Minutes", lbl_decimal: "Decimal Hours", lbl_minutes: "Total Minutes", lbl_percentage: "Of 8-Hour Day",
+                tab_guide: "User Guide", tab_history: "History & Facts",
+                guide_h1: "Online Work Hours Calculator", guide_p1: "Accurately tracking work hours is essential for payroll. This tool acts as a digital time card for employers and employees.",
+                guide_h2: "How to Use", guide_h3: "Example",
+                rule_1: "Enter your Start and End times.",
+                rule_2: "Supports 24-hour format inputs.",
+                rule_3: "Enter minutes in 'Break Deduction' to subtract unpaid breaks.",
+                rule_4: "If End Time is earlier than Start Time (e.g. 10 PM to 2 AM), it automatically adds 24 hours.",
+                example_txt: "Example: Start 08:12, End 15:33, Break 30 mins. Result: 6h 51m (6.85 hours).",
+                // History Section
+                hist_title: "History of the 8-Hour Workday",
+                hist_content: "The 8-hour workday originated in 16th-century Spain. Modern movements trace back to the Industrial Revolution in the UK. In 1817, Robert Owen coined the slogan '8 hours labor, 8 hours recreation, 8 hours rest'. The massive strikes in the US on May 1, 1886, solidified this movement.",
+                arr_title: "Work Arrangements",
+                arr_list: "<li><strong>Standard:</strong> 9-to-5, 40 hours/week.</li><li><strong>Flexitime:</strong> Allows flexible start/end times.</li><li><strong>Compressed Week:</strong> 4 days x 10 hours.</li><li><strong>Shift Work:</strong> 24/7 operations, rotating schedules.</li><li><strong>Freelance:</strong> Result-based, flexible hours.</li>",
+                hist_quote: "\"WHO studies show that overwork leads to health issues. Research suggests creativity drops after ~5 hours of focused work; shortening hours may improve efficiency.\"",
+                // Share
+                share_title: "Share this Tool", share_link: "Link", share_text: "Text", share_html: "HTML",
+                share_preview: "Preview Widget", btn_copy: "Copy to Clipboard", msg_copied: "Copied!"
+            },
+            'es': {
+                title: "Calculadora de Horas", subtitle: "Herramienta de Nómina",
+                lbl_start: "Hora Inicio", lbl_end: "Hora Fin", lbl_break: "Descanso (Minutos)",
+                btn_now: "Ahora", btn_noon: "Mediodía", btn_midnight: "Medianoche",
+                lbl_total_hours: "Total Horas", tag_next_day: "Día Siguiente",
+                lbl_hh_mm: "Horas : Minutos", lbl_decimal: "Horas Decimales", lbl_minutes: "Minutos Totales", lbl_percentage: "De Jornada 8h",
+                tab_guide: "Guía", tab_history: "Historia",
+                guide_h1: "Calculadora de Horas de Trabajo", guide_p1: "El seguimiento preciso de las horas es esencial para la nómina.",
+                guide_h2: "Reglas", guide_h3: "Ejemplo",
+                rule_1: "Ingrese su hora de inicio y fin.",
+                rule_2: "Soporta formato de 24 horas.",
+                rule_3: "Ingrese minutos de descanso para deducirlos.",
+                rule_4: "Detecta automáticamente turnos nocturnos (cruce de medianoche).",
+                example_txt: "Ej: Inicio 08:12, Fin 15:33, Descanso 30 min. Resultado: 6h 51m.",
+                // History Section
+                hist_title: "Historia de la jornada de 8 horas",
+                hist_content: "La jornada laboral de 8 horas se originó en la España del siglo XVI. El movimiento moderno se remonta a la Revolución Industrial. En 1817, Robert Owen acuñó el lema '8 horas de trabajo, 8 de recreo, 8 de descanso'. Las huelgas en EE.UU. el 1 de mayo de 1886 consolidaron este movimiento.",
+                arr_title: "Tipos de Jornada",
+                arr_list: "<li><strong>Estándar:</strong> 9 a 5, 40 horas/semana.</li><li><strong>Flexible:</strong> Horarios de entrada/salida flexibles.</li><li><strong>Semana Comprimida:</strong> 4 días x 10 horas.</li><li><strong>Turnos:</strong> Operaciones 24/7, horarios rotativos.</li><li><strong>Freelance:</strong> Basado en resultados, horas flexibles.</li>",
+                hist_quote: "\"Estudios de la OMS muestran que el exceso de trabajo causa problemas de salud. La investigación sugiere que la creatividad cae después de 5 horas de enfoque.\"",
+                // Share
+                share_title: "Compartir Herramienta", share_link: "Enlace", share_text: "Texto", share_html: "HTML",
+                share_preview: "Vista Previa del Widget", btn_copy: "Copiar al Portapapeles", msg_copied: "¡Copiado!"
+            },
+            'ru': {
+                title: "Калькулятор Часов", subtitle: "Учет рабочего времени",
+                lbl_start: "Начало", lbl_end: "Конец", lbl_break: "Перерыв (минуты)",
+                btn_now: "Сейчас", btn_noon: "Полдень", btn_midnight: "Полночь",
+                lbl_total_hours: "Всего часов", tag_next_day: "След. день",
+                lbl_hh_mm: "Часы : Минуты", lbl_decimal: "Десятичные часы", lbl_minutes: "Всего минут", lbl_percentage: "От 8-часового дня",
+                tab_guide: "Руководство", tab_history: "История",
+                guide_h1: "Онлайн калькулятор рабочего времени", guide_p1: "Точный учет рабочего времени важен для начисления зарплаты.",
+                guide_h2: "Правила", guide_h3: "Пример",
+                rule_1: "Введите время начала и окончания.",
+                rule_2: "Поддержка 24-часового формата.",
+                rule_3: "Введите минуты перерыва для вычета.",
+                rule_4: "Автоматически учитывает переход через полночь.",
+                example_txt: "Пример: Начало 08:12, Конец 15:33, Перерыв 30 мин. Итог: 6ч 51м.",
+                // History Section
+                hist_title: "История 8-часового рабочего дня",
+                hist_content: "8-часовой рабочий день зародился в Испании 16-го века. Современное движение восходит к Промышленной революции. В 1817 году Роберт Оуэн выдвинул лозунг «8 часов труда, 8 часов отдыха, 8 часов сна». Забастовки в США 1 мая 1886 года закрепили это движение.",
+                arr_title: "Виды графиков",
+                arr_list: "<li><strong>Стандартный:</strong> С 9 до 5, 40 часов/неделю.</li><li><strong>Гибкий:</strong> Гибкое время начала/конца.</li><li><strong>Сжатая неделя:</strong> 4 дня по 10 часов.</li><li><strong>Сменная работа:</strong> 24/7, ротация смен.</li><li><strong>Фриланс:</strong> Ориентация на результат.</li>",
+                hist_quote: "\"Исследования ВОЗ показывают, что переутомление ведет к проблемам со здоровьем. Творческий потенциал падает после 5 часов работы.\"",
+                // Share
+                share_title: "Поделиться", share_link: "Ссылка", share_text: "Текст", share_html: "HTML",
+                share_preview: "Предпросмотр виджета", btn_copy: "Копировать", msg_copied: "Скопировано!"
+            },
+            'hi': {
+                title: "कार्य घंटे कैलकुलेटर", subtitle: "पेरोल समय उपकरण",
+                lbl_start: "शुरू", lbl_end: "समाप्त", lbl_break: "ब्रेक (मिनट)",
+                btn_now: "अभी", btn_noon: "दोपहर", btn_midnight: "मध्यरात्रि",
+                lbl_total_hours: "कुल घंटे", tag_next_day: "अगला दिन",
+                lbl_hh_mm: "घंटे : मिनट", lbl_decimal: "दशमलव घंटे", lbl_minutes: "कुल मिनट", lbl_percentage: "8 घंटे का %",
+                tab_guide: "गाइड", tab_history: "इतिहास",
+                guide_h1: "ऑनलाइन कार्य घंटे कैलकुलेटर", guide_p1: "पेरोल के लिए काम के घंटों को सटीक रूप से ट्रैक करना आवश्यक है।",
+                guide_h2: "नियम", guide_h3: "उदाहरण",
+                rule_1: "अपना शुरू और समाप्त समय दर्ज करें।",
+                rule_2: "24-घंटे प्रारूप का समर्थन करता है।",
+                rule_3: "ब्रेक कटौती दर्ज करें।",
+                rule_4: "यदि समाप्ति समय शुरू होने से पहले है, तो यह अगले दिन माना जाता है।",
+                example_txt: "उदाहरण: शुरू 08:12, अंत 15:33, ब्रेक 30 मिनट। परिणाम: 6 घंटे 51 मिनट।",
+                // History Section
+                hist_title: "8 घंटे के कार्यदिवस का इतिहास",
+                hist_content: "8 घंटे का कार्यदिवस 16वीं सदी के स्पेन में शुरू हुआ। आधुनिक आंदोलन औद्योगिक क्रांति से जुड़े हैं। 1817 में, रॉबर्ट ओवेन ने '8 घंटे श्रम, 8 घंटे मनोरंजन, 8 घंटे आराम' का नारा दिया। 1 मई 1886 को अमेरिका में हड़तालों ने इसे मजबूत किया।",
+                arr_title: "कार्य व्यवस्था",
+                arr_list: "<li><strong>मानक:</strong> 9-से-5, सप्ताह में 40 घंटे।</li><li><strong>लचीला समय:</strong> लचीला शुरू/अंत समय।</li><li><strong>संक्षिप्त सप्ताह:</strong> 4 दिन x 10 घंटे।</li><li><strong>शिफ्ट कार्य:</strong> 24/7 संचालन, रोटेटिंग शिफ्ट।</li><li><strong>फ्रीलांस:</strong> परिणाम-आधारित, लचीले घंटे।</li>",
+                hist_quote: "\"WHO के अध्ययन से पता चलता है कि अधिक काम करने से स्वास्थ्य समस्याएं होती हैं। शोध बताते हैं कि 5 घंटे के ध्यान केंद्रित काम के बाद रचनात्मकता कम हो जाती है।\"",
+                // Share
+                share_title: "साझा करें", share_link: "लिंक", share_text: "लेख", share_html: "HTML",
+                share_preview: "विजेट पूर्वावलोकन", btn_copy: "क्लिपबोर्ड पर कॉपी करें", msg_copied: "कॉपी किया गया!"
+            },
+            'pl': {
+                title: "Kalkulator Godzin", subtitle: "Narzędzie Czasu Pracy",
+                lbl_start: "Początek", lbl_end: "Koniec", lbl_break: "Przerwa (min)",
+                btn_now: "Teraz", btn_noon: "Południe", btn_midnight: "Północ",
+                lbl_total_hours: "Łącznie Godzin", tag_next_day: "Następny dzień",
+                lbl_hh_mm: "Godziny : Minuty", lbl_decimal: "Godz. Dziesiętne", lbl_minutes: "Łącznie Minut", lbl_percentage: "Z 8-godz. dnia",
+                tab_guide: "Instrukcja", tab_history: "Historia",
+                guide_h1: "Kalkulator Godzin Pracy", guide_p1: "Dokładne śledzenie czasu pracy jest kluczowe dla listy płac.",
+                guide_h2: "Zasady", guide_h3: "Przykład",
+                rule_1: "Wpisz godzinę rozpoczęcia i zakończenia.",
+                rule_2: "Obsługuje format 24-godzinny.",
+                rule_3: "Wpisz minuty przerwy, aby je odjąć.",
+                rule_4: "Automatycznie wykrywa pracę w nocy (przejście przez północ).",
+                example_txt: "Przykład: Start 08:12, Koniec 15:33, Przerwa 30 min. Wynik: 6h 51m.",
+                // History Section
+                hist_title: "Historia 8-godzinnego dnia pracy",
+                hist_content: "8-godzinny dzień pracy powstał w XVI-wiecznej Hiszpanii. Nowoczesne ruchy sięgają rewolucji przemysłowej. W 1817 roku Robert Owen ukuł hasło „8 godzin pracy, 8 godzin rekreacji, 8 godzin odpoczynku”. Strajki w USA 1 maja 1886 roku umocniły ten ruch.",
+                arr_title: "Systemy Pracy",
+                arr_list: "<li><strong>Standardowy:</strong> 9-17, 40 godz./tydzień.</li><li><strong>Elastyczny:</strong> Ruchome godziny pracy.</li><li><strong>Skrócony tydzień:</strong> 4 dni x 10 godzin.</li><li><strong>Zmianowy:</strong> Praca 24/7, zmiany rotacyjne.</li><li><strong>Freelance:</strong> Zadaniowy czas pracy.</li>",
+                hist_quote: "\"Badania WHO wykazują, że przepracowanie prowadzi do problemów zdrowotnych. Kreatywność spada po ok. 5 godzinach skupienia; skrócenie czasu pracy może poprawić wydajność.\"",
+                // Share
+                share_title: "Udostępnij", share_link: "Link", share_text: "Tekst", share_html: "HTML",
+                share_preview: "Podgląd Widżetu", btn_copy: "Kopiuj do schowka", msg_copied: "Skopiowano!"
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            shareType: 'link', // link, text, html
+            
+            init() {
+                this.setupTheme();
+                this.setupLang();
+                
+                // Set default times (9 to 5 standard)
+                document.getElementById('start-time').value = "09:00";
+                document.getElementById('end-time').value = "17:00";
+                
+                this.calculate();
+                document.getElementById('cur-year').innerText = new Date().getFullYear();
+            },
+
+            setupTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryLang = urlParams.get('lang');
+                
+                if (queryLang && i18nData[queryLang]) {
+                    this.lang = queryLang;
+                } else {
+                    this.lang = 'zh-CN';
+                }
+                
+                sel.value = this.lang;
+                this.updateText();
+
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', this.lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (e) {}
+                    this.updateText();
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) {
+                        el.innerHTML = dict[key];
+                    }
+                });
+                // Update share text if modal is open
+                this.updateShareContent();
+            },
+
+            setStart(val) {
+                const el = document.getElementById('start-time');
+                if(val === 'now') el.value = this.getNowStr();
+                else el.value = val;
+                this.calculate();
+            },
+
+            setEnd(val) {
+                const el = document.getElementById('end-time');
+                if(val === 'now') el.value = this.getNowStr();
+                else el.value = val;
+                this.calculate();
+            },
+
+            setBreak(val) {
+                document.getElementById('break-time').value = val;
+                this.calculate();
+            },
+
+            getNowStr() {
+                const d = new Date();
+                const h = String(d.getHours()).padStart(2, '0');
+                const m = String(d.getMinutes()).padStart(2, '0');
+                return `${h}:${m}`;
+            },
+
+            switchInfo(tab) {
+                const tGuide = document.getElementById('tab-guide');
+                const tHistory = document.getElementById('tab-history');
+                const cGuide = document.getElementById('content-guide');
+                const cHistory = document.getElementById('content-history');
+
+                if (tab === 'guide') {
+                    tGuide.classList.add('border-brand', 'text-slate-600', 'dark:text-slate-300');
+                    tGuide.classList.remove('border-transparent', 'text-slate-400');
+                    tHistory.classList.remove('border-brand', 'text-slate-600', 'dark:text-slate-300');
+                    tHistory.classList.add('border-transparent', 'text-slate-400');
+                    
+                    cGuide.classList.remove('hidden');
+                    cHistory.classList.add('hidden');
+                } else {
+                    tHistory.classList.add('border-brand', 'text-slate-600', 'dark:text-slate-300');
+                    tHistory.classList.remove('border-transparent', 'text-slate-400');
+                    tGuide.classList.remove('border-brand', 'text-slate-600', 'dark:text-slate-300');
+                    tGuide.classList.add('border-transparent', 'text-slate-400');
+                    
+                    cHistory.classList.remove('hidden');
+                    cGuide.classList.add('hidden');
+                }
+            },
+
+            calculate() {
+                const startStr = document.getElementById('start-time').value;
+                const endStr = document.getElementById('end-time').value;
+                const breakMins = parseInt(document.getElementById('break-time').value) || 0;
+
+                if (!startStr || !endStr) return;
+
+                const [sh, sm] = startStr.split(':').map(Number);
+                const [eh, em] = endStr.split(':').map(Number);
+
+                let startMin = sh * 60 + sm;
+                let endMin = eh * 60 + em;
+                let isNextDay = false;
+
+                if (endMin < startMin) {
+                    endMin += 24 * 60; // Add 24 hours
+                    isNextDay = true;
+                }
+
+                let diffMin = endMin - startMin - breakMins;
+                
+                // If break is larger than work time, fix to 0
+                if (diffMin < 0) diffMin = 0;
+
+                // Formats
+                const hours = Math.floor(diffMin / 60);
+                const mins = diffMin % 60;
+                const dec = (diffMin / 60).toFixed(2);
+                
+                // UI Updates
+                document.getElementById('res-main').innerText = `${hours}:${String(mins).padStart(2, '0')}`;
+                document.getElementById('res-decimal').innerText = dec;
+                document.getElementById('res-minutes').innerText = diffMin;
+
+                // Next day tag
+                const tag = document.getElementById('cross-day-badge');
+                if (isNextDay) tag.classList.remove('hidden');
+                else tag.classList.add('hidden');
+
+                // Progress Bar (Based on 8h standard workday)
+                const percent = Math.min((diffMin / 480) * 100, 100);
+                document.getElementById('progress-bar').style.width = `${percent}%`;
+                
+                const percentText = Math.round((diffMin / 480) * 100);
+                document.getElementById('res-workday').innerText = `${percentText}%`;
+            },
+
+            // --- Share Logic ---
+            openShare() {
+                const modal = document.getElementById('share-modal');
+                const content = document.getElementById('share-content');
+                modal.classList.remove('hidden');
+                // Trigger animation
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                    content.classList.add('scale-100');
+                }, 10);
+                
+                this.setShareType('link');
+            },
+
+            closeShare() {
+                const modal = document.getElementById('share-modal');
+                const content = document.getElementById('share-content');
+                
+                modal.classList.add('opacity-0');
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+                
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            },
+
+            setShareType(type) {
+                this.shareType = type;
+                
+                // UI Tabs
+                ['link', 'text', 'html'].forEach(t => {
+                    const el = document.getElementById(`share-tab-${t}`);
+                    if (t === type) el.classList.add('active');
+                    else el.classList.remove('active');
+                });
+
+                this.updateShareContent();
+            },
+
+            updateShareContent() {
+                const url = window.location.href.split('?')[0] + `?lang=${this.lang}`;
+                const dict = i18nData[this.lang];
+                const input = document.getElementById('share-input');
+                
+                let content = "";
+                if (this.shareType === 'link') {
+                    content = url;
+                } else if (this.shareType === 'text') {
+                    content = `${dict.title} - ${dict.subtitle}\n${url}`;
+                } else if (this.shareType === 'html') {
+                    content = `<iframe src="${url}" width="400" height="600" frameborder="0"></iframe>`;
+                }
+                
+                input.value = content;
+            },
+
+            copyShare() {
+                const input = document.getElementById('share-input');
+                input.select();
+                input.setSelectionRange(0, 99999); // Mobile
+                navigator.clipboard.writeText(input.value).then(() => {
+                    const btnSpan = document.getElementById('btn-copy-text');
+                    const original = btnSpan.innerText;
+                    const dict = i18nData[this.lang];
+                    
+                    btnSpan.innerText = dict.msg_copied;
+                    setTimeout(() => {
+                        btnSpan.innerText = original;
+                    }, 2000);
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>

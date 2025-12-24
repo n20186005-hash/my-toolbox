@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="date-time">
+    <meta name="icon" content="🕰️">
+    <meta name="description" content="Clock Calculator - Add/Subtract time, calculate duration, work hours, and convert time units.">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🕰️</text></svg>">
+    
+    <title>时钟计算器 | Clock Calculator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 
+                            light: '#60a5fa', 
+                            DEFAULT: '#3b82f6', 
+                            dark: '#2563eb' 
+                        },
+                        bg: { light: '#f0f9ff', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                @apply bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            .input-label {
+                @apply block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1;
+            }
+            .custom-input {
+                @apply w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all font-medium;
+            }
+            .custom-select {
+                @apply w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all font-bold appearance-none cursor-pointer;
+            }
+            .quick-btn {
+                @apply px-3 py-1 rounded-full border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-brand hover:text-white hover:border-brand transition-all whitespace-nowrap bg-white dark:bg-slate-800;
+            }
+            .mode-btn {
+                @apply flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all duration-200;
+            }
+            .mode-btn.active {
+                @apply border-brand bg-brand text-white shadow-lg shadow-brand/30;
+            }
+            .mode-btn.inactive {
+                @apply border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-brand/50 hover:text-brand bg-white dark:bg-slate-800;
+            }
+            
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: transparent; }
+            ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+            .dark ::-webkit-scrollbar-thumb { background: #475569; }
+            .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden bg-[url('https://www.transparenttextures.com/patterns/graphy.png')]">
+
+    <!-- Header -->
+    <header class="bg-white/95 dark:bg-slate-800/95 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-brand/20">
+                    <i class="fa fa-clock-o"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight" data-i18n="title">时钟计算器</h1>
+                    <p class="text-[10px] text-slate-500 font-medium" data-i18n="subtitle">Time Operation & Work Hours</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-2 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300 outline-none shadow-sm">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="ru">Русский</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="pl">Polski</option>
+                </select>
+                <button onclick="App.openShare()" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-brand transition-colors shadow-sm" title="Share">
+                    <i class="fa fa-share-alt"></i>
+                </button>
+                <button id="mode-toggle" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-brand transition-colors shadow-sm">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+
+        <!-- Mode Selector (Grid) -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+            <button onclick="App.setMode('duration')" id="btn-mode-duration" class="mode-btn active">
+                <i class="fa fa-arrows-h"></i> <span data-i18n="mode_duration">持续时间</span>
+            </button>
+            <button onclick="App.setMode('add')" id="btn-mode-add" class="mode-btn inactive">
+                <i class="fa fa-plus-circle"></i> <span data-i18n="mode_add">增加时间</span>
+            </button>
+            <button onclick="App.setMode('sub')" id="btn-mode-sub" class="mode-btn inactive">
+                <i class="fa fa-minus-circle"></i> <span data-i18n="mode_sub">减少时间</span>
+            </button>
+            <button onclick="App.setMode('sum')" id="btn-mode-sum" class="mode-btn inactive">
+                <i class="fa fa-list-ol"></i> <span data-i18n="mode_sum">时间总和</span>
+            </button>
+            <button onclick="App.setMode('work')" id="btn-mode-work" class="mode-btn inactive">
+                <i class="fa fa-briefcase"></i> <span data-i18n="mode_work">工作时间</span>
+            </button>
+            <button onclick="App.setMode('convert')" id="btn-mode-convert" class="mode-btn inactive">
+                <i class="fa fa-exchange"></i> <span data-i18n="mode_convert">单位转换</span>
+            </button>
+        </div>
+
+        <!-- Main Calculator Card -->
+        <div class="glass rounded-2xl shadow-xl overflow-hidden mb-8 border-t-4 border-t-brand relative transition-all duration-300 min-h-[400px]">
+            
+            <div class="p-6 md:p-10">
+                
+                <!-- 1. DURATION MODE -->
+                <div id="view-duration" class="mode-view block">
+                    <div class="grid md:grid-cols-2 gap-8 mb-8">
+                        <div class="space-y-4">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500"></span> <span data-i18n="lbl_start">开始时间</span></h3>
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="lbl_date">日期</label>
+                                <input type="date" id="dur-start-date" class="custom-input" onchange="App.calcDuration()">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="lbl_time">时间</label>
+                                <input type="time" id="dur-start-time" class="custom-input" step="1" onchange="App.calcDuration()">
+                                <div class="flex gap-2 mt-1"><button class="quick-btn" onclick="App.setQuickTime('dur-start', 'now')" data-i18n="btn_now">现在</button></div>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> <span data-i18n="lbl_end">结束时间</span></h3>
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="lbl_date">日期</label>
+                                <input type="date" id="dur-end-date" class="custom-input" onchange="App.calcDuration()">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="lbl_time">时间</label>
+                                <input type="time" id="dur-end-time" class="custom-input" step="1" onchange="App.calcDuration()">
+                                <div class="flex gap-2 mt-1"><button class="quick-btn" onclick="App.setQuickTime('dur-end', 'now')" data-i18n="btn_now">现在</button></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-inner text-center">
+                        <div id="dur-result" class="text-3xl md:text-4xl font-mono font-bold">00:00:00</div>
+                        <div id="dur-sub" class="text-slate-400 mt-2 text-sm">...</div>
+                    </div>
+                </div>
+
+                <!-- 2. ADD & 3. SUBTRACT MODE (Shared UI) -->
+                <div id="view-addsub" class="mode-view hidden">
+                    <div class="grid md:grid-cols-2 gap-8 mb-8">
+                        <div class="space-y-4">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-brand"></span> <span data-i18n="lbl_base_time">基准时间</span></h3>
+                            <input type="datetime-local" id="as-base-time" class="custom-input" step="1" onchange="App.calcAddSub()">
+                            <div class="flex gap-2"><button class="quick-btn" onclick="App.setASNow()" data-i18n="btn_now">现在</button></div>
+                        </div>
+                        <div class="space-y-4">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm flex items-center gap-2" id="as-op-label">增加/减少</h3>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div><label class="input-label" data-i18n="unit_days">天</label><input type="number" id="as-days" class="custom-input" value="0" min="0" oninput="App.calcAddSub()"></div>
+                                <div><label class="input-label" data-i18n="unit_hours_short">时</label><input type="number" id="as-hours" class="custom-input" value="0" min="0" oninput="App.calcAddSub()"></div>
+                                <div><label class="input-label" data-i18n="unit_minutes_short">分</label><input type="number" id="as-minutes" class="custom-input" value="0" min="0" oninput="App.calcAddSub()"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-inner text-center">
+                        <div class="text-xs text-slate-400 uppercase mb-2" data-i18n="lbl_new_time">计算结果 (新时间)</div>
+                        <div id="as-result" class="text-2xl md:text-3xl font-mono font-bold text-brand-light">---</div>
+                    </div>
+                </div>
+
+                <!-- 4. SUM HOURS MODE -->
+                <div id="view-sum" class="mode-view hidden">
+                    <div class="mb-4 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm" data-i18n="lbl_time_list">时间段列表 (HH:MM:SS)</h3>
+                        <button onclick="App.addSumRow()" class="quick-btn bg-brand text-white border-brand hover:bg-brand-dark"><i class="fa fa-plus"></i> <span data-i18n="btn_add_row">添加一行</span></button>
+                    </div>
+                    <div id="sum-rows" class="space-y-2 mb-6 max-h-[300px] overflow-y-auto pr-2">
+                        <!-- JS generated rows -->
+                    </div>
+                    <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-inner flex flex-col md:flex-row justify-between items-center">
+                        <span class="text-sm text-slate-400" data-i18n="lbl_total_sum">总时长:</span>
+                        <span id="sum-result" class="text-3xl font-mono font-bold text-brand-light">00:00:00</span>
+                    </div>
+                </div>
+
+                <!-- 5. WORK HOURS MODE -->
+                <div id="view-work" class="mode-view hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600 dark:text-slate-300">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/50">
+                                <tr>
+                                    <th class="px-4 py-3" data-i18n="col_day">日期</th>
+                                    <th class="px-4 py-3" data-i18n="col_start">开始</th>
+                                    <th class="px-4 py-3" data-i18n="col_end">结束</th>
+                                    <th class="px-4 py-3" data-i18n="col_break">休息(分)</th>
+                                    <th class="px-4 py-3 text-right" data-i18n="col_total">小计</th>
+                                </tr>
+                            </thead>
+                            <tbody id="work-rows">
+                                <!-- Mon-Sun Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-6 flex justify-end items-center gap-4 bg-slate-100 dark:bg-slate-800 p-4 rounded-xl">
+                        <span class="font-bold text-slate-600 dark:text-slate-300" data-i18n="lbl_weekly_total">每周总工时:</span>
+                        <span id="work-total" class="text-2xl font-bold text-brand font-mono">0h 0m</span>
+                    </div>
+                </div>
+
+                <!-- 6. CONVERT MODE -->
+                <div id="view-convert" class="mode-view hidden">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div class="space-y-4">
+                            <label class="input-label" data-i18n="lbl_from">从</label>
+                            <input type="number" id="conv-val" class="custom-input" value="1" oninput="App.calcConvert()">
+                            <select id="conv-from" class="custom-select" onchange="App.calcConvert()">
+                                <option value="sec">Seconds (秒)</option>
+                                <option value="min">Minutes (分)</option>
+                                <option value="hour" selected>Hours (时)</option>
+                                <option value="day">Days (天)</option>
+                                <option value="week">Weeks (周)</option>
+                                <option value="year">Years (年)</option>
+                            </select>
+                        </div>
+                        <div class="text-center md:pt-6">
+                            <i class="fa fa-arrow-right text-2xl text-slate-300 dark:text-slate-600 transform md:rotate-0 rotate-90"></i>
+                        </div>
+                        <div class="space-y-4">
+                            <label class="input-label" data-i18n="lbl_to">到</label>
+                            <div id="conv-result" class="custom-input bg-slate-50 dark:bg-slate-800 border-dashed flex items-center">0</div>
+                            <select id="conv-to" class="custom-select" onchange="App.calcConvert()">
+                                <option value="sec">Seconds (秒)</option>
+                                <option value="min" selected>Minutes (分)</option>
+                                <option value="hour">Hours (时)</option>
+                                <option value="day">Days (天)</option>
+                                <option value="week">Weeks (周)</option>
+                                <option value="year">Years (年)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="glass rounded-xl shadow-sm p-6 md:p-8 space-y-6">
+            <h3 class="font-bold text-lg text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-3" data-i18n="info_title">关于时钟计算器</h3>
+            <div class="grid md:grid-cols-2 gap-8 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                <div>
+                    <h4 class="font-bold text-brand mb-2" data-i18n="info_h1">功能详解</h4>
+                    <ul class="list-disc pl-4 space-y-2">
+                        <li data-i18n="info_p1"><strong>持续时间:</strong> 计算两个具体日期和时间之间的精确差值（天、时、分、秒）。</li>
+                        <li data-i18n="info_p2"><strong>加减时间:</strong> 想要知道“100小时后是几点”？或者“截止日期前45分钟是何时”？使用此模式。</li>
+                        <li data-i18n="info_p3"><strong>工作时间:</strong> 记录一周的上下班打卡时间，自动扣除休息时间，计算工资工时。</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-brand mb-2" data-i18n="info_h2">时间知识</h4>
+                    <p class="mb-2" data-i18n="info_p4">时间计算器与日期计算器类似，但它侧重于时间值。它可以帮助您处理从项目管理到日常生活的各种时间数学问题。</p>
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 text-xs">
+                        <i class="fa fa-lightbulb-o text-blue-500 mr-1"></i> <span data-i18n="info_tip">提示：在进行跨时区计算时，请先将所有时间转换为同一时区，或直接使用两个时间点的绝对差值。</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-xs text-slate-400 py-8 font-mono">
+            <p>&copy; <span id="cur-year"></span> Clock Calculator Tool.</p>
+        </footer>
+
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all duration-300 scale-95" id="share-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa fa-share-alt text-brand"></i> <span data-i18n="share_title">分享此工具</span>
+                </h3>
+                <button onclick="App.closeShare()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors"><i class="fa fa-times"></i></button>
+            </div>
+            <div class="flex gap-1 mb-4 border-b border-slate-200 dark:border-slate-700 pb-1">
+                <button onclick="App.setShareType('link')" id="share-tab-link" class="share-tab active" data-i18n="share_link">关联</button>
+                <button onclick="App.setShareType('text')" id="share-tab-text" class="share-tab" data-i18n="share_text">文本</button>
+                <button onclick="App.setShareType('html')" id="share-tab-html" class="share-tab" data-i18n="share_html">HTML</button>
+            </div>
+            <textarea id="share-input" class="w-full h-24 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 font-mono text-xs text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-brand outline-none resize-none mb-4" readonly></textarea>
+            <button onclick="App.copyShare()" class="w-full py-3 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl flex items-center justify-center gap-2 group"><i class="fa fa-clone"></i> <span id="btn-copy-text" data-i18n="btn_copy">复制</span></button>
+        </div>
+    </div>
+
+    <script>
+        const i18nData = {
+            'zh-CN': {
+                title: "时钟计算器", subtitle: "时间运算与工时统计",
+                mode_duration: "持续时间", mode_add: "增加时间", mode_sub: "减少时间", mode_sum: "时间总和", mode_work: "工作时间", mode_convert: "单位转换",
+                lbl_start: "开始时间", lbl_end: "结束时间", lbl_date: "日期", lbl_time: "时间", btn_now: "现在",
+                lbl_base_time: "基准时间", lbl_new_time: "计算结果 (新时间)", unit_days: "天", unit_hours_short: "时", unit_minutes_short: "分",
+                lbl_time_list: "时间段列表", btn_add_row: "添加一行", lbl_total_sum: "总时长:",
+                col_day: "日期", col_start: "开始", col_end: "结束", col_break: "休息(分)", col_total: "小计", lbl_weekly_total: "每周总工时:",
+                lbl_from: "从", lbl_to: "到",
+                info_title: "关于时钟计算器", info_h1: "功能详解", info_h2: "时间知识",
+                info_p1: "<strong>持续时间:</strong> 计算两个具体日期和时间之间的精确差值。", info_p2: "<strong>加减时间:</strong> 计算未来或过去的确切时间点。", info_p3: "<strong>工作时间:</strong> 记录一周的工时。",
+                info_p4: "时钟计算器侧重于时间值的运算，帮助您解决各类时间数学问题。", info_tip: "提示：在进行跨时区计算时，请先统一时区。",
+                share_title: "分享此工具", share_link: "关联", share_text: "文本", share_html: "HTML", btn_copy: "复制", msg_copied: "已复制!"
+            },
+            'zh-TW': {
+                title: "時鐘計算器", subtitle: "時間運算與工時統計",
+                mode_duration: "持續時間", mode_add: "增加時間", mode_sub: "減少時間", mode_sum: "時間總和", mode_work: "工作時間", mode_convert: "單位轉換",
+                lbl_start: "開始時間", lbl_end: "結束時間", lbl_date: "日期", lbl_time: "時間", btn_now: "現在",
+                lbl_base_time: "基準時間", lbl_new_time: "計算結果 (新時間)", unit_days: "天", unit_hours_short: "時", unit_minutes_short: "分",
+                lbl_time_list: "時間段列表", btn_add_row: "添加一行", lbl_total_sum: "總時長:",
+                col_day: "日期", col_start: "開始", col_end: "結束", col_break: "休息(分)", col_total: "小計", lbl_weekly_total: "每週總工時:",
+                lbl_from: "從", lbl_to: "到",
+                info_title: "關於時鐘計算器", info_h1: "功能詳解", info_h2: "時間知識",
+                info_p1: "<strong>持續時間:</strong> 計算兩個具體日期和時間之間的精確差值。", info_p2: "<strong>加減時間:</strong> 計算未來或過去的確切時間點。", info_p3: "<strong>工作時間:</strong> 記錄一週的工時。",
+                info_p4: "時鐘計算器側重於時間值的運算，幫助您解決各類時間數學問題。", info_tip: "提示：在進行跨時區計算時，請先統一時區。",
+                share_title: "分享此工具", share_link: "關聯", share_text: "文本", share_html: "HTML", btn_copy: "複製", msg_copied: "已複製!"
+            },
+            'en': {
+                title: "Clock Calculator", subtitle: "Time Operations & Worksheet",
+                mode_duration: "Duration", mode_add: "Add Time", mode_sub: "Subtract", mode_sum: "Sum Hours", mode_work: "Work Hours", mode_convert: "Convert",
+                lbl_start: "Start", lbl_end: "End", lbl_date: "Date", lbl_time: "Time", btn_now: "Now",
+                lbl_base_time: "Base Time", lbl_new_time: "Result (New Time)", unit_days: "Days", unit_hours_short: "Hrs", unit_minutes_short: "Mins",
+                lbl_time_list: "Time Intervals", btn_add_row: "Add Row", lbl_total_sum: "Total:",
+                col_day: "Day", col_start: "Start", col_end: "End", col_break: "Break(m)", col_total: "Subtotal", lbl_weekly_total: "Weekly Total:",
+                lbl_from: "From", lbl_to: "To",
+                info_title: "About Clock Calculator", info_h1: "Features", info_h2: "Knowledge",
+                info_p1: "<strong>Duration:</strong> Exact difference between two dates/times.", info_p2: "<strong>Add/Sub:</strong> Find future or past dates.", info_p3: "<strong>Work Hours:</strong> Track weekly shifts.",
+                info_p4: "Calculates time values rather than just dates. Useful for payroll and scheduling.", info_tip: "Tip: Convert all times to same timezone before calc.",
+                share_title: "Share Tool", share_link: "Link", share_text: "Text", share_html: "HTML", btn_copy: "Copy", msg_copied: "Copied!"
+            },
+            'es': {
+                title: "Calculadora de Reloj", subtitle: "Operaciones de Tiempo",
+                mode_duration: "Duración", mode_add: "Sumar", mode_sub: "Restar", mode_sum: "Suma Total", mode_work: "Horas Trabajo", mode_convert: "Convertir",
+                lbl_start: "Inicio", lbl_end: "Fin", lbl_date: "Fecha", lbl_time: "Hora", btn_now: "Ahora",
+                lbl_base_time: "Hora Base", lbl_new_time: "Resultado", unit_days: "Días", unit_hours_short: "H", unit_minutes_short: "M",
+                lbl_time_list: "Intervalos", btn_add_row: "Añadir Fila", lbl_total_sum: "Total:",
+                col_day: "Día", col_start: "Inicio", col_end: "Fin", col_break: "Descanso", col_total: "Subtotal", lbl_weekly_total: "Total Semanal:",
+                lbl_from: "De", lbl_to: "A",
+                info_title: "Sobre Calculadora", info_h1: "Funciones", info_h2: "Información",
+                info_p1: "<strong>Duración:</strong> Diferencia exacta.", info_p2: "<strong>Sumar/Restar:</strong> Fechas futuras/pasadas.", info_p3: "<strong>Trabajo:</strong> Hoja de horas.",
+                info_p4: "Calcula valores de tiempo.", info_tip: "Consejo: Usa la misma zona horaria.",
+                share_title: "Compartir", share_link: "Enlace", share_text: "Texto", share_html: "HTML", btn_copy: "Copiar", msg_copied: "¡Copiado!"
+            },
+            'ru': {
+                title: "Калькулятор Часов", subtitle: "Операции со временем",
+                mode_duration: "Длительность", mode_add: "Прибавить", mode_sub: "Вычесть", mode_sum: "Сумма", mode_work: "Рабочие часы", mode_convert: "Конвертер",
+                lbl_start: "Начало", lbl_end: "Конец", lbl_date: "Дата", lbl_time: "Время", btn_now: "Сейчас",
+                lbl_base_time: "Базовое время", lbl_new_time: "Результат", unit_days: "Дн", unit_hours_short: "Ч", unit_minutes_short: "М",
+                lbl_time_list: "Интервалы", btn_add_row: "Добавить", lbl_total_sum: "Всего:",
+                col_day: "День", col_start: "Начало", col_end: "Конец", col_break: "Перерыв", col_total: "Итог", lbl_weekly_total: "Всего за неделю:",
+                lbl_from: "Из", lbl_to: "В",
+                info_title: "О калькуляторе", info_h1: "Функции", info_h2: "Знание",
+                info_p1: "<strong>Длительность:</strong> Точная разница.", info_p2: "<strong>+/-:</strong> Будущие даты.", info_p3: "<strong>Работа:</strong> Табель.",
+                info_p4: "Вычисляет временные значения.", info_tip: "Совет: Используйте один часовой пояс.",
+                share_title: "Поделиться", share_link: "Ссылка", share_text: "Текст", share_html: "HTML", btn_copy: "Копировать", msg_copied: "Скопировано!"
+            },
+            'hi': {
+                title: "घड़ी कैलकुलेटर", subtitle: "समय गणना",
+                mode_duration: "अवधि", mode_add: "जोड़ें", mode_sub: "घटाएं", mode_sum: "योग", mode_work: "कार्य घंटे", mode_convert: "परिवर्तन",
+                lbl_start: "शुरू", lbl_end: "समाप्त", lbl_date: "तारीख", lbl_time: "समय", btn_now: "अभी",
+                lbl_base_time: "आधार समय", lbl_new_time: "परिणाम", unit_days: "दिन", unit_hours_short: "घंटे", unit_minutes_short: "मिनट",
+                lbl_time_list: "अंतराल", btn_add_row: "पंक्ति जोड़ें", lbl_total_sum: "कुल:",
+                col_day: "दिन", col_start: "शुरू", col_end: "अंत", col_break: "ब्रेक", col_total: "उप", lbl_weekly_total: "साप्ताहिक कुल:",
+                lbl_from: "से", lbl_to: "तक",
+                info_title: "कैलकुलेटर के बारे में", info_h1: "विशेषताएं", info_h2: "ज्ञान",
+                info_p1: "<strong>अवधि:</strong> सटीक अंतर।", info_p2: "<strong>+/-:</strong> भविष्य की तारीखें।", info_p3: "<strong>कार्य:</strong> टाइम्सहीट।",
+                info_p4: "समय मूल्यों की गणना करता है।", info_tip: "सुझाव: एक ही समय क्षेत्र का उपयोग करें।",
+                share_title: "साझा करें", share_link: "लिंक", share_text: "पाठ", share_html: "HTML", btn_copy: "कॉपी", msg_copied: "कॉपी किया!"
+            },
+            'pl': {
+                title: "Kalkulator Zegarowy", subtitle: "Operacje Czasowe",
+                mode_duration: "Czas trwania", mode_add: "Dodaj", mode_sub: "Odejmij", mode_sum: "Suma", mode_work: "Godziny pracy", mode_convert: "Konwersja",
+                lbl_start: "Start", lbl_end: "Koniec", lbl_date: "Data", lbl_time: "Czas", btn_now: "Teraz",
+                lbl_base_time: "Czas bazowy", lbl_new_time: "Wynik", unit_days: "Dni", unit_hours_short: "Godz", unit_minutes_short: "Min",
+                lbl_time_list: "Interwały", btn_add_row: "Dodaj wiersz", lbl_total_sum: "Razem:",
+                col_day: "Dzień", col_start: "Start", col_end: "Koniec", col_break: "Przerwa", col_total: "Suma", lbl_weekly_total: "Tydzień:",
+                lbl_from: "Z", lbl_to: "Do",
+                info_title: "O kalkulatorze", info_h1: "Funkcje", info_h2: "Wiedza",
+                info_p1: "<strong>Czas trwania:</strong> Dokładna różnica.", info_p2: "<strong>+/-:</strong> Przyszłe daty.", info_p3: "<strong>Praca:</strong> Grafik.",
+                info_p4: "Oblicza wartości czasu.", info_tip: "Wskazówka: Używaj jednej strefy czasowej.",
+                share_title: "Udostępnij", share_link: "Link", share_text: "Tekst", share_html: "HTML", btn_copy: "Kopiuj", msg_copied: "Skopiowano!"
+            }
+        };
+
+        const App = {
+            lang: 'zh-CN',
+            mode: 'duration', // duration, add, sub, sum, work, convert
+            shareType: 'link',
+            
+            init() {
+                this.setupTheme();
+                this.setupLang();
+                this.setupDefaults();
+                this.renderSumRows(); // Init sum rows
+                this.renderWorkRows(); // Init work rows
+                
+                // Initial calc based on default mode
+                this.setMode('duration');
+                
+                document.getElementById('cur-year').innerText = new Date().getFullYear();
+            },
+
+            setupDefaults() {
+                // Duration
+                this.setDateVal('dur-start-date', 'today');
+                this.setTimeVal('dur-start-time', '09:00:00');
+                this.setDateVal('dur-end-date', 'today');
+                this.setTimeVal('dur-end-time', '17:00:00');
+                
+                // Add/Sub
+                const now = new Date();
+                const nowIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0,19);
+                document.getElementById('as-base-time').value = nowIso;
+            },
+
+            setupTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+
+            setupLang() {
+                const sel = document.getElementById('lang-selector');
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryLang = urlParams.get('lang');
+                if (queryLang && i18nData[queryLang]) this.lang = queryLang;
+                sel.value = this.lang;
+                this.updateText();
+                sel.addEventListener('change', (e) => {
+                    this.lang = e.target.value;
+                    try { window.history.pushState({}, '', `?lang=${this.lang}`); } catch (e) {}
+                    this.updateText();
+                    this.renderWorkRows(); // Re-render for translated days
+                });
+            },
+
+            updateText() {
+                const dict = i18nData[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(dict[key]) el.innerHTML = dict[key];
+                });
+                this.updateShareContent();
+            },
+
+            // --- Helpers ---
+            setDateVal(id, type) {
+                const now = new Date();
+                if(type==='today') document.getElementById(id).value = now.toISOString().split('T')[0];
+            },
+            setTimeVal(id, val) {
+                document.getElementById(id).value = val;
+            },
+            setQuickTime(prefix, type) {
+                const now = new Date();
+                const timeStr = now.toTimeString().split(' ')[0];
+                document.getElementById(`${prefix}-time`).value = timeStr;
+                if(type === 'now') document.getElementById(`${prefix}-date`).value = now.toISOString().split('T')[0];
+                this.calcDuration();
+            },
+
+            // --- Mode Logic ---
+            setMode(mode) {
+                this.mode = mode;
+                // Update Buttons
+                ['duration','add','sub','sum','work','convert'].forEach(m => {
+                    const btn = document.getElementById(`btn-mode-${m}`);
+                    const view = document.getElementById(`view-${m === 'sub' ? 'addsub' : (m === 'add' ? 'addsub' : m)}`);
+                    
+                    if(m === mode) {
+                        btn.classList.add('active');
+                        btn.classList.remove('inactive');
+                    } else {
+                        btn.classList.remove('active');
+                        btn.classList.add('inactive');
+                    }
+                    
+                    if (view) view.classList.add('hidden');
+                });
+
+                // Handle Shared Views
+                if(mode === 'add' || mode === 'sub') {
+                    document.getElementById('view-addsub').classList.remove('hidden');
+                    const isAdd = mode === 'add';
+                    const dict = i18nData[this.lang];
+                    // Update Label
+                    document.getElementById('as-op-label').innerHTML = `<span class="w-2 h-2 rounded-full ${isAdd ? 'bg-green-500' : 'bg-red-500'}"></span> ${dict[`mode_${mode}`]}`;
+                    this.calcAddSub();
+                } else {
+                    document.getElementById(`view-${mode}`).classList.remove('hidden');
+                    // Trigger calc for that mode
+                    if(mode === 'duration') this.calcDuration();
+                    if(mode === 'sum') this.calcSum();
+                    if(mode === 'work') this.calcWork();
+                    if(mode === 'convert') this.calcConvert();
+                }
+            },
+
+            // --- Calc: Duration ---
+            calcDuration() {
+                const d1 = document.getElementById('dur-start-date').value;
+                const t1 = document.getElementById('dur-start-time').value;
+                const d2 = document.getElementById('dur-end-date').value;
+                const t2 = document.getElementById('dur-end-time').value;
+                if(!d1 || !t1 || !d2 || !t2) return;
+
+                const start = new Date(`${d1}T${t1}`);
+                const end = new Date(`${d2}T${t2}`);
+                let diff = end - start;
+                const isNeg = diff < 0;
+                diff = Math.abs(diff);
+
+                // Format
+                const totalSec = Math.floor(diff / 1000);
+                const d = Math.floor(totalSec / 86400);
+                const h = Math.floor((totalSec % 86400) / 3600);
+                const m = Math.floor((totalSec % 3600) / 60);
+                const s = totalSec % 60;
+
+                const sign = isNeg ? "-" : "";
+                document.getElementById('dur-result').innerText = `${sign}${d}d ${h}h ${m}m ${s}s`;
+                document.getElementById('dur-sub').innerText = `${Math.floor(totalSec/3600)} Hours, ${Math.floor(totalSec/60)} Minutes`;
+            },
+
+            // --- Calc: Add/Sub ---
+            setASNow() {
+                const now = new Date();
+                const nowIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0,19);
+                document.getElementById('as-base-time').value = nowIso;
+                this.calcAddSub();
+            },
+            calcAddSub() {
+                const baseStr = document.getElementById('as-base-time').value;
+                if(!baseStr) return;
+                const base = new Date(baseStr);
+                
+                const d = parseInt(document.getElementById('as-days').value) || 0;
+                const h = parseInt(document.getElementById('as-hours').value) || 0;
+                const m = parseInt(document.getElementById('as-minutes').value) || 0;
+                
+                const msOffset = (d*86400000) + (h*3600000) + (m*60000);
+                let newTime;
+                
+                if(this.mode === 'add') newTime = new Date(base.getTime() + msOffset);
+                else newTime = new Date(base.getTime() - msOffset);
+                
+                // Format output
+                const outStr = newTime.toLocaleString(this.lang === 'zh-CN' ? 'zh-CN' : 'en-US', { 
+                    year: 'numeric', month: 'numeric', day: 'numeric', 
+                    hour: '2-digit', minute: '2-digit', second: '2-digit' 
+                });
+                document.getElementById('as-result').innerText = outStr;
+            },
+
+            // --- Calc: Sum ---
+            sumRows: [{h:0, m:0, s:0}, {h:0, m:0, s:0}], // Initial 2 rows
+            renderSumRows() {
+                const container = document.getElementById('sum-rows');
+                container.innerHTML = '';
+                this.sumRows.forEach((row, i) => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-center gap-2";
+                    div.innerHTML = `
+                        <input type="number" class="custom-input p-2 text-center" placeholder="H" value="${row.h || ''}" oninput="App.updateSumRow(${i}, 'h', this.value)"> :
+                        <input type="number" class="custom-input p-2 text-center" placeholder="M" value="${row.m || ''}" oninput="App.updateSumRow(${i}, 'm', this.value)"> :
+                        <input type="number" class="custom-input p-2 text-center" placeholder="S" value="${row.s || ''}" oninput="App.updateSumRow(${i}, 's', this.value)">
+                        ${i > 1 ? `<button onclick="App.remSumRow(${i})" class="text-red-400 hover:text-red-600 px-2"><i class="fa fa-trash"></i></button>` : ''}
+                    `;
+                    container.appendChild(div);
+                });
+                this.calcSum();
+            },
+            addSumRow() {
+                this.sumRows.push({h:0, m:0, s:0});
+                this.renderSumRows();
+            },
+            remSumRow(i) {
+                this.sumRows.splice(i, 1);
+                this.renderSumRows();
+            },
+            updateSumRow(i, type, val) {
+                this.sumRows[i][type] = parseInt(val) || 0;
+                this.calcSum();
+            },
+            calcSum() {
+                let totalSec = 0;
+                this.sumRows.forEach(r => {
+                    totalSec += (r.h * 3600) + (r.m * 60) + r.s;
+                });
+                const h = Math.floor(totalSec / 3600);
+                const m = Math.floor((totalSec % 3600) / 60);
+                const s = totalSec % 60;
+                document.getElementById('sum-result').innerText = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            },
+
+            // --- Calc: Work Hours ---
+            workData: Array(7).fill({s:'', e:'', b:0}),
+            renderWorkRows() {
+                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                // Localize days
+                const daysMap = {
+                    'zh-CN': ['周一','周二','周三','周四','周五','周六','周日'],
+                    'zh-TW': ['週一','週二','週三','週四','週五','週六','週日'],
+                    'es': ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],
+                    'ru': ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
+                };
+                const labels = daysMap[this.lang] || days;
+                
+                const tbody = document.getElementById('work-rows');
+                tbody.innerHTML = '';
+                
+                this.workData.forEach((d, i) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50";
+                    tr.innerHTML = `
+                        <td class="px-4 py-2 font-bold">${labels[i]}</td>
+                        <td class="px-4 py-2"><input type="time" class="bg-transparent outline-none w-24" value="${d.s}" onchange="App.updateWork(${i}, 's', this.value)"></td>
+                        <td class="px-4 py-2"><input type="time" class="bg-transparent outline-none w-24" value="${d.e}" onchange="App.updateWork(${i}, 'e', this.value)"></td>
+                        <td class="px-4 py-2"><input type="number" class="bg-transparent outline-none w-16" value="${d.b || ''}" placeholder="0" onchange="App.updateWork(${i}, 'b', this.value)"></td>
+                        <td class="px-4 py-2 text-right font-mono text-brand" id="work-sub-${i}">0.0h</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                this.calcWork();
+            },
+            updateWork(i, field, val) {
+                let data = {...this.workData[i]};
+                data[field] = val;
+                this.workData[i] = data;
+                this.calcWork();
+            },
+            calcWork() {
+                let totalMin = 0;
+                this.workData.forEach((d, i) => {
+                    let dayMin = 0;
+                    if(d.s && d.e) {
+                        const [sh, sm] = d.s.split(':').map(Number);
+                        const [eh, em] = d.e.split(':').map(Number);
+                        let sMin = sh*60 + sm;
+                        let eMin = eh*60 + em;
+                        if(eMin < sMin) eMin += 24*60; // Next day
+                        dayMin = Math.max(0, eMin - sMin - (parseInt(d.b)||0));
+                    }
+                    document.getElementById(`work-sub-${i}`).innerText = (dayMin/60).toFixed(1) + 'h';
+                    totalMin += dayMin;
+                });
+                const th = Math.floor(totalMin/60);
+                const tm = totalMin%60;
+                document.getElementById('work-total').innerText = `${th}h ${tm}m`;
+            },
+
+            // --- Calc: Convert ---
+            calcConvert() {
+                const val = parseFloat(document.getElementById('conv-val').value) || 0;
+                const from = document.getElementById('conv-from').value;
+                const to = document.getElementById('conv-to').value;
+                
+                // Base unit: Seconds
+                const rates = {
+                    sec: 1, min: 60, hour: 3600, day: 86400, week: 604800, year: 31536000
+                };
+                
+                const secs = val * rates[from];
+                const res = secs / rates[to];
+                
+                // Format nicely
+                let display = res;
+                if(res % 1 !== 0) display = res.toFixed(4).replace(/\.?0+$/, ''); // Clean trailing zeros
+                
+                document.getElementById('conv-result').innerText = display;
+            },
+
+            // --- Share ---
+            openShare() {
+                const modal = document.getElementById('share-modal');
+                const content = document.getElementById('share-content');
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+                this.updateShareContent();
+            },
+            closeShare() {
+                const modal = document.getElementById('share-modal');
+                const content = document.getElementById('share-content');
+                modal.classList.add('opacity-0'); content.classList.remove('scale-100'); content.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            },
+            setShareType(t) {
+                this.shareType = t;
+                ['link','text','html'].forEach(id => {
+                    const el = document.getElementById(`share-tab-${id}`);
+                    if(id===t) el.classList.add('active'); else el.classList.remove('active');
+                });
+                this.updateShareContent();
+            },
+            updateShareContent() {
+                const url = window.location.href.split('?')[0] + `?lang=${this.lang}`;
+                const dict = i18nData[this.lang];
+                const input = document.getElementById('share-input');
+                if(this.shareType==='link') input.value = url;
+                else if(this.shareType==='text') input.value = `${dict.title} - ${dict.subtitle}\n${url}`;
+                else input.value = `<iframe src="${url}" width="400" height="600"></iframe>`;
+            },
+            copyShare() {
+                const input = document.getElementById('share-input');
+                input.select();
+                navigator.clipboard.writeText(input.value).then(() => {
+                    const btn = document.getElementById('btn-copy-text');
+                    const orig = btn.innerText;
+                    btn.innerText = i18nData[this.lang].msg_copied;
+                    setTimeout(() => btn.innerText = orig, 2000);
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+     <!--  结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>
