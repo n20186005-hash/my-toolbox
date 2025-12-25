@@ -69,7 +69,7 @@ SPECIFIC_FIXES = {
     'text-case-converter': 'text-tools', 'average-calculator': 'math'
 }
 
-# --- 3. 图标库 (Massively Expanded) ---
+# --- 3. 图标库 (补全后的版本) ---
 BACKUP_ICONS = {
     # Electronics
     'resistor': '🔌', 'ohm': 'Ω', 'voltage': '⚡', 'circuit': '🔌', 'capacitor': '🔋', 
@@ -88,6 +88,8 @@ BACKUP_ICONS = {
     'fraction': '½', 'shape': '🔷', 'area': '🟥', 'volume': '🧊', 'surface': '🎨',
     'matrix': '▦', 'vector': '↗️', 'logarithm': '🪵', 'trigonometry': '📐', 'circle': '⭕',
     'triangle': '🔺', 'square': '🟥', 'cube': '🎲', 'root': '🌱', 'derivative': '∂', 'integral': '∫',
+    'absolute-value': '📏', 'prism': '🧊', 'cone': '🍦', 'torus': '🍩', 'frustum': '🔺',
+    'hexagonal': '💠', 'gcd': '➗', 'surface-area': '🟥', 'binary': '🔢', 'decimal': '🔟',
     # Finance
     '401k': '💰', 'loan': '💸', 'mortgage': '🏠', 'salary': '💵', 'tax': '🧾', 
     'invest': '📈', 'currency': '💱', 'interest': '℅', 'retirement': '🏖️', 'deposit': '🏦', 
@@ -95,22 +97,26 @@ BACKUP_ICONS = {
     'cagr': '📈', 'profit': '💰', 'margin': '📊', 'vat': '🧾', 'gst': '🧾', 
     'stock': '📉', 'crypto': '₿', 'bitcoin': '₿', 'exchange': '💱', 'check': '✅',
     'payment': '💳', 'debt': '📉', 'compound': '📈', 'discount': '🏷️',
+    'tfsa': '🏦', 'pay': '💵', 'fee': '💵',
     # Development
     'code': '👨‍💻', 'json': '📋', 'xml': '📜', 'html': '🌐', 'css': '🎨', 
     'base64': '📦', 'dev': '🛠️', 'minify': '🤏', 'formatter': '✨', 'hash': '#️⃣', 
     'encrypt': '🔒', 'decrypt': '🔓', 'language': '🗣️', 'regex': '🔍', 'sql': '🗄️', 
-    'dns': '🌍', 'whois': '❓', 'cron': '⏰', 'uuid': '🆔', 'guid': '🆔', 
-    'ip': '📍', 'subnet': '🕸️', 'diff': '↔️', 'markdown': '⬇️', 'url': '🔗',
+    'dns': '🌍', 'whois': '🔍', 'cron': '⏰', 'uuid': '🆔', 'guid': '🆔', 
+    'ip': '🌐', 'subnet': '🕸️', 'diff': '↔️', 'markdown': '⬇️', 'url': '🔗',
     'javascript': '☕', 'python': '🐍', 'java': '☕', 'git': '🌲', 'docker': '🐳',
     'linux': '🐧', 'terminal': '💻', 'api': '🔌', 'unicode': '🔣', 'ascii': '🔡',
+    'ua-parser': '🔍', 'minifier': '🤏', 'dwz': '🔗',
     # Date & Time
     'date': '📅', 'time': '⏰', 'clock': '🕰️', 'calendar': '🗓️', 'stopwatch': '⏱️', 
     'timer': '⏲️', 'zone': '🌍', 'runyue': '🌒', 'countdown': '⏳', 'timestamp': '⌚', 
     'daylight': '☀️', 'duration': '⌛', 'meeting': '🤝', 'world': '🌏', 'age': '🎂',
     'birthday': '🍰', 'year': '📅', 'month': '📆', 'week': '🗓️', 'day': '☀️',
+    'day-of-year': '🗓️', 'chinese-uppercase': '🇨🇳',
     # E-commerce
     'amazon': '📦', 'ebay': '🛍️', 'shopify': '👜', 'sales': '📈', 'shipping': '🚚', 
     'asoch': '🔍', 'fba': '📦', 'pricing': '🏷️', 'commission': '💰', 'inventory': '📦',
+    'pinduoduo': '🛍️',
     # Image
     'image': '🖼️', 'photo': '📷', 'resize': '📏', 'crop': '✂️', 'png': '🎨', 
     'jpg': '📸', 'svg': '✒️', 'compress': '🗜️', 'watermark': '©️', 'convert-to-image': '🖼️',
@@ -119,6 +125,7 @@ BACKUP_ICONS = {
     'text': '📄', 'word': '🔤', 'count': '🔢', 'lorem': '📝', 'string': '🧵', 
     'case': 'Aa', 'editor': '✍️', 'font': '🅰️', 'pinyin': '🇨🇳', 'slug': '🐌',
     'upper': '⬆️', 'lower': '⬇️', 'camel': '🐫', 'snake': '🐍', 'kebab': '🍢',
+    'abstract-talk': '🗣️', 'capital-number': '🏦', 'word-count': '🔢', 'character': '🔡',
     # Color
     'color': '🎨', 'rgb': '🌈', 'hex': '#️⃣', 'palette': '🎨', 'picker': '🖌️', 
     'contrast': '🌗', 'gradient': '🌈', 'cmyk': '🖨️', 'hcl': '🎨',
@@ -127,10 +134,11 @@ BACKUP_ICONS = {
     'length': '📏', 'speed': '🚀', 'area-convert': '🟥', 'pressure-convert': '🎈',
     'volume-convert': '🧊', 'mass': '⚖️', 'metric': '📏', 'imperial': '🦶',
     # Health
-    'bmi': '⚖️', 'calorie': '🍎', 'fat': '🥓', 'health': '🏥', 'heart': '❤️', 
+    'bmi': '⚖️', 'calorie': '🔥', 'fat': '🥓', 'health': '🏥', 'heart': '❤️', 
     'pregnancy': '🤰', 'bac': '🍺', 'bmr': '🔥', 'tdee': '🏃', 'macro': '🥗', 
     'body': '🧍', 'ovulation': '🥚', 'period': '🩸', 'sleep': '😴', 'water-intake': '💧',
     'bra-size': '👙', 'shoe-size': '👟', 'ideal-weight': '⚖️', 'protein': '🥩', 'carb': '🍞',
+    'conception': '🤰', 'creatine': '💊', 'macronutrient': '🥗',
     # Life
     'life': '🌱', 'habit': '✅', 'goal': '🎯', 'wedding': '💍', 'event': '🎉', 
     'shengxiao': '🐉', 'zodiac': '♈', 'chinese-zodiac': '🐉', 'decision': '⚖️',
@@ -143,13 +151,14 @@ BACKUP_ICONS = {
     # Fun
     'game': '🎮', 'joke': '🤡', 'meme': '😂', 'random': '🎲', 'dice': '🎲', 
     'love': '❤️', 'solitaire': '🃏', 'flames': '🔥', 'compatibility': '💑', 'puzzle': '🧩',
-    'sudoku': '🔢', 'chess': '♟️',
+    'sudoku': '🔢', 'chess': '♟️', 'temple': '🔔', 'hollow-knight': '🗡️',
     # Security
     'password': '🔑', 'generator': '⚙️', 'security': '🛡️', '2fa': '📱', 'totp': '🔐', 
     'md5': '#️⃣', 'sha': '#️⃣', 'safe': '🔐', 'lock': '🔒', 'key': '🗝️',
     # Construction
     'concrete': '🏗️', 'brick': '🧱', 'tile': '🔲', 'paint': '🖌️', 'roof': '🏠', 
     'flooring': '🪵', 'wallpaper': '🖼️', 'gravel': '🪨', 'sand': '⏳',
+    'asphalt': '🚜',
     # Gardening
     'garden': '🏡', 'plant': '🌿', 'seed': '🌰', 'soil': '🟤', 'water': '🚿', 
     'fertilizer': '💩', 'mulch': '🍂', 'flower': '🌸', 'tree': '🌳',
@@ -172,8 +181,8 @@ BACKUP_ICONS = {
 }
 
 # --- 4. 定义需要被覆盖的“弱/通用”图标 ---
-# 如果旧图标是这些，我们将尝试用更精准的图标替换它
-WEAK_ICONS = ['🔧', '🌐', '🧮', '1️⃣', '❓', '📄', '📝', '✅']
+# 加入了 🔍，以便为水印工具、搜题等工具匹配更具体的图标
+WEAK_ICONS = ['🔧', '🌐', '🧮', '1️⃣', '❓', '📄', '📝', '✅', '🔍']
 
 # --- 5. 工具函数 ---
 def to_kebab_case(filename):
@@ -188,21 +197,18 @@ def to_kebab_case(filename):
 def get_icon(tool_id, filename, existing_icon_map):
     existing_icon = existing_icon_map.get(tool_id, '🔧')
     
-    # 策略：如果现有图标是“强”图标（不在弱图标列表中），则直接保留，防止覆盖用户自定义
+    # 策略：如果现有图标是“强”图标（不在弱图标列表中），则直接保留
     if existing_icon not in WEAK_ICONS:
         return existing_icon
     
-    # 否则（现有图标是扳手、地球、计算器等），尝试从文件名匹配更精准的图标
+    # 否则，尝试从文件名匹配更精准的图标
     fname_lower = filename.lower()
     
-    # 优先匹配长关键词 (避免 'car' 匹配 'card' 这种情况)
     # 遍历备份库寻找匹配
     for key, icon in BACKUP_ICONS.items():
         if key in fname_lower:
             return icon
             
-    # 如果没找到更好的，且原图标不是扳手，就还是用原图标（比如保留 '🌐'）
-    # 如果原图标是扳手，就返回扳手
     return existing_icon
 
 def inject_ads_to_file(file_path):
@@ -254,7 +260,6 @@ def main():
             with open(TOOLS_JSON_FILE, 'r', encoding='utf-8') as f:
                 old_data = json.load(f)
                 for item in old_data:
-                    # 只有当现有图标存在时才保存
                     if 'icon' in item:
                         existing_icon_map[item['id']] = item['icon']
         except: pass
@@ -264,11 +269,7 @@ def main():
         for filename in files:
             if filename.endswith('.html'):
                 original_path = os.path.join(root, filename)
-                
-                # 计算分类
                 category = get_category_from_content(original_path, filename)
-                
-                # 特殊处理：如果分类名字里就含 date/time，强制归位
                 if 'date' in category or 'time' in category: category = 'date-time'
 
                 new_filename = to_kebab_case(filename)
@@ -323,7 +324,7 @@ def main():
     with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(tools_data, f, indent=2, ensure_ascii=False)
 
-    print(f"🎉 完成！图标库已扩充，工具分类与路径已修复。")
+    print(f"🎉 完成！图标库已大幅扩充，弱图标识别已增强。")
 
 if __name__ == '__main__':
     main()
