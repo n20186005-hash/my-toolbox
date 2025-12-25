@@ -37,27 +37,25 @@ KEYWORD_CATEGORIES = {
     'weather-health': ['weather', 'air', 'quality', 'aqi', 'humidity', 'sun', 'moon']
 }
 
-SPECIFIC_FIXES = {
-    'voltage-drop-calculator': 'electronics', 'voltage-calculator': 'electronics', 'ohm-law-calculator': 'electronics',
-    'age-calculator': 'date-time', 'digital-clock-stopwatch': 'date-time', 'unix-timestamp-converter': 'date-time',
-    'love-marriage-calculator': 'fun', 'mortgage-calculator-uk': 'finance', 'canadian-mortgage': 'finance'
-}
-
+# --- 2. 扩充后的图标库 (包含更多前缀匹配) ---
 BACKUP_ICONS = {
-    'resistor': '🔌', 'ohm': 'Ω', 'voltage': '⚡', 'circuit': '🔌', 'capacitor': '🔋', 
-    'math': '➕', 'algebra': '✖️', 'geometry': '📐', 'stat': '📊', 'prime': '🔢',
-    'loan': '💸', 'mortgage': '🏠', 'salary': '💵', 'tax': '🧾', 'invest': '📈',
-    'code': '👨‍💻', 'json': '📋', 'xml': '📜', 'html': '🌐', 'css': '🎨', 
-    'date': '📅', 'time': '⏰', 'clock': '🕰️', 'calendar': '🗓️', 'stopwatch': '⏱️', 
-    'image': '🖼️', 'photo': '📷', 'watermark': '©️', 'text': '📄', 'word': '🔤',
-    'bmi': '⚖️', 'calorie': '🔥', 'fat': '🥓', 'pregnancy': '🤰', 'love': '❤️',
-    'car': '🚗', 'fuel': '⛽', 'horsepower': '🐎', 'engine': '⚙️',
-    'grade': '💯', 'gpa': '🎓', 'password': '🔑', 'weather': '☁️', 'search': '🔍'
+    'molar': '🧪', 'chem': '🧪', 'period': '📑', 'ph-cal': '💧',
+    'volt': '⚡', 'ohm': 'Ω', 'resistor': '🔌', 'circuit': '🔌', 'battery': '🔋',
+    'math': '➕', 'calc': '🧮', 'algebra': '✖️', 'geom': '📐', 'stat': '📊', 'prime': '🔢',
+    'loan': '💸', 'mortgage': '🏠', 'salary': '💵', 'tax': '🧾', 'invest': '📈', 'bank': '🏦',
+    'code': '👨‍💻', 'json': '📋', 'xml': '📜', 'html': '🌐', 'css': '🎨', 'hash': '#️⃣', 'encrypt': '🔒',
+    'date': '📅', 'time': '⏰', 'clock': '🕰️', 'calendar': '🗓️', 'stopwatch': '⏱️', 'age': '🎂',
+    'image': '🖼️', 'photo': '📷', 'watermark': '©️', 'png': '🎨', 'jpg': '📸',
+    'text': '📄', 'word': '🔤', 'count': '🔢', 'case': 'Aa',
+    'bmi': '⚖️', 'calorie': '🔥', 'fat': '🥓', 'preg': '🤰', 'health': '🏥',
+    'car': '🚗', 'fuel': '⛽', 'engine': '⚙️', 'horse': '🐎',
+    'grade': '💯', 'gpa': '🎓', 'exam': '📝', 'pass': '🔑', 'secure': '🛡️',
+    'weather': '☁️', 'sun': '☀️', 'moon': '🌙', 'wind': '🌬️', 'search': '🔍'
 }
 
 WEAK_ICONS = ['🔧', '🌐', '🧮', '1️⃣', '❓', '📄', '📝', '✅', '🔍', '']
 
-# --- 2. 逻辑函数 ---
+# --- 3. 辅助函数 ---
 
 def to_kebab_case(filename):
     name = filename.lower()
@@ -81,30 +79,24 @@ def inject_ads_to_file(file_path):
 
 def get_category_by_name(filename):
     tid = filename.lower().replace('.html', '')
-    if tid in SPECIFIC_FIXES: return SPECIFIC_FIXES[tid]
     for cat, kws in KEYWORD_CATEGORIES.items():
         for kw in kws:
             if kw in tid: return cat
     return 'others'
 
 def main():
-    print("\n" + "="*50)
-    print("🚀 TOOLBOX 自动化整理 & 无损数据更新系统")
-    print("="*50)
+    print("\n🚀 启动全功能整理 & 图标强制补全系统...")
 
-    # A. 预加载旧 JSON 数据
+    # A. 预加载旧数据
     old_data_map = {}
     if os.path.exists(TOOLS_JSON_FILE):
         with open(TOOLS_JSON_FILE, 'r', encoding='utf-8') as f:
             try:
                 data = json.load(f)
                 for item in data: old_data_map[item['id']] = item
-                print(f"📦 成功读取旧 JSON，发现 {len(old_data_map)} 个现有工具条目")
-            except: 
-                print("⚠️ 警告：tools.json 格式错误或为空，将创建新数据")
+            except: pass
 
-    # B. 文件整理与广告注入
-    print("\n>>> 📂 正在整理物理文件并检查广告代码...")
+    # B. 文件整理与广告
     for root, dirs, files in os.walk(MODULES_DIR):
         if root == MODULES_DIR: continue 
         for filename in files:
@@ -113,71 +105,53 @@ def main():
                 new_filename = to_kebab_case(filename)
                 target_cat = get_category_by_name(new_filename)
                 target_dir = os.path.join(MODULES_DIR, target_cat)
-                
                 if not os.path.exists(target_dir): os.makedirs(target_dir)
                 target_path = os.path.join(target_dir, new_filename)
-
-                # 物理操作日志
                 if os.path.abspath(current_path) != os.path.abspath(target_path):
                     shutil.move(current_path, target_path)
-                    print(f"  [移动] {filename} -> {target_cat}/{new_filename}")
-                
-                # 广告注入日志
-                if inject_ads_to_file(target_path):
-                    print(f"  [广告] 已为 {new_filename} 补全 AdSense 代码")
+                inject_ads_to_file(target_path)
 
-    # C. 生成 JSON (无损合并)
-    print("\n>>> 📑 正在执行无损数据合并...")
+    # C. 生成 JSON (改进的图标匹配逻辑)
     new_tools_data = []
-    
     for root, dirs, files in os.walk(MODULES_DIR):
         for file in files:
             if file.endswith('.html'):
                 tid = file[:-5]
                 cat = os.path.basename(root)
-                
-                # 获取旧数据
                 old_entry = old_data_map.get(tid)
                 
                 if old_entry:
-                    # 无损继承
                     entry = old_entry.copy()
-                    # 只有图标太弱时才尝试更新
-                    if entry.get('icon', '') in WEAK_ICONS:
-                        for kw, icon in BACKUP_ICONS.items():
-                            if kw in tid.lower():
-                                entry['icon'] = icon
-                                print(f"  [图标] 工具 '{tid}' 已由默认更新为 {icon}")
-                                break
-                    # 更新路径和分类（以磁盘当前状态为准）
-                    entry['file'] = f"modules/{cat}/{file}"
-                    entry['category'] = cat
-                    field_count = len(entry.keys())
-                    print(f"  [继承] 工具 '{tid}' 数据已保留，包含 {field_count} 个字段")
                 else:
-                    # 创建新工具
-                    entry = {
-                        "id": tid,
-                        "title": tid.replace('-', ' ').title(),
-                        "category": cat,
-                        "file": f"modules/{cat}/{file}",
-                        "desc": f"Free online {tid} tool.",
-                        "icon": "🔧"
-                    }
-                    print(f"  [新增] 发现新文件 '{tid}'，已创建基础条目")
-                
+                    entry = {"id": tid, "title": tid.replace('-', ' ').title(), "desc": f"Free online {tid} tool."}
+
+                # --- 图标强制补全逻辑改进 ---
+                current_icon = entry.get('icon', '')
+                if current_icon in WEAK_ICONS:
+                    matched_icon = None
+                    # 按关键词长度倒序排列，优先匹配长词（更精准）
+                    sorted_keys = sorted(BACKUP_ICONS.keys(), key=len, reverse=True)
+                    for kw in sorted_keys:
+                        if kw in tid.lower():
+                            matched_icon = BACKUP_ICONS[kw]
+                            break
+                    
+                    if matched_icon:
+                        entry['icon'] = matched_icon
+                        print(f"  [补全图标] {tid} -> {matched_icon}")
+                    else:
+                        entry['icon'] = '🔧' # 实在匹配不到再用扳手
+
+                entry['file'] = f"modules/{cat}/{file}"
+                entry['category'] = cat
                 new_tools_data.append(entry)
 
-    # D. 写入结果
+    # D. 写入
     new_tools_data.sort(key=lambda x: (x.get('category', 'others'), x['id']))
     with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(new_tools_data, f, indent=2, ensure_ascii=False)
 
-    print("\n" + "="*50)
-    print(f"✅ 任务完成！")
-    print(f"📊 最终工具总数：{len(new_tools_data)}")
-    print(f"📄 结果已保存至：{TOOLS_JSON_FILE}")
-    print("="*50 + "\n")
+    print(f"\n✅ 任务完成！处理了 {len(new_tools_data)} 个工具。")
 
 if __name__ == '__main__':
     main()
