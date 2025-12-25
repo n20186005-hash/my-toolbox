@@ -18,313 +18,166 @@ KEYWORD_CATEGORIES = {
     'electronics': ['resistor', 'ohm', 'voltage', 'circuit', 'capacitor', 'drop', 'zener', 'current', 'electricity', 'induct', 'power-factor', 'dbm', 'frequency'],
     'physics': ['physic', 'force', 'velocity', 'gravity', 'acceleration', 'density', 'power', 'pressure', 'torque', 'energy', 'work', 'kinematic'],
     'chemistry': ['chem', 'periodic', 'molar', 'atom', 'molecule', 'ph-cal', 'reaction', 'stoichiometry', 'solution'],
-    'math': ['calculator', 'math', 'algebra', 'geometry', 'stat', 'average', 'prime', 'factor', 'number', 'percent', 'fraction', 'shape', 'area', 'volume', 'surface', 'matrix', 'vector', 'logarithm', 'trigonometry'],
-    'finance': ['401k', 'loan', 'mortgage', 'salary', 'tax', 'invest', 'currency', 'interest', 'retirement', 'deposit', 'bank', 'budget', 'gdp', 'inflation', 'roi', 'cagr', 'profit', 'margin', 'vat', 'gst'],
-    'development-tools': ['code', 'json', 'xml', 'html', 'css', 'base64', 'dev', 'minify', 'formatter', 'hash', 'encrypt', 'language', 'regex', 'sql', 'dns', 'whois', 'cron', 'uuid', 'guid', 'ip-', 'subnet', 'diff', 'markdown', 'url-'],
-    'date-time': ['date', 'time', 'clock', 'calendar', 'stopwatch', 'timer', 'zone', 'runyue', 'countdown', 'timestamp', 'daylight', 'duration', 'meeting', 'world', 'age-'], 
-    'e-commerce-operations': ['profit', 'margin', 'amazon', 'ebay', 'shopify', 'discount', 'sales', 'shipping', 'asoch', 'fba', 'pricing', 'commission'],
+    'math': ['calculator', 'math', 'algebra', 'geometry', 'stat', 'average', 'prime', 'factor', 'number', 'percent', 'fraction', 'shape', 'area', 'volume', 'surface', 'matrix', 'vector', 'logarithm', 'trigonometry', 'absolute-value', 'prism', 'cone', 'torus', 'frustum'],
+    'finance': ['401k', 'loan', 'mortgage', 'salary', 'tax', 'invest', 'currency', 'interest', 'retirement', 'deposit', 'bank', 'budget', 'gdp', 'inflation', 'roi', 'cagr', 'profit', 'margin', 'vat', 'gst', 'tfsa'],
+    'development-tools': ['code', 'json', 'xml', 'html', 'css', 'base64', 'dev', 'minify', 'formatter', 'hash', 'encrypt', 'language', 'regex', 'sql', 'dns', 'whois', 'cron', 'uuid', 'guid', 'ip-', 'subnet', 'diff', 'markdown', 'url-', 'ua-parser'],
+    'date-time': ['date', 'time', 'clock', 'calendar', 'stopwatch', 'timer', 'zone', 'runyue', 'countdown', 'timestamp', 'daylight', 'duration', 'meeting', 'world', 'age-', 'day-of-year'], 
+    'e-commerce-operations': ['amazon', 'ebay', 'shopify', 'discount', 'sales', 'shipping', 'asoch', 'fba', 'pricing', 'commission', 'inventory', 'pinduoduo'],
     'image-tools': ['image', 'photo', 'resize', 'crop', 'png', 'jpg', 'svg', 'compress', 'watermark', 'convert-to-image', 'favicon', 'ico'],
-    'text-tools': ['text', 'word', 'count', 'lorem', 'string', 'case', 'editor', 'markdown', 'font', 'pinyin', 'ascii', 'slug', 'diff'],
+    'text-tools': ['text', 'word', 'count', 'lorem', 'string', 'case', 'editor', 'markdown', 'font', 'pinyin', 'ascii', 'slug', 'abstract-talk', 'capital-number'],
     'color-tool': ['color', 'rgb', 'hex', 'palette', 'picker', 'contrast', 'gradient'],
     'conversion': ['convert', 'unit', 'farenheit', 'celsius', 'weight', 'length', 'volume', 'temperature', 'speed', 'area-convert', 'pressure-convert'],
-    'health': ['bmi', 'calorie', 'fat', 'health', 'heart', 'pregnancy', 'bac', 'bmr', 'tdee', 'macro', 'body', 'ovulation', 'period', 'sleep', 'water-intake'],
-    'life': ['life', 'habit', 'goal', 'wedding', 'event', 'shengxiao', 'zodiac', 'age-calc', 'chinese-zodiac'],
-    'auto': ['car', 'fuel', 'mpg', 'gas', 'vehicle', 'loan', 'plate', 'vin', 'tire', 'horsepower'],
+    'health': ['bmi', 'calorie', 'fat', 'health', 'heart', 'pregnancy', 'bac', 'bmr', 'tdee', 'macro', 'body', 'ovulation', 'period', 'sleep', 'water-intake', 'creatine', 'macronutrient'],
+    'life': ['life', 'habit', 'goal', 'wedding', 'event', 'shengxiao', 'zodiac', 'chinese-zodiac'],
+    'auto': ['car', 'fuel', 'mpg', 'gas', 'vehicle', 'plate', 'vin', 'tire', 'horsepower', 'engine'],
     'education': ['grade', 'gpa', 'study', 'student', 'school', 'exam', 'quiz'],
-    'fun': ['game', 'joke', 'meme', 'random', 'decision', 'dice', 'love', 'solitaire', 'flames', 'compatibility'],
+    'fun': ['game', 'joke', 'meme', 'random', 'decision', 'dice', 'love', 'solitaire', 'flames', 'compatibility', 'temple', 'hollow-knight'],
     'security': ['password', 'generator', 'security', '2fa', 'totp', 'md5', 'sha'],
-    'construction': ['concrete', 'brick', 'tile', 'paint', 'roof', 'flooring', 'wallpaper'],
-    'gardening': ['garden', 'plant', 'seed', 'soil', 'water', 'fertilizer'],
-    'pets': ['pet', 'dog', 'cat', 'food', 'animal', 'fish', 'aquarium'],
-    'sports': ['sport', 'running', 'pace', 'score', 'team', 'golf', 'cricket', 'football'],
-    'statistics': ['probability', 'mean', 'median', 'mode', 'deviation', 'sample', 'permutation', 'combination'],
+    'construction': ['concrete', 'brick', 'tile', 'paint', 'roof', 'flooring', 'wallpaper', 'asphalt'],
     'weather-health': ['weather', 'air', 'quality', 'aqi', 'humidity', 'sun', 'moon']
 }
 
-# --- 2. 强力纠错名单 ---
 SPECIFIC_FIXES = {
     'voltage-drop-calculator': 'electronics', 'voltage-calculator': 'electronics', 'ohm-law-calculator': 'electronics',
-    'resistor-calculator': 'electronics', 'capacitor-calculator': 'electronics',
     'age-calculator': 'date-time', 'digital-clock-stopwatch': 'date-time', 'unix-timestamp-converter': 'date-time',
-    'race-time-predictor': 'date-time', 'world-clock-meeting-planner': 'date-time', 'days-between-dates': 'date-time',
-    'time-zone-abbreviations-worldwide-list': 'date-time', 'worldwide-time-differences-for-any-city': 'date-time',
-    'time-zone-map': 'date-time', 'daylight-saving-time': 'date-time', 'date-to-chinese-uppercase': 'date-time',
-    'day-of-year-calculator': 'date-time', 'calendar-generator': 'date-time', 'countdown-timer': 'date-time',
-    'stopwatch': 'date-time', 'love-marriage-calculator': 'fun', 'sudoku-solver': 'fun', 
-    'mortgage-calculator-uk': 'finance', 'canadian-mortgage': 'finance', 'auto-loan-comparison': 'finance',
-    'bank-deposit-calculator': 'finance', 'compound-interest': 'finance', 'debt-to-income-ratio': 'finance',
-    'discount-calculator': 'finance', 'general-loan-calculator': 'finance', 'investment-calculator': 'finance',
-    'shopping-calculator': 'finance', 'sales-tax-vat-calculator': 'finance', 'salary-tax-stimator': 'finance',
-    'salary-converter': 'finance', 'retirement-calculator': 'finance', 'retirement-calculato': 'finance',
-    'language-switcher': 'e-commerce-operations', 'currency-calculator': 'e-commerce-operations',
-    'title-generator': 'e-commerce-operations', 'percentage-calculator': 'math', 'multi-language': 'math',
-    'body-surface-area-calculator': 'math', 'cone-calculator': 'math', 'frustum-calculator': 'math',
-    'cylinder-calculator': 'math', 'standard-calculator': 'math', 'sphere-calculator': 'math',
-    'rectangular-prism-calculator': 'math', 'btu-calculator': 'math', 'pregnancy-timeline': 'health',
-    'tdee-calculator': 'health', 'bmi-calculator': 'health', 'bac-calculator': 'health',
-    'energy-converter': 'health', 'weight-watchers-points-calculator': 'health', 'conception-calculator': 'health',
-    'fat-intake-calculator': 'health', 'comprehensive-gpa-calculator': 'education', 'exam-countdown': 'education',
-    'final-grade-calculator': 'education', 'power-converter': 'conversion', 'temperature-converter': 'conversion',
-    'speed-converter': 'conversion', 'pressure-converter': 'conversion', 'chinese-capital-number': 'text-tools',
-    'text-case-converter': 'text-tools', 'average-calculator': 'math'
+    'love-marriage-calculator': 'fun', 'mortgage-calculator-uk': 'finance', 'canadian-mortgage': 'finance'
 }
 
-# --- 3. 图标库 (补全后的版本) ---
 BACKUP_ICONS = {
-    # Electronics
     'resistor': '🔌', 'ohm': 'Ω', 'voltage': '⚡', 'circuit': '🔌', 'capacitor': '🔋', 
-    'drop': '💧', 'zener': '⚡', 'current': '〰️', 'electricity': '💡', 'induct': '🌀',
-    'dbm': '📶', 'frequency': '📻', 'pcb': '📟', 'solder': '🔥', 'battery': '🔋',
-    # Physics
-    'physic': '⚛️', 'force': '💪', 'velocity': '🏎️', 'gravity': '🍎', 'acceleration': '🚀', 
-    'density': '🧱', 'power': '⚡', 'pressure': '🌡️', 'torque': '🔧', 'energy': '🔋',
-    'kinematic': '🏃', 'thermodynamic': '🔥', 'optics': '🔦', 'quantum': '🌌',
-    # Chemistry
-    'chem': '🧪', 'periodic': '📑', 'molar': '⚖️', 'atom': '⚛️', 'molecule': '⚗️', 
-    'ph': '💧', 'reaction': '💥', 'solution': '🥃', 'gas': '⛽', 'acid': '🍋',
-    # Math
-    'calculator': '🧮', 'math': '➕', 'algebra': '✖️', 'geometry': '📐', 'stat': '📊', 
-    'average': '📉', 'prime': '🔢', 'factor': '➗', 'number': '1️⃣', 'percent': '％', 
-    'fraction': '½', 'shape': '🔷', 'area': '🟥', 'volume': '🧊', 'surface': '🎨',
-    'matrix': '▦', 'vector': '↗️', 'logarithm': '🪵', 'trigonometry': '📐', 'circle': '⭕',
-    'triangle': '🔺', 'square': '🟥', 'cube': '🎲', 'root': '🌱', 'derivative': '∂', 'integral': '∫',
-    'absolute-value': '📏', 'prism': '🧊', 'cone': '🍦', 'torus': '🍩', 'frustum': '🔺',
-    'hexagonal': '💠', 'gcd': '➗', 'surface-area': '🟥', 'binary': '🔢', 'decimal': '🔟',
-    # Finance
-    '401k': '💰', 'loan': '💸', 'mortgage': '🏠', 'salary': '💵', 'tax': '🧾', 
-    'invest': '📈', 'currency': '💱', 'interest': '℅', 'retirement': '🏖️', 'deposit': '🏦', 
-    'bank': '🏛️', 'budget': '📝', 'gdp': '🌏', 'inflation': '🎈', 'roi': '💹',
-    'cagr': '📈', 'profit': '💰', 'margin': '📊', 'vat': '🧾', 'gst': '🧾', 
-    'stock': '📉', 'crypto': '₿', 'bitcoin': '₿', 'exchange': '💱', 'check': '✅',
-    'payment': '💳', 'debt': '📉', 'compound': '📈', 'discount': '🏷️',
-    'tfsa': '🏦', 'pay': '💵', 'fee': '💵',
-    # Development
+    'math': '➕', 'algebra': '✖️', 'geometry': '📐', 'stat': '📊', 'prime': '🔢',
+    'loan': '💸', 'mortgage': '🏠', 'salary': '💵', 'tax': '🧾', 'invest': '📈',
     'code': '👨‍💻', 'json': '📋', 'xml': '📜', 'html': '🌐', 'css': '🎨', 
-    'base64': '📦', 'dev': '🛠️', 'minify': '🤏', 'formatter': '✨', 'hash': '#️⃣', 
-    'encrypt': '🔒', 'decrypt': '🔓', 'language': '🗣️', 'regex': '🔍', 'sql': '🗄️', 
-    'dns': '🌍', 'whois': '🔍', 'cron': '⏰', 'uuid': '🆔', 'guid': '🆔', 
-    'ip': '🌐', 'subnet': '🕸️', 'diff': '↔️', 'markdown': '⬇️', 'url': '🔗',
-    'javascript': '☕', 'python': '🐍', 'java': '☕', 'git': '🌲', 'docker': '🐳',
-    'linux': '🐧', 'terminal': '💻', 'api': '🔌', 'unicode': '🔣', 'ascii': '🔡',
-    'ua-parser': '🔍', 'minifier': '🤏', 'dwz': '🔗',
-    # Date & Time
     'date': '📅', 'time': '⏰', 'clock': '🕰️', 'calendar': '🗓️', 'stopwatch': '⏱️', 
-    'timer': '⏲️', 'zone': '🌍', 'runyue': '🌒', 'countdown': '⏳', 'timestamp': '⌚', 
-    'daylight': '☀️', 'duration': '⌛', 'meeting': '🤝', 'world': '🌏', 'age': '🎂',
-    'birthday': '🍰', 'year': '📅', 'month': '📆', 'week': '🗓️', 'day': '☀️',
-    'day-of-year': '🗓️', 'chinese-uppercase': '🇨🇳',
-    # E-commerce
-    'amazon': '📦', 'ebay': '🛍️', 'shopify': '👜', 'sales': '📈', 'shipping': '🚚', 
-    'asoch': '🔍', 'fba': '📦', 'pricing': '🏷️', 'commission': '💰', 'inventory': '📦',
-    'pinduoduo': '🛍️',
-    # Image
-    'image': '🖼️', 'photo': '📷', 'resize': '📏', 'crop': '✂️', 'png': '🎨', 
-    'jpg': '📸', 'svg': '✒️', 'compress': '🗜️', 'watermark': '©️', 'convert-to-image': '🖼️',
-    'favicon': '🔖', 'ico': '🔖', 'pixel': '👾', 'blur': '🌫️', 'filter': '🎨',
-    # Text
-    'text': '📄', 'word': '🔤', 'count': '🔢', 'lorem': '📝', 'string': '🧵', 
-    'case': 'Aa', 'editor': '✍️', 'font': '🅰️', 'pinyin': '🇨🇳', 'slug': '🐌',
-    'upper': '⬆️', 'lower': '⬇️', 'camel': '🐫', 'snake': '🐍', 'kebab': '🍢',
-    'abstract-talk': '🗣️', 'capital-number': '🏦', 'word-count': '🔢', 'character': '🔡',
-    # Color
-    'color': '🎨', 'rgb': '🌈', 'hex': '#️⃣', 'palette': '🎨', 'picker': '🖌️', 
-    'contrast': '🌗', 'gradient': '🌈', 'cmyk': '🖨️', 'hcl': '🎨',
-    # Conversion
-    'convert': '🔄', 'unit': '📏', 'farenheit': '🌡️', 'celsius': '🌡️', 'weight': '⚖️', 
-    'length': '📏', 'speed': '🚀', 'area-convert': '🟥', 'pressure-convert': '🎈',
-    'volume-convert': '🧊', 'mass': '⚖️', 'metric': '📏', 'imperial': '🦶',
-    # Health
-    'bmi': '⚖️', 'calorie': '🔥', 'fat': '🥓', 'health': '🏥', 'heart': '❤️', 
-    'pregnancy': '🤰', 'bac': '🍺', 'bmr': '🔥', 'tdee': '🏃', 'macro': '🥗', 
-    'body': '🧍', 'ovulation': '🥚', 'period': '🩸', 'sleep': '😴', 'water-intake': '💧',
-    'bra-size': '👙', 'shoe-size': '👟', 'ideal-weight': '⚖️', 'protein': '🥩', 'carb': '🍞',
-    'conception': '🤰', 'creatine': '💊', 'macronutrient': '🥗',
-    # Life
-    'life': '🌱', 'habit': '✅', 'goal': '🎯', 'wedding': '💍', 'event': '🎉', 
-    'shengxiao': '🐉', 'zodiac': '♈', 'chinese-zodiac': '🐉', 'decision': '⚖️',
-    # Auto
-    'car': '🚗', 'fuel': '⛽', 'mpg': '⛽', 'gas': '⛽', 'vehicle': '🚙', 
-    'plate': '🆔', 'vin': '🔍', 'tire': '🍩', 'horsepower': '🐎', 'engine': '⚙️',
-    # Education
-    'grade': '💯', 'gpa': '🎓', 'study': '📚', 'student': '🎒', 'school': '🏫', 
-    'exam': '📝', 'quiz': '❓', 'college': '🏛️', 'university': '🎓', 'course': '📘',
-    # Fun
-    'game': '🎮', 'joke': '🤡', 'meme': '😂', 'random': '🎲', 'dice': '🎲', 
-    'love': '❤️', 'solitaire': '🃏', 'flames': '🔥', 'compatibility': '💑', 'puzzle': '🧩',
-    'sudoku': '🔢', 'chess': '♟️', 'temple': '🔔', 'hollow-knight': '🗡️',
-    # Security
-    'password': '🔑', 'generator': '⚙️', 'security': '🛡️', '2fa': '📱', 'totp': '🔐', 
-    'md5': '#️⃣', 'sha': '#️⃣', 'safe': '🔐', 'lock': '🔒', 'key': '🗝️',
-    # Construction
-    'concrete': '🏗️', 'brick': '🧱', 'tile': '🔲', 'paint': '🖌️', 'roof': '🏠', 
-    'flooring': '🪵', 'wallpaper': '🖼️', 'gravel': '🪨', 'sand': '⏳',
-    'asphalt': '🚜',
-    # Gardening
-    'garden': '🏡', 'plant': '🌿', 'seed': '🌰', 'soil': '🟤', 'water': '🚿', 
-    'fertilizer': '💩', 'mulch': '🍂', 'flower': '🌸', 'tree': '🌳',
-    # Pets
-    'pet': '🐾', 'dog': '🐶', 'cat': '🐱', 'food': '🍖', 'animal': '🦁', 
-    'fish': '🐟', 'aquarium': '🐠', 'bird': '🐦', 'hamster': '🐹',
-    # Sports
-    'sport': '⚽', 'running': '🏃', 'pace': '⏱️', 'score': '🏆', 'team': '👕', 
-    'golf': '⛳', 'cricket': '🏏', 'football': '🏈', 'basketball': '🏀', 'tennis': '🎾',
-    # Statistics
-    'probability': '🎲', 'mean': 'µ', 'median': '📊', 'mode': '📊', 'deviation': 'σ', 
-    'sample': '📉', 'permutation': '🔄', 'combination': '🎲', 'z-score': '📊',
-    # Weather
-    'weather': '☁️', 'air': '💨', 'quality': '😷', 'aqi': '🌫️', 'humidity': '💧', 
-    'sun': '☀️', 'moon': '🌙', 'rain': '🌧️', 'snow': '❄️', 'wind': '🌬️',
-    # Generic & Common
-    'search': '🔍', 'find': '🔎', 'list': '📝', 'map': '🗺️', 'guide': '📖',
-    'tutorial': '📚', 'info': 'ℹ️', 'about': 'ℹ️', 'contact': '📧', 'home': '🏠',
-    'user': '👤', 'setting': '⚙️', 'config': '🛠️', 'tool': '🔧', 'app': '📱'
+    'image': '🖼️', 'photo': '📷', 'watermark': '©️', 'text': '📄', 'word': '🔤',
+    'bmi': '⚖️', 'calorie': '🔥', 'fat': '🥓', 'pregnancy': '🤰', 'love': '❤️',
+    'car': '🚗', 'fuel': '⛽', 'horsepower': '🐎', 'engine': '⚙️',
+    'grade': '💯', 'gpa': '🎓', 'password': '🔑', 'weather': '☁️', 'search': '🔍'
 }
 
-# --- 4. 定义需要被覆盖的“弱/通用”图标 ---
-# 加入了 🔍，以便为水印工具、搜题等工具匹配更具体的图标
-WEAK_ICONS = ['🔧', '🌐', '🧮', '1️⃣', '❓', '📄', '📝', '✅', '🔍']
+WEAK_ICONS = ['🔧', '🌐', '🧮', '1️⃣', '❓', '📄', '📝', '✅', '🔍', '']
 
-# --- 5. 工具函数 ---
+# --- 2. 逻辑函数 ---
+
 def to_kebab_case(filename):
     name = filename.lower()
-    while name.endswith('.html'): name = name[:-5]
-    s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1-\2', name)
-    name = re.sub(r'([a-z0-9])([A-Z])', r'\1-\2', s1)
-    clean_name = re.sub(r'[\s_.]+', '-', name)
-    clean_name = re.sub(r'-+', '-', clean_name).strip('-')
-    return clean_name + '.html'
-
-def get_icon(tool_id, filename, existing_icon_map):
-    existing_icon = existing_icon_map.get(tool_id, '🔧')
-    
-    # 策略：如果现有图标是“强”图标（不在弱图标列表中），则直接保留
-    if existing_icon not in WEAK_ICONS:
-        return existing_icon
-    
-    # 否则，尝试从文件名匹配更精准的图标
-    fname_lower = filename.lower()
-    
-    # 遍历备份库寻找匹配
-    for key, icon in BACKUP_ICONS.items():
-        if key in fname_lower:
-            return icon
-            
-    return existing_icon
+    if name.endswith('.html'): name = name[:-5]
+    name = re.sub(r'[\s_.]+', '-', name)
+    name = re.sub(r'-+', '-', name).strip('-')
+    return name + '.html'
 
 def inject_ads_to_file(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        if 'ca-pub-9279583389810634' in content: return
+        if 'ca-pub-9279583389810634' in content: return False
         if '</head>' in content:
             new_content = content.replace('</head>', f'{ADSENSE_SCRIPT}\n</head>')
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(new_content)
+            return True
     except: pass
+    return False
 
-def get_category_from_content(file_path, filename):
-    tool_id = filename.lower().replace('.html', '')
-    while tool_id.endswith('.html'): tool_id = tool_id[:-5]
-    
-    # 优先强力纠错
-    if tool_id in SPECIFIC_FIXES: return SPECIFIC_FIXES[tool_id]
-    
-    # 关键词匹配
-    for cat_folder, keywords in KEYWORD_CATEGORIES.items():
-        for kw in keywords:
-            if kw in tool_id: return cat_folder
-            
-    # Meta 标签兜底
-    try:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
-            match = re.search(r'<meta\s+name=["\']category["\']\s+content=["\'](.*?)["\']', content, re.IGNORECASE)
-            if match:
-                raw_cat = match.group(1).lower().strip()
-                if 'date' in raw_cat or 'time' in raw_cat: return 'date-time'
-                return raw_cat.replace(' ', '-').replace('&', '')
-    except: pass
-    
+def get_category_by_name(filename):
+    tid = filename.lower().replace('.html', '')
+    if tid in SPECIFIC_FIXES: return SPECIFIC_FIXES[tid]
+    for cat, kws in KEYWORD_CATEGORIES.items():
+        for kw in kws:
+            if kw in tid: return cat
     return 'others'
 
 def main():
-    print(">>> 🛠️ 开始修复文件名后缀、移除重复项并修正分类 (及图标补全)...")
-    
-    if not os.path.exists(MODULES_DIR):
-        print(f"❌ 错误：找不到 {MODULES_DIR} 文件夹。")
-        return
+    print("\n" + "="*50)
+    print("🚀 TOOLBOX 自动化整理 & 无损数据更新系统")
+    print("="*50)
 
-    existing_icon_map = {}
+    # A. 预加载旧 JSON 数据
+    old_data_map = {}
     if os.path.exists(TOOLS_JSON_FILE):
-        try:
-            with open(TOOLS_JSON_FILE, 'r', encoding='utf-8') as f:
-                old_data = json.load(f)
-                for item in old_data:
-                    if 'icon' in item:
-                        existing_icon_map[item['id']] = item['icon']
-        except: pass
+        with open(TOOLS_JSON_FILE, 'r', encoding='utf-8') as f:
+            try:
+                data = json.load(f)
+                for item in data: old_data_map[item['id']] = item
+                print(f"📦 成功读取旧 JSON，发现 {len(old_data_map)} 个现有工具条目")
+            except: 
+                print("⚠️ 警告：tools.json 格式错误或为空，将创建新数据")
 
-    # --- 1. 遍历并移动 ---
+    # B. 文件整理与广告注入
+    print("\n>>> 📂 正在整理物理文件并检查广告代码...")
     for root, dirs, files in os.walk(MODULES_DIR):
+        if root == MODULES_DIR: continue 
         for filename in files:
             if filename.endswith('.html'):
-                original_path = os.path.join(root, filename)
-                category = get_category_from_content(original_path, filename)
-                if 'date' in category or 'time' in category: category = 'date-time'
-
+                current_path = os.path.join(root, filename)
                 new_filename = to_kebab_case(filename)
-                target_dir = os.path.join(MODULES_DIR, category)
+                target_cat = get_category_by_name(new_filename)
+                target_dir = os.path.join(MODULES_DIR, target_cat)
+                
+                if not os.path.exists(target_dir): os.makedirs(target_dir)
                 target_path = os.path.join(target_dir, new_filename)
-                
-                if os.path.abspath(original_path) != os.path.abspath(target_path):
-                    if not os.path.exists(target_dir): os.makedirs(target_dir)
-                    try:
-                        shutil.move(original_path, target_path)
-                        print(f"✅ 修正: {filename} -> {category}/{new_filename}")
-                    except Exception as e:
-                        print(f"⚠️ 失败: {filename} -> {e}")
-                
-                if os.path.exists(target_path):
-                    inject_ads_to_file(target_path)
 
-    # --- 2. 清理空目录 ---
-    for root, dirs, files in os.walk(MODULES_DIR, topdown=False):
-        for name in dirs:
-            try: os.rmdir(os.path.join(root, name))
-            except: pass
+                # 物理操作日志
+                if os.path.abspath(current_path) != os.path.abspath(target_path):
+                    shutil.move(current_path, target_path)
+                    print(f"  [移动] {filename} -> {target_cat}/{new_filename}")
+                
+                # 广告注入日志
+                if inject_ads_to_file(target_path):
+                    print(f"  [广告] 已为 {new_filename} 补全 AdSense 代码")
 
-    # --- 3. 生成 JSON ---
-    print(">>> 正在生成 tools.json...")
-    tools_data = []
+    # C. 生成 JSON (无损合并)
+    print("\n>>> 📑 正在执行无损数据合并...")
+    new_tools_data = []
     
     for root, dirs, files in os.walk(MODULES_DIR):
         for file in files:
             if file.endswith('.html'):
-                tool_id = file[:-5]
-                current_folder = os.path.basename(root)
-                final_category = current_folder
+                tid = file[:-5]
+                cat = os.path.basename(root)
                 
-                if 'date' in final_category or 'time' in final_category:
-                    final_category = 'date-time'
+                # 获取旧数据
+                old_entry = old_data_map.get(tid)
+                
+                if old_entry:
+                    # 无损继承
+                    entry = old_entry.copy()
+                    # 只有图标太弱时才尝试更新
+                    if entry.get('icon', '') in WEAK_ICONS:
+                        for kw, icon in BACKUP_ICONS.items():
+                            if kw in tid.lower():
+                                entry['icon'] = icon
+                                print(f"  [图标] 工具 '{tid}' 已由默认更新为 {icon}")
+                                break
+                    # 更新路径和分类（以磁盘当前状态为准）
+                    entry['file'] = f"modules/{cat}/{file}"
+                    entry['category'] = cat
+                    field_count = len(entry.keys())
+                    print(f"  [继承] 工具 '{tid}' 数据已保留，包含 {field_count} 个字段")
+                else:
+                    # 创建新工具
+                    entry = {
+                        "id": tid,
+                        "title": tid.replace('-', ' ').title(),
+                        "category": cat,
+                        "file": f"modules/{cat}/{file}",
+                        "desc": f"Free online {tid} tool.",
+                        "icon": "🔧"
+                    }
+                    print(f"  [新增] 发现新文件 '{tid}'，已创建基础条目")
+                
+                new_tools_data.append(entry)
 
-                display_title = tool_id.replace('-', ' ').title()
-                web_path = f"modules/{current_folder}/{file}".replace('\\', '/')
-                
-                tools_data.append({
-                    "id": tool_id,
-                    "title": display_title,
-                    "category": final_category, 
-                    "path": web_path,
-                    "description": f"Free online {display_title} tool.",
-                    "icon": get_icon(tool_id, file, existing_icon_map)
-                })
-    
-    tools_data.sort(key=lambda x: (x['category'], x['id']))
-    
+    # D. 写入结果
+    new_tools_data.sort(key=lambda x: (x.get('category', 'others'), x['id']))
     with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
-        json.dump(tools_data, f, indent=2, ensure_ascii=False)
+        json.dump(new_tools_data, f, indent=2, ensure_ascii=False)
 
-    print(f"🎉 完成！图标库已大幅扩充，弱图标识别已增强。")
+    print("\n" + "="*50)
+    print(f"✅ 任务完成！")
+    print(f"📊 最终工具总数：{len(new_tools_data)}")
+    print(f"📄 结果已保存至：{TOOLS_JSON_FILE}")
+    print("="*50 + "\n")
 
 if __name__ == '__main__':
     main()
