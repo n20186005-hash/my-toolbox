@@ -1,5 +1,7 @@
-# 此文件由 merge_script.py 自动生成
-# 集成了 organize, canonical, adsense, sitemap 的所有功能
+# ==========================================
+# 修复版 manage_all.py
+# 核心改进：加入“防抖”机制，只有内容变了才写入，解决 Git 全红问题
+# ==========================================
 
 import datetime
 import json
@@ -7,22 +9,22 @@ import os
 import re
 import shutil
 
-
-# ==========================================
-# 来源: organize.py
-# ==========================================
-
-# 配置路径
+# ================= 配置区域 =================
 MODULES_DIR = 'modules'
 TOOLS_JSON_FILE = 'tools.json'
+SITE_DOMAIN = "https://toolboxpro.top"
+ADSENSE_ID = "ca-pub-9279583389810634"
 
-# --- 0. AdSense 广告代码 ---
-ADSENSE_SCRIPT = r'''
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+# 广告代码
+ADSENSE_SCRIPT = f'''
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_ID}"
      crossorigin="anonymous"></script>
 '''
 
-# --- 1. 核心关键词分类配置 ---
+# 忽略目录
+IGNORE_DIRS = {'.git', '.github', '__pycache__', 'scripts', 'node_modules', 'venv'}
+
+# --- 核心关键词分类配置 ---
 KEYWORD_CATEGORIES = {
     'electronics': ['resistor', 'ohm', 'voltage', 'circuit', 'capacitor', 'drop', 'zener', 'current', 'electricity', 'induct', 'power-factor', 'dbm', 'frequency'],
     'physics': ['physic', 'force', 'velocity', 'gravity', 'acceleration', 'density', 'power', 'pressure', 'torque', 'energy', 'work', 'kinematic'],
@@ -50,7 +52,6 @@ KEYWORD_CATEGORIES = {
     'weather-health': ['weather', 'air', 'quality', 'aqi', 'humidity', 'sun', 'moon']
 }
 
-# --- 2. 强力纠错名单 ---
 SPECIFIC_FIXES = {
     'voltage-drop-calculator': 'electronics', 'voltage-calculator': 'electronics', 'ohm-law-calculator': 'electronics',
     'resistor-calculator': 'electronics', 'capacitor-calculator': 'electronics',
@@ -78,113 +79,34 @@ SPECIFIC_FIXES = {
     'text-case-converter': 'text-tools', 'average-calculator': 'math'
 }
 
-# --- 3. 图标库 (Massively Expanded) ---
 BACKUP_ICONS = {
-    # Electronics
-    'resistor': '🔌', 'ohm': 'Ω', 'voltage': '⚡', 'circuit': '🔌', 'capacitor': '🔋', 
-    'drop': '💧', 'zener': '⚡', 'current': '〰️', 'electricity': '💡', 'induct': '🌀',
-    'dbm': '📶', 'frequency': '📻', 'pcb': '📟', 'solder': '🔥', 'battery': '🔋',
-    # Physics
-    'physic': '⚛️', 'force': '💪', 'velocity': '🏎️', 'gravity': '🍎', 'acceleration': '🚀', 
-    'density': '🧱', 'power': '⚡', 'pressure': '🌡️', 'torque': '🔧', 'energy': '🔋',
-    'kinematic': '🏃', 'thermodynamic': '🔥', 'optics': '🔦', 'quantum': '🌌',
-    # Chemistry
-    'chem': '🧪', 'periodic': '📑', 'molar': '⚖️', 'atom': '⚛️', 'molecule': '⚗️', 
-    'ph': '💧', 'reaction': '💥', 'solution': '🥃', 'gas': '⛽', 'acid': '🍋',
-    # Math
-    'calculator': '🧮', 'math': '➕', 'algebra': '✖️', 'geometry': '📐', 'stat': '📊', 
-    'average': '📉', 'prime': '🔢', 'factor': '➗', 'number': '1️⃣', 'percent': '％', 
-    'fraction': '½', 'shape': '🔷', 'area': '🟥', 'volume': '🧊', 'surface': '🎨',
-    'matrix': '▦', 'vector': '↗️', 'logarithm': '🪵', 'trigonometry': '📐', 'circle': '⭕',
-    'triangle': '🔺', 'square': '🟥', 'cube': '🎲', 'root': '🌱', 'derivative': '∂', 'integral': '∫',
-    # Finance
-    '401k': '💰', 'loan': '💸', 'mortgage': '🏠', 'salary': '💵', 'tax': '🧾', 
-    'invest': '📈', 'currency': '💱', 'interest': '℅', 'retirement': '🏖️', 'deposit': '🏦', 
-    'bank': '🏛️', 'budget': '📝', 'gdp': '🌏', 'inflation': '🎈', 'roi': '💹',
-    'cagr': '📈', 'profit': '💰', 'margin': '📊', 'vat': '🧾', 'gst': '🧾', 
-    'stock': '📉', 'crypto': '₿', 'bitcoin': '₿', 'exchange': '💱', 'check': '✅',
-    'payment': '💳', 'debt': '📉', 'compound': '📈', 'discount': '🏷️',
-    # Development
-    'code': '👨‍💻', 'json': '📋', 'xml': '📜', 'html': '🌐', 'css': '🎨', 
-    'base64': '📦', 'dev': '🛠️', 'minify': '🤏', 'formatter': '✨', 'hash': '#️⃣', 
-    'encrypt': '🔒', 'decrypt': '🔓', 'language': '🗣️', 'regex': '🔍', 'sql': '🗄️', 
-    'dns': '🌍', 'whois': '❓', 'cron': '⏰', 'uuid': '🆔', 'guid': '🆔', 
-    'ip': '📍', 'subnet': '🕸️', 'diff': '↔️', 'markdown': '⬇️', 'url': '🔗',
-    'javascript': '☕', 'python': '🐍', 'java': '☕', 'git': '🌲', 'docker': '🐳',
-    'linux': '🐧', 'terminal': '💻', 'api': '🔌', 'unicode': '🔣', 'ascii': '🔡',
-    # Date & Time
-    'date': '📅', 'time': '⏰', 'clock': '🕰️', 'calendar': '🗓️', 'stopwatch': '⏱️', 
-    'timer': '⏲️', 'zone': '🌍', 'runyue': '🌒', 'countdown': '⏳', 'timestamp': '⌚', 
-    'daylight': '☀️', 'duration': '⌛', 'meeting': '🤝', 'world': '🌏', 'age': '🎂',
-    'birthday': '🍰', 'year': '📅', 'month': '📆', 'week': '🗓️', 'day': '☀️',
-    # E-commerce
-    'amazon': '📦', 'ebay': '🛍️', 'shopify': '👜', 'sales': '📈', 'shipping': '🚚', 
-    'asoch': '🔍', 'fba': '📦', 'pricing': '🏷️', 'commission': '💰', 'inventory': '📦',
-    # Image
-    'image': '🖼️', 'photo': '📷', 'resize': '📏', 'crop': '✂️', 'png': '🎨', 
-    'jpg': '📸', 'svg': '✒️', 'compress': '🗜️', 'watermark': '©️', 'convert-to-image': '🖼️',
-    'favicon': '🔖', 'ico': '🔖', 'pixel': '👾', 'blur': '🌫️', 'filter': '🎨',
-    # Text
-    'text': '📄', 'word': '🔤', 'count': '🔢', 'lorem': '📝', 'string': '🧵', 
-    'case': 'Aa', 'editor': '✍️', 'font': '🅰️', 'pinyin': '🇨🇳', 'slug': '🐌',
-    'upper': '⬆️', 'lower': '⬇️', 'camel': '🐫', 'snake': '🐍', 'kebab': '🍢',
-    # Color
-    'color': '🎨', 'rgb': '🌈', 'hex': '#️⃣', 'palette': '🎨', 'picker': '🖌️', 
-    'contrast': '🌗', 'gradient': '🌈', 'cmyk': '🖨️', 'hcl': '🎨',
-    # Conversion
-    'convert': '🔄', 'unit': '📏', 'farenheit': '🌡️', 'celsius': '🌡️', 'weight': '⚖️', 
-    'length': '📏', 'speed': '🚀', 'area-convert': '🟥', 'pressure-convert': '🎈',
-    'volume-convert': '🧊', 'mass': '⚖️', 'metric': '📏', 'imperial': '🦶',
-    # Health
-    'bmi': '⚖️', 'calorie': '🍎', 'fat': '🥓', 'health': '🏥', 'heart': '❤️', 
-    'pregnancy': '🤰', 'bac': '🍺', 'bmr': '🔥', 'tdee': '🏃', 'macro': '🥗', 
-    'body': '🧍', 'ovulation': '🥚', 'period': '🩸', 'sleep': '😴', 'water-intake': '💧',
-    'bra-size': '👙', 'shoe-size': '👟', 'ideal-weight': '⚖️', 'protein': '🥩', 'carb': '🍞',
-    # Life
-    'life': '🌱', 'habit': '✅', 'goal': '🎯', 'wedding': '💍', 'event': '🎉', 
-    'shengxiao': '🐉', 'zodiac': '♈', 'chinese-zodiac': '🐉', 'decision': '⚖️',
-    # Auto
-    'car': '🚗', 'fuel': '⛽', 'mpg': '⛽', 'gas': '⛽', 'vehicle': '🚙', 
-    'plate': '🆔', 'vin': '🔍', 'tire': '🍩', 'horsepower': '🐎', 'engine': '⚙️',
-    # Education
-    'grade': '💯', 'gpa': '🎓', 'study': '📚', 'student': '🎒', 'school': '🏫', 
-    'exam': '📝', 'quiz': '❓', 'college': '🏛️', 'university': '🎓', 'course': '📘',
-    # Fun
-    'game': '🎮', 'joke': '🤡', 'meme': '😂', 'random': '🎲', 'dice': '🎲', 
-    'love': '❤️', 'solitaire': '🃏', 'flames': '🔥', 'compatibility': '💑', 'puzzle': '🧩',
-    'sudoku': '🔢', 'chess': '♟️',
-    # Security
-    'password': '🔑', 'generator': '⚙️', 'security': '🛡️', '2fa': '📱', 'totp': '🔐', 
-    'md5': '#️⃣', 'sha': '#️⃣', 'safe': '🔐', 'lock': '🔒', 'key': '🗝️',
-    # Construction
-    'concrete': '🏗️', 'brick': '🧱', 'tile': '🔲', 'paint': '🖌️', 'roof': '🏠', 
-    'flooring': '🪵', 'wallpaper': '🖼️', 'gravel': '🪨', 'sand': '⏳',
-    # Gardening
-    'garden': '🏡', 'plant': '🌿', 'seed': '🌰', 'soil': '🟤', 'water': '🚿', 
-    'fertilizer': '💩', 'mulch': '🍂', 'flower': '🌸', 'tree': '🌳',
-    # Pets
-    'pet': '🐾', 'dog': '🐶', 'cat': '🐱', 'food': '🍖', 'animal': '🦁', 
-    'fish': '🐟', 'aquarium': '🐠', 'bird': '🐦', 'hamster': '🐹',
-    # Sports
-    'sport': '⚽', 'running': '🏃', 'pace': '⏱️', 'score': '🏆', 'team': '👕', 
-    'golf': '⛳', 'cricket': '🏏', 'football': '🏈', 'basketball': '🏀', 'tennis': '🎾',
-    # Statistics
-    'probability': '🎲', 'mean': 'µ', 'median': '📊', 'mode': '📊', 'deviation': 'σ', 
-    'sample': '📉', 'permutation': '🔄', 'combination': '🎲', 'z-score': '📊',
-    # Weather
-    'weather': '☁️', 'air': '💨', 'quality': '😷', 'aqi': '🌫️', 'humidity': '💧', 
-    'sun': '☀️', 'moon': '🌙', 'rain': '🌧️', 'snow': '❄️', 'wind': '🌬️',
-    # Generic & Common
-    'search': '🔍', 'find': '🔎', 'list': '📝', 'map': '🗺️', 'guide': '📖',
-    'tutorial': '📚', 'info': 'ℹ️', 'about': 'ℹ️', 'contact': '📧', 'home': '🏠',
-    'user': '👤', 'setting': '⚙️', 'config': '🛠️', 'tool': '🔧', 'app': '📱'
+    'resistor': '🔌', 'ohm': 'Ω', 'voltage': '⚡', 'circuit': '🔌', 'capacitor': '🔋', 'drop': '💧', 'zener': '⚡', 'current': '〰️', 'electricity': '💡', 'induct': '🌀', 'dbm': '📶', 'frequency': '📻', 'pcb': '📟', 'solder': '🔥', 'battery': '🔋', 'physic': '⚛️', 'force': '💪', 'velocity': '🏎️', 'gravity': '🍎', 'acceleration': '🚀', 'density': '🧱', 'power': '⚡', 'pressure': '🌡️', 'torque': '🔧', 'energy': '🔋', 'kinematic': '🏃', 'thermodynamic': '🔥', 'optics': '🔦', 'quantum': '🌌', 'chem': '🧪', 'periodic': '📑', 'molar': '⚖️', 'atom': '⚛️', 'molecule': '⚗️', 'ph': '💧', 'reaction': '💥', 'solution': '🥃', 'gas': '⛽', 'acid': '🍋', 'calculator': '🧮', 'math': '➕', 'algebra': '✖️', 'geometry': '📐', 'stat': '📊', 'average': '📉', 'prime': '🔢', 'factor': '➗', 'number': '1️⃣', 'percent': '％', 'fraction': '½', 'shape': '🔷', 'area': '🟥', 'volume': '🧊', 'surface': '🎨', 'matrix': '▦', 'vector': '↗️', 'logarithm': '🪵', 'trigonometry': '📐', 'circle': '⭕', 'triangle': '🔺', 'square': '🟥', 'cube': '🎲', 'root': '🌱', 'derivative': '∂', 'integral': '∫', '401k': '💰', 'loan': '💸', 'mortgage': '🏠', 'salary': '💵', 'tax': '🧾', 'invest': '📈', 'currency': '💱', 'interest': '℅', 'retirement': '🏖️', 'deposit': '🏦', 'bank': '🏛️', 'budget': '📝', 'gdp': '🌏', 'inflation': '🎈', 'roi': '💹', 'cagr': '📈', 'profit': '💰', 'margin': '📊', 'vat': '🧾', 'gst': '🧾', 'stock': '📉', 'crypto': '₿', 'bitcoin': '₿', 'exchange': '💱', 'check': '✅', 'payment': '💳', 'debt': '📉', 'compound': '📈', 'discount': '🏷️', 'code': '👨‍💻', 'json': '📋', 'xml': '📜', 'html': '🌐', 'css': '🎨', 'base64': '📦', 'dev': '🛠️', 'minify': '🤏', 'formatter': '✨', 'hash': '#️⃣', 'encrypt': '🔒', 'decrypt': '🔓', 'language': '🗣️', 'regex': '🔍', 'sql': '🗄️', 'dns': '🌍', 'whois': '❓', 'cron': '⏰', 'uuid': '🆔', 'guid': '🆔', 'ip': '📍', 'subnet': '🕸️', 'diff': '↔️', 'markdown': '⬇️', 'url': '🔗', 'javascript': '☕', 'python': '🐍', 'java': '☕', 'git': '🌲', 'docker': '🐳', 'linux': '🐧', 'terminal': '💻', 'api': '🔌', 'unicode': '🔣', 'ascii': '🔡', 'date': '📅', 'time': '⏰', 'clock': '🕰️', 'calendar': '🗓️', 'stopwatch': '⏱️', 'timer': '⏲️', 'zone': '🌍', 'runyue': '🌒', 'countdown': '⏳', 'timestamp': '⌚', 'daylight': '☀️', 'duration': '⌛', 'meeting': '🤝', 'world': '🌏', 'age': '🎂', 'birthday': '🍰', 'year': '📅', 'month': '📆', 'week': '🗓️', 'day': '☀️', 'amazon': '📦', 'ebay': '🛍️', 'shopify': '👜', 'sales': '📈', 'shipping': '🚚', 'asoch': '🔍', 'fba': '📦', 'pricing': '🏷️', 'commission': '💰', 'inventory': '📦', 'image': '🖼️', 'photo': '📷', 'resize': '📏', 'crop': '✂️', 'png': '🎨', 'jpg': '📸', 'svg': '✒️', 'compress': '🗜️', 'watermark': '©️', 'convert-to-image': '🖼️', 'favicon': '🔖', 'ico': '🔖', 'pixel': '👾', 'blur': '🌫️', 'filter': '🎨', 'text': '📄', 'word': '🔤', 'count': '🔢', 'lorem': '📝', 'string': '🧵', 'case': 'Aa', 'editor': '✍️', 'font': '🅰️', 'pinyin': '🇨🇳', 'slug': '🐌', 'upper': '⬆️', 'lower': '⬇️', 'camel': '🐫', 'snake': '🐍', 'kebab': '🍢', 'color': '🎨', 'rgb': '🌈', 'hex': '#️⃣', 'palette': '🎨', 'picker': '🖌️', 'contrast': '🌗', 'gradient': '🌈', 'cmyk': '🖨️', 'hcl': '🎨', 'convert': '🔄', 'unit': '📏', 'farenheit': '🌡️', 'celsius': '🌡️', 'weight': '⚖️', 'length': '📏', 'speed': '🚀', 'area-convert': '🟥', 'pressure-convert': '🎈', 'volume-convert': '🧊', 'mass': '⚖️', 'metric': '📏', 'imperial': '🦶', 'bmi': '⚖️', 'calorie': '🍎', 'fat': '🥓', 'health': '🏥', 'heart': '❤️', 'pregnancy': '🤰', 'bac': '🍺', 'bmr': '🔥', 'tdee': '🏃', 'macro': '🥗', 'body': '🧍', 'ovulation': '🥚', 'period': '🩸', 'sleep': '😴', 'water-intake': '💧', 'bra-size': '👙', 'shoe-size': '👟', 'ideal-weight': '⚖️', 'protein': '🥩', 'carb': '🍞', 'life': '🌱', 'habit': '✅', 'goal': '🎯', 'wedding': '💍', 'event': '🎉', 'shengxiao': '🐉', 'zodiac': '♈', 'chinese-zodiac': '🐉', 'decision': '⚖️', 'car': '🚗', 'fuel': '⛽', 'mpg': '⛽', 'gas': '⛽', 'vehicle': '🚙', 'plate': '🆔', 'vin': '🔍', 'tire': '🍩', 'horsepower': '🐎', 'engine': '⚙️', 'grade': '💯', 'gpa': '🎓', 'study': '📚', 'student': '🎒', 'school': '🏫', 'exam': '📝', 'quiz': '❓', 'college': '🏛️', 'university': '🎓', 'course': '📘', 'game': '🎮', 'joke': '🤡', 'meme': '😂', 'random': '🎲', 'dice': '🎲', 'love': '❤️', 'solitaire': '🃏', 'flames': '🔥', 'compatibility': '💑', 'puzzle': '🧩', 'sudoku': '🔢', 'chess': '♟️', 'password': '🔑', 'generator': '⚙️', 'security': '🛡️', '2fa': '📱', 'totp': '🔐', 'md5': '#️⃣', 'sha': '#️⃣', 'safe': '🔐', 'lock': '🔒', 'key': '🗝️', 'concrete': '🏗️', 'brick': '🧱', 'tile': '🔲', 'paint': '🖌️', 'roof': '🏠', 'flooring': '🪵', 'wallpaper': '🖼️', 'gravel': '🪨', 'sand': '⏳', 'garden': '🏡', 'plant': '🌿', 'seed': '🌰', 'soil': '🟤', 'water': '🚿', 'fertilizer': '💩', 'mulch': '🍂', 'flower': '🌸', 'tree': '🌳', 'pet': '🐾', 'dog': '🐶', 'cat': '🐱', 'food': '🍖', 'animal': '🦁', 'fish': '🐟', 'aquarium': '🐠', 'bird': '🐦', 'hamster': '🐹', 'sport': '⚽', 'running': '🏃', 'pace': '⏱️', 'score': '🏆', 'team': '👕', 'golf': '⛳', 'cricket': '🏏', 'football': '🏈', 'basketball': '🏀', 'tennis': '🎾', 'probability': '🎲', 'mean': 'µ', 'median': '📊', 'mode': '📊', 'deviation': 'σ', 'sample': '📉', 'permutation': '🔄', 'combination': '🎲', 'z-score': '📊', 'weather': '☁️', 'air': '💨', 'quality': '😷', 'aqi': '🌫️', 'humidity': '💧', 'sun': '☀️', 'moon': '🌙', 'rain': '🌧️', 'snow': '❄️', 'wind': '🌬️', 'search': '🔍', 'find': '🔎', 'list': '📝', 'map': '🗺️', 'guide': '📖', 'tutorial': '📚', 'info': 'ℹ️', 'about': 'ℹ️', 'contact': '📧', 'home': '🏠', 'user': '👤', 'setting': '⚙️', 'config': '🛠️', 'tool': '🔧', 'app': '📱'
 }
 
-# --- 4. 定义需要被覆盖的“弱/通用”图标 ---
-# 如果旧图标是这些，我们将尝试用更精准的图标替换它
 WEAK_ICONS = ['🔧', '🌐', '🧮', '1️⃣', '❓', '📄', '📝', '✅']
 
-# --- 5. 工具函数 ---
+# ================= 辅助函数 (智能写文件) =================
+
+def write_if_changed(file_path, new_content):
+    """
+    智能写入：如果文件内容没有变化，就不写入。
+    防止 Git 检测到大量未修改文件的'修改'（通常是由于换行符或时间戳）。
+    """
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                old_content = f.read()
+            if old_content == new_content:
+                # 内容完全一致，直接跳过
+                return False
+        except:
+            pass # 读取失败则视为需要写入
+
+    # 使用 newline='' 保持 Python 内部换行符，避免 Windows 下自动转 CRLF
+    with open(file_path, 'w', encoding='utf-8', newline='') as f:
+        f.write(new_content)
+    return True
+
 def to_kebab_case(filename):
     name = filename.lower()
     while name.endswith('.html'): name = name[:-5]
@@ -196,48 +118,24 @@ def to_kebab_case(filename):
 
 def get_icon(tool_id, filename, existing_icon_map):
     existing_icon = existing_icon_map.get(tool_id, '🔧')
-    
-    # 策略：如果现有图标是“强”图标（不在弱图标列表中），则直接保留，防止覆盖用户自定义
     if existing_icon not in WEAK_ICONS:
         return existing_icon
-    
-    # 否则（现有图标是扳手、地球、计算器等），尝试从文件名匹配更精准的图标
     fname_lower = filename.lower()
-    
-    # 优先匹配长关键词 (避免 'car' 匹配 'card' 这种情况)
-    # 遍历备份库寻找匹配
     for key, icon in BACKUP_ICONS.items():
         if key in fname_lower:
             return icon
-            
-    # 如果没找到更好的，且原图标不是扳手，就还是用原图标（比如保留 '🌐'）
-    # 如果原图标是扳手，就返回扳手
     return existing_icon
-
-def inject_ads_to_file(file_path):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        if 'ca-pub-9279583389810634' in content: return
-        if '</head>' in content:
-            new_content = content.replace('</head>', f'{ADSENSE_SCRIPT}\n</head>')
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(new_content)
-    except: pass
 
 def get_category_from_content(file_path, filename):
     tool_id = filename.lower().replace('.html', '')
     while tool_id.endswith('.html'): tool_id = tool_id[:-5]
     
-    # 优先强力纠错
     if tool_id in SPECIFIC_FIXES: return SPECIFIC_FIXES[tool_id]
     
-    # 关键词匹配
     for cat_folder, keywords in KEYWORD_CATEGORIES.items():
         for kw in keywords:
             if kw in tool_id: return cat_folder
             
-    # Meta 标签兜底
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
@@ -250,9 +148,10 @@ def get_category_from_content(file_path, filename):
     
     return 'others'
 
+# ================= 任务 1: Organize (整理分类) =================
+
 def run_task_organize():
-    print(">>> 🛠️ 开始修复文件名后缀、移除重复项并修正分类 (及图标补全)...")
-    
+    print(">>> 🛠️ 正在整理文件结构...")
     if not os.path.exists(MODULES_DIR):
         print(f"❌ 错误：找不到 {MODULES_DIR} 文件夹。")
         return
@@ -263,46 +162,41 @@ def run_task_organize():
             with open(TOOLS_JSON_FILE, 'r', encoding='utf-8') as f:
                 old_data = json.load(f)
                 for item in old_data:
-                    # 只有当现有图标存在时才保存
                     if 'icon' in item:
                         existing_icon_map[item['id']] = item['icon']
         except: pass
 
-    # --- 1. 遍历并移动 ---
+    # 1. 移动文件
+    moved_count = 0
     for root, dirs, files in os.walk(MODULES_DIR):
         for filename in files:
             if filename.endswith('.html'):
                 original_path = os.path.join(root, filename)
-                
-                # 计算分类
                 category = get_category_from_content(original_path, filename)
-                
-                # 特殊处理：如果分类名字里就含 date/time，强制归位
                 if 'date' in category or 'time' in category: category = 'date-time'
 
                 new_filename = to_kebab_case(filename)
                 target_dir = os.path.join(MODULES_DIR, category)
                 target_path = os.path.join(target_dir, new_filename)
                 
+                # 只有路径真正改变时才移动
                 if os.path.abspath(original_path) != os.path.abspath(target_path):
                     if not os.path.exists(target_dir): os.makedirs(target_dir)
                     try:
                         shutil.move(original_path, target_path)
-                        print(f"✅ 修正: {filename} -> {category}/{new_filename}")
+                        print(f"✅ 移动: {filename} -> {category}/{new_filename}")
+                        moved_count += 1
                     except Exception as e:
-                        print(f"⚠️ 失败: {filename} -> {e}")
-                
-                if os.path.exists(target_path):
-                    inject_ads_to_file(target_path)
+                        print(f"⚠️ 移动失败: {filename} -> {e}")
 
-    # --- 2. 清理空目录 ---
+    # 2. 清理空目录
     for root, dirs, files in os.walk(MODULES_DIR, topdown=False):
         for name in dirs:
             try: os.rmdir(os.path.join(root, name))
             except: pass
 
-    # --- 3. 生成 JSON ---
-    print(">>> 正在生成 tools.json...")
+    # 3. 生成 tools.json (带内容对比检测)
+    print(">>> 正在检查 tools.json...")
     tools_data = []
     
     for root, dirs, files in os.walk(MODULES_DIR):
@@ -311,7 +205,6 @@ def run_task_organize():
                 tool_id = file[:-5]
                 current_folder = os.path.basename(root)
                 final_category = current_folder
-                
                 if 'date' in final_category or 'time' in final_category:
                     final_category = 'date-time'
 
@@ -329,200 +222,118 @@ def run_task_organize():
     
     tools_data.sort(key=lambda x: (x['category'], x['id']))
     
-    with open(TOOLS_JSON_FILE, 'w', encoding='utf-8') as f:
-        json.dump(tools_data, f, indent=2, ensure_ascii=False)
+    new_json_content = json.dumps(tools_data, indent=2, ensure_ascii=False)
+    if write_if_changed(TOOLS_JSON_FILE, new_json_content):
+        print("✅ tools.json 已更新")
+    else:
+        print("⏩ tools.json 无需更新")
 
-    print(f"🎉 完成！图标库已扩充，工具分类与路径已修复。")
+# ================= 任务 2: Canonical (SEO 标签) =================
 
-
-# ==========================================
-# 来源: auto_add_canonical.py
-# ==========================================
-
-# 您的网站域名（请确保最后没有斜杠）
-SITE_DOMAIN = "https://toolboxpro.top"
-
-def process_html_files():
-    # 获取当前脚本所在的目录作为根目录
+def run_task_canonical():
+    print(">>> 🔍 正在检查 Canonical 标签...")
     root_dir = os.getcwd()
-    modified_count = 0
-    
-    print(f"正在扫描目录: {root_dir} ...")
+    count = 0
 
-    # 遍历所有文件夹和文件
     for dirpath, dirnames, filenames in os.walk(root_dir):
+        # 排除忽略目录
+        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS]
+
         for filename in filenames:
-            # 只处理 .html 文件
             if filename.endswith('.html'):
                 file_path = os.path.join(dirpath, filename)
+                rel_path = os.path.relpath(file_path, root_dir).replace('\\', '/')
                 
-                # 计算相对路径，例如: /modules/math/calc.html
-                rel_path = os.path.relpath(file_path, root_dir)
-                # 将 Windows 的反斜杠 \ 替换为 /
-                rel_path = rel_path.replace('\\', '/')
-                
-                # 跳过脚本自己可能产生的临时文件或 .git 文件夹
-                if '.git' in rel_path or 'node_modules' in rel_path:
-                    continue
-
-                # 生成标准 URL
                 if filename == 'index.html' and rel_path == 'index.html':
-                    # 首页通常是 https://toolboxpro.top/
                     canonical_url = f"{SITE_DOMAIN}/"
                 else:
-                    # 其他页面是 https://toolboxpro.top/路径/文件名.html
-                    # 确保路径以 / 开头
-                    if not rel_path.startswith('/'):
-                        rel_path = '/' + rel_path
+                    if not rel_path.startswith('/'): rel_path = '/' + rel_path
                     canonical_url = f"{SITE_DOMAIN}{rel_path}"
 
-                # 读取文件内容
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    content = f.read()
+                try:
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+                    
+                    # 如果已存在且链接正确，不碰文件
+                    if f'link rel="canonical" href="{canonical_url}"' in content:
+                        continue
+                    
+                    # 如果存在但链接不对（旧的），或者完全不存在，则替换/插入
+                    if 'rel="canonical"' in content:
+                        # 简单正则替换旧标签
+                        new_content = re.sub(r'<link rel="canonical".*?>', f'<link rel="canonical" href="{canonical_url}" />', content)
+                    else:
+                        tag = f'\n    \n    <link rel="canonical" href="{canonical_url}" />'
+                        if '</title>' in content:
+                            new_content = content.replace('</title>', '</title>' + tag, 1)
+                        elif '<head>' in content:
+                            new_content = content.replace('<head>', '<head>' + tag, 1)
+                        else:
+                            continue
 
-                # 检查是否已经存在 canonical 标签，避免重复添加
-                if 'rel="canonical"' in content:
-                    print(f"跳过 (已存在): {rel_path}")
-                    continue
+                    if write_if_changed(file_path, new_content):
+                        print(f"✅ 修复 SEO: {rel_path}")
+                        count += 1
+                except Exception as e:
+                    print(f"⚠️ 读取出错 {file_path}: {e}")
+                    
+    print(f"Canonical 检查完成，更新了 {count} 个文件。")
 
-                # 构造要插入的标签
-                tag = f'\n    <!-- SEO Canonical Tag -->\n    <link rel="canonical" href="{canonical_url}" />'
-
-                # 寻找插入位置：在 <head> 之后，或者 <title> 之后
-                # 优先插在 <title>... </title> 后面，比较整齐
-                if '</title>' in content:
-                    new_content = content.replace('</title>', '</title>' + tag, 1)
-                elif '<head>' in content:
-                    new_content = content.replace('<head>', '<head>' + tag, 1)
-                else:
-                    print(f"跳过 (找不到 head 标签): {rel_path}")
-                    continue
-
-                # 写入修改后的内容
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write(new_content)
-                
-                print(f"已修改: {rel_path} -> {canonical_url}")
-                modified_count += 1
-
-    print(f"\n完成！共修改了 {modified_count} 个文件。")
-    print("请检查几个文件确认无误后，提交(git push)到 GitHub。")
-
-
-# ==========================================
-# 来源: add_adsense.py
-# ==========================================
-
-# --- 你的 AdSense 代码 (已根据截图为你提取) ---
-ADSENSE_SCRIPT = r'''
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
-     crossorigin="anonymous"></script>
-'''
-
-# 需要跳过不处理的文件夹 (比如 .git, scripts 等)
-IGNORE_DIRS = {'.git', '.github', '__pycache__', 'scripts', 'node_modules'}
-
-def add_ads_to_html(file_path):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # 1. 检查是否已经存在广告代码 (防止重复添加)
-        # 我们用 client ID 来作为判断依据，比较准确
-        if 'ca-pub-9279583389810634' in content:
-            print(f"⏩ 跳过 (已存在): {file_path}")
-            return
-
-        # 2. 寻找插入位置
-        # Google 要求代码放在 <head> 和 </head> 之间
-        # 最稳妥的方法是替换 </head> 标签，把它插在 </head> 的前面
-        if '</head>' in content:
-            new_content = content.replace('</head>', f'{ADSENSE_SCRIPT}\n</head>')
-            
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(new_content)
-            print(f"✅ 已添加广告: {file_path}")
-        else:
-            print(f"⚠️ 找不到 </head> 标签: {file_path}")
-
-    except Exception as e:
-        print(f"❌ 读取错误 {file_path}: {e}")
+# ================= 任务 3: AdSense (广告代码) =================
 
 def run_task_adsense():
-    print("开始全站扫描并添加 AdSense 代码...")
+    print(">>> 💰 正在检查 AdSense 代码...")
     count = 0
     
-    # os.walk('.') 表示从当前根目录开始递归遍历所有文件夹
     for root, dirs, files in os.walk('.'):
-        # 移除不需要扫描的目录，提高效率并防止改错
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
         
         for file in files:
             if file.endswith('.html'):
                 file_path = os.path.join(root, file)
-                add_ads_to_html(file_path)
-                count += 1
+                try:
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+
+                    # 严格检查 Client ID，如果有了就绝对不碰
+                    if ADSENSE_ID in content:
+                        continue
+
+                    if '</head>' in content:
+                        new_content = content.replace('</head>', f'{ADSENSE_SCRIPT}\n</head>')
+                        if write_if_changed(file_path, new_content):
+                            print(f"✅ 添加广告: {file}")
+                            count += 1
+                except: pass
                 
-    print("-" * 30)
-    print(f"🎉 处理完成！共扫描了 {count} 个 HTML 文件。")
-    print("请记得使用 Git 提交并推送到服务器生效。")
+    print(f"AdSense 检查完成，更新了 {count} 个文件。")
 
+# ================= 任务 4: Sitemap (网站地图) =================
 
-# ==========================================
-# 来源: gen_sitemap.py
-# ==========================================
-
-# --- 配置区域 ---
-# 你的网站域名 (注意：不要带最后的斜杠 /)
-DOMAIN = "https://toolboxpro.top"
-TOOLS_FILE = "tools.json"
-OUTPUT_FILE = "sitemap.xml"
-
-# XML 标准头尾
-XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-XML_FOOTER = '</urlset>'
-
-def run_task_sitemap(): # 原 generate_sitemap
-    print("🗺️ 正在根据 tools.json 生成网站地图...")
-    
-    # 1. 检查 tools.json 是否存在
-    if not os.path.exists(TOOLS_FILE):
-        print(f"❌ 错误：找不到 {TOOLS_FILE}。请先运行 organize.py！")
+def run_task_sitemap():
+    print(">>> 🗺️ 正在生成 Sitemap...")
+    if not os.path.exists(TOOLS_JSON_FILE):
         return
 
-    # 获取今天的日期
     today = datetime.date.today().isoformat()
+    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     
-    xml_content = XML_HEADER
-
-    # --- 2. 添加首页 (权重最高 1.0) ---
+    # 首页
     xml_content += f"""  <url>
-    <loc>{DOMAIN}/</loc>
+    <loc>{SITE_DOMAIN}/</loc>
     <lastmod>{today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>\n"""
 
-    # --- 3. 读取 tools.json 添加工具页 (权重 0.8) ---
     try:
-        with open(TOOLS_FILE, 'r', encoding='utf-8') as f:
+        with open(TOOLS_JSON_FILE, 'r', encoding='utf-8') as f:
             tools = json.load(f)
-            
-        print(f"📦 发现 {len(tools)} 个工具，正在写入...")
 
         for tool in tools:
-            # 获取路径 (例如 modules/date-time/timestamp.html)
             path = tool['path']
-            
-            # 确保路径开头没有斜杠，避免 https://toolboxpro.top//modules... 这种情况
-            if path.startswith('/'):
-                path = path[1:]
-            
-            # 拼接完整 URL
-            full_url = f"{DOMAIN}/{path}"
-            
-            # 转义 URL 中的特殊字符 (比如 & 变为 &amp;)
-            full_url = full_url.replace("&", "&amp;")
+            if path.startswith('/'): path = path[1:]
+            full_url = f"{SITE_DOMAIN}/{path}".replace("&", "&amp;")
 
             xml_content += f"""  <url>
     <loc>{full_url}</loc>
@@ -530,49 +341,37 @@ def run_task_sitemap(): # 原 generate_sitemap
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>\n"""
+    except: pass
 
-    except Exception as e:
-        print(f"❌ 读取错误: {e}")
-        return
-
-    # --- 4. 结束并保存 ---
-    xml_content += XML_FOOTER
+    xml_content += '</urlset>'
     
-    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-        f.write(xml_content)
-        
-    print("-" * 30)
-    print(f"✅ 成功生成: {OUTPUT_FILE}")
-    print(f"✅ 共包含链接数: {len(tools) + 1}")
-    print("🚀 现在，你可以 git push 提交代码了！")
+    # 注意：Sitemap 因为包含 current_date，如果你每天运行，它依然会显示“修改”
+    # 这是正常的，因为你确实希望告诉 Google "我今天确认过这个文件了"
+    # 但我们依然使用 write_if_changed 来防止同一天内多次运行产生变化
+    if write_if_changed('sitemap.xml', xml_content):
+        print(f"✅ sitemap.xml 已更新 ({len(tools) + 1} 个链接)")
+    else:
+        print("⏩ sitemap.xml 无需更新 (今日已生成)")
 
+# ================= 主程序入口 =================
 
-
-# ==========================================
-# 总执行入口
-# ==========================================
 if __name__ == '__main__':
-    print('🤖 [ALL-IN-ONE] 开始执行全站维护任务...')
+    print('🤖 [ALL-IN-ONE] 维护脚本启动...')
 
-    print('\n➡️ [1/4] 正在整理文件结构 (Organize)...')
     try:
         run_task_organize()
     except Exception as e: print(f'⚠️ Organize 错误: {e}')
 
-    print('\n➡️ [2/4] 正在检查 SEO 索引 (Canonical)...')
     try:
-        # auto_add_canonical 需要参数或者默认值，这里根据别名调用
-        run_task_canonical()
+        run_task_canonical() # 变量名已修复
     except Exception as e: print(f'⚠️ SEO 错误: {e}')
 
-    print('\n➡️ [3/4] 正在添加 AdSense 广告代码...')
     try:
         run_task_adsense()
     except Exception as e: print(f'⚠️ AdSense 错误: {e}')
 
-    print('\n➡️ [4/4] 正在生成网站地图 (Sitemap)...')
     try:
         run_task_sitemap()
     except Exception as e: print(f'⚠️ Sitemap 错误: {e}')
 
-    print('\n🎉 所有任务执行完毕！')
+    print('\n🎉 所有任务执行完毕！现在 Git 应该很干净了。')
