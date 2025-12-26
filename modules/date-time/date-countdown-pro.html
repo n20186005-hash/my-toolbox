@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="category" content="date-time">
+    <meta name="icon" content="⏳">
+    <meta name="description" content="Date Countdown Pro - Precision tracking for your big moments">
+    
+    <title>Date Countdown Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { 
+                        bg: { light: '#f8fafc', dark: '#0f172a' },
+                        primary: '#3b82f6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans SC', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass { @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/30; }
+            .glass-strong { @apply bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 shadow-xl; }
+            .text-gradient { @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500; }
+            .event-card { @apply flex items-center p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 transition-all hover:shadow-lg group relative overflow-hidden; }
+            .time-unit { @apply flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800/50 rounded-lg p-2 min-w-[60px]; }
+        }
+
+        /* 修复全屏主题切换：使用更高优先级的 ID 选择器确保颜色变化明显 */
+        #fullscreen-view.fullscreen-theme-1 { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; color: #ffffff !important; }
+        #fullscreen-view.fullscreen-theme-2 { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%) !important; color: #ffffff !important; }
+        #fullscreen-view.fullscreen-theme-3 { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%) !important; color: #ffffff !important; }
+        #fullscreen-view.fullscreen-theme-4 { background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%) !important; color: #ffffff !important; }
+        #fullscreen-view.fullscreen-theme-5 { background: #ffffff !important; color: #0f172a !important; }
+        #fullscreen-view.fullscreen-theme-6 { background: #f1f5f9 !important; color: #1e293b !important; }
+
+        /* 浅色模式下的细节适配 */
+        #fullscreen-view.fullscreen-theme-5 .time-unit, 
+        #fullscreen-view.fullscreen-theme-6 .time-unit { background-color: rgba(0,0,0,0.05) !important; }
+        
+        body { opacity: 0; transition: opacity 0.5s ease; }
+        body.loaded { opacity: 1; }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Normal View -->
+    <div id="main-view">
+        <header class="glass sticky top-0 z-50 shadow-sm border-b border-white/10">
+            <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-lg">
+                        <i class="fa fa-hourglass-half"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-black tracking-tight text-slate-900 dark:text-white">Countdown <span class="text-xs font-normal px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600">Pro</span></h1>
+                        <div class="flex items-center gap-2 text-[10px] font-mono text-slate-500">
+                            <span id="header-clock">00:00:00</span>
+                            <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                            <span id="current-date">...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <select id="lang-selector" class="bg-slate-100 dark:bg-slate-700 text-xs font-bold px-2 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer text-slate-600 dark:text-slate-300 outline-none h-9">
+                        <option value="zh-CN">🇨🇳 简体中文</option>
+                        <option value="zh-TW">🇭🇰 繁體中文</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="ru">🇷🇺 Русский</option>
+                        <option value="hi">🇮🇳 हिन्दी</option>
+                        <option value="pl">🇵🇱 Polski</option>
+                    </select>
+                    <button id="mode-toggle" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-amber-500 transition-colors">
+                        <i class="fa fa-moon-o dark:hidden"></i>
+                        <i class="fa fa-sun-o hidden dark:inline"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="container mx-auto px-4 py-6 max-w-5xl pb-32">
+            <!-- Hero Main Countdown -->
+            <div id="hero-countdown" onclick="App.openFullscreen()" class="glass-strong rounded-3xl p-8 mb-12 text-center relative overflow-hidden cursor-pointer hover:ring-4 ring-blue-500/20 transition-all group">
+                <div class="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
+                    <i class="fa fa-expand"></i>
+                </div>
+                <div id="hero-empty" class="py-12">
+                    <h2 class="text-2xl font-bold mb-4" data-i18n="no_event">暂无倒计时任务</h2>
+                    <button onclick="event.stopPropagation(); document.getElementById('input-name').focus()" class="bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-bold" data-i18n="create_now">立即创建</button>
+                </div>
+                <div id="hero-display" class="hidden">
+                    <div class="flex justify-center gap-2 mb-4">
+                        <div class="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 text-xs font-bold" id="hero-tag">TAG</div>
+                        <!-- 分享按钮 -->
+                        <button onclick="event.stopPropagation(); App.shareCurrentHero()" class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-blue-500 flex items-center justify-center transition-colors">
+                            <i class="fa fa-share-alt"></i>
+                        </button>
+                    </div>
+                    <h2 class="text-3xl md:text-5xl font-black mb-8 text-slate-900 dark:text-white" id="hero-title">--</h2>
+                    <div class="flex justify-center gap-4 md:gap-8">
+                        <div class="time-unit">
+                            <span class="text-3xl md:text-5xl font-mono font-bold text-gradient" id="hero-d">00</span>
+                            <span class="text-[10px] uppercase tracking-widest text-slate-400" data-i18n="days">DAYS</span>
+                        </div>
+                        <div class="time-unit">
+                            <span class="text-3xl md:text-5xl font-mono font-bold text-gradient" id="hero-h">00</span>
+                            <span class="text-[10px] uppercase tracking-widest text-slate-400" data-i18n="hours">HOURS</span>
+                        </div>
+                        <div class="time-unit">
+                            <span class="text-3xl md:text-5xl font-mono font-bold text-gradient" id="hero-m">00</span>
+                            <span class="text-[10px] uppercase tracking-widest text-slate-400" data-i18n="mins">MINS</span>
+                        </div>
+                        <div class="time-unit">
+                            <span class="text-3xl md:text-5xl font-mono font-bold text-gradient" id="hero-s">00</span>
+                            <span class="text-[10px] uppercase tracking-widest text-slate-400" data-i18n="secs">SECS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Management Section -->
+            <div class="grid lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1">
+                    <div class="glass p-6 rounded-2xl sticky top-24">
+                        <h3 class="font-bold mb-4 flex items-center gap-2">
+                            <i class="fa fa-plus-circle text-blue-500"></i>
+                            <span data-i18n="add_new">添加新日期</span>
+                        </h3>
+                        <div class="space-y-4">
+                            <div><label class="block text-[10px] font-bold text-slate-400 mb-1" data-i18n="lbl_name">事件名称</label><input type="text" id="input-name" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm outline-none"></div>
+                            <div><label class="block text-[10px] font-bold text-slate-400 mb-1" data-i18n="lbl_date">目标日期</label><input type="datetime-local" id="input-date" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm outline-none"></div>
+                            <div><label class="block text-[10px] font-bold text-slate-400 mb-1" data-i18n="lbl_cat">分类</label><select id="input-cat" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm outline-none"></select></div>
+                            <button onclick="App.addEvent()" class="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold text-sm shadow-lg" data-i18n="btn_add">创建倒计时</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold" data-i18n="list_title">所有计划</h3>
+                        <button onclick="App.toggleBatchMode()" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500">
+                            <i class="fa fa-check-square-o mr-1"></i> <span data-i18n="manage">管理</span>
+                        </button>
+                    </div>
+                    <div id="batch-actions" class="hidden mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-between">
+                        <span class="text-xs font-bold text-blue-600" id="selected-count">Selected: 0</span>
+                        <div class="flex gap-2">
+                            <button onclick="App.deleteSelected()" class="px-4 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg">Delete</button>
+                            <button onclick="App.toggleBatchMode()" class="px-4 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs font-bold rounded-lg">Cancel</button>
+                        </div>
+                    </div>
+                    <div id="event-list" class="grid gap-4"></div>
+                </div>
+            </div>
+
+            <!-- Holiday Section -->
+            <div class="mt-16 glass p-6 rounded-3xl border-2 border-blue-500/10">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold flex items-center gap-2">
+                        <i class="fa fa-calendar-check-o text-blue-500"></i>
+                        <span data-i18n="holiday_track">主流节日追踪</span>
+                    </h3>
+                    <div class="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                        NOW: <span id="holiday-clock">--:--:--</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="holiday-container"></div>
+            </div>
+
+            <!-- Guide & Features Section -->
+            <div class="mt-12 border-t border-slate-200 dark:border-slate-800 pt-12">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <div>
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fa fa-info-circle text-blue-500"></i>
+                            <span data-i18n="guide_title">使用指南</span>
+                        </h3>
+                        <ul class="space-y-3 text-sm text-slate-500 dark:text-slate-400">
+                            <li class="flex gap-2"><b>01.</b> <span data-i18n="guide_1">输入事件名称并选择目标日期时间。</span></li>
+                            <li class="flex gap-2"><b>02.</b> <span data-i18n="guide_2">选择合适的分类，以便更好地整理您的计划。</span></li>
+                            <li class="flex gap-2"><b>03.</b> <span data-i18n="guide_3">点击“创建”，倒计时将自动置顶并开始精准跳动。</span></li>
+                            <li class="flex gap-2"><b>04.</b> <span data-i18n="guide_4">使用分享按钮，将重要时刻生成的文本发送给好友。</span></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fa fa-star text-amber-500"></i>
+                            <span data-i18n="feature_title">核心功能</span>
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs">
+                                <h4 class="font-bold mb-1" data-i18n="feat_1_t">本地存储</h4>
+                                <p data-i18n="feat_1_d">数据存储在浏览器，无账号隐私泄露风险。</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs">
+                                <h4 class="font-bold mb-1" data-i18n="feat_2_t">多语言支持</h4>
+                                <p data-i18n="feat_2_d">支持中、英、西、俄等多国语言一键切换。</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs">
+                                <h4 class="font-bold mb-1" data-i18n="feat_3_t">暗黑模式</h4>
+                                <p data-i18n="feat_3_d">自适应系统主题，保护视力更护眼。</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs">
+                                <h4 class="font-bold mb-1" data-i18n="feat_4_t">精准追踪</h4>
+                                <p data-i18n="feat_4_d">毫秒级逻辑处理，不错过任何重要瞬间。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="text-center text-xs text-slate-400 py-12 mt-16">
+                <p>&copy; 2025 Date Countdown Pro. <span data-i18n="auto_save">数据实时同步。</span></p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Fullscreen View -->
+    <div id="fullscreen-view" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-700">
+        <div class="absolute top-8 left-8 flex gap-4 z-[110]">
+            <!-- 修复：确保按钮背景与主题适配且层级最高 -->
+            <button onclick="App.cycleTheme()" class="w-12 h-12 rounded-full bg-white/20 dark:bg-black/20 backdrop-blur-md flex items-center justify-center transition-transform hover:scale-110 cursor-pointer shadow-lg">
+                <i class="fa fa-paint-brush"></i>
+            </button>
+            <button onclick="App.closeFullscreen()" class="w-12 h-12 rounded-full bg-white/20 dark:bg-black/20 backdrop-blur-md flex items-center justify-center transition-transform hover:scale-110 cursor-pointer shadow-lg">
+                <i class="fa fa-compress"></i>
+            </button>
+        </div>
+        <div class="text-center px-4">
+            <h1 id="fs-title" class="text-4xl md:text-7xl font-black mb-12 drop-shadow-2xl">--</h1>
+            <div class="flex flex-wrap justify-center gap-4 md:gap-12">
+                <div class="flex flex-col items-center">
+                    <span id="fs-d" class="text-6xl md:text-9xl font-mono font-bold">00</span>
+                    <span class="text-sm md:text-lg uppercase tracking-widest opacity-60" data-i18n="days">DAYS</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span id="fs-h" class="text-6xl md:text-9xl font-mono font-bold">00</span>
+                    <span class="text-sm md:text-lg uppercase tracking-widest opacity-60" data-i18n="hours">HOURS</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span id="fs-m" class="text-6xl md:text-9xl font-mono font-bold">00</span>
+                    <span class="text-sm md:text-lg uppercase tracking-widest opacity-60" data-i18n="mins">MINS</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span id="fs-s" class="text-6xl md:text-9xl font-mono font-bold">00</span>
+                    <span class="text-sm md:text-lg uppercase tracking-widest opacity-60" data-i18n="secs">SECS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div id="toast" class="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-6 py-3 rounded-full shadow-2xl text-sm font-medium opacity-0 transition-all duration-300 pointer-events-none z-[110] backdrop-blur-sm transform translate-y-4">
+        Notification
+    </div>
+
+    <script>
+        const I18N = {
+            'zh-CN': {
+                no_event: "暂无倒计时任务", create_now: "立即创建", manage: "管理", holiday_track: "主流节日追踪",
+                days: "天", hours: "时", mins: "分", secs: "秒",
+                add_new: "添加新日期", lbl_name: "事件名称", lbl_date: "目标日期", lbl_cat: "分类",
+                btn_add: "创建倒计时", list_title: "所有计划", auto_save: "数据已本地保存。",
+                guide_title: "使用指南", feature_title: "核心功能",
+                guide_1: "输入事件名称并选择目标日期时间。", guide_2: "选择合适的分类，以便更好地整理您的计划。",
+                guide_3: "点击“创建”，倒计时将自动置顶并开始精准跳动。", guide_4: "使用分享按钮，将重要时刻生成的文本发送给好友。",
+                feat_1_t: "本地存储", feat_1_d: "数据存储在浏览器，无隐私风险。",
+                feat_2_t: "多语言", feat_2_d: "支持多国语言一键切换。",
+                feat_3_t: "暗黑模式", feat_3_d: "自适应系统主题。",
+                feat_4_t: "精准追踪", feat_4_d: "毫秒级逻辑处理。",
+                cats: { life: "🎂 生活", work: "💼 工作", trip: "✈️ 旅行", game: "🎮 娱乐", other: "📌 其他" },
+                toast_empty: "请填写完整信息 🙏", toast_added: "倒计时已添加 ✨", toast_deleted: "已删除",
+                share_msg: "分享倒计时: {name} 还有 {time} 结束！",
+                holidays: { ny: "元旦", vd: "情人节", id: "独立日", hw: "万圣节", tg: "感恩节", xm: "圣诞节" }
+            },
+            'zh-TW': {
+                no_event: "暫無倒計時任務", create_now: "立即創建", manage: "管理", holiday_track: "主流節日追蹤",
+                days: "天", hours: "時", mins: "分", secs: "秒",
+                add_new: "添加新日期", lbl_name: "事件名稱", lbl_date: "目標日期", lbl_cat: "分類",
+                btn_add: "創建倒計時", list_title: "所有計劃", auto_save: "數據已本地保存。",
+                guide_title: "使用指南", feature_title: "核心功能",
+                guide_1: "輸入事件名稱並選擇目標日期時間。", guide_2: "選擇合適的分類，以便更好地整理您的計劃。",
+                guide_3: "點擊“創建”，倒計時將自動置頂並開始精準跳動。", guide_4: "使用分享按鈕，將重要時刻生成的文本發送給好友。",
+                feat_1_t: "本地存儲", feat_1_d: "數據存儲在瀏覽器，無隱私風險。",
+                feat_2_t: "多語言", feat_2_d: "支持多國語言一鍵切換。",
+                feat_3_t: "暗黑模式", feat_3_d: "自適應系統主題。",
+                feat_4_t: "精準追蹤", feat_4_d: "毫秒級邏輯處理。",
+                cats: { life: "🎂 生活", work: "💼 工作", trip: "✈️ 旅行", game: "🎮 娛樂", other: "📌 其他" },
+                toast_empty: "請填寫完整信息 🙏", toast_added: "倒計時已添加 ✨", toast_deleted: "已刪除",
+                share_msg: "分享倒計時: {name} 還有 {time} 結束！",
+                holidays: { ny: "元旦", vd: "情人節", id: "獨立日", hw: "萬聖節", tg: "感恩節", xm: "聖誕節" }
+            },
+            'en': {
+                no_event: "No Countdowns", create_now: "Create Now", manage: "Manage", holiday_track: "Holiday Tracker",
+                days: "Days", hours: "Hours", mins: "Mins", secs: "Secs",
+                add_new: "Add New Date", lbl_name: "Event Name", lbl_date: "Target Date", lbl_cat: "Category",
+                btn_add: "Start Countdown", list_title: "All Plans", auto_save: "Data saved locally.",
+                guide_title: "User Guide", feature_title: "Core Features",
+                guide_1: "Enter event name and choose target date.", guide_2: "Select a category to stay organized.",
+                guide_3: "Click Create to start precision tracking.", guide_4: "Share your moments with friends easily.",
+                feat_1_t: "Local Storage", feat_1_d: "Private browser storage.",
+                feat_2_t: "Multilingual", feat_2_d: "One-click lang switch.",
+                feat_3_t: "Dark Mode", feat_3_d: "Adapts to your system.",
+                feat_4_t: "Precision", feat_4_d: "Millisecond logic.",
+                cats: { life: "🎂 Life", work: "💼 Work", trip: "✈️ Trip", game: "🎮 Game", other: "📌 Other" },
+                toast_empty: "Fill all fields 🙏", toast_added: "Added ✨", toast_deleted: "Deleted",
+                share_msg: "Countdown: {name} ends in {time}!",
+                holidays: { ny: "New Year", vd: "Valentine", id: "July 4th", hw: "Halloween", tg: "Thanksgiving", xm: "Christmas" }
+            },
+            'es': {
+                no_event: "Sin tareas", create_now: "Crear ahora", manage: "Gestionar", holiday_track: "Días festivos",
+                days: "Días", hours: "Horas", mins: "Mins", secs: "Segs",
+                add_new: "Añadir fecha", lbl_name: "Nombre del evento", lbl_date: "Fecha objetivo", lbl_cat: "Categoría",
+                btn_add: "Crear", list_title: "Planes", auto_save: "Guardado localmente.",
+                guide_title: "Guía de uso", feature_title: "Características",
+                cats: { life: "🎂 Vida", work: "💼 Trabajo", trip: "✈️ Viaje", game: "🎮 Juego", other: "📌 Otro" },
+                toast_empty: "Rellena los campos 🙏", toast_added: "Añadido ✨", toast_deleted: "Eliminado",
+                share_msg: "Cuenta atrás: {name} termina en {time}!",
+                holidays: { ny: "Año Nuevo", vd: "San Valentín", id: "Independencia", hw: "Halloween", tg: "Acción de Gracias", xm: "Navidad" }
+            },
+            'ru': {
+                no_event: "Нет задач", create_now: "Создать", manage: "Управление", holiday_track: "Праздники",
+                days: "Дни", hours: "Часы", mins: "Мин", secs: "Сек",
+                add_new: "Добавить дату", lbl_name: "Событие", lbl_date: "Дата", lbl_cat: "Категория",
+                btn_add: "Запуск", list_title: "Все планы", auto_save: "Сохранено локально.",
+                cats: { life: "🎂 Жизнь", work: "💼 Работа", trip: "✈️ Поездка", game: "🎮 Игра", other: "📌 Другое" },
+                toast_empty: "Заполните все поля 🙏", toast_added: "Добавлено ✨", toast_deleted: "Удалено",
+                share_msg: "Отсчет: {name} заканчивается через {time}!",
+                holidays: { ny: "Новый год", vd: "Валентин", id: "4 июля", hw: "Хэллоуин", tg: "Благодарение", xm: "Рождество" }
+            },
+            'hi': {
+                no_event: "कोई कार्य नहीं", create_now: "बनाएँ", manage: "प्रबंधन", holiday_track: "त्योहार",
+                days: "दिन", hours: "घंटे", mins: "मिनट", secs: "सेकंड",
+                add_new: "नई तिथि जोड़ें", lbl_name: "घटना का नाम", lbl_date: "लक्ष्य तिथि", lbl_cat: "श्रेणी",
+                btn_add: "शुरू करें", list_title: "सभी योजनाएं", auto_save: "स्थानीय रूप से सहेजा गया।",
+                cats: { life: "🎂 जीवन", work: "💼 काम", trip: "✈️ यात्रा", game: "🎮 खेल", other: "📌 अन्य" },
+                toast_empty: "सभी फ़ील्ड भरें 🙏", toast_added: "जोड़ा गया ✨", toast_deleted: "हटाया गया",
+                share_msg: "उलटी गिनती: {name} {time} में समाप्त होगी!",
+                holidays: { ny: "नया साल", vd: "वेलेंटाइन", id: "जुलाई 4", hw: "हेलोवीन", tg: "थैंक्सगिविंग", xm: "क्रिसमस" }
+            },
+            'pl': {
+                no_event: "Brak zadań", create_now: "Utwórz", manage: "Zarządzaj", holiday_track: "Święta",
+                days: "Dni", hours: "Godz", mins: "Min", secs: "Sek",
+                add_new: "Dodaj datę", lbl_name: "Nazwa wydarzenia", lbl_date: "Data", lbl_cat: "Kategoria",
+                btn_add: "Start", list_title: "Wszystkie plany", auto_save: "Zapisano lokalnie.",
+                cats: { life: "🎂 Życie", work: "💼 Praca", trip: "✈️ Podróż", game: "🎮 Gra", other: "📌 Inne" },
+                toast_empty: "Wypełnij pola 🙏", toast_added: "Dodano ✨", toast_deleted: "Usunięto",
+                share_msg: "Odliczanie: {name} kończy się za {time}!",
+                holidays: { ny: "Nowy Rok", vd: "Walentynki", id: "4 lipca", hw: "Halloween", tg: "Dziękczynienie", xm: "Boże Narodzenie" }
+            }
+        };
+
+        const App = {
+            data: { events: [] },
+            lang: 'zh-CN',
+            themeIndex: 1,
+            batchMode: false,
+
+            init() {
+                const saved = localStorage.getItem('dateCountdownPro');
+                if (saved) this.data = JSON.parse(saved);
+                this.themeIndex = parseInt(localStorage.fsTheme || 1);
+                
+                this.initLang();
+                this.setupUI();
+                this.renderHolidays();
+                this.startGlobalTimer();
+                document.body.classList.add('loaded');
+                this.renderAll();
+            },
+
+            initLang() {
+                const params = new URLSearchParams(window.location.search);
+                const urlLang = params.get('lang');
+                if (urlLang && I18N[urlLang]) {
+                    this.lang = urlLang;
+                } else {
+                    const navLang = navigator.language.split('-')[0];
+                    const langMap = { 'zh': 'zh-CN', 'en': 'en', 'es': 'es', 'ru': 'ru', 'hi': 'hi', 'pl': 'pl' };
+                    this.lang = langMap[navLang] || 'zh-CN';
+                }
+                
+                const selector = document.getElementById('lang-selector');
+                selector.value = this.lang;
+                selector.onchange = (e) => {
+                    this.lang = e.target.value;
+                    const url = new URL(window.location);
+                    url.searchParams.set('lang', this.lang);
+                    try {
+                        window.history.pushState({}, '', url);
+                    } catch (err) {
+                        console.warn("URL 同步在当前预览环境下受限。");
+                    }
+                    this.updateI18N();
+                    this.renderAll();
+                    this.renderHolidays();
+                };
+                this.updateI18N();
+            },
+
+            updateI18N() {
+                const dict = I18N[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    el.innerText = dict[key] || key;
+                });
+                const catSel = document.getElementById('input-cat');
+                if (catSel) {
+                    catSel.innerHTML = Object.entries(dict.cats).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+                }
+            },
+
+            setupUI() {
+                const toggle = document.getElementById('mode-toggle');
+                toggle.onclick = () => {
+                    document.documentElement.classList.toggle('dark');
+                    localStorage.darkMode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+                };
+                if (localStorage.darkMode === 'dark') document.documentElement.classList.add('dark');
+                
+                setInterval(() => {
+                    const now = new Date();
+                    const clock = document.getElementById('header-clock');
+                    const hClock = document.getElementById('holiday-clock');
+                    const timeStr = now.toLocaleTimeString([], {hour12: false});
+                    if (clock) clock.innerText = timeStr;
+                    if (hClock) hClock.innerText = timeStr;
+                    document.getElementById('current-date').innerText = now.toLocaleDateString();
+                }, 1000);
+
+                if (new URLSearchParams(window.location.search).get('view') === 'fullscreen') {
+                    document.getElementById('main-view').classList.add('hidden');
+                    document.getElementById('fullscreen-view').classList.remove('hidden');
+                    this.applyTheme();
+                }
+            },
+
+            cycleTheme() {
+                this.themeIndex = (this.themeIndex >= 6) ? 1 : this.themeIndex + 1;
+                localStorage.fsTheme = this.themeIndex;
+                this.applyTheme();
+            },
+
+            applyTheme() {
+                const el = document.getElementById('fullscreen-view');
+                if (!el) return;
+                // 彻底清除旧的主题类名
+                for (let i = 1; i <= 6; i++) {
+                    el.classList.remove(`fullscreen-theme-${i}`);
+                }
+                // 强制添加新的主题类名
+                el.classList.add(`fullscreen-theme-${this.themeIndex}`);
+            },
+
+            openFullscreen() {
+                window.open(window.location.pathname + '?view=fullscreen&lang=' + this.lang, '_blank');
+            },
+
+            closeFullscreen() { window.close(); },
+
+            renderHolidays() {
+                const container = document.getElementById('holiday-container');
+                if(!container) return;
+                const now = new Date();
+                const curY = now.getFullYear();
+
+                const getTarget = (m, d) => {
+                    let target = new Date(curY, m, d);
+                    if (target < now) target = new Date(curY + 1, m, d);
+                    return target;
+                };
+
+                const configs = [
+                    { key: 'ny', m: 0, d: 1 }, { key: 'vd', m: 1, d: 14 },
+                    { key: 'id', m: 6, d: 4 }, { key: 'hw', m: 9, d: 31 },
+                    { key: 'tg', m: 10, d: 27 }, { key: 'xm', m: 11, d: 25 }
+                ];
+
+                const holidays = configs.map(c => ({ key: c.key, date: getTarget(c.m, c.d) })).sort((a,b)=>a.date-b.date);
+
+                container.innerHTML = holidays.map(h => {
+                    const days = Math.ceil((h.date - now) / 86400000);
+                    return `
+                        <div class="p-4 bg-white/40 dark:bg-slate-800/40 rounded-2xl border border-white/20">
+                            <div class="text-[10px] font-bold text-blue-500 uppercase">${I18N[this.lang].holidays[h.key]}</div>
+                            <div class="text-2xl font-black text-slate-900 dark:text-white">${days} <span class="text-[10px] opacity-50">${I18N[this.lang].days}</span></div>
+                            <div class="text-[9px] text-slate-400 mt-1 font-mono">${h.date.toLocaleDateString()}</div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            addEvent() {
+                const n = document.getElementById('input-name').value;
+                const d = document.getElementById('input-date').value;
+                if (!n || !d) {
+                    this.showToast(I18N[this.lang].toast_empty);
+                    return;
+                }
+                this.data.events.push({ id: Date.now(), name: n, target: new Date(d).getTime(), cat: document.getElementById('input-cat').value });
+                localStorage.setItem('dateCountdownPro', JSON.stringify(this.data));
+                this.renderAll();
+                document.getElementById('input-name').value = '';
+                document.getElementById('input-date').value = '';
+                this.showToast(I18N[this.lang].toast_added);
+            },
+
+            toggleBatchMode() {
+                this.batchMode = !this.batchMode;
+                this.renderAll();
+            },
+
+            shareCurrentHero() {
+                const now = Date.now();
+                const upcoming = this.data.events.filter(e => e.target > now).sort((a,b)=>a.target-b.target)[0];
+                if (!upcoming) return;
+                
+                const diff = upcoming.target - now;
+                const d = Math.floor(diff / 86400000);
+                const h = Math.floor((diff % 86400000) / 3600000);
+                const timeStr = `${d}d ${h}h`;
+                
+                const msg = I18N[this.lang].share_msg.replace('{name}', upcoming.name).replace('{time}', timeStr);
+                
+                const el = document.createElement('textarea');
+                el.value = msg;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                
+                this.showToast("Copied to clipboard! 📋");
+            },
+
+            showToast(msg) {
+                const t = document.getElementById('toast');
+                if (!t) return;
+                t.innerText = msg;
+                t.classList.remove('opacity-0', 'translate-y-4');
+                setTimeout(() => t.classList.add('opacity-0', 'translate-y-4'), 2500);
+            },
+
+            startGlobalTimer() {
+                setInterval(() => {
+                    const now = Date.now();
+                    const up = this.data.events.filter(e => e.target > now).sort((a,b)=>a.target-b.target)[0];
+                    if (up) {
+                        ['hero', 'fs'].forEach(p => {
+                            const diff = up.target - now;
+                            const d = Math.floor(diff / 86400000);
+                            const h = Math.floor((diff % 86400000) / 3600000);
+                            const m = Math.floor((diff % 3600000) / 60000);
+                            const s = Math.floor((diff % 60000) / 1000);
+                            const titleEl = document.getElementById(`${p}-title`);
+                            if(titleEl) titleEl.innerText = up.name;
+                            const tagEl = document.getElementById(`${p}-tag`);
+                            if(tagEl) tagEl.innerText = I18N[this.lang].cats[up.cat];
+                            const dEl = document.getElementById(`${p}-d`);
+                            const hEl = document.getElementById(`${p}-h`);
+                            const mEl = document.getElementById(`${p}-m`);
+                            const sEl = document.getElementById(`${p}-s`);
+                            if(dEl) dEl.innerText = d.toString().padStart(2,'0');
+                            if(hEl) hEl.innerText = h.toString().padStart(2,'0');
+                            if(mEl) mEl.innerText = m.toString().padStart(2,'0');
+                            if(sEl) sEl.innerText = s.toString().padStart(2,'0');
+                        });
+                        const empty = document.getElementById('hero-empty');
+                        const display = document.getElementById('hero-display');
+                        if(empty) empty.classList.add('hidden');
+                        if(display) display.classList.remove('hidden');
+                    }
+                }, 1000);
+            },
+
+            renderAll() {
+                const list = document.getElementById('event-list');
+                if(!list) return;
+                const sorted = [...this.data.events].sort((a,b)=>a.target-b.target);
+                list.innerHTML = sorted.map(e => `
+                    <div class="event-card">
+                        <div class="flex-1">
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500">${I18N[this.lang].cats[e.cat]}</span>
+                            <h4 class="font-bold text-slate-800 dark:text-white">${e.name}</h4>
+                        </div>
+                        <div class="text-right font-mono font-bold text-blue-600">${new Date(e.target).toLocaleDateString()}</div>
+                    </div>
+                `).join('');
+            }
+        };
+
+        App.init();
+    </script>
+
+    <!-- 结尾必须包含的代码 -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+</body>
+</html>
