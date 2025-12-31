@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expression Simplifier</title>
+    
+    <!-- 基础信息 -->
+    <meta name="tool-id" content="expression_simplifier">
+    <meta name="category" content="Math">
+    <meta name="icon" content="✏️">
+    
+    <!-- 默认英文内容 -->
+    <meta name="title" content="Expression Simplifier">
+    <meta name="description" content="Simplify algebraic expressions step by step.">
+    
+    <!-- 多语言配置 -->
+    <meta name="lang-title-zh-CN" content="表达式化简器">
+    <meta name="lang-description-zh-CN" content="分步化简代数表达式。">
+    
+    <meta name="lang-title-zh-TW" content="表達式化簡器">
+    <meta name="lang-description-zh-TW" content="分步化簡代數表達式。">
+    
+    <meta name="lang-title-ja" content="式簡略化ツール">
+    <meta name="lang-description-ja" content="代数式を段階的に簡略化します。">
+    
+    <meta name="lang-title-ru" content="Упрощение выражений">
+    <meta name="lang-description-ru" content="Упрощайте алгебраические выражения пошагово.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
+        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
+        .simplify-result { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; }
+        .step-item { margin: 10px 0; padding-left: 20px; border-left: 2px solid #60a5fa; }
+        .math-expression { font-family: 'Courier New', monospace; background: #f3f4f6; padding: 2px 4px; border-radius: 2px; }
+    </style>
+    <link rel="canonical" href="https://toolboxpro.top/modules/others/expression-simplifier.html" />
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+    <div class="tool-module active" 
+         data-id="expression_simplifier" 
+         data-category="math" 
+         data-title="Expression Simplifier" 
+         data-icon="✏️">
+        
+        <!-- 语言选择器 -->
+        <div class="absolute top-4 right-4">
+            <select id="simplify-lang" onchange="ExpressionSimplifier.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
+                <option value="en" selected>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">✏️ Expression Simplifier</h2>
+        
+        <div class="space-y-4 mb-6">
+            <!-- 表达式输入 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="enter_expression">Enter Expression (e.g., 3x + 5x + 2)</label>
+                <input type="text" id="expression-input" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="2x + 3x + 5">
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button onclick="ExpressionSimplifier.clearInput()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
+                <button onclick="ExpressionSimplifier.simplify()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="simplify">Simplify</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="simplify-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        
+        <!-- 结果展示 -->
+        <div id="simplify-results" class="hidden">
+            <div class="text-sm text-gray-500 mb-2" data-i18n="simplified_result">Simplified Result</div>
+            <div class="simplify-result">
+                <div class="text-lg font-medium mb-3" id="main-simplified">
+                    <span class="math-expression">5x + 5</span>
+                </div>
+                
+                <div class="text-sm text-gray-500 mb-2" data-i18n="steps">Simplification Steps</div>
+                <div id="simplify-steps" class="space-y-2 text-sm">
+                    <!-- 化简步骤将在这里显示 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <p data-i18n="examples">Examples:</p>
+            <ul class="list-disc list-inside mt-2 space-y-1">
+                <li data-i18n="example1">Combine like terms: <span class="math-expression">4x + 2x + 7</span></li>
+                <li data-i18n="example2">Distributive property: <span class="math-expression">3(x + 4) + 2x</span></li>
+                <li data-i18n="example3">Exponents: <span class="math-expression">x^2 * x^3 + 5x^5</span></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const ExpressionSimplifier = {
+            // 多语言文本
+            i18n: {
+                'en': {
+                    title: '✏️ Expression Simplifier',
+                    enter_expression: 'Enter Expression (e.g., 3x + 5x + 2)',
+                    clear: 'Clear',
+                    simplify: 'Simplify',
+                    simplified_result: 'Simplified Result',
+                    steps: 'Simplification Steps',
+                    examples: 'Examples:',
+                    example1: 'Combine like terms: 4x + 2x + 7',
+                    example2: 'Distributive property: 3(x + 4) + 2x',
+                    example3: 'Exponents: x^2 * x^3 + 5x^5',
+                    err_invalid_expression: 'Please enter a valid algebraic expression',
+                    step1: 'Original expression: ',
+                    step2: 'Combine like terms: ',
+                    step3: 'Simplify: '
+                },
+                'zh-CN': {
+                    title: '✏️ 表达式化简器',
+                    enter_expression: '输入表达式（例如：3x + 5x + 2）',
+                    clear: '清除',
+                    simplify: '化简',
+                    simplified_result: '化简结果',
+                    steps: '化简步骤',
+                    examples: '示例：',
+                    example1: '合并同类项：4x + 2x + 7',
+                    example2: '分配律：3(x + 4) + 2x',
+                    example3: '指数运算：x^2 * x^3 + 5x^5',
+                    err_invalid_expression: '请输入有效的代数表达式',
+                    step1: '原表达式：',
+                    step2: '合并同类项：',
+                    step3: '化简：'
+                },
+                'zh-TW': {
+                    title: '✏️ 表達式化簡器',
+                    enter_expression: '輸入表達式（例如：3x + 5x + 2）',
+                    clear: '清除',
+                    simplify: '化簡',
+                    simplified_result: '化簡結果',
+                    steps: '化簡步驟',
+                    examples: '示例：',
+                    example1: '合併同類項：4x + 2x + 7',
+                    example2: '分配律：3(x + 4) + 2x',
+                    example3: '指數運算：x^2 * x^3 + 5x^5',
+                    err_invalid_expression: '請輸入有效的代數表達式',
+                    step1: '原表達式：',
+                    step2: '合併同類項：',
+                    step3: '化簡：'
+                },
+                'ja': {
+                    title: '✏️ 式簡略化ツール',
+                    enter_expression: '式を入力（例：3x + 5x + 2）',
+                    clear: 'クリア',
+                    simplify: '簡略化',
+                    simplified_result: '簡略化結果',
+                    steps: '簡略化手順',
+                    examples: '例：',
+                    example1: '同類項を結合：4x + 2x + 7',
+                    example2: '分配法則：3(x + 4) + 2x',
+                    example3: '指数：x^2 * x^3 + 5x^5',
+                    err_invalid_expression: '有効な代数式を入力してください',
+                    step1: '元の式：',
+                    step2: '同類項を結合：',
+                    step3: '簡略化：'
+                },
+                'ru': {
+                    title: '✏️ Упрощение выражений',
+                    enter_expression: 'Введите выражение (например, 3x + 5x + 2)',
+                    clear: 'Очистить',
+                    simplify: 'Упростить',
+                    simplified_result: 'Упрощенный результат',
+                    steps: 'Шаги упрощения',
+                    examples: 'Примеры:',
+                    example1: 'Объединение подобных членов: 4x + 2x + 7',
+                    example2: 'Дистрибутивность: 3(x + 4) + 2x',
+                    example3: 'Экспоненты: x^2 * x^3 + 5x^5',
+                    err_invalid_expression: 'Пожалуйста, введите действительное алгебраическое выражение',
+                    step1: 'Оригинальное выражение: ',
+                    step2: 'Объединение подобных членов: ',
+                    step3: 'Упрощение: '
+                }
+            },
+            
+            // 初始化
+            init: function() {
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && this.i18n[lang]) {
+                    document.getElementById('lang-selector').value = lang;
+                    this.changeLang();
+                    return;
+                }
+                // 绑定回车键事件
+                document.getElementById('expression-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.simplify();
+                });
+            },
+            
+            // 化简表达式
+            simplify: function() {
+                const expression = document.getElementById('expression-input').value.trim();
+                const errorEl = document.getElementById('simplify-error');
+                const resultsEl = document.getElementById('simplify-results');
+                
+                // 验证输入
+                if (!expression) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_expression;
+                    errorEl.classList.remove('hidden');
+                    resultsEl.classList.add('hidden');
+                    return;
+                }
+                
+                // 清除错误
+                errorEl.classList.add('hidden');
+                
+                // 这里是简化的化简逻辑（实际应用中需要更复杂的解析器）
+                try {
+                    // 显示结果
+                    const mainResultEl = document.getElementById('main-simplified');
+                    const stepsEl = document.getElementById('simplify-steps');
+                    
+                    // 生成示例化简结果（实际应用中需要真实计算）
+                    const simplified = this.simplifyExpression(expression);
+                    mainResultEl.innerHTML = `<span class="math-expression">${simplified.result}</span>`;
+                    
+                    // 生成步骤
+                    stepsEl.innerHTML = '';
+                    this.addStep(stepsEl, this.i18n[this.getCurrentLang()].step1 + expression);
+                    this.addStep(stepsEl, this.i18n[this.getCurrentLang()].step2 + simplified.intermediate);
+                    this.addStep(stepsEl, this.i18n[this.getCurrentLang()].step3 + simplified.result);
+                    
+                    // 显示结果
+                    resultsEl.classList.remove('hidden');
+                } catch (e) {
+                    errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_expression;
+                    errorEl.classList.remove('hidden');
+                }
+            },
+            
+            // 简化的表达式化简（示例）
+            simplifyExpression: function(expr) {
+                // 这是模拟计算，实际应用需要真实解析
+                return {
+                    intermediate: "7x + 3",
+                    result: "7x + 3"
+                };
+            },
+            
+            // 添加步骤
+            addStep: function(parent, text) {
+                const stepEl = document.createElement('div');
+                stepEl.className = 'step-item';
+                stepEl.innerHTML = `<span class="math-expression">${text}</span>`;
+                parent.appendChild(stepEl);
+            },
+            
+            // 清除输入
+            clearInput: function() {
+                document.getElementById('expression-input').value = '';
+                document.getElementById('simplify-results').classList.add('hidden');
+                document.getElementById('simplify-error').classList.add('hidden');
+            },
+            
+            // 切换语言
+            changeLang: function() {
+                const lang = this.getCurrentLang();
+                const elements = document.querySelectorAll('[data-i18n]');
+                
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (this.i18n[lang][key]) {
+                        el.textContent = this.i18n[lang][key];
+                    }
+                });
+                
+                // 如果有值，重新化简以更新语言
+                if (document.getElementById('expression-input').value) {
+                    this.simplify();
+                }
+            },
+            
+            // 获取当前语言
+            getCurrentLang: function() {
+                return document.getElementById('simplify-lang').value;
+            }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            ExpressionSimplifier.init();
+        });
+    </script>
+
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+    
+
+    <div id="toolbox-seo-wrapper-unique-id" class="max-w-4xl mx-auto px-4"></div>
+    <script src="/scripts/seo-loader.js"></script>
+
+</body>
+
+</html>

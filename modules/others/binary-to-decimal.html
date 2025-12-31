@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 3. Added Category Meta Tag -->
+    <meta name="category" content="development-tools">
+    <meta name="description" content="Professional Base Converter & File Analysis Tool. Support Binary, Decimal, Hex, Base64 and File recovery. Local processing only.">
+    <title>DevTools | Professional Converter & File Tools</title>
+    <!-- SEO Canonical Tag -->
+    <link rel="canonical" href="https://toolboxpro.top/modules/others/binary-to-decimal.html" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#3b82f6', hover: '#2563eb' },
+                        surface: { light: '#ffffff', dark: '#1e293b' },
+                        bg: { light: '#f8fafc', dark: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            .glass {
+                @apply bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border border-slate-200 dark:border-slate-700;
+            }
+            
+            .input-base {
+                @apply w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-3 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all font-mono text-sm sm:text-base;
+            }
+
+            .btn-base {
+                @apply px-4 py-2.5 rounded-lg font-medium transition-all active:scale-[0.98] flex items-center justify-center gap-2;
+            }
+
+            .content-section {
+                @apply prose dark:prose-invert max-w-none;
+            }
+        }
+
+        #app-loader { transition: opacity 0.5s ease; }
+        .loaded #app-loader { opacity: 0; pointer-events: none; }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-bg-light dark:bg-bg-dark min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Loader -->
+    <div id="app-loader" class="fixed inset-0 z-[9999] bg-white dark:bg-slate-900 flex items-center justify-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-400 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-400 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center text-xl shadow-lg shadow-blue-500/20">
+                    <i class="fa fa-terminal"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="title">DevTools 进制箱</h1>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                <!-- 2. Added new languages -->
+                <select id="lang-selector" class="bg-transparent text-xs font-medium px-2 py-1.5 rounded focus:outline-none cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <option value="zh-CN">🇨🇳 中文 (简体)</option>
+                    <option value="zh-TW">🇨🇳 中文 (繁體)</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                </select>
+                <div class="w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
+                <button id="mode-toggle" class="w-8 h-8 rounded flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tool Area -->
+        <div class="grid lg:grid-cols-12 gap-6 mb-12">
+            
+            <main class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass rounded-2xl shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                    
+                    <!-- Tabs -->
+                    <div class="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 overflow-x-auto scrollbar-hide">
+                        <div class="flex px-2 py-2 min-w-max" id="tab-container">
+                            <!-- Tabs injected via JS -->
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-grow relative">
+                        
+                        <!-- Converter Tab -->
+                        <div id="content-converter" class="tab-content animate-fade-in space-y-6">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-lg font-bold flex items-center gap-2">
+                                    <span class="w-1 h-6 bg-primary rounded-full"></span>
+                                    <span data-i18n="h2_converter">二进制 转 十进制</span>
+                                </h2>
+                                <button onclick="Tool.setRandom()" class="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-md hover:bg-blue-100 font-medium">
+                                    <i class="fa fa-random"></i> <span data-i18n="btn_random">随机</span>
+                                </button>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase" data-i18n="label_bin_input">Binary 输入</label>
+                                    <textarea id="input-single" rows="2" class="input-base text-lg" placeholder="101010..." oninput="Tool.convertSingle()"></textarea>
+                                </div>
+                                
+                                <div class="flex justify-center text-slate-400">
+                                    <i class="fa fa-arrow-down"></i>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase" data-i18n="label_dec_result">Decimal 结果</label>
+                                    <div class="relative group cursor-pointer" onclick="Tool.copyText('result-single')">
+                                        <div id="result-single" class="input-base bg-slate-100 dark:bg-slate-800 text-xl font-bold text-center py-6 border-dashed select-all text-primary">-</div>
+                                        <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg backdrop-blur-sm">
+                                            <span class="text-xs font-bold bg-black text-white px-3 py-1 rounded-full shadow-lg" data-i18n="click_copy">点击复制</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Any Base Tab -->
+                        <div id="content-anybase" class="tab-content hidden animate-fade-in space-y-6">
+                            <h2 class="text-lg font-bold flex items-center gap-2">
+                                <span class="w-1 h-6 bg-purple-500 rounded-full"></span>
+                                <span data-i18n="h2_anybase">任意进制转换</span>
+                            </h2>
+                            
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 items-center">
+                                        <span class="px-3 py-1 text-xs font-bold text-slate-500 flex items-center whitespace-nowrap">BASE</span>
+                                        <input type="number" id="base-from" min="2" max="64" value="10" class="flex-grow bg-transparent text-sm font-bold text-right px-2 focus:outline-none w-16 text-slate-700 dark:text-slate-200" oninput="BaseTool.convert()">
+                                    </div>
+                                    <textarea id="base-input" rows="8" class="input-base" placeholder="..." oninput="BaseTool.convert()"></textarea>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 items-center">
+                                        <span class="px-3 py-1 text-xs font-bold text-slate-500 flex items-center whitespace-nowrap">TO BASE</span>
+                                        <input type="number" id="base-to" min="2" max="64" value="2" class="flex-grow bg-transparent text-sm font-bold text-right px-2 focus:outline-none w-16 text-slate-700 dark:text-slate-200" oninput="BaseTool.convert()">
+                                    </div>
+                                    <div class="relative h-full">
+                                        <textarea id="base-output" rows="8" readonly class="input-base bg-slate-50 dark:bg-slate-900/50 cursor-pointer h-full" onclick="Tool.copyText('base-output', true)"></textarea>
+                                        <button onclick="Tool.copyText('base-output', true)" class="absolute bottom-2 right-2 p-2 bg-white dark:bg-slate-700 rounded shadow-sm text-slate-400 hover:text-primary">
+                                            <i class="fa fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-400 text-center">Supports Bases 2 - 64. (For bases &le; 36, input is case-insensitive)</p>
+                        </div>
+
+                        <!-- File Tools Tab -->
+                        <div id="content-filetools" class="tab-content hidden animate-fade-in space-y-8">
+                            <div class="space-y-4">
+                                <h2 class="text-lg font-bold flex items-center gap-2">
+                                    <span class="w-1 h-6 bg-green-500 rounded-full"></span>
+                                    <span data-i18n="h2_file_parse">文件解析 (File to Bin/Hex)</span>
+                                </h2>
+                                
+                                <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" onclick="document.getElementById('file-input').click()" id="drop-zone">
+                                    <input type="file" id="file-input" class="hidden" onchange="FileTool.handleFile(this.files[0])">
+                                    <div class="text-3xl text-slate-400 mb-2"><i class="fa fa-cloud-upload"></i></div>
+                                    <p class="text-sm font-medium text-slate-600 dark:text-slate-300" data-i18n="drop_zone_text">点击上传或拖拽文件</p>
+                                    <p class="text-xs text-slate-400 mt-1" data-i18n="drop_zone_sub">本地处理，不上传服务器</p>
+                                </div>
+
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <div class="flex justify-between mb-1">
+                                            <label class="text-xs font-bold text-slate-500">Binary Preview</label>
+                                            <button class="text-xs text-primary hover:underline" onclick="Tool.copyText('file-bin-out', true)" data-i18n="btn_copy">复制</button>
+                                        </div>
+                                        <textarea id="file-bin-out" rows="5" class="input-base text-xs text-slate-500" readonly placeholder="Binary..."></textarea>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between mb-1">
+                                            <label class="text-xs font-bold text-slate-500">Hex Preview</label>
+                                            <button class="text-xs text-primary hover:underline" onclick="Tool.copyText('file-hex-out', true)" data-i18n="btn_copy">复制</button>
+                                        </div>
+                                        <textarea id="file-hex-out" rows="5" class="input-base text-xs text-slate-500" readonly placeholder="Hex..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="border-slate-200 dark:border-slate-700">
+
+                            <div class="space-y-4">
+                                <h2 class="text-lg font-bold flex items-center gap-2">
+                                    <span class="w-1 h-6 bg-orange-500 rounded-full"></span>
+                                    <span data-i18n="h2_file_restore">文件还原 (Bin/Hex to File)</span>
+                                </h2>
+                                <div class="flex flex-col md:flex-row gap-2">
+                                    <select id="restore-mode" class="input-base md:w-32 py-2">
+                                        <option value="hex">From Hex</option>
+                                        <option value="bin">From Binary</option>
+                                    </select>
+                                    <input type="text" id="dl-filename" class="input-base py-2" placeholder="Filename (e.g. image.png)">
+                                </div>
+                                <textarea id="restore-input" rows="4" class="input-base text-xs" placeholder="Paste Hex or Binary string here..."></textarea>
+                                <button onclick="FileTool.download()" class="btn-base bg-primary text-white w-full shadow-lg shadow-primary/30 hover:bg-primary-hover">
+                                    <i class="fa fa-download"></i> <span data-i18n="btn_download">下载还原文件</span>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+
+            <!-- Sidebar -->
+            <aside class="lg:col-span-4 space-y-6">
+                <div class="glass rounded-2xl p-6 shadow-md">
+                    <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <i class="fa fa-table text-slate-400"></i> <span data-i18n="h3_cheatsheet">速查表</span>
+                    </h3>
+                    <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                        <table class="w-full text-sm text-center">
+                            <thead class="bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-500">
+                                <tr><th class="py-2">Dec</th><th class="py-2">Hex</th><th class="py-2">Binary</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 font-mono text-xs">
+                                <tr><td>0</td><td>00</td><td>0000</td></tr>
+                                <tr><td>1</td><td>01</td><td>0001</td></tr>
+                                <tr><td>2</td><td>02</td><td>0010</td></tr>
+                                <tr><td>5</td><td>05</td><td>0101</td></tr>
+                                <tr><td>10</td><td>0A</td><td>1010</td></tr>
+                                <tr><td>15</td><td>0F</td><td>1111</td></tr>
+                                <tr><td>255</td><td>FF</td><td>1111 1111</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="glass rounded-2xl p-6 shadow-md">
+                    <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <i class="fa fa-info-circle text-slate-400"></i> <span data-i18n="h3_quick_info">快速说明</span>
+                    </h3>
+                    <div class="text-sm text-slate-600 dark:text-slate-400 space-y-3">
+                        <p data-i18n="info_secure">🔒 <strong class="text-slate-700 dark:text-slate-200">Local Safe:</strong> Processing runs entirely in your browser. No data leaves your device.</p>
+                        <p data-i18n="info_limit">⚡ <strong class="text-slate-700 dark:text-slate-200">Big Numbers:</strong> Supports arbitrary precision for large integers.</p>
+                    </div>
+                </div>
+                
+                <footer class="text-center text-xs text-slate-400 py-4">
+                    <p>&copy; <span id="year"></span> DevTools. <span data-i18n="footer_text">Local-First Tool.</span></p>
+                </footer>
+            </aside>
+        </div>
+
+        <!-- 5. Comprehensive Guide Section (Replicated and Expanded) -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Feature Introduction -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-book text-primary"></i> <span data-i18n="guide_title">功能使用指南</span>
+                        </h2>
+                        <div class="space-y-6 text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_convert">核心：进制转换</h3>
+                                <p data-i18n="guide_p_convert">我们的转换引擎支持任意精度的大数运算。不仅限于标准的32位或64位整数，您可以输入任意长度的二进制串（如 1010...）并在毫秒级内获得对应的十进制数值。反之亦然，支持二、八、十、十六及Base64之间的无损互转。</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2" data-i18n="guide_h_file">进阶：文件透视与还原</h3>
+                                <p data-i18n="guide_p_file">
+                                    无需安装Hex编辑器，直接将文件拖入工具即可查看其底层的二进制（Binary）和十六进制（Hex）编码。这对于调试文件头、分析协议数据包或CTF解题非常有用。
+                                    <br><br>
+                                    <strong>文件还原功能：</strong> 允许您将一串Hex代码或Binary代码重新编译为原始文件并下载。例如，您可以将一张图片的Hex数据粘贴进来，重新生成图片文件。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa fa-question-circle text-primary"></i> <span data-i18n="faq_title">常见问题 (FAQ)</span>
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q1">我的文件会被上传吗？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a1">绝对不会。本工具基于纯前端技术（HTML5 FileReader），所有计算都在您的浏览器内存中完成。即使断开网络，工具依然可以正常使用。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q2">支持多大的文件？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a2">预览功能限制显示前5KB数据以防止页面卡顿。但文件还原功能受限于您的浏览器可用内存，通常处理几百MB的文件没有问题。</p>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2" data-i18n="faq_q3">转换结果显示不正确？</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-400" data-i18n="faq_a3">请检查输入数据是否含有非法字符（如二进制中包含2，Hex中包含G）。我们的工具会自动过滤空格，但非法字符会导致解析错误。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-all duration-300 opacity-0">
+        <div class="bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <i class="fa fa-check-circle text-green-400"></i>
+            <span class="text-sm font-medium" data-i18n="msg_copied">已复制到剪贴板</span>
+        </div>
+    </div>
+
+    <!-- Required Footer Code -->
+    <div id="related-tools-container"></div>
+    <script src="/scripts/related.js"></script>
+
+    <script>
+        // --- Localization Data ---
+        const i18nData = {
+            'zh-CN': {
+                title: "DevTools 进制箱",
+                tab_conv: "二转十", tab_any: "多进制转换", tab_file: "文件工具",
+                h2_converter: "二进制 转 十进制", btn_random: "随机",
+                label_bin_input: "Binary 输入", label_dec_result: "Decimal 结果",
+                h2_anybase: "任意进制转换",
+                h2_file_parse: "文件解析 (File to Bin/Hex)", h2_file_restore: "文件还原 (Bin/Hex to File)",
+                drop_zone_text: "点击上传或拖拽文件", drop_zone_sub: "本地处理，不上传服务器",
+                btn_copy: "复制", btn_download: "下载还原文件",
+                h3_cheatsheet: "速查表", h3_quick_info: "快速说明",
+                info_secure: "🔒 本地安全: 所有处理均在浏览器内完成，无数据上传。",
+                info_limit: "⚡ 大数支持: 支持任意精度的大整数运算。",
+                footer_text: "Local-First 工具 toolboxpro.top .",
+                click_copy: "点击复制", msg_copied: "已复制到剪贴板",
+                // Guide
+                guide_title: "功能使用指南",
+                guide_h_convert: "核心：进制转换",
+                guide_p_convert: "我们的转换引擎支持任意精度的大数运算。不仅限于标准的32位或64位整数，您可以输入任意长度的二进制串（如 1010...）并在毫秒级内获得对应的十进制数值。反之亦然，支持二、八、十、十六及Base64之间的无损互转。",
+                guide_h_file: "进阶：文件透视与还原",
+                guide_p_file: "无需安装Hex编辑器，直接将文件拖入工具即可查看其底层的二进制（Binary）和十六进制（Hex）编码。这对于调试文件头、分析协议数据包或CTF解题非常有用。<br><br><strong>文件还原功能：</strong> 允许您将一串Hex代码或Binary代码重新编译为原始文件并下载。",
+                faq_title: "常见问题 (FAQ)",
+                faq_q1: "我的文件会被上传吗？", faq_a1: "绝对不会。本工具基于纯前端技术，所有计算都在您的浏览器内存中完成。",
+                faq_q2: "支持多大的文件？", faq_a2: "预览功能限制显示前5KB数据。还原功能受限于浏览器内存，通常可处理几百MB的文件。",
+                faq_q3: "转换结果不正确？", faq_a3: "请检查输入是否含非法字符。工具会自动过滤空格，但非法字符会导致错误。"
+            },
+            'zh-TW': {
+                title: "DevTools 進制箱",
+                tab_conv: "二轉十", tab_any: "多進制轉換", tab_file: "文件工具",
+                h2_converter: "二進制 轉 十進制", btn_random: "隨機",
+                label_bin_input: "Binary 輸入", label_dec_result: "Decimal 結果",
+                h2_anybase: "任意進制轉換",
+                h2_file_parse: "文件解析 (File to Bin/Hex)", h2_file_restore: "文件還原 (Bin/Hex to File)",
+                drop_zone_text: "點擊上傳或拖曳文件", drop_zone_sub: "本地處理，不上傳伺服器",
+                btn_copy: "複製", btn_download: "下載還原文件",
+                h3_cheatsheet: "速查表", h3_quick_info: "快速說明",
+                info_secure: "🔒 本地安全: 所有處理均在瀏覽器內完成，無數據上傳。",
+                info_limit: "⚡ 大數支持: 支持任意精度的大整數運算。",
+                footer_text: "Local-First 工具.toolboxpro.top ",
+                click_copy: "點擊複製", msg_copied: "已複製到剪貼板",
+                guide_title: "功能使用指南",
+                guide_h_convert: "核心：進制轉換",
+                guide_p_convert: "我們的轉換引擎支持任意精度的大數運算。不僅限於標準的32位或64位整數，您可以輸入任意長度的二進制串並在毫秒級內獲得對應的十進制數值。支持二、八、十、十六及Base64之間的無損互轉。",
+                guide_h_file: "進階：文件透視與還原",
+                guide_p_file: "無需安裝Hex編輯器，直接將文件拖入工具即可查看其底層的二進制（Binary）和十六進制（Hex）編碼。<br><br><strong>文件還原功能：</strong> 允許您將一串Hex代碼或Binary代碼重新編譯為原始文件並下載。",
+                faq_title: "常見問題 (FAQ)",
+                faq_q1: "我的文件會被上傳嗎？", faq_a1: "絕對不會。本工具基於純前端技術，所有計算都在您的瀏覽器內存中完成。",
+                faq_q2: "支持多大的文件？", faq_a2: "預覽功能限制顯示前5KB數據。還原功能受限於瀏覽器內存，通常可處理幾百MB的文件。",
+                faq_q3: "轉換結果不正確？", faq_a3: "請檢查輸入是否含非法字符。工具會自動過濾空格，但非法字符會導致錯誤。"
+            },
+            'en': {
+                title: "DevTools Converter",
+                tab_conv: "Bin to Dec", tab_any: "Base Converter", tab_file: "File Tools",
+                h2_converter: "Binary to Decimal", btn_random: "Random",
+                label_bin_input: "Binary Input", label_dec_result: "Decimal Result",
+                h2_anybase: "Any Base Converter",
+                h2_file_parse: "File Parser (File to Bin/Hex)", h2_file_restore: "File Restore (Bin/Hex to File)",
+                drop_zone_text: "Click or Drop File Here", drop_zone_sub: "Local processing, no server upload",
+                btn_copy: "Copy", btn_download: "Download Restored File",
+                h3_cheatsheet: "Cheatsheet", h3_quick_info: "Quick Info",
+                info_secure: "🔒 Local Safe: Processing runs entirely in browser. No data leaves device.",
+                info_limit: "⚡ Big Numbers: Supports arbitrary precision for large integers.",
+                footer_text: "Local-First Tool.toolboxpro.top ",
+                click_copy: "Click to Copy", msg_copied: "Copied to clipboard",
+                guide_title: "User Guide",
+                guide_h_convert: "Core: Base Conversion",
+                guide_p_convert: "Our engine supports arbitrary precision. You can input binary strings of any length and get decimal results instantly. Supports lossless conversion between Binary, Octal, Decimal, Hex, and Base64.",
+                guide_h_file: "Advanced: File Analysis",
+                guide_p_file: "Drag and drop any file to view its underlying Binary and Hex encoding without installing a Hex editor. Useful for debugging and CTF.<br><br><strong>File Restore:</strong> Compiles Hex or Binary strings back into original files.",
+                faq_title: "FAQ",
+                faq_q1: "Is my file uploaded?", faq_a1: "Absolutely not. This tool uses HTML5 FileReader. All processing happens in your browser memory.",
+                faq_q2: "File size limit?", faq_a2: "Preview is limited to first 5KB. Restoration depends on browser memory, usually supporting hundreds of MBs.",
+                faq_q3: "Incorrect results?", faq_a3: "Check for invalid characters. The tool filters spaces, but other invalid chars will cause errors."
+            },
+            'es': {
+                title: "DevTools Convertidor",
+                tab_conv: "Bin a Dec", tab_any: "Convertidor Base", tab_file: "Archivos",
+                h2_converter: "Binario a Decimal", btn_random: "Aleatorio",
+                label_bin_input: "Entrada Binaria", label_dec_result: "Resultado Decimal",
+                h2_anybase: "Convertidor de Base",
+                h2_file_parse: "Analizar Archivo (File to Bin/Hex)", h2_file_restore: "Restaurar Archivo (Bin/Hex to File)",
+                drop_zone_text: "Haga clic o arrastre el archivo", drop_zone_sub: "Procesamiento local, sin subida al servidor",
+                btn_copy: "Copiar", btn_download: "Descargar Archivo",
+                h3_cheatsheet: "Tabla de referencia", h3_quick_info: "Info Rápida",
+                info_secure: "🔒 Seguro: El procesamiento se ejecuta en el navegador.",
+                info_limit: "⚡ Números Grandes: Soporta precisión arbitraria.",
+                footer_text: "Herramienta Local.toolboxpro.top ",
+                click_copy: "Copiar", msg_copied: "Copiado al portapapeles",
+                guide_title: "Guía del Usuario",
+                guide_h_convert: "Núcleo: Conversión",
+                guide_p_convert: "Nuestro motor soporta precisión arbitraria. Puede ingresar cadenas binarias de cualquier longitud. Soporta conversión entre Binario, Octal, Decimal, Hex y Base64.",
+                guide_h_file: "Avanzado: Análisis de Archivos",
+                guide_p_file: "Arrastre cualquier archivo para ver su codificación Binaria y Hex subyacente.<br><br><strong>Restauración:</strong> Compila cadenas Hex o Binarias de nuevo en archivos originales.",
+                faq_title: "Preguntas Frecuentes",
+                faq_q1: "¿Se sube mi archivo?", faq_a1: "Absolutamente no. Todo el procesamiento ocurre en la memoria de su navegador.",
+                faq_q2: "¿Límite de tamaño?", faq_a2: "La vista previa está limitada a 5KB. La restauración depende de la memoria del navegador.",
+                faq_q3: "¿Resultados incorrectos?", faq_a3: "Verifique caracteres inválidos. La herramienta filtra espacios, pero otros caracteres causarán errores."
+            },
+            'ru': {
+                title: "DevTools Конвертер",
+                tab_conv: "Бин в Дек", tab_any: "Конвертер систем", tab_file: "Файлы",
+                h2_converter: "Двоичный в Десятичный", btn_random: "Случайно",
+                label_bin_input: "Двоичный ввод", label_dec_result: "Десятичный результат",
+                h2_anybase: "Конвертер любой системы",
+                h2_file_parse: "Анализ файла (File to Bin/Hex)", h2_file_restore: "Восстановление (Bin/Hex to File)",
+                drop_zone_text: "Нажмите или перетащите файл", drop_zone_sub: "Локальная обработка, без загрузки",
+                btn_copy: "Копировать", btn_download: "Скачать файл",
+                h3_cheatsheet: "Шпаргалка", h3_quick_info: "Инфо",
+                info_secure: "🔒 Безопасно: Обработка только в браузере.",
+                info_limit: "⚡ Большие числа: Поддержка произвольной точности.",
+                footer_text: "Local-First инструмент.toolboxpro.top ",
+                click_copy: "Скопировать", msg_copied: "Скопировано в буфер",
+                guide_title: "Руководство",
+                guide_h_convert: "Ядро: Конвертация",
+                guide_p_convert: "Наш движок поддерживает произвольную точность. Вы можете вводить двоичные строки любой длины. Поддержка Bin, Oct, Dec, Hex и Base64.",
+                guide_h_file: "Файлы: Анализ и Восстановление",
+                guide_p_file: "Перетащите любой файл, чтобы увидеть его Binary и Hex код.<br><br><strong>Восстановление:</strong> Компилирует Hex или Binary строки обратно в файлы.",
+                faq_title: "FAQ",
+                faq_q1: "Файл загружается?", faq_a1: "Нет. Все происходит в памяти вашего браузера.",
+                faq_q2: "Лимит размера?", faq_a2: "Превью ограничено 5 КБ. Восстановление зависит от памяти браузера (обычно сотни МБ).",
+                faq_q3: "Ошибка конвертации?", faq_a3: "Проверьте ввод на недопустимые символы."
+            },
+            'hi': {
+                title: "DevTools कन्वर्टर",
+                tab_conv: "Bin से Dec", tab_any: "बेस कन्वर्टर", tab_file: "फ़ाइल टूल्स",
+                h2_converter: "बाइनरी से दशमलव (Decimal)", btn_random: "रैंडम",
+                label_bin_input: "बाइनरी इनपुट", label_dec_result: "दशमलव परिणाम",
+                h2_anybase: "किसी भी बेस में बदलें",
+                h2_file_parse: "फ़ाइल विश्लेषण (File to Bin/Hex)", h2_file_restore: "फ़ाइल रिस्टोर (Bin/Hex to File)",
+                drop_zone_text: "फ़ाइल यहाँ छोड़ें या क्लिक करें", drop_zone_sub: "स्थानीय प्रोसेसिंग, सर्वर पर अपलोड नहीं",
+                btn_copy: "कॉपी", btn_download: "फ़ाइल डाउनलोड करें",
+                h3_cheatsheet: "चीट शीट", h3_quick_info: "त्वरित जानकारी",
+                info_secure: "🔒 सुरक्षित: प्रोसेसिंग पूरी तरह ब्राउज़र में होती है।",
+                info_limit: "⚡ बड़ी संख्याएँ: मनचाही लंबाई की संख्याओं का समर्थन।",
+                footer_text: "लोकल-फर्स्ट टूल। toolboxpro.top ",
+                click_copy: "कॉपी करें", msg_copied: "क्लिपबोर्ड पर कॉपी किया गया",
+                guide_title: "उपयोग गाइड",
+                guide_h_convert: "कन्वर्टर",
+                guide_p_convert: "हमारा इंजन बड़ी संख्याओं का समर्थन करता है। आप किसी भी लंबाई की बाइनरी स्ट्रिंग इनपुट कर सकते हैं। Bin, Oct, Dec, Hex और Base64 का समर्थन करता है।",
+                guide_h_file: "फ़ाइल विश्लेषण",
+                guide_p_file: "किसी भी फ़ाइल का Binary और Hex कोड देखने के लिए उसे ड्रैग करें।<br><br><strong>रिस्टोर:</strong> Hex या Binary स्ट्रिंग्स को वापस फ़ाइल में बदलता है।",
+                faq_title: "सामान्य प्रश्न",
+                faq_q1: "क्या मेरी फ़ाइल अपलोड होती है?", faq_a1: "बिल्कुल नहीं। यह टूल पूरी तरह से आपके ब्राउज़र मेमोरी में काम करता है।",
+                faq_q2: "फ़ाइल आकार सीमा?", faq_a2: "पूर्वावलोकन 5KB तक सीमित है। रिस्टोर ब्राउज़र मेमोरी पर निर्भर करता है।",
+                faq_q3: "गलत परिणाम?", faq_a3: "अमान्य वर्णों की जाँच करें। टूल रिक्त स्थान हटा देता है, लेकिन अन्य अमान्य वर्ण त्रुटि का कारण बनेंगे।"
+            },
+            'pl': {
+                title: "DevTools Konwerter",
+                tab_conv: "Bin na Dec", tab_any: "Konwerter Baz", tab_file: "Narzędzia Plików",
+                h2_converter: "Binarny na Dziesiętny", btn_random: "Losowy",
+                label_bin_input: "Wejście Binarne", label_dec_result: "Wynik Dziesiętny",
+                h2_anybase: "Konwersja Dowolnej Bazy",
+                h2_file_parse: "Analiza Pliku (File to Bin/Hex)", h2_file_restore: "Przywracanie Pliku (Bin/Hex to File)",
+                drop_zone_text: "Kliknij lub upuść plik", drop_zone_sub: "Przetwarzanie lokalne, bez przesyłania",
+                btn_copy: "Kopiuj", btn_download: "Pobierz Plik",
+                h3_cheatsheet: "Ściąga", h3_quick_info: "Szybkie Info",
+                info_secure: "🔒 Bezpiecznie: Przetwarzanie w przeglądarce.",
+                info_limit: "⚡ Duże Liczby: Obsługa dowolnej precyzji.",
+                footer_text: "Narzędzie Lokalne. toolboxpro.top ",
+                click_copy: "Kopiuj", msg_copied: "Skopiowano do schowka",
+                guide_title: "Instrukcja Obsługi",
+                guide_h_convert: "Rdzeń: Konwersja",
+                guide_p_convert: "Nasz silnik obsługuje dowolną precyzję. Możesz wprowadzać ciągi binarne o dowolnej długości. Obsługuje konwersję między Bin, Oct, Dec, Hex i Base64.",
+                guide_h_file: "Zaawansowane: Pliki",
+                guide_p_file: "Przeciągnij dowolny plik, aby zobaczyć jego kod binarny i szesnastkowy.<br><br><strong>Przywracanie:</strong> Kompiluje ciągi Hex lub Binary z powrotem do oryginalnych plików.",
+                faq_title: "FAQ",
+                faq_q1: "Czy plik jest wysyłany?", faq_a1: "Absolutnie nie. Wszystko odbywa się w pamięci przeglądarki.",
+                faq_q2: "Limit rozmiaru?", faq_a2: "Podgląd ograniczony do 5KB. Przywracanie zależy od pamięci przeglądarki.",
+                faq_q3: "Błędne wyniki?", faq_a3: "Sprawdź poprawność znaków. Narzędzie filtruje spacje, ale inne znaki spowodują błędy."
+            }
+        };
+
+        const App = {
+            tabs: [
+                { id: 'converter', key: 'tab_conv', icon: 'fa-exchange' },
+                { id: 'anybase', key: 'tab_any', icon: 'fa-cogs' },
+                { id: 'filetools', key: 'tab_file', icon: 'fa-file-code-o' }
+            ],
+
+            init() {
+                // 4. Handle URL Parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang');
+                const savedLang = localStorage.getItem('app_lang');
+                const defaultLang = 'zh-CN';
+                
+                // Priority: URL > LocalStorage > Default
+                this.currentLang = (langParam && i18nData[langParam]) ? langParam : (savedLang || defaultLang);
+                
+                document.getElementById('lang-selector').value = this.currentLang;
+
+                this.renderTabs();
+                this.handleTheme();
+                this.setupDropZone();
+                this.setupLanguage();
+                this.updateYear();
+
+                // Initial translate
+                this.translateUI(this.currentLang);
+                
+                setTimeout(() => document.body.classList.add('loaded'), 100);
+            },
+
+            updateYear() {
+                document.getElementById('year').textContent = new Date().getFullYear();
+            },
+
+            setupLanguage() {
+                const selector = document.getElementById('lang-selector');
+                selector.addEventListener('change', (e) => {
+                    const lang = e.target.value;
+                    this.currentLang = lang;
+                    localStorage.setItem('app_lang', lang);
+                    
+                    // 4. Update URL parameter (safely)
+                    try {
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('lang', lang);
+                        window.history.pushState({}, '', newUrl);
+                    } catch (err) {
+                        console.warn('URL update failed (expected in preview environment):', err);
+                    }
+
+                    this.translateUI(lang);
+                    this.renderTabs(); // Re-render tabs to update names
+                });
+            },
+
+            translateUI(lang) {
+                const data = i18nData[lang] || i18nData['en']; // Fallback to EN
+                document.documentElement.lang = lang;
+                
+                // Update simple text elements
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(data[key]) {
+                        if(key.startsWith('guide_p') || key.startsWith('faq_')) {
+                            el.innerHTML = data[key]; // Allow HTML for guides
+                        } else {
+                            el.textContent = data[key];
+                        }
+                    }
+                });
+
+                // Update placeholders
+                if(lang === 'zh-CN' || lang === 'zh-TW') {
+                    document.getElementById('input-single').placeholder = "输入二进制 (如 101010)...";
+                    document.getElementById('dl-filename').placeholder = "文件名 (例如 test.png)";
+                } else {
+                    document.getElementById('input-single').placeholder = "Enter Binary (e.g. 101010)...";
+                    document.getElementById('dl-filename').placeholder = "Filename (e.g. test.png)";
+                }
+            },
+
+            renderTabs() {
+                const container = document.getElementById('tab-container');
+                container.innerHTML = ''; // Clear existing
+                const data = i18nData[this.currentLang] || i18nData['en'];
+
+                this.tabs.forEach((tab, index) => {
+                    const btn = document.createElement('button');
+                    // Check if content is currently active to style button
+                    const content = document.getElementById(`content-${tab.id}`);
+                    const isActive = !content.classList.contains('hidden');
+                    
+                    btn.className = `px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap flex items-center gap-2 transition-all mr-2 ${isActive ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`;
+                    btn.innerHTML = `<i class="fa ${tab.icon}"></i> ${data[tab.key]}`;
+                    btn.onclick = () => this.switchTab(tab.id, btn);
+                    container.appendChild(btn);
+                });
+            },
+
+            switchTab(tabId, btnElement) {
+                // UI Toggle
+                const buttons = document.getElementById('tab-container').children;
+                for(let btn of buttons) {
+                    btn.className = 'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap flex items-center gap-2 transition-all mr-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300';
+                }
+                btnElement.className = 'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap flex items-center gap-2 transition-all mr-2 bg-white dark:bg-slate-800 text-primary shadow-sm';
+
+                // Content Toggle
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            },
+
+            handleTheme() {
+                const toggle = document.getElementById('mode-toggle');
+                const html = document.documentElement;
+                
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                }
+
+                toggle.addEventListener('click', () => {
+                    html.classList.toggle('dark');
+                    localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+                });
+            },
+            
+            setupDropZone() {
+                const zone = document.getElementById('drop-zone');
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    zone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+                zone.addEventListener('drop', (e) => {
+                    FileTool.handleFile(e.dataTransfer.files[0]);
+                });
+            }
+        };
+
+        const Tool = {
+            convertSingle() {
+                const input = document.getElementById('input-single').value.replace(/\s/g, '');
+                const out = document.getElementById('result-single');
+                const lang = App.currentLang;
+                const errMsg = (lang === 'zh-CN' || lang === 'zh-TW') ? "非二进制字符" : "Invalid Binary";
+                const bigMsg = (lang === 'zh-CN' || lang === 'zh-TW') ? "数值过大" : "Value too large";
+
+                if(!input) { out.textContent = '-'; return; }
+                
+                if(!/^[01]+$/.test(input)) { 
+                    out.textContent = errMsg; 
+                    out.classList.add('text-red-500');
+                    return; 
+                }
+                out.classList.remove('text-red-500');
+                
+                try {
+                    out.textContent = BigInt('0b' + input).toString();
+                } catch(e) {
+                    out.textContent = bigMsg;
+                }
+            },
+
+            setRandom() {
+                const len = Math.floor(Math.random() * 16) + 4;
+                let b = '1';
+                for(let i=0; i<len; i++) b += Math.random() > 0.5 ? '1' : '0';
+                document.getElementById('input-single').value = b;
+                this.convertSingle();
+            },
+
+            copyText(id, isVal = false) {
+                const text = isVal ? document.getElementById(id).value : document.getElementById(id).innerText;
+                if(!text || text === '-') return;
+                
+                // Use execCommand for better compatibility in iframes/previews
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                
+                // Ensure element is part of DOM but hidden
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        const t = document.getElementById('toast');
+                        t.classList.remove('translate-x-full', 'opacity-0');
+                        setTimeout(() => t.classList.add('translate-x-full', 'opacity-0'), 2000);
+                    } else {
+                        console.warn('Copy command failed.');
+                    }
+                } catch (err) {
+                    console.error('Unable to copy', err);
+                }
+                
+                document.body.removeChild(textArea);
+            }
+        };
+
+        const BaseTool = {
+            chars: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/",
+            convert() {
+                let input = document.getElementById('base-input').value.trim();
+                let from = parseInt(document.getElementById('base-from').value);
+                let to = parseInt(document.getElementById('base-to').value);
+                const out = document.getElementById('base-output');
+                const lang = App.currentLang;
+                
+                if(!input || isNaN(from) || isNaN(to)) { out.value = ''; return; }
+                
+                // Enforce range 2-64
+                if(from < 2) from = 2; if(from > 64) from = 64;
+                if(to < 2) to = 2; if(to > 64) to = 64;
+
+                try {
+                    let val = 0n;
+                    
+                    // Case handling: For bases <= 36, standard practice is case-insensitive.
+                    // For bases > 36, case sensitive (e.g., Base64).
+                    let processInput = input;
+                    if (from <= 36) processInput = processInput.toLowerCase();
+                    
+                    for (const char of processInput) {
+                        const idx = this.chars.indexOf(char);
+                        if (idx === -1 || idx >= from) throw new Error("Invalid char: " + char);
+                        val = val * BigInt(from) + BigInt(idx);
+                    }
+
+                    // Encode to target base
+                    if (val === 0n) {
+                        out.value = "0";
+                        return;
+                    }
+
+                    let res = "";
+                    while (val > 0n) {
+                        const rem = val % BigInt(to);
+                        val = val / BigInt(to);
+                        res = this.chars[Number(rem)] + res;
+                    }
+
+                    out.value = res;
+
+                } catch(e) {
+                    out.value = (lang === 'zh-CN' || lang === 'zh-TW') ? "错误: 输入格式无效" : "Error: Invalid input format";
+                }
+            }
+        };
+
+        const FileTool = {
+            handleFile(file) {
+                if(!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const buffer = e.target.result;
+                    const u8 = new Uint8Array(buffer);
+                    
+                    const limit = 5000;
+                    let bin = '', hex = '';
+                    
+                    for(let i=0; i < Math.min(u8.length, limit); i++) {
+                        bin += u8[i].toString(2).padStart(8, '0') + ' ';
+                        hex += u8[i].toString(16).padStart(2, '0').toUpperCase() + ' ';
+                    }
+
+                    if(u8.length > limit) {
+                        const msg = `\n... (${u8.length - limit} bytes hidden)`;
+                        bin += msg; hex += msg;
+                    }
+
+                    document.getElementById('file-bin-out').value = bin;
+                    document.getElementById('file-hex-out').value = hex;
+                };
+                reader.readAsArrayBuffer(file);
+            },
+
+            download() {
+                const input = document.getElementById('restore-input').value.replace(/[\s\n]/g, '');
+                const mode = document.getElementById('restore-mode').value;
+                const fname = document.getElementById('dl-filename').value || `restored.${mode === 'hex' ? 'bin' : 'dat'}`;
+                
+                if(!input) return alert('Input is empty');
+
+                try {
+                    let u8;
+                    if(mode === 'hex') {
+                        if(input.length % 2 !== 0) throw new Error('Hex length must be even');
+                        u8 = new Uint8Array(input.length / 2);
+                        for(let i=0; i<u8.length; i++) {
+                            u8[i] = parseInt(input.substr(i*2, 2), 16);
+                        }
+                    } else {
+                        if(input.length % 8 !== 0) throw new Error('Binary length must be multiple of 8');
+                        u8 = new Uint8Array(input.length / 8);
+                        for(let i=0; i<u8.length; i++) {
+                            u8[i] = parseInt(input.substr(i*8, 8), 2);
+                        }
+                    }
+
+                    const blob = new Blob([u8], {type: 'application/octet-stream'});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fname;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch(e) {
+                    alert('Error: ' + e.message);
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+<div id="related-tools-container"></div>
+<script src="/scripts/related.js"></script>
+</body>
+</html>
