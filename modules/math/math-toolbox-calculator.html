@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 标签与元数据必须包含的代码 -->
+    <meta name="category" content="development-tools">
+    <meta name="icon" content="📅">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Toolbox Calculator</title>
+    
+    <link rel="canonical" href="https://toolboxpro.top/modules/math/math-toolbox-calculator.html" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Math.js 用于计算演示 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        primaryDark: '#2563eb',
+                        slate: {
+                            850: '#1e293b', // 自定义深色背景
+                            900: '#0f172a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'Menlo', 'Monaco', 'monospace'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* 玻璃拟态卡片 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* 交互卡片 */
+        .card {
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: 0.5s;
+            pointer-events: none;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #3b82f6;
+        }
+        .card:hover::after {
+            transform: translateX(100%);
+        }
+        
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        
+        /* 代码块样式 */
+        .code-snippet {
+            font-family: 'Fira Code', monospace;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            letter-spacing: -0.02em;
+            border: 1px solid #e2e8f0;
+        }
+        .dark .code-snippet {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            border-color: #334155;
+        }
+
+        .category-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .category-btn.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
+        }
+        
+        select.custom-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+        }
+
+        /* 模态框动画 */
+        #shareModal {
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease;
+        }
+        
+        /* 渐变背景 */
+        .bg-gradient-header {
+            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.05) 0%, transparent 100%);
+        }
+        .dark .bg-gradient-header {
+            background: linear-gradient(to bottom, rgba(30, 41, 59, 0.5) 0%, transparent 100%);
+        }
+    </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans leading-relaxed dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300 min-h-screen flex flex-col selection:bg-blue-100 dark:selection:bg-blue-900">
+
+    <!-- 顶部工具栏 -->
+    <div class="fixed top-4 right-4 z-50 flex gap-3">
+        <!-- 分享按钮 -->
+        <button onclick="openShareModal()" class="glass-card p-2.5 rounded-xl shadow-sm hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all text-blue-600 dark:text-blue-400 hover:scale-105 active:scale-95" title="Share">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+        </button>
+        <!-- 模式切换 -->
+        <button onclick="toggleTheme()" class="glass-card p-2.5 rounded-xl shadow-sm hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all hover:scale-105 active:scale-95" title="Switch Theme">
+            <svg id="theme-icon-sun" class="w-5 h-5 text-amber-500 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path></svg>
+            <svg id="theme-icon-moon" class="w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+        </button>
+        <!-- 语言切换 -->
+        <div class="relative">
+            <select id="lang-select" onchange="changeLanguage(this.value)" class="custom-select w-full appearance-none glass-card pl-3 pr-10 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer">
+                <option value="en">🇺🇸 English</option>
+                <option value="zh-CN">🇨🇳 简体中文</option>
+                <option value="zh-TW">🇹🇼 繁體中文</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="ru">🇷🇺 Русский</option>
+                <option value="hi">🇮🇳 हिन्दी</option>
+                <option value="pl">🇵🇱 Polski</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 头部区域 -->
+    <header class="bg-gradient-header pt-20 pb-12 px-4 border-b border-slate-200/50 dark:border-slate-800/50">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-10 animate-fade-in">
+                <div class="inline-block p-3 bg-blue-50 dark:bg-slate-800 rounded-2xl mb-4 shadow-sm">
+                    <span class="text-4xl">🧮</span>
+                </div>
+                <h1 id="ui-title" class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 mb-4 tracking-tight">Math Toolbox Calculator</h1>
+                <p id="ui-subtitle" class="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed">
+                    Comprehensive reference library and calculation bench for calculus, complex numbers, probability, matrices, and more.
+                </p>
+            </div>
+
+            <!-- 计算器演示区 -->
+            <div class="max-w-3xl mx-auto glass-card rounded-2xl p-1 shadow-lg animate-slide-up">
+                <div class="bg-white/50 dark:bg-slate-900/50 rounded-xl p-6 backdrop-blur-sm">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-3 flex justify-between items-center tracking-wider">
+                        <span id="ui-calc-title" class="flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            Calculation Bench
+                        </span>
+                        <span id="ui-calc-example" class="text-blue-500 hover:text-blue-600 cursor-pointer text-xs bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded transition-colors" onclick="loadExample()">Fill Example</span>
+                    </label>
+                    <div class="flex gap-3">
+                        <div class="relative flex-1 group">
+                            <input type="text" id="calcInput" placeholder="Enter expression, e.g., 5! or sin(45 deg)" 
+                                class="w-full pl-4 pr-4 py-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none transition-all font-mono text-lg shadow-sm group-hover:border-blue-300 dark:group-hover:border-blue-700"
+                                onkeydown="if(event.key === 'Enter') calculate()">
+                        </div>
+                        <button id="ui-calc-btn" onclick="calculate()" class="bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg active:scale-95 text-lg">
+                            =
+                        </button>
+                    </div>
+                    <div class="mt-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 min-h-[3.5rem] flex items-center justify-end">
+                        <div id="calcResult" class="font-mono text-2xl font-bold text-slate-700 dark:text-slate-200 break-all text-right w-full"></div>
+                    </div>
+                    <p id="ui-calc-note" class="text-[10px] text-slate-400 mt-2 text-right italic opacity-70">Note: Some symbolic functions (like integrals/derivatives) are for syntax reference only; the JS engine supports numerical operations.</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主体内容 -->
+    <div class="flex-1 max-w-7xl mx-auto w-full px-4 py-10 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        <!-- 左侧导航 (移动端为横向滚动) -->
+        <div class="lg:col-span-1 space-y-4">
+            <div class="sticky top-24">
+                <div class="relative mb-6 group">
+                    <input type="text" id="searchInput" placeholder="Search functions..." oninput="filterFunctions()"
+                        class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all shadow-sm">
+                    <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">Navigation</h3>
+                <nav class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-4 lg:pb-0 scrollbar-hide" id="categoryNav">
+                    <!-- 动态生成分类按钮 -->
+                </nav>
+            </div>
+        </div>
+
+        <!-- 右侧内容区 -->
+        <div class="lg:col-span-3">
+            <div id="contentArea" class="space-y-10 animate-fade-in">
+                <!-- 动态生成内容卡片 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部功能介绍与使用指南 -->
+    <div class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-8">
+        <div class="max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-8 rounded-3xl border border-slate-100 dark:border-slate-700/50">
+                <h3 class="text-2xl font-bold mb-6 flex items-center gap-3 text-slate-800 dark:text-slate-100">
+                    <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <span id="ui-feature-title">Features</span>
+                </h3>
+                <ul class="space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed" id="ui-feature-list">
+                    <!-- 动态填充 -->
+                </ul>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-8 rounded-3xl border border-slate-100 dark:border-slate-700/50">
+                <h3 class="text-2xl font-bold mb-6 flex items-center gap-3 text-slate-800 dark:text-slate-100">
+                    <div class="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg text-green-600 dark:text-green-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <span id="ui-guide-title">User Guide</span>
+                </h3>
+                <ol class="space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed list-decimal list-inside" id="ui-guide-list">
+                    <!-- 动态填充 -->
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分享模态框 -->
+    <div id="shareModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden p-6 animate-slide-up border border-slate-100 dark:border-slate-700">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-800 dark:text-white" id="ui-share-title">Share Tool</h3>
+                <button onclick="closeShareModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">&times;</button>
+            </div>
+            
+            <div class="space-y-5">
+                <!-- 链接 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider" id="ui-share-link">Tool Link</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="shareUrl" readonly class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs p-3 rounded-lg text-slate-600 dark:text-slate-300 font-mono focus:outline-none">
+                        <button onclick="copyToClipboard('shareUrl')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold transition-colors shadow-sm" id="ui-copy-btn-1">Copy</button>
+                    </div>
+                </div>
+                <!-- 文本摘要 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider" id="ui-share-text">Text Summary</label>
+                    <div class="relative group">
+                        <textarea id="shareTextSummary" readonly rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs p-3 rounded-lg resize-none text-slate-600 dark:text-slate-300 font-sans focus:outline-none"></textarea>
+                        <button onclick="copyToClipboard('shareTextSummary')" class="absolute top-2 right-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-bold">COPY</button>
+                    </div>
+                </div>
+                <!-- HTML 嵌入 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider" id="ui-share-html">HTML Embed</label>
+                    <div class="relative group">
+                        <textarea id="shareHtmlEmbed" readonly rows="2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs p-3 rounded-lg resize-none text-slate-600 dark:text-slate-300 font-mono focus:outline-none"></textarea>
+                        <button onclick="copyToClipboard('shareHtmlEmbed')" class="absolute top-2 right-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-bold">COPY</button>
+                    </div>
+                </div>
+            </div>
+            <div id="copyNotice" class="mt-4 flex items-center justify-center gap-2 text-green-600 dark:text-green-400 text-sm font-medium h-6 opacity-0 transition-opacity bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span id="copyNoticeText">Copied to clipboard!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据与逻辑 -->
+    <script>
+        // --- 多语言字典 ---
+        const i18n = {
+            "en": {
+                ui: {
+                    title: "Math Toolbox Calculator",
+                    subtitle: "Comprehensive reference library and calculation bench for calculus, complex numbers, probability, matrices, and more.",
+                    calcTitle: "Calculation Bench (via math.js)",
+                    calcExample: "Fill Example: det([[1,2],[3,4]])",
+                    calcPlaceholder: "Enter expression, e.g., 5! or sin(45 deg)",
+                    calcBtn: "=",
+                    calcNote: "Note: Some symbolic functions (like integrals/derivatives) are for syntax reference only; the JS engine supports numerical operations.",
+                    searchPlaceholder: "Search functions...",
+                    noResults: "No functions found",
+                    clickToTry: "Click to try",
+                    featureTitle: "Features",
+                    guideTitle: "User Guide",
+                    shareTitle: "Share Tool",
+                    shareLink: "Tool Link",
+                    shareText: "Text Summary",
+                    shareHtml: "HTML Embed",
+                    copyBtn: "Copy",
+                    copied: "Copied to clipboard!",
+                    featureList: [
+                        "• <strong>Extensive Library</strong>: Covers calculus, linear algebra, statistics, and more.",
+                        "• <strong>Real-time Calculation</strong>: Built-in Math.js engine for instant numerical computing.",
+                        "• <strong>Multi-language Support</strong>: Supports major global languages.",
+                        "• <strong>Responsive Design</strong>: Perfectly adapted for desktop and mobile devices."
+                    ],
+                    guideList: [
+                        "1. <strong>Find Functions</strong>: Switch between math domains using the sidebar/top navigation.",
+                        "2. <strong>Use Calculator</strong>: Click any function card to auto-fill the calculation box.",
+                        "3. <strong>Calculate</strong>: Press Enter or click '=' button to get results.",
+                        "4. <strong>Share</strong>: Click the share icon top-right to copy links or embed code."
+                    ]
+                },
+                data: [
+                    { id: "basic", name: "Basic Ops", icon: "🔢", items: [{ name: "abs(x)", desc: "Absolute value. E.g., abs(-4.5) = 4.5" }, { name: "root(x,n)", desc: "n-th root of x. E.g., root(8, 3) = 2" }, { name: "log(x,a)", desc: "Logarithm of x with base a. E.g., log(100, 10) = 2" }, { name: "n!", desc: "Factorial. E.g., 5! = 120" }] },
+                    { id: "calculus", name: "Calculus", icon: "∫", items: [{ name: "diff(f(x),x,a)", desc: "Derivative at point a. E.g., diff(sqrt(x),x,5)" }, { name: "diff(f(x),x,a,n)", desc: "n-th derivative at point a." }, { name: "int(f(x),x,a,b)", desc: "Definite integral from a to b." }, { name: "sum(f(n),n,min,max)", desc: "Summation ∑. Sum of f(n) from min to max." }, { name: "product(f(n),n,min,max)", desc: "Product ∏. Product of f(n) from min to max." }] },
+                    { id: "complex", name: "Complex", icon: "ℂ", items: [{ name: "abs(z)", desc: "Modulus. E.g., abs(2+3i)" }, { name: "arg(z)", desc: "Argument (radians). E.g., arg(2+3i)" }, { name: "re(z)", desc: "Real part. E.g., re(2+3i) = 2" }, { name: "im(z)", desc: "Imaginary part. E.g., im(2+3i) = 3" }, { name: "conj(z)", desc: "Conjugate. E.g., conj(2+3i) = 2-3i" }] },
+                    { id: "probability", name: "Probability", icon: "🎲", subsections: [{ title: "Combinatorics", items: [{ name: "binomial(n,k)", desc: "Combinations C(n,k). Number of ways to choose k from n." }, { name: "permute(n,k)", desc: "Permutations P(n,k). Number of ordered ways to choose k from n." }] }, { title: "Normal Dist.", items: [{ name: "normcdf(a,µ,σ)", desc: "P(X < a), where X ~ N(µ, σ)" }, { name: "normcdfrange(a,b,µ,σ)", desc: "P(a < X < b), where X ~ N(µ, σ)" }, { name: "invnorm(a,µ,σ)", desc: "Inverse CDF, returns m such that P(X < m) = a" }, { name: "normpdf(x,µ,σ)", desc: "Probability Density Function PDF" }] }, { title: "Binomial Dist.", items: [{ name: "binompdf(m,n,p)", desc: "P(X = m), where X ~ B(n, p)" }, { name: "binomcdf(m,n,p)", desc: "P(X ≤ m), where X ~ B(n, p)" }, { name: "invbinom(a,n,p)", desc: "Inverse CDF, returns m such that P(X ≤ m) = a" }] }, { title: "Other Dist.", items: [{ name: "poissonpdf(m,λ)", desc: "Poisson prob P(X=m)" }, { name: "tcdf(a,k)", desc: "Student's t prob P(X<a), k degrees of freedom" }, { name: "geompdf(m,p)", desc: "Geometric prob P(X=m)" }, { name: "hgeompdf(m,N,K,n)", desc: "Hypergeometric prob" }] }, { title: "Random", items: [{ name: "random()", desc: "Random float between [0,1]" }, { name: "randint(a,b)", desc: "Random integer between [a,b]" }, { name: "randintnorep(a,b,n)", desc: "n unique random integers between [a,b]" }] }] },
+                    { id: "matrices", name: "Matrices", icon: "[ ]", items: [{ name: "dim(M)", desc: "Dimensions [rows, cols]" }, { name: "transpose(M)", desc: "Transpose matrix" }, { name: "det(M)", desc: "Determinant" }, { name: "inverse(M)", desc: "Inverse matrix" }, { name: "identity(n)", desc: "Identity matrix of size n" }, { name: "trace(M)", desc: "Trace (sum of diagonal elements)" }, { name: "ref(M)", desc: "Row Echelon Form" }, { name: "rref(M)", desc: "Reduced Row Echelon Form" }, { name: "dot(U,V)", desc: "Dot product" }, { name: "cross(U,V)", desc: "Cross product (3D)" }, { name: "norm(U)", desc: "Vector norm (length)" }] },
+                    { id: "list", name: "Statistics", icon: "📊", items: [{ name: "mean(L)", desc: "Mean value" }, { name: "stddev(L)", desc: "Population standard deviation" }, { name: "samplestddev(L)", desc: "Sample standard deviation" }, { name: "med(L)", desc: "Median" }, { name: "var(L)", desc: "Variance" }, { name: "sort(L)", desc: "Sort ascending" }, { name: "sum(L)", desc: "Sum of elements" }] },
+                    { id: "arithmetic", name: "Arithmetic", icon: "÷", items: [{ name: "gcd(p,q)", desc: "Greatest Common Divisor. E.g., gcd(55, 11) = 11" }, { name: "lcm(p,q)", desc: "Least Common Multiple. E.g., lcm(13, 2) = 26" }, { name: "factor(n)", desc: "Prime factorization. E.g., factor(24) = 2^3 × 3" }, { name: "rem(p,q)", desc: "Remainder. rem(50, 45) = 5" }, { name: "quo(p,q)", desc: "Quotient. quo(80, 39) = 2" }] },
+                    { id: "trig", name: "Trigonometry", icon: "△", items: [{ name: "sinh, cosh, tanh", desc: "Hyperbolic sine, cosine, tangent" }, { name: "arsinh, arcosh, artanh", desc: "Inverse hyperbolic functions" }, { name: "csc, sec, cot", desc: "Cosecant, Secant, Cotangent" }, { name: "arccsc, arcsec, arccot", desc: "Inverse Cosecant, Secant, Cotangent" }] },
+                    { id: "decimal", name: "Decimal", icon: ".00", items: [{ name: "floor(x)", desc: "Round down. floor(5.8) = 5" }, { name: "ceiling(x)", desc: "Round up. ceil(5.4) = 6" }, { name: "frac(x)", desc: "Fractional part. frac(5.8) = 0.8" }, { name: "round(x,n)", desc: "Round to n decimals. round(8.6576, 2) = 8.66" }] },
+                    { id: "logic", name: "Logic", icon: "bool", items: [{ name: "piecewise", desc: "Piecewise template. (-x, x<0, x, x≥0)" }, { name: "and, or, not, xor", desc: "Logical operators" }, { name: "≤, ≥, ≠", desc: "Comparison operators" }] },
+                    { id: "units", name: "Units", icon: "⚖️", displayType: "list", content: `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="space-y-4"><h4 class="font-bold text-blue-600">Length</h4><p class="text-sm">in, ft, yd, mi, au, ly, pc (Imperial/Astro)</p><p class="text-sm">pm, nm, µm, mm, cm, m, km (Metric)</p><h4 class="font-bold text-blue-600">Time</h4><p class="text-sm">ns, µs, ms, s, min, h, day, week, month, year</p><h4 class="font-bold text-blue-600">Volume</h4><p class="text-sm">tsp, tbsp, cup, pt, qt, gal (Imperial)</p><p class="text-sm">mL, cL, dL, L (Metric)</p><h4 class="font-bold text-blue-600">Constants</h4><ul class="text-sm space-y-1"><li>c: Speed of light</li><li>e: Elementary charge</li><li>G: Gravitational constant</li><li>g0: Standard gravity (9.80665)</li><li>Na: Avogadro constant</li></ul></div><div class="space-y-4"><h4 class="font-bold text-blue-600">Mass</h4><p class="text-sm">oz, lb, ton (Imperial)</p><p class="text-sm">µg, mg, g, kg, t (Metric)</p><h4 class="font-bold text-blue-600">Electricity</h4><p class="text-sm">A (Ampere), V (Volt), Ω (Ohm), F (Farad)</p><h4 class="font-bold text-blue-600">Energy & Power</h4><p class="text-sm">J (Joule), W (Watt), eV (Electronvolt)</p><h4 class="font-bold text-blue-600">Temperature</h4><p class="text-sm">K (Kelvin), °F (Fahrenheit), °C (Celsius)</p></div></div>` }
+                ]
+            },
+            "zh-CN": {
+                ui: {
+                    title: "数学工具箱计算器",
+                    subtitle: "集成微积分、复数、概率统计、矩阵向量等高级函数的综合参考库与计算实验台。",
+                    calcTitle: "计算试验台 (基于 math.js)",
+                    calcExample: "填入示例: det([[1,2],[3,4]])",
+                    calcPlaceholder: "输入表达式，例如: 5! 或 sin(45 deg)",
+                    calcBtn: "=",
+                    calcNote: "注：部分复杂的符号函数（如积分/求导）在此仅作为语法参考，JS引擎可能不支持符号运算。",
+                    searchPlaceholder: "搜索函数...",
+                    noResults: "未找到相关函数",
+                    clickToTry: "点击试用",
+                    featureTitle: "功能介绍",
+                    guideTitle: "使用指南",
+                    shareTitle: "分享此工具",
+                    shareLink: "工具链接",
+                    shareText: "文本摘要",
+                    shareHtml: "HTML 嵌入",
+                    copyBtn: "复制",
+                    copied: "已复制到剪贴板!",
+                    featureList: [
+                        "• <strong>海量函数库</strong>：涵盖微积分、线性代数、统计学等多个领域。",
+                        "• <strong>实时计算</strong>：内置 Math.js 引擎，支持即时数值运算。",
+                        "• <strong>多语言支持</strong>：支持六种主流语言，全球通用。",
+                        "• <strong>响应式设计</strong>：完美适配桌面与移动端设备。"
+                    ],
+                    guideList: [
+                        "1. <strong>查找函数</strong>：通过左侧（或顶部）分类栏切换不同数学领域。",
+                        "2. <strong>使用计算器</strong>：点击任意函数卡片可快速填入上方计算框。",
+                        "3. <strong>执行运算</strong>：输入参数后按回车或点击“计算”按钮获取结果。",
+                        "4. <strong>分享工具</strong>：点击右上角分享按钮，即可复制链接或嵌入代码。"
+                    ]
+                },
+                data: [
+                    { id: "basic", name: "基础运算", icon: "🔢", items: [{ name: "abs(x)", desc: "计算绝对值。例如：abs(-4.5) = 4.5" }, { name: "root(x,n)", desc: "计算 x 的 n 次方根。例如：root(8, 3) = 2" }, { name: "log(x,a)", desc: "计算以 a 为底 x 的对数。例如：log(100, 10) = 2" }, { name: "n!", desc: "阶乘。返回 n 与所有小于它的正整数的乘积。例如：5! = 120" }] },
+                    { id: "calculus", name: "微积分", icon: "∫", items: [{ name: "diff(f(x),x,a)", desc: "计算函数在某一点 a 的导数 f'(a)。例如：diff(sqrt(x),x,5)" }, { name: "diff(f(x),x,a,n)", desc: "计算函数在某一点 a 的 n 阶导数 f^(n)(a)。" }, { name: "int(f(x),x,a,b)", desc: "计算函数在区间 [a, b] 上的定积分。" }, { name: "sum(f(n),n,min,max)", desc: "求和符号 ∑。计算 f(n) 从 min 到 max 的总和。" }, { name: "product(f(n),n,min,max)", desc: "求积符号 ∏。计算 f(n) 从 min 到 max 的乘积。" }] },
+                    { id: "complex", name: "复数", icon: "ℂ", items: [{ name: "abs(z)", desc: "复数的模。例如：abs(2+3i)" }, { name: "arg(z)", desc: "复数的辐角（弧度）。例如：arg(2+3i)" }, { name: "re(z)", desc: "复数的实部。例如：re(2+3i) = 2" }, { name: "im(z)", desc: "复数的虚部。例如：im(2+3i) = 3" }, { name: "conj(z)", desc: "复数的共轭。例如：conj(2+3i) = 2-3i" }] },
+                    { id: "probability", name: "概率与统计", icon: "🎲", subsections: [{ title: "组合数学", items: [{ name: "binomial(n,k)", desc: "组合数 C(n,k)。从 n 个元素中选取 k 个的方法数。" }, { name: "permute(n,k)", desc: "排列数 P(n,k)。从 n 个元素中有序选取 k 个的方法数。" }] }, { title: "正态分布 (Normal)", items: [{ name: "normcdf(a,µ,σ)", desc: "P(X < a)，其中 X ~ N(µ, σ)" }, { name: "normcdfrange(a,b,µ,σ)", desc: "P(a < X < b)，其中 X ~ N(µ, σ)" }, { name: "invnorm(a,µ,σ)", desc: "反函数，返回 m 使得 P(X < m) = a" }, { name: "normpdf(x,µ,σ)", desc: "概率密度函数 PDF" }] }, { title: "二项分布 (Binomial)", items: [{ name: "binompdf(m,n,p)", desc: "P(X = m)，其中 X ~ B(n, p)" }, { name: "binomcdf(m,n,p)", desc: "P(X ≤ m)，其中 X ~ B(n, p)" }, { name: "invbinom(a,n,p)", desc: "反函数，返回 m 使得 P(X ≤ m) = a" }] }, { title: "其他分布", items: [{ name: "poissonpdf(m,λ)", desc: "泊松分布概率 P(X=m)" }, { name: "tcdf(a,k)", desc: "学生t分布 P(X<a)，k 为自由度" }, { name: "geompdf(m,p)", desc: "几何分布 P(X=m)" }, { name: "hgeompdf(m,N,K,n)", desc: "超几何分布概率" }] }, { title: "随机数", items: [{ name: "random()", desc: "返回 [0,1] 之间的随机浮点数" }, { name: "randint(a,b)", desc: "返回 [a,b] 之间的随机整数" }, { name: "randintnorep(a,b,n)", desc: "返回 [a,b] 之间 n 个不重复的随机整数" }] }] },
+                    { id: "matrices", name: "矩阵与向量", icon: "[ ]", items: [{ name: "dim(M)", desc: "返回矩阵的维度 [行, 列]" }, { name: "transpose(M)", desc: "转置矩阵" }, { name: "det(M)", desc: "计算矩阵行列式" }, { name: "inverse(M)", desc: "计算逆矩阵" }, { name: "identity(n)", desc: "创建 n 阶单位矩阵" }, { name: "trace(M)", desc: "计算矩阵的迹（对角线元素之和）" }, { name: "ref(M)", desc: "行阶梯形矩阵" }, { name: "rref(M)", desc: "简化行阶梯形矩阵" }, { name: "dot(U,V)", desc: "向量点积" }, { name: "cross(U,V)", desc: "向量叉积（3维）" }, { name: "norm(U)", desc: "向量的模（长度）" }] },
+                    { id: "list", name: "列表统计", icon: "📊", items: [{ name: "mean(L)", desc: "平均值" }, { name: "stddev(L)", desc: "总体标准差" }, { name: "samplestddev(L)", desc: "样本标准差" }, { name: "med(L)", desc: "中位数" }, { name: "var(L)", desc: "方差" }, { name: "sort(L)", desc: "升序排序" }, { name: "sum(L)", desc: "列表元素求和" }] },
+                    { id: "arithmetic", name: "算术", icon: "÷", items: [{ name: "gcd(p,q)", desc: "最大公约数。例如 gcd(55, 11) = 11" }, { name: "lcm(p,q)", desc: "最小公倍数。例如 lcm(13, 2) = 26" }, { name: "factor(n)", desc: "整数分解质因数。例如 factor(24) = 2^3 × 3" }, { name: "rem(p,q)", desc: "求余数。rem(50, 45) = 5" }, { name: "quo(p,q)", desc: "求商。quo(80, 39) = 2" }] },
+                    { id: "trig", name: "三角学", icon: "△", items: [{ name: "sinh, cosh, tanh", desc: "双曲正弦、余弦、正切" }, { name: "arsinh, arcosh, artanh", desc: "反双曲函数" }, { name: "csc, sec, cot", desc: "余割、正割、余切" }, { name: "arccsc, arcsec, arccot", desc: "反余割、反正割、反余切" }] },
+                    { id: "decimal", name: "小数运算", icon: ".00", items: [{ name: "floor(x)", desc: "向下取整。floor(5.8) = 5" }, { name: "ceiling(x)", desc: "向上取整。ceil(5.4) = 6" }, { name: "frac(x)", desc: "取小数部分。frac(5.8) = 0.8" }, { name: "round(x,n)", desc: "四舍五入到 n 位小数。round(8.6576, 2) = 8.66" }] },
+                    { id: "logic", name: "逻辑", icon: "bool", items: [{ name: "piecewise", desc: "分段函数模板。(-x, x<0, x, x≥0)" }, { name: "and, or, not, xor", desc: "逻辑运算符：与、或、非、异或" }, { name: "≤, ≥, ≠", desc: "比较运算符" }] },
+                    { id: "units", name: "单位与常数", icon: "⚖️", displayType: "list", content: `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="space-y-4"><h4 class="font-bold text-blue-600">长度 (Length)</h4><p class="text-sm">in, ft, yd, mi, au, ly, pc (英制/天文)</p><p class="text-sm">pm, nm, µm, mm, cm, m, km (公制)</p><h4 class="font-bold text-blue-600">时间 (Time)</h4><p class="text-sm">ns, µs, ms, s, min, h, day, week, month, year</p><h4 class="font-bold text-blue-600">体积 (Volume)</h4><p class="text-sm">tsp, tbsp, cup, pt, qt, gal (英制)</p><p class="text-sm">mL, cL, dL, L (公制)</p><h4 class="font-bold text-blue-600">物理常数 (Constants)</h4><ul class="text-sm space-y-1"><li>c: 光速</li><li>e: 基本电荷</li><li>G: 万有引力常数</li><li>g0: 重力加速度 (9.80665)</li><li>Na: 阿伏伽德罗常数</li></ul></div><div class="space-y-4"><h4 class="font-bold text-blue-600">质量 (Mass)</h4><p class="text-sm">oz, lb, ton (英制)</p><p class="text-sm">µg, mg, g, kg, t (公制)</p><h4 class="font-bold text-blue-600">电学 (Electricity)</h4><p class="text-sm">A (安培), V (伏特), Ω (欧姆), F (法拉)</p><h4 class="font-bold text-blue-600">能量与功率</h4><p class="text-sm">J (焦耳), W (瓦特), eV (电子伏特)</p><h4 class="font-bold text-blue-600">温度 (Temperature)</h4><p class="text-sm">K (开尔文), °F (华氏), °C (摄氏)</p></div></div>` }
+                ]
+            },
+            "zh-TW": {
+                ui: {
+                    title: "數學工具箱計算器",
+                    subtitle: "集成微積分、複數、機率統計、矩陣向量等高級函數的綜合參考庫與計算實驗台。",
+                    calcTitle: "計算實驗台 (基於 math.js)",
+                    calcExample: "填入範例: det([[1,2],[3,4]])",
+                    calcPlaceholder: "輸入表達式，例如: 5! 或 sin(45 deg)",
+                    calcBtn: "=",
+                    calcNote: "註：部分複雜的符號函數（如積分/求導）在此僅作為語法參考，JS引擎可能不支援符號運算。",
+                    searchPlaceholder: "搜尋函數...",
+                    noResults: "未找到相關函數",
+                    clickToTry: "點擊試用",
+                    featureTitle: "功能介紹",
+                    guideTitle: "使用指南",
+                    shareTitle: "分享此工具",
+                    shareLink: "工具連結",
+                    shareText: "文本摘要",
+                    shareHtml: "HTML 嵌入",
+                    copyBtn: "複製",
+                    copied: "已複製到剪貼板!",
+                    featureList: [
+                        "• <strong>海量函數庫</strong>：涵蓋微積分、線性代數、統計學等多個領域。",
+                        "• <strong>實時計算</strong>：內建 Math.js 引擎，支持即時數值運算。",
+                        "• <strong>多語言支持</strong>：支持六種主流語言，全球通用。",
+                        "• <strong>響應式設計</strong>：完美適配桌面與移動端設備。"
+                    ],
+                    guideList: [
+                        "1. <strong>查找函數</strong>：通過左側（或頂部）分類欄切換不同數學領域。",
+                        "2. <strong>使用計算器</strong>：點擊任意函數卡片可快速填入上方計算框。",
+                        "3. <strong>執行運算</strong>：輸入參數後按回車或點擊“計算”按鈕獲取結果。",
+                        "4. <strong>分享工具</strong>：點擊右上角分享按鈕，即可複製連結或嵌入代碼。"
+                    ]
+                },
+                data: [
+                    { id: "basic", name: "基礎運算", icon: "🔢", items: [{ name: "abs(x)", desc: "計算絕對值。例如：abs(-4.5) = 4.5" }, { name: "root(x,n)", desc: "計算 x 的 n 次方根。例如：root(8, 3) = 2" }, { name: "log(x,a)", desc: "計算以 a 為底 x 的對數。例如：log(100, 10) = 2" }, { name: "n!", desc: "階乘。返回 n 與所有小於它的正整數的乘積。例如：5! = 120" }] },
+                    { id: "calculus", name: "微積分", icon: "∫", items: [{ name: "diff(f(x),x,a)", desc: "計算函數在某一點 a 的導數 f'(a)。例如：diff(sqrt(x),x,5)" }, { name: "diff(f(x),x,a,n)", desc: "計算函數在某一點 a 的 n 階導數 f^(n)(a)。" }, { name: "int(f(x),x,a,b)", desc: "計算函數在區間 [a, b] 上的定積分。" }, { name: "sum(f(n),n,min,max)", desc: "求和符號 ∑。計算 f(n) 從 min 到 max 的總和。" }, { name: "product(f(n),n,min,max)", desc: "求積符號 ∏。計算 f(n) 從 min 到 max 的乘積。" }] },
+                    { id: "complex", name: "複數", icon: "ℂ", items: [{ name: "abs(z)", desc: "複數的模。例如：abs(2+3i)" }, { name: "arg(z)", desc: "複數的輻角（弧度）。例如：arg(2+3i)" }, { name: "re(z)", desc: "複數的實部。例如：re(2+3i) = 2" }, { name: "im(z)", desc: "複數的虛部。例如：im(2+3i) = 3" }, { name: "conj(z)", desc: "複數的共軛。例如：conj(2+3i) = 2-3i" }] },
+                    { id: "probability", name: "機率與統計", icon: "🎲", subsections: [{ title: "組合數學", items: [{ name: "binomial(n,k)", desc: "組合數 C(n,k)。從 n 個元素中選取 k 個的方法數。" }, { name: "permute(n,k)", desc: "排列數 P(n,k)。從 n 個元素中有序選取 k 個的方法數。" }] }, { title: "常態分佈 (Normal)", items: [{ name: "normcdf(a,µ,σ)", desc: "P(X < a)，其中 X ~ N(µ, σ)" }, { name: "normcdfrange(a,b,µ,σ)", desc: "P(a < X < b)，其中 X ~ N(µ, σ)" }, { name: "invnorm(a,µ,σ)", desc: "反函數，返回 m 使得 P(X < m) = a" }, { name: "normpdf(x,µ,σ)", desc: "機率密度函數 PDF" }] }, { title: "二項分佈 (Binomial)", items: [{ name: "binompdf(m,n,p)", desc: "P(X = m)，其中 X ~ B(n, p)" }, { name: "binomcdf(m,n,p)", desc: "P(X ≤ m)，其中 X ~ B(n, p)" }, { name: "invbinom(a,n,p)", desc: "反函數，返回 m 使得 P(X ≤ m) = a" }] }, { title: "其他分佈", items: [{ name: "poissonpdf(m,λ)", desc: "泊松分佈機率 P(X=m)" }, { name: "tcdf(a,k)", desc: "學生t分佈 P(X<a)，k 為自由度" }, { name: "geompdf(m,p)", desc: "幾何分佈 P(X=m)" }, { name: "hgeompdf(m,N,K,n)", desc: "超幾何分佈機率" }] }, { title: "隨機數", items: [{ name: "random()", desc: "返回 [0,1] 之間的隨機浮點數" }, { name: "randint(a,b)", desc: "返回 [a,b] 之間的隨機整數" }, { name: "randintnorep(a,b,n)", desc: "返回 [a,b] 之間 n 個不重複的隨機整數" }] }] },
+                    { id: "matrices", name: "矩陣與向量", icon: "[ ]", items: [{ name: "dim(M)", desc: "返回矩陣的維度 [行, 列]" }, { name: "transpose(M)", desc: "轉置矩陣" }, { name: "det(M)", desc: "計算矩陣行列式" }, { name: "inverse(M)", desc: "計算逆矩陣" }, { name: "identity(n)", desc: "建立 n 階單位矩陣" }, { name: "trace(M)", desc: "計算矩陣的跡（對角線元素之和）" }, { name: "ref(M)", desc: "列梯形矩陣" }, { name: "rref(M)", desc: "簡化列梯形矩陣" }, { name: "dot(U,V)", desc: "向量點積" }, { name: "cross(U,V)", desc: "向量外積（3維）" }, { name: "norm(U)", desc: "向量的模（長度）" }] },
+                    { id: "list", name: "列表統計", icon: "📊", items: [{ name: "mean(L)", desc: "平均值" }, { name: "stddev(L)", desc: "母體標準差" }, { name: "samplestddev(L)", desc: "樣本標準差" }, { name: "med(L)", desc: "中位數" }, { name: "var(L)", desc: "變異數" }, { name: "sort(L)", desc: "升序排序" }, { name: "sum(L)", desc: "列表元素求和" }] },
+                    { id: "arithmetic", name: "算術", icon: "÷", items: [{ name: "gcd(p,q)", desc: "最大公因數。例如 gcd(55, 11) = 11" }, { name: "lcm(p,q)", desc: "最小公倍數。例如 lcm(13, 2) = 26" }, { name: "factor(n)", desc: "整數分解質因數。例如 factor(24) = 2^3 × 3" }, { name: "rem(p,q)", desc: "求餘數。rem(50, 45) = 5" }, { name: "quo(p,q)", desc: "求商。quo(80, 39) = 2" }] },
+                    { id: "trig", name: "三角學", icon: "△", items: [{ name: "sinh, cosh, tanh", desc: "雙曲正弦、餘弦、正切" }, { name: "arsinh, arcosh, artanh", desc: "反雙曲函數" }, { name: "csc, sec, cot", desc: "餘割、正割、餘切" }, { name: "arccsc, arcsec, arccot", desc: "反餘割、反正割、反餘切" }] },
+                    { id: "decimal", name: "小數運算", icon: ".00", items: [{ name: "floor(x)", desc: "向下取整。floor(5.8) = 5" }, { name: "ceiling(x)", desc: "向上取整。ceil(5.4) = 6" }, { name: "frac(x)", desc: "取小數部分。frac(5.8) = 0.8" }, { name: "round(x,n)", desc: "四捨五入到 n 位小數。round(8.6576, 2) = 8.66" }] },
+                    { id: "logic", name: "邏輯", icon: "bool", items: [{ name: "piecewise", desc: "分段函數模板。(-x, x<0, x, x≥0)" }, { name: "and, or, not, xor", desc: "邏輯運算符：與、或、非、互斥或" }, { name: "≤, ≥, ≠", desc: "比較運算符" }] },
+                    { id: "units", name: "單位與常數", icon: "⚖️", displayType: "list", content: `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="space-y-4"><h4 class="font-bold text-blue-600">長度 (Length)</h4><p class="text-sm">in, ft, yd, mi, au, ly, pc (英制/天文)</p><p class="text-sm">pm, nm, µm, mm, cm, m, km (公制)</p><h4 class="font-bold text-blue-600">時間 (Time)</h4><p class="text-sm">ns, µs, ms, s, min, h, day, week, month, year</p><h4 class="font-bold text-blue-600">體積 (Volume)</h4><p class="text-sm">tsp, tbsp, cup, pt, qt, gal (英制)</p><p class="text-sm">mL, cL, dL, L (公制)</p><h4 class="font-bold text-blue-600">物理常數 (Constants)</h4><ul class="text-sm space-y-1"><li>c: 光速</li><li>e: 基本電荷</li><li>G: 萬有引力常數</li><li>g0: 重力加速度 (9.80665)</li><li>Na: 亞佛加厥常數</li></ul></div><div class="space-y-4"><h4 class="font-bold text-blue-600">質量 (Mass)</h4><p class="text-sm">oz, lb, ton (英制)</p><p class="text-sm">µg, mg, g, kg, t (公制)</p><h4 class="font-bold text-blue-600">電學 (Electricity)</h4><p class="text-sm">A (安培), V (伏特), Ω (歐姆), F (法拉)</p><h4 class="font-bold text-blue-600">能量與功率</h4><p class="text-sm">J (焦耳), W (瓦特), eV (電子伏特)</p><h4 class="font-bold text-blue-600">溫度 (Temperature)</h4><p class="text-sm">K (凱氏), °F (華氏), °C (攝氏)</p></div></div>` }
+                ]
+            },
+            "es": {
+                ui: {
+                    title: "Calculadora de Herramientas",
+                    subtitle: "Biblioteca completa de funciones avanzadas para cálculo, números complejos, probabilidad, matrices y más.",
+                    calcTitle: "Calculadora (vía math.js)",
+                    calcExample: "Ejemplo: det([[1,2],[3,4]])",
+                    calcPlaceholder: "Ingrese expresión, ej: 5! o sin(45 deg)",
+                    calcBtn: "=",
+                    calcNote: "Nota: Algunas funciones simbólicas complejas (como integrales) son solo referencia de sintaxis.",
+                    searchPlaceholder: "Buscar función...",
+                    noResults: "No se encontraron funciones",
+                    clickToTry: "Clic para probar",
+                    featureTitle: "Características",
+                    guideTitle: "Guía de Uso",
+                    shareTitle: "Compartir Herramienta",
+                    shareLink: "Enlace",
+                    shareText: "Resumen",
+                    shareHtml: "Código HTML",
+                    copyBtn: "Copiar",
+                    copied: "¡Copiado!",
+                    featureList: [
+                        "• <strong>Biblioteca Extensa</strong>: Cubre cálculo, álgebra lineal, estadísticas y más.",
+                        "• <strong>Cálculo en Tiempo Real</strong>: Motor Math.js integrado.",
+                        "• <strong>Soporte Multilingüe</strong>: Seis idiomas principales soportados.",
+                        "• <strong>Diseño Responsivo</strong>: Funciona en escritorio y móvil."
+                    ],
+                    guideList: [
+                        "1. <strong>Buscar Función</strong>: Use la barra lateral para navegar.",
+                        "2. <strong>Usar Calculadora</strong>: Haga clic en una tarjeta para rellenar.",
+                        "3. <strong>Ejecutar</strong>: Presione Enter o Calcular.",
+                        "4. <strong>Compartir</strong>: Use el botón de compartir arriba a la derecha."
+                    ]
+                },
+                data: [
+                    { id: "basic", name: "Básicos", icon: "🔢", items: [{ name: "abs(x)", desc: "Valor absoluto. Ej: abs(-4.5) = 4.5" }, { name: "root(x,n)", desc: "Raíz n-ésima de x. Ej: root(8, 3) = 2" }, { name: "log(x,a)", desc: "Logaritmo de x en base a." }, { name: "n!", desc: "Factorial. Ej: 5! = 120" }] },
+                    { id: "calculus", name: "Cálculo", icon: "∫", items: [{ name: "diff(f(x),x,a)", desc: "Derivada en el punto a." }, { name: "int(f(x),x,a,b)", desc: "Integral definida entre a y b." }, { name: "sum(f(n),n,min,max)", desc: "Sumatoria ∑." }, { name: "product(f(n),n,min,max)", desc: "Productoria ∏." }] },
+                    { id: "complex", name: "Complejos", icon: "ℂ", items: [{ name: "abs(z)", desc: "Módulo." }, { name: "arg(z)", desc: "Argumento (radianes)." }, { name: "conj(z)", desc: "Conjugado." }] },
+                    { id: "probability", name: "Probabilidad", icon: "🎲", subsections: [{ title: "Combinatoria", items: [{ name: "binomial(n,k)", desc: "Combinaciones C(n,k)." }, { name: "permute(n,k)", desc: "Permutaciones P(n,k)." }] }, { title: "Distribuciones", items: [{ name: "normcdf(a,µ,σ)", desc: "Normal P(X < a)" }, { name: "binompdf(m,n,p)", desc: "Binomial P(X=m)" }] }] },
+                    { id: "matrices", name: "Matrices", icon: "[ ]", items: [{ name: "dim(M)", desc: "Dimensión [filas, cols]" }, { name: "det(M)", desc: "Determinante" }, { name: "inverse(M)", desc: "Inversa" }, { name: "dot(U,V)", desc: "Producto punto" }] },
+                    { id: "list", name: "Estadística", icon: "📊", items: [{ name: "mean(L)", desc: "Media" }, { name: "stddev(L)", desc: "Desviación estándar" }, { name: "sort(L)", desc: "Ordenar ascendente" }] },
+                    { id: "arithmetic", name: "Aritmética", icon: "÷", items: [{ name: "gcd(p,q)", desc: "Máximo común divisor" }, { name: "lcm(p,q)", desc: "Mínimo común múltiplo" }] },
+                    { id: "trig", name: "Trigonometría", icon: "△", items: [{ name: "sinh, cosh, tanh", desc: "Hiperbólicas" }, { name: "csc, sec, cot", desc: "Cosecante, Secante, Cotangente" }] },
+                    { id: "decimal", name: "Decimales", icon: ".00", items: [{ name: "floor(x)", desc: "Suelo" }, { name: "round(x,n)", desc: "Redondear" }] },
+                    { id: "logic", name: "Lógica", icon: "bool", items: [{ name: "and, or, not", desc: "Operadores lógicos" }] },
+                    { id: "units", name: "Unidades", icon: "⚖️", displayType: "list", content: `<div class="p-4">Unidades y constantes (Visualización simplificada para español)</div>` }
+                ]
+            },
+            "ru": {
+                ui: {
+                    title: "Математический калькулятор",
+                    subtitle: "Комплексная библиотека функций для вычислений, статистики, матриц и многого другого.",
+                    calcTitle: "Калькулятор (math.js)",
+                    calcExample: "Пример: det([[1,2],[3,4]])",
+                    calcPlaceholder: "Введите выражение, например: 5! или sin(45 deg)",
+                    calcBtn: "=",
+                    calcNote: "Примечание: Сложные символьные функции (интегралы) приведены только для справки.",
+                    searchPlaceholder: "Поиск функции...",
+                    noResults: "Функции не найдены",
+                    clickToTry: "Нажмите",
+                    featureTitle: "Возможности",
+                    guideTitle: "Инструкция",
+                    shareTitle: "Поделиться",
+                    shareLink: "Ссылка",
+                    shareText: "Текст",
+                    shareHtml: "HTML код",
+                    copyBtn: "Копировать",
+                    copied: "Скопировано!",
+                    featureList: [
+                        "• <strong>Большая библиотека</strong>: Мат. анализ, алгебра, статистика.",
+                        "• <strong>Мгновенный расчет</strong>: Движок Math.js.",
+                        "• <strong>Мультиязычность</strong>: Поддержка 6 языков.",
+                        "• <strong>Адаптивность</strong>: Для ПК и мобильных."
+                    ],
+                    guideList: [
+                        "1. <strong>Поиск</strong>: Выберите категорию слева.",
+                        "2. <strong>Выбор</strong>: Нажмите на карточку функции.",
+                        "3. <strong>Расчет</strong>: Нажмите Enter или кнопку 'Вычислить'.",
+                        "4. <strong>Поделиться</strong>: Используйте кнопку вверху справа."
+                    ]
+                },
+                data: [
+                    { id: "basic", name: "Базовые", icon: "🔢", items: [{ name: "abs(x)", desc: "Модуль числа." }, { name: "root(x,n)", desc: "Корень n-й степени." }, { name: "n!", desc: "Факториал." }] },
+                    { id: "calculus", name: "Исчисление", icon: "∫", items: [{ name: "diff(f(x),x,a)", desc: "Производная в точке." }, { name: "int(f(x),x,a,b)", desc: "Определенный интеграл." }] },
+                    { id: "complex", name: "Комплексные", icon: "ℂ", items: [{ name: "abs(z)", desc: "Модуль." }, { name: "arg(z)", desc: "Аргумент." }, { name: "conj(z)", desc: "Сопряженное." }] },
+                    { id: "probability", name: "Вероятность", icon: "🎲", subsections: [{ title: "Комбинаторика", items: [{ name: "binomial(n,k)", desc: "Сочетания." }] }] },
+                    { id: "matrices", name: "Матрицы", icon: "[ ]", items: [{ name: "det(M)", desc: "Определитель" }, { name: "inverse(M)", desc: "Обратная матрица" }] },
+                    { id: "list", name: "Статистика", icon: "📊", items: [{ name: "mean(L)", desc: "Среднее" }, { name: "stddev(L)", desc: "Стандартное отклонение" }] },
+                    { id: "arithmetic", name: "Арифметика", icon: "÷", items: [{ name: "gcd(p,q)", desc: "НОД" }, { name: "lcm(p,q)", desc: "НОК" }] },
+                    { id: "trig", name: "Тригонометрия", icon: "△", items: [{ name: "sinh, cosh, tanh", desc: "Гиперболические" }] },
+                    { id: "decimal", name: "Десятичные", icon: ".00", items: [{ name: "floor(x)", desc: "Округление вниз" }, { name: "round(x,n)", desc: "Округление" }] },
+                    { id: "units", name: "Единицы", icon: "⚖️", displayType: "list", content: `<div class="p-4">Единицы и константы</div>` }
+                ]
+            },
+            "hi": {
+                ui: {
+                    title: "गणित टूलबॉक्स कैलकुलेटर",
+                    subtitle: "कैलकुलस, कॉम्प्लेक्स नंबर, सांख्यिकी और मैट्रिक्स के लिए व्यापक लाइब्रेरी।",
+                    calcTitle: "कैलकुलेटर (math.js)",
+                    calcExample: "उदाहरण: det([[1,2],[3,4]])",
+                    calcPlaceholder: "व्यंजक दर्ज करें, जैसे: 5! या sin(45 deg)",
+                    calcBtn: "=",
+                    calcNote: "नोट: कुछ जटिल कार्य केवल संदर्भ के लिए हैं।",
+                    searchPlaceholder: "फ़ंक्शन खोजें...",
+                    noResults: "कोई परिणाम नहीं",
+                    clickToTry: "कोशिश करें",
+                    featureTitle: "विशेषताएं",
+                    guideTitle: "उपयोग गाइड",
+                    shareTitle: "साझा करें",
+                    shareLink: "लिंक",
+                    shareText: "सारांश",
+                    shareHtml: "HTML कोड",
+                    copyBtn: "कॉपी",
+                    copied: "कॉपी किया गया!",
+                    featureList: [
+                        "• <strong>विशाल लाइब्रेरी</strong>: कैलकुलस, बीजगणित, सांख्यिकी।",
+                        "• <strong>त्वरित गणना</strong>: Math.js इंजन।",
+                        "• <strong>बहुभाषी</strong>: 6 भाषाओं का समर्थन।",
+                        "• <strong>उत्तरदायी</strong>: मोबाइल और डेस्कटॉप के लिए।"
+                    ],
+                    guideList: [
+                        "1. <strong>खोजें</strong>: श्रेणी चुनें।",
+                        "2. <strong>चुनें</strong>: कार्ड पर क्लिक करें।",
+                        "3. <strong>गणना</strong>: एंटर दबाएं।",
+                        "4. <strong>साझा करें</strong>: शेयर बटन का उपयोग करें।"
+                    ]
+                },
+                data: [
+                    { id: "basic", name: "बुनियादी", icon: "🔢", items: [{ name: "abs(x)", desc: "निरपेक्ष मान।" }, { name: "n!", desc: "क्रमगुणित (Factorial)।" }] },
+                    { id: "calculus", name: "कलन (Calculus)", icon: "∫", items: [{ name: "diff(f(x),x,a)", desc: "अवकलन (Derivative)।" }, { name: "int(f(x),x,a,b)", desc: "समाकलन (Integral)।" }] },
+                    { id: "complex", name: "मिश्रित संख्या", icon: "ℂ", items: [{ name: "abs(z)", desc: "मापांक।" }] },
+                    { id: "matrices", name: "मैट्रिक्स", icon: "[ ]", items: [{ name: "det(M)", desc: "सारणिक (Determinant)।" }] },
+                    { id: "list", name: "सांख्यिकी", icon: "📊", items: [{ name: "mean(L)", desc: "मध्यमान (Mean)।" }] },
+                    { id: "units", name: "इकाइयाँ", icon: "⚖️", displayType: "list", content: `<div class="p-4">इकाइयाँ और स्थिरांक</div>` }
+                ]
+            },
+            "pl": {
+                ui: {
+                    title: "Kalkulator Matematyczny",
+                    subtitle: "Kompleksowa biblioteka funkcji do rachunku różniczkowego, liczb zespolonych, statystyki i macierzy.",
+                    calcTitle: "Kalkulator (math.js)",
+                    calcExample: "Przykład: det([[1,2],[3,4]])",
+                    calcPlaceholder: "Wpisz wyrażenie, np.: 5! lub sin(45 deg)",
+                    calcBtn: "=",
+                    calcNote: "Uwaga: Niektóre funkcje symboliczne służą tylko jako odniesienie.",
+                    searchPlaceholder: "Szukaj funkcji...",
+                    noResults: "Brak wyników",
+                    clickToTry: "Kliknij",
+                    featureTitle: "Funkcje",
+                    guideTitle: "Instrukcja",
+                    shareTitle: "Udostępnij",
+                    shareLink: "Link",
+                    shareText: "Tekst",
+                    shareHtml: "Kod HTML",
+                    copyBtn: "Kopiuj",
+                    copied: "Skopiowano!",
+                    featureList: [
+                        "• <strong>Biblioteka</strong>: Rachunek różniczkowy, algebra, statystyka.",
+                        "• <strong>Szybkie obliczenia</strong>: Silnik Math.js.",
+                        "• <strong>Wielojęzyczność</strong>: 6 języków.",
+                        "• <strong>Responsywność</strong>: Mobile i Desktop."
+                    ],
+                    guideList: [
+                        "1. <strong>Szukaj</strong>: Wybierz kategorię.",
+                        "2. <strong>Wybierz</strong>: Kliknij kartę.",
+                        "3. <strong>Oblicz</strong>: Naciśnij Enter.",
+                        "4. <strong>Udostępnij</strong>: Użyj przycisku udostępniania."
+                    ]
+                },
+                data: [
+                    { id: "basic", name: "Podstawowe", icon: "🔢", items: [{ name: "abs(x)", desc: "Wartość bezwzględna." }, { name: "n!", desc: "Silnia." }] },
+                    { id: "calculus", name: "Rachunek", icon: "∫", items: [{ name: "diff", desc: "Pochodna." }, { name: "int", desc: "Całka." }] },
+                    { id: "matrices", name: "Macierze", icon: "[ ]", items: [{ name: "det(M)", desc: "Wyznacznik." }] },
+                    { id: "list", name: "Statystyka", icon: "📊", items: [{ name: "mean(L)", desc: "Średnia." }] },
+                    { id: "units", name: "Jednostki", icon: "⚖️", displayType: "list", content: `<div class="p-4">Jednostki i stałe</div>` }
+                ]
+            }
+        };
+
+        let currentLang = 'en';
+        let activeCategory = 'basic';
+        let currentData = i18n['en'].data;
+
+        // --- 初始化逻辑 ---
+        function init() {
+            // 1. 读取 URL 参数
+            const params = new URLSearchParams(window.location.search);
+            const langParam = params.get('lang');
+            if (langParam && i18n[langParam]) {
+                currentLang = langParam;
+            } else {
+                currentLang = 'en'; // 默认英语
+            }
+            document.getElementById('lang-select').value = currentLang;
+
+            // 2. 更新语言
+            updateLanguage(currentLang);
+            
+            // 3. 恢复主题
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                updateThemeIcons(true);
+            }
+        }
+
+        // --- 切换语言 ---
+        function changeLanguage(lang) {
+            currentLang = lang;
+            
+            // 安全修复：try-catch 包裹 history 操作
+            try {
+                const url = new URL(window.location);
+                url.searchParams.set('lang', lang);
+                window.history.pushState({}, '', url);
+            } catch (e) {
+                console.warn('History API not available in this environment:', e);
+            }
+
+            updateLanguage(lang);
+        }
+
+        function updateLanguage(lang) {
+            const langObj = i18n[lang];
+            
+            // 更新 UI 文本
+            document.getElementById('ui-title').innerText = langObj.ui.title;
+            document.getElementById('ui-subtitle').innerText = langObj.ui.subtitle;
+            document.getElementById('ui-calc-title').innerText = langObj.ui.calcTitle;
+            document.getElementById('ui-calc-example').innerText = langObj.ui.calcExample;
+            document.getElementById('calcInput').placeholder = langObj.ui.calcPlaceholder;
+            document.getElementById('ui-calc-btn').innerText = langObj.ui.calcBtn;
+            document.getElementById('ui-calc-note').innerText = langObj.ui.calcNote;
+            document.getElementById('searchInput').placeholder = langObj.ui.searchPlaceholder;
+            
+            // 更新功能介绍和指南
+            document.getElementById('ui-feature-title').innerText = langObj.ui.featureTitle;
+            document.getElementById('ui-guide-title').innerText = langObj.ui.guideTitle;
+            
+            // 更新列表内容
+            const featureListEl = document.getElementById('ui-feature-list');
+            if (langObj.ui.featureList) {
+                featureListEl.innerHTML = langObj.ui.featureList.map(item => `<li>${item}</li>`).join('');
+            }
+            
+            const guideListEl = document.getElementById('ui-guide-list');
+            if (langObj.ui.guideList) {
+                guideListEl.innerHTML = langObj.ui.guideList.map(item => `<li>${item}</li>`).join('');
+            }
+
+            // 更新分享模态框文本
+            document.getElementById('ui-share-title').innerText = langObj.ui.shareTitle;
+            document.getElementById('ui-share-link').innerText = langObj.ui.shareLink;
+            document.getElementById('ui-share-text').innerText = langObj.ui.shareText;
+            document.getElementById('ui-share-html').innerText = langObj.ui.shareHtml;
+            document.getElementById('ui-copy-btn-1').innerText = langObj.ui.copyBtn;
+
+            // 更新数据源
+            currentData = langObj.data;
+            
+            // 重绘
+            renderNav();
+            renderContent(activeCategory);
+            updateShareContent();
+        }
+
+        // --- 渲染导航 ---
+        function renderNav() {
+            const nav = document.getElementById('categoryNav');
+            nav.innerHTML = currentData.map(cat => `
+                <button onclick="setActiveCategory('${cat.id}')" 
+                    class="category-btn flex items-center gap-3 px-5 py-3.5 rounded-xl text-left border border-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-all ${cat.id === activeCategory ? 'active shadow-lg shadow-blue-500/20' : 'text-slate-600 dark:text-slate-400'} group w-full">
+                    <span class="text-xl group-hover:scale-110 transition-transform duration-300">${cat.icon}</span>
+                    <span class="font-medium text-sm whitespace-nowrap">${cat.name}</span>
+                    ${cat.id === activeCategory ? '<div class="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white/30 rounded-l-full"></div>' : ''}
+                </button>
+            `).join('');
+        }
+
+        function setActiveCategory(id) {
+            activeCategory = id;
+            renderNav();
+            renderContent(id);
+            if (window.innerWidth < 1024) {
+                document.getElementById('contentArea').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // --- 渲染内容 ---
+        function renderContent(id) {
+            const container = document.getElementById('contentArea');
+            const data = currentData.find(c => c.id === id);
+            
+            if (!data) return;
+
+            if (data.displayType === 'list') {
+                container.innerHTML = `
+                    <div class="card bg-white dark:bg-slate-800 p-8 animate-fade-in border border-slate-100 dark:border-slate-700">
+                        <h2 class="text-3xl font-bold mb-8 flex items-center gap-4 text-slate-800 dark:text-white">
+                            <span class="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600">${data.icon}</span> 
+                            ${data.name}
+                        </h2>
+                        ${data.content}
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="mb-8 flex items-center justify-between animate-fade-in">
+                    <h2 class="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                        <span class="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md text-2xl">${data.icon}</span> 
+                        ${data.name}
+                    </h2>
+                </div>
+            `;
+
+            if (data.subsections) {
+                html += data.subsections.map(sub => `
+                    <div class="mb-10 animate-fade-in">
+                        <h3 class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 mb-5 border-b border-slate-200 dark:border-slate-700 pb-3 flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            ${sub.title}
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            ${sub.items.map(item => createCard(item)).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-5 animate-fade-in">
+                    ${data.items.map(item => createCard(item)).join('')}
+                </div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function createCard(item) {
+            const clickText = i18n[currentLang].ui.clickToTry || "Click to try";
+            // 提取函数名
+            const funcName = item.name.split('(')[0];
+            
+            return `
+                <div class="card bg-white dark:bg-slate-800 p-5 border border-slate-100 dark:border-slate-700 hover:border-blue-400/50 dark:hover:border-blue-500/50 group cursor-pointer relative" onclick="fillCalculator('${item.name}')">
+                    <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                        <span class="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">${clickText} &rarr;</span>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <div>
+                            <code class="code-snippet font-bold text-blue-700 dark:text-blue-300 text-base shadow-sm">${funcName}</code>
+                        </div>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed min-h-[2.5em]">${item.desc}</p>
+                        <div class="mt-1 text-xs text-slate-400 font-mono truncate opacity-60 group-hover:opacity-100 transition-opacity">${item.name}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 搜索功能 ---
+        function filterFunctions() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('contentArea');
+            
+            if (!query) {
+                renderContent(activeCategory);
+                return;
+            }
+
+            let results = [];
+            currentData.forEach(cat => {
+                if (cat.items) {
+                    const matches = cat.items.filter(i => i.name.toLowerCase().includes(query) || i.desc.toLowerCase().includes(query));
+                    if (matches.length) results.push({ catName: cat.name, items: matches });
+                }
+                if (cat.subsections) {
+                    cat.subsections.forEach(sub => {
+                        const matches = sub.items.filter(i => i.name.toLowerCase().includes(query) || i.desc.toLowerCase().includes(query));
+                        if (matches.length) results.push({ catName: `${cat.name} - ${sub.title}`, items: matches });
+                    });
+                }
+            });
+
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 text-slate-400 animate-fade-in">
+                        <svg class="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p class="text-lg font-medium">${i18n[currentLang].ui.noResults}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = results.map(group => `
+                <div class="mb-8 animate-fade-in">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-1 flex items-center gap-2">
+                        <span class="w-2 h-0.5 bg-slate-300 dark:bg-slate-600"></span>
+                        ${group.catName}
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        ${group.items.map(item => createCard(item)).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- 计算器逻辑 ---
+        function calculate() {
+            const input = document.getElementById('calcInput');
+            const resultDisplay = document.getElementById('calcResult');
+            const expr = input.value;
+
+            try {
+                const result = math.evaluate(expr);
+                let output = result;
+                if (typeof result === 'object' && result.entries) {
+                    output = math.format(result, { notation: 'fixed', precision: 4 });
+                } else if (typeof result === 'number') {
+                    output = Number.isInteger(result) ? result : result.toFixed(6).replace(/\.?0+$/, '');
+                } else if (result.toString().startsWith('Complex')) {
+                     output = result.toString();
+                }
+
+                resultDisplay.innerText = `= ${output}`;
+                resultDisplay.classList.remove('text-red-500');
+                resultDisplay.classList.add('text-slate-700', 'dark:text-slate-200');
+            } catch (e) {
+                resultDisplay.innerText = "Error: " + e.message;
+                resultDisplay.classList.add('text-red-500');
+            }
+        }
+
+        function fillCalculator(text) {
+            const input = document.getElementById('calcInput');
+            const funcName = text.split('(')[0] + '(';
+            input.value = funcName;
+            input.focus();
+            const len = input.value.length;
+            input.setSelectionRange(len, len);
+        }
+
+        function loadExample() {
+            document.getElementById('calcInput').value = 'det([[1,2],[3,4]])';
+            calculate();
+        }
+
+        // --- 分享功能 ---
+        function updateShareContent() {
+            const langData = i18n[currentLang].ui;
+            const url = window.location.href;
+            const summary = `${langData.title} - ${langData.subtitle}`;
+            const html = `<a href="${url}" target="_blank">${langData.title}</a>`;
+            
+            document.getElementById('shareUrl').value = url;
+            document.getElementById('shareTextSummary').value = summary;
+            document.getElementById('shareHtmlEmbed').value = html;
+        }
+
+        function openShareModal() { 
+            updateShareContent();
+            document.getElementById('shareModal').classList.remove('hidden'); 
+        }
+        function closeShareModal() { document.getElementById('shareModal').classList.add('hidden'); }
+
+        function copyToClipboard(inputId) {
+            const input = document.getElementById(inputId);
+            input.select();
+            document.execCommand('copy');
+            
+            const notice = document.getElementById('copyNotice');
+            const noticeText = document.getElementById('copyNoticeText');
+            noticeText.innerText = i18n[currentLang].ui.copied;
+            notice.style.opacity = '1';
+            setTimeout(() => notice.style.opacity = '0', 2000);
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcons(isDark);
+        }
+
+        function updateThemeIcons(isDark) {
+            document.getElementById('theme-icon-sun').classList.toggle('hidden', !isDark);
+            document.getElementById('theme-icon-moon').classList.toggle('hidden', isDark);
+        }
+
+        window.onload = init;
+
+    </script>
+    
+    <!-- 结尾必须包含的代码 -->
+
+    <div id="related-tools-container"></div>
+
+    <script src="/scripts/related.js"></script>
+
+</body>
+</html>
