@@ -3,399 +3,719 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free local image upscaler tool. Upscale images 2x or 4x locally in your browser using smart algorithms. Privacy-focused, no server upload.">
     <meta name="tool-id" content="anime4k">
     <meta name="category" content="Image Tools">
-    <meta name="icon" content="🖼️">
-    <title>图片无损放大工具 Pro (Local)</title>
+    <meta name="icon" content="✨">
+    <title>图片无损放大工具 Pro (Local AI Upscaler)</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body { background: #f8fafc; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
-        .tool-module { background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); max-width: 1000px; margin: 40px auto; position: relative; overflow: hidden; }
-        
-        /* Upload Zone */
-        .upload-zone { border: 2px dashed #cbd5e1; border-radius: 12px; transition: all 0.3s ease; background: #f8fafc; }
-        .upload-zone:hover, .upload-zone.dragover { border-color: #3b82f6; background: #eff6ff; }
-        
-        /* Custom Radio Inputs for Options */
-        .option-card input[type="radio"] { display: none; }
-        .option-card label { display: block; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-align: center; }
-        .option-card input[type="radio"]:checked + label { border-color: #22c55e; background: #f0fdf4; color: #15803d; font-weight: bold; }
-        
-        /* Comparison Slider */
-        .compare-container { position: relative; width: 100%; max-width: 800px; margin: 0 auto; overflow: hidden; border-radius: 8px; cursor: col-resize; user-select: none; line-height: 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .compare-image { width: 100%; height: auto; display: block; }
-        .img-overlay { position: absolute; top: 0; left: 0; width: 50%; height: 100%; overflow: hidden; border-right: 3px solid white; box-shadow: 5px 0 15px rgba(0,0,0,0.2); z-index: 10; background: white; }
-        .img-overlay img { width: auto; height: 100%; max-width: none; } /* Important to keep aspect ratio in overlay */
-        
-        .slider-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.3); z-index: 20; display: flex; align-items: center; justify-content: center; color: #64748b; pointer-events: none; }
-        
-        .label-badge { position: absolute; top: 10px; padding: 4px 10px; background: rgba(0,0,0,0.6); color: white; font-size: 12px; border-radius: 4px; pointer-events: none; backdrop-filter: blur(2px); }
-        .label-before { right: 10px; }
-        .label-after { left: 10px; z-index: 11; }
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Typography Plugin for Tailwind (for the text content) -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
 
-        /* Animations */
+    <style>
+        body { 
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); 
+            font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif; 
+            min-height: 100vh;
+        }
+        
+        /* Smooth Fade In */
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .tool-card { 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px);
+            border-radius: 24px; 
+            box-shadow: 0 20px 40px -10px rgba(14, 165, 233, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Upload Zone */
+        .upload-zone { 
+            border: 3px dashed #e2e8f0; 
+            border-radius: 16px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            background: #f8fafc; 
+        }
+        .upload-zone:hover, .upload-zone.dragover { 
+            border-color: #3b82f6; 
+            background: #eff6ff; 
+            transform: scale(1.01);
+        }
+
+        /* Custom Radio Inputs */
+        .option-card input[type="radio"] { display: none; }
+        .option-card label { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            padding: 16px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            background: white;
+            height: 100%;
+        }
+        .option-card input[type="radio"]:checked + label { 
+            border-color: #0ea5e9; 
+            background: #f0f9ff; 
+            color: #0284c7; 
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+        }
+        .option-card input[type="radio"]:disabled + label {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f1f5f9;
+        }
+
+        /* Comparison Slider */
+        .compare-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            background: #1e293b;
+            line-height: 0;
+            user-select: none;
+        }
+        .compare-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 100%; 
+            cursor: col-resize; 
+        }
+        .compare-image { width: 100%; height: auto; display: block; }
+        .img-overlay { 
+            position: absolute; top: 0; left: 0; width: 50%; height: 100%; 
+            overflow: hidden; 
+            border-right: 2px solid rgba(255,255,255,0.8); 
+            box-shadow: 5px 0 20px rgba(0,0,0,0.3); 
+            z-index: 10; 
+            background: #1e293b;
+        }
+        .img-overlay img { width: auto; height: 100%; max-width: none; } 
+        
+        .slider-handle { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 48px; height: 48px; 
+            background: rgba(255, 255, 255, 0.9); 
+            backdrop-filter: blur(4px);
+            border-radius: 50%; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+            z-index: 20; 
+            display: flex; align-items: center; justify-content: center; 
+            color: #0f172a; 
+            pointer-events: none; 
+            transition: transform 0.1s;
+        }
+        .compare-wrapper:hover .slider-handle { transform: translate(-50%, -50%) scale(1.1); }
+        
+        .label-badge { 
+            position: absolute; top: 16px; 
+            padding: 6px 12px; 
+            background: rgba(0,0,0,0.7); 
+            color: white; 
+            font-size: 12px; 
+            font-weight: 600; 
+            border-radius: 8px; 
+            pointer-events: none; 
+            backdrop-filter: blur(4px); 
+        }
+        .label-before { right: 16px; }
+        .label-after { left: 16px; z-index: 11; background: rgba(14, 165, 233, 0.8); }
+
+        /* Scanning Animation */
         @keyframes scan {
             0% { top: 0%; opacity: 0; }
             10% { opacity: 1; }
             90% { opacity: 1; }
             100% { top: 100%; opacity: 0; }
         }
-        .scan-line { position: absolute; left: 0; width: 100%; height: 2px; background: #22c55e; box-shadow: 0 0 10px #22c55e; animation: scan 2s linear infinite; z-index: 5; display: none; }
-        .processing .scan-line { display: block; }
-        
-        /* Responsive adjustments */
-        @media (max-width: 640px) {
-            .options-grid { grid-template-columns: 1fr; }
-            .tool-module { margin: 10px; border-radius: 10px; }
+        .scan-line { 
+            position: absolute; left: 0; width: 100%; height: 4px; 
+            background: #38bdf8; 
+            box-shadow: 0 0 15px #38bdf8, 0 0 30px #38bdf8; 
+            animation: scan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+            z-index: 15; 
+            display: none; 
+            pointer-events: none;
         }
+        .processing .scan-line { display: block; }
+
+        /* Content Sections */
+        .lang-content { display: none; }
+        .lang-content.active { display: block; animation: fadeIn 0.5s ease; }
     </style>
+    <!-- Canonical link for SEO -->
     <link rel="canonical" href="https://toolboxpro.top/modules/others/anime4k.html" />
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
-     crossorigin="anonymous"></script>
-
 </head>
-<body>
+<body class="p-4 md:p-8">
 
-    <div class="tool-module" id="image-upscale-tool">
+    <!-- Main Tool Container -->
+    <div class="tool-card max-w-5xl mx-auto mb-12 overflow-hidden" id="image-upscale-tool">
+        
         <!-- Header -->
-        <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-gray-100 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-white p-2 rounded-lg shadow-sm text-2xl">🖼️</div>
-                <div>
-                    <h2 class="text-xl font-bold text-gray-800" data-i18n="title">图片无损放大工具</h2>
-                    <p class="text-xs text-gray-500 mt-0.5" data-i18n="subtitle">本地运算 · 免费无限制 · 画质增强</p>
+        <div class="bg-gradient-to-r from-sky-50 to-blue-50 p-6 md:p-8 border-b border-blue-100 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div class="bg-white w-12 h-12 md:w-14 md:h-14 rounded-2xl shadow-sm text-2xl md:text-3xl flex items-center justify-center transform hover:rotate-6 transition-transform">✨</div>
+                <div class="text-center md:text-left">
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight" data-i18n="title">图片无损放大工具 Pro</h2>
+                    <p class="text-sm text-slate-500 mt-1 font-medium" data-i18n="subtitle">本地运算 · 隐私安全 · 免费无限制</p>
                 </div>
             </div>
-            <select id="lang-selector" onchange="ImageTool.changeLang()" class="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-600 focus:outline-none hover:border-green-400 transition-colors cursor-pointer">
-                <option value="en">English</option>
-                <option value="zh-CN" selected>简体中文</option>
-                <option value="zh-TW">繁體中文</option>
-                <option value="ja">日本語</option>
-                <option value="ru">Русский</option>
-            </select>
+            
+            <div class="relative group">
+                <select id="lang-selector" onchange="ImageTool.changeLang()" class="appearance-none pl-4 pr-10 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-blue-300 cursor-pointer shadow-sm transition-all">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文 (HK)</option>
+                    <option value="en">English (US)</option>
+                    <option value="ja">日本語</option>
+                    <option value="ru">Русский</option>
+                    <option value="pl">Polski</option>
+                </select>
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <i class="fas fa-chevron-down text-xs"></i>
+                </div>
+            </div>
         </div>
 
-        <div class="p-6 space-y-8">
+        <div class="p-6 md:p-10 space-y-10">
             <!-- 1. Upload Section -->
             <div class="section">
-                <div class="upload-zone p-8 flex flex-col items-center justify-center cursor-pointer relative" id="drop_zone" onclick="document.getElementById('file_input').click()">
+                <div class="upload-zone p-10 flex flex-col items-center justify-center cursor-pointer relative min-h-[240px]" id="drop_zone" onclick="document.getElementById('file_input').click()">
                     <input type="file" id="file_input" accept="image/jpeg, image/png, image/webp" class="hidden">
-                    <div id="upload_prompt" class="text-center">
-                        <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                            <i class="fas fa-cloud-upload-alt"></i>
+                    
+                    <!-- Empty State -->
+                    <div id="upload_prompt" class="text-center transition-opacity duration-300">
+                        <div class="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-sm">
+                            <i class="fas fa-cloud-upload-alt transform group-hover:-translate-y-1 transition-transform"></i>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-700 mb-2" data-i18n="drag_drop">点击或拖拽上传图片</h3>
-                        <p class="text-sm text-gray-400" data-i18n="formats">支持 JPG, PNG, WebP (建议 < 5MB 以保证速度)</p>
+                        <h3 class="text-xl font-bold text-slate-700 mb-2" data-i18n="drag_drop">点击或拖拽上传图片</h3>
+                        <p class="text-sm text-slate-400" data-i18n="formats">支持 JPG, PNG, WebP (建议 < 5MB)</p>
                     </div>
                     
-                    <!-- Preview when file selected -->
-                    <div id="file_preview_container" class="hidden w-full flex flex-col items-center">
-                         <div class="relative group">
-                            <img id="preview_thumb" class="h-48 object-contain rounded-lg shadow-md border border-gray-200" src="" alt="Preview">
-                            <button onclick="event.stopPropagation(); ImageTool.clearAll()" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors">
+                    <!-- Preview State -->
+                    <div id="file_preview_container" class="hidden w-full flex flex-col items-center animate-fade-in">
+                         <div class="relative group inline-block">
+                            <img id="preview_thumb" class="h-64 object-contain rounded-lg shadow-lg border border-slate-200 bg-grid-pattern" src="" alt="Preview">
+                            <button onclick="event.stopPropagation(); ImageTool.clearAll()" class="absolute -top-4 -right-4 bg-red-500 hover:bg-red-600 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg transition-transform hover:scale-110 z-10" title="Remove">
                                 <i class="fas fa-times"></i>
                             </button>
-                         </div>
-                         <div class="mt-3 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                            <span id="original_info">-- x --</span>
+                            <div class="absolute bottom-2 right-2 bg-black/70 backdrop-blur text-white text-xs px-2 py-1 rounded">
+                                <span id="original_info">-- x --</span>
+                            </div>
                          </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. Configuration -->
-            <div class="grid md:grid-cols-2 gap-8">
+            <!-- 2. Controls Section -->
+            <div class="grid md:grid-cols-2 gap-8 lg:gap-12">
                 <!-- Scale Factor -->
                 <div>
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-                        <i class="fas fa-expand text-green-500"></i> <span data-i18n="scale_factor">放大倍数</span>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i class="fas fa-expand text-blue-500"></i> <span data-i18n="scale_factor">放大倍数</span>
                     </h3>
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="grid grid-cols-3 gap-4 h-24">
                         <div class="option-card">
                             <input type="radio" name="scale" id="scale_2" value="2" checked>
-                            <label for="scale_2" class="shadow-sm hover:shadow-md">2x</label>
+                            <label for="scale_2">
+                                <span class="text-2xl font-bold mb-1">2x</span>
+                                <span class="text-xs text-gray-400">HD</span>
+                            </label>
                         </div>
                         <div class="option-card">
                             <input type="radio" name="scale" id="scale_4" value="4">
-                            <label for="scale_4" class="shadow-sm hover:shadow-md">4x</label>
+                            <label for="scale_4">
+                                <span class="text-2xl font-bold mb-1">4x</span>
+                                <span class="text-xs text-gray-400">Ultra HD</span>
+                            </label>
                         </div>
-                        <!-- 8x disabled for performance in JS version -->
-                        <div class="option-card opacity-50 cursor-not-allowed" title="Web版本限制最大4倍">
+                        <div class="option-card">
                             <input type="radio" name="scale" id="scale_8" value="8" disabled>
-                            <label for="scale_8" class="shadow-sm bg-gray-100 text-gray-400 cursor-not-allowed">8x</label>
+                            <label for="scale_8">
+                                <span class="text-2xl font-bold mb-1">8x</span>
+                                <span class="text-xs text-gray-400">Pro Only</span>
+                            </label>
                         </div>
                     </div>
                 </div>
 
                 <!-- Algorithm -->
                 <div>
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                         <i class="fas fa-magic text-purple-500"></i> <span data-i18n="algorithm">增强模式</span>
                     </h3>
-                    <div class="grid grid-cols-1 gap-2">
-                        <select id="algorithm" class="w-full p-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-shadow shadow-sm">
-                            <option value="sharp" data-i18n="anime4k_algorithm">智能锐化 (推荐/通用)</option>
-                            <option value="smooth" data-i18n="general_algorithm">平滑降噪 (适合动漫/老照片)</option>
-                            <option value="basic" data-i18n="restoration_algorithm">基础放大 (无额外处理)</option>
+                    <div class="relative">
+                        <select id="algorithm" class="w-full p-4 pl-12 border border-slate-200 rounded-xl bg-white text-slate-700 font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none shadow-sm appearance-none transition-shadow cursor-pointer h-24">
+                            <option value="sharp" data-i18n="anime4k_algorithm">✨ 智能锐化 (通用/推荐)</option>
+                            <option value="smooth" data-i18n="general_algorithm">🧘 平滑降噪 (动漫/插画)</option>
+                            <option value="basic" data-i18n="restoration_algorithm">📸 基础放大 (原汁原味)</option>
                         </select>
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-purple-500 text-xl pointer-events-none">
+                            <i class="fas fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Action Bar -->
-            <div class="pt-4">
-                <button id="process_btn" onclick="ImageTool.upscaleImage()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition transform hover:-translate-y-0.5 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fas fa-rocket"></i> <span data-i18n="btn_upscale">开始处理 (本地运算)</span>
-                </button>
-            </div>
+            <!-- Action Button -->
+            <button id="process_btn" onclick="ImageTool.upscaleImage()" class="w-full group relative bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-5 rounded-2xl font-bold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:-translate-y-0.5 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none overflow-hidden">
+                <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                <div class="relative flex items-center justify-center gap-3">
+                    <i class="fas fa-rocket text-xl"></i> 
+                    <span data-i18n="btn_upscale">开始处理 (本地运算)</span>
+                </div>
+            </button>
 
-            <!-- 3. Results Section (Hidden initially) -->
-            <div id="result_section" class="hidden border-t border-gray-100 pt-8 animate-fade-in">
-                <div class="flex justify-between items-end mb-4">
-                    <h3 class="text-xl font-bold text-gray-800" data-i18n="results">处理结果</h3>
-                    <div class="text-sm text-green-600 font-medium bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                        <i class="fas fa-check-circle mr-1"></i> <span id="process_time_display">0.0s</span>
+            <!-- 3. Results Section -->
+            <div id="result_section" class="hidden pt-2 animate-fade-in">
+                <div class="flex flex-wrap justify-between items-end mb-6 gap-4">
+                    <h3 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-check-circle text-green-500"></i>
+                        <span data-i18n="results">处理结果</span>
+                    </h3>
+                    <div class="text-sm font-mono text-blue-600 bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100 flex items-center gap-2">
+                        <i class="fas fa-stopwatch"></i>
+                        <span id="process_time_display">0.0s</span>
                     </div>
                 </div>
 
                 <!-- Comparison Slider -->
-                <div class="bg-gray-900 rounded-xl p-1 shadow-inner mb-6 relative group">
+                <div class="compare-wrapper mb-8 group" id="compare_wrapper_box">
                     <div class="compare-container" id="compare_container">
-                        <!-- Background: Original (scaled to fit) -->
-                        <img id="img_before" class="compare-image opacity-80 transition-all duration-300" src="" alt="Before">
+                        <img id="img_before" class="compare-image opacity-60 grayscale-[30%] transition-all duration-500 group-hover:grayscale-0 group-hover:opacity-100" src="" alt="Before">
                         <div class="label-badge label-before">Original</div>
                         
-                        <!-- Foreground: Result (Clipped) -->
                         <div class="img-overlay" id="img_overlay">
-                            <!-- This image will be manipulated to match size of container for overlay effect -->
                             <img id="img_after" src="" alt="After" style="height: 100%; width: auto; max-width: none;"> 
-                            <div class="label-badge label-after" style="background: rgba(34, 197, 94, 0.8);">Processed</div>
+                            <div class="label-badge label-after">Upscaled Pro</div>
                         </div>
 
-                        <!-- Handle -->
                         <div class="slider-handle" id="slider_handle">
-                            <i class="fas fa-arrows-alt-h"></i>
+                            <i class="fas fa-arrows-left-right text-lg"></i>
                         </div>
                         
-                        <!-- Scanline animation for processing effect (optional) -->
                         <div class="scan-line"></div>
                     </div>
-                    <p class="text-center text-gray-400 text-xs mt-2" data-i18n="drag_compare">↔️ 拖动滑块对比效果</p>
                 </div>
+                
+                <p class="text-center text-slate-400 text-sm mb-6 flex items-center justify-center gap-2">
+                    <i class="fas fa-hand-pointer animate-pulse"></i>
+                    <span data-i18n="drag_compare">↔️ 拖动滑块对比细节</span>
+                </p>
 
-                <!-- Result Stats & Download -->
-                <div class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm flex flex-wrap gap-4 items-center justify-between">
-                    <div class="flex gap-6">
-                        <div>
-                            <span class="text-gray-400 text-xs uppercase" data-i18n="original_size">原始尺寸</span>
-                            <div class="font-mono text-gray-700 font-bold" id="res_original_size">--</div>
+                <!-- Stats & Download -->
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-6 flex flex-col md:flex-row gap-6 items-center justify-between">
+                    <div class="flex gap-8 md:gap-12 w-full md:w-auto justify-center md:justify-start">
+                        <div class="text-center md:text-left">
+                            <span class="text-slate-400 text-xs font-bold uppercase tracking-wider block mb-1" data-i18n="original_size">原始尺寸</span>
+                            <div class="font-mono text-slate-700 font-bold text-xl" id="res_original_size">--</div>
                         </div>
-                        <div class="w-px bg-gray-200"></div>
-                        <div>
-                            <span class="text-gray-400 text-xs uppercase" data-i18n="new_size">放大后尺寸</span>
-                            <div class="font-mono text-green-600 font-bold text-lg" id="res_new_size">--</div>
+                        <div class="w-px bg-slate-200"></div>
+                        <div class="text-center md:text-left">
+                            <span class="text-slate-400 text-xs font-bold uppercase tracking-wider block mb-1" data-i18n="new_size">放大后尺寸</span>
+                            <div class="font-mono text-blue-600 font-bold text-xl" id="res_new_size">--</div>
                         </div>
                     </div>
                     
-                    <button onclick="ImageTool.downloadResult()" class="flex-1 md:flex-none bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-md flex items-center justify-center gap-2">
-                        <i class="fas fa-download"></i> <span data-i18n="btn_download">下载结果</span>
+                    <button onclick="ImageTool.downloadResult()" class="w-full md:w-auto bg-slate-800 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-black transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                        <i class="fas fa-download"></i> <span data-i18n="btn_download">下载高清原图</span>
                     </button>
-                </div>
-            </div>
-
-            <!-- Intro Info -->
-            <div class="bg-blue-50 rounded-xl p-5 flex gap-4 items-start text-sm text-blue-800 border border-blue-100 mt-8">
-                <i class="fas fa-info-circle text-xl mt-0.5 text-blue-500"></i>
-                <div>
-                    <h4 class="font-bold mb-1" data-i18n="intro_title">功能说明</h4>
-                    <p class="opacity-80" data-i18n="intro_text">此版本已升级为本地 Canvas 运算。使用双三次插值算法进行无损放大，并应用卷积滤镜进行锐化增强。所有处理均在浏览器内完成，您的图片不会上传到服务器，安全且免费。</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Multi-language Introduction Section (SSR Friendly) -->
+    <!-- Content is placed directly in DOM for SEO crawlers -->
+    <article id="tool-description" class="max-w-4xl mx-auto px-4 md:px-8 mb-20 prose prose-slate prose-img:rounded-xl prose-headings:text-slate-800 prose-a:text-blue-600 hover:prose-a:text-blue-500">
+        
+        <!-- Simplified Chinese (Default) -->
+        <div id="desc-zh-CN" class="lang-content active">
+            <h2>图片无损放大工具Pro✨ 超会“修图”的AI小助手</h2>
+            <p>嗨～宝子们😜！是不是总遇到心仪的图片放大就糊成马赛克？别急！本工具带着「本地开挂buff」来拯救你的视觉体验啦👇</p>
+            
+            <h3>🖼️ 我是你的专属图片“焕新师”</h3>
+            <p>不用上传、不用等服务器、不用花一分钱💰！我就藏在你的浏览器里，主打一个「本地运算，隐私拉满」——所有操作都在你眼前完成，图片数据绝不乱跑，安全感直接焊死在天花板～</p>
+            
+            <h3>✨ 我的超能力清单</h3>
+            <ul>
+                <li><strong>无损放大，细节焊死</strong>：不管是2倍、4倍放大（8倍暂时歇业啦💤，网页版怕你设备扛不住），我都用「双三次插值算法」精准拿捏每一个像素，放大后边缘不糊、色彩不飘，老照片/动漫图/自拍都能支棱起来～</li>
+                <li><strong>3种增强模式，精准贴贴你的需求</strong>
+                    <ul>
+                        <li>🧠「智能锐化」：我的王牌技能✨！通用款yyds，一键唤醒图片细节，文字、线条秒变清晰，发朋友圈/做素材都超顶；</li>
+                        <li>🧘「平滑降噪」：专为动漫/老照片定制～磨平噪点还不丢质感，二次元老婆的轮廓再也不毛毛躁躁；</li>
+                        <li>📸「基础放大」：主打一个“原汁原味”，只放大不折腾，适合只想简单扩尺寸的宝子。</li>
+                    </ul>
+                </li>
+                <li><strong>实时对比，效果眼见为实</strong>：处理完我会给你搭个「滑动对比台」👉👈，拖动滑块就能秒看“原图vs放大后”，哪里变清晰、哪里更细腻，一眼看穿，拒绝“盲开美颜”～</li>
+            </ul>
+
+            <h3>🚀 用我超简单，三步搞定！</h3>
+            <ol>
+                <li><strong>投喂图片</strong>：点击/拖拽把图片丢给我（JPG/PNG/WebP都接，建议≤5MB哦⏳，快到飞起）；</li>
+                <li><strong>定制需求</strong>：选放大倍数+增强模式，我的操作面板超直观，小白也能秒会；</li>
+                <li><strong>一键焕新</strong>：点「开始处理」，我原地开启“像素精修模式”🔧，扫描线动画跑起来超有仪式感，几秒就能交出成品～</li>
+            </ol>
+
+            <h3>💡 关于我的小秘密</h3>
+            <ul>
+                <li>❓ <strong>为啥我这么快？</strong> ——因为我直接调用浏览器的Canvas“黑科技”，不用绕远路传服务器，本地CPU直接开工，快到你眨眼就完事～</li>
+                <li>❓ <strong>处理后的图片咋保存？</strong> ——我会自动生成「_upscaled.png」格式，点击下载按钮就能抱走，文件名还贴心保留原图前缀，分类超方便📁～</li>
+                <li>❓ <strong>多语言适配？必须有！</strong> ——简体/繁体中文、英语、日语、俄语统统拿捏🌍，切换语言秒响应，海外党也能无障碍贴贴～</li>
+            </ul>
+
+            <h3>🎨 贴心小细节，主打一个宠粉</h3>
+            <ul>
+                <li>📱 手机党放心冲！自适应界面自动缩，小屏也能操作不憋屈；</li>
+                <li>⏱️ 处理耗时实时显示，每一秒都透明，不搞“无限加载”套路；</li>
+                <li>❌ 想重来？一键清空，我立刻重置状态，重新投喂图片就行～</li>
+            </ul>
+
+            <h3>🚨 温馨提示</h3>
+            <p>虽然我超能干，但也怕超大图“噎住”😵‍💫～建议图片≤5MB，处理速度和体验都会更丝滑；如果遇到报错，大概率是图片尺寸超纲啦，裁一裁再找我，保证稳稳拿捏～</p>
+            <p>总之，不管是修表情包、复原老照片、放大动漫截图，还是做自媒体素材，我都是你的「零成本图片开挂神器」✨！不用装软件、不用学教程，点开就能用，快把你的模糊图片丢过来，让我给它开个“高清滤镜”～</p>
+        </div>
+
+        <!-- Traditional Chinese (HK) -->
+        <div id="desc-zh-TW" class="lang-content">
+            <h2>圖片無損放大工具Pro✨ 超識「執相」的AI小助手</h2>
+            <p>嗨～各位友仔友女😜！係咪成日遇到心水嘅相放大就蒙成馬賽克？唔使急！呢個工具帶住「本地開掛buff」嚟拯救你嘅視覺體驗啦👇</p>
+
+            <h3>🖼️ 我係你專屬嘅圖片「煥新師」</h3>
+            <p>唔使上傳、唔使等伺服器、唔使使一分錢💰！我就匿喺你嘅瀏覽器入面，主打一個「本地運算，私隱拉滿」——所有操作都係你眼前完成，圖片數據絕對唔會亂走，安全感直接焊死喺天花板～</p>
+
+            <h3>✨ 我的超能力清單</h3>
+            <ul>
+                <li><strong>無損放大，細節焊死</strong>：無論係2倍、4倍放大，我都用「雙三次插值演算法」精準捉實每一粒像素，放大之後邊位唔蒙、色彩唔飄，舊相/動漫相/自拍都可以起身～</li>
+                <li><strong>3種增強模式，貼晒你嘅需求</strong>
+                    <ul>
+                        <li>🧠「智能銳化」：我嘅王牌技能✨！通用款yyds，一鍵激活圖片細節，文字、線條秒變清晰，發IG/做素材都超掂；</li>
+                        <li>🧘「平滑降噪」：專為動漫/舊相訂製～磨平雜訊又唔走質感，二次元老婆嘅輪廓唔再毛毛糙糙；</li>
+                        <li>📸「基礎放大」：主打一個「原汁原味」，淨係放大唔搞花臣，適合淨想簡單擴尺寸嘅朋友。</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>🚀 用我超簡單，三步搞掂！</h3>
+            <ol>
+                <li><strong>俾相我</strong>：點擊/拖曳將相丟俾我（JPG/PNG/WebP都接，建議≤5MB哦⏳，快到飛起）；</li>
+                <li><strong>自訂需求</strong>：揀放大倍數+增強模式，我嘅操作面板超直觀，新手都秒識；</li>
+                <li><strong>一鍵煥新</strong>：按「開始處理」，我即刻開啟「像素精修模式」🔧，掃描線動畫行起上嚟超有儀式感，幾秒就交貨～</li>
+            </ol>
+            
+            <p>總之，無論係執表情包、還原舊相、放大動漫截圖，定係做自媒體素材，我都係你嘅「零成本圖片開掛神器」✨！</p>
+        </div>
+
+        <!-- English (US) -->
+        <div id="desc-en" class="lang-content">
+            <h2>Image Upscaling Tool Pro✨ Your AI Photo Retouching Sidekick</h2>
+            <p>Hey guys😜! Ever had a favorite pic that turns into a blurry mess when you zoom in? Don’t panic! This tool’s got a local cheat code buff to save your visual experience👇</p>
+
+            <h3>🖼️ I’m Your Personal Image Glow-Up Artist</h3>
+            <p>No uploads, no server waits, no cost at all💰! I live right in your browser, with 100% local processing and maximum privacy—every edit happens right in front of your eyes, no image data ever leaves your device. Safety is locked down tight!</p>
+
+            <h3>✨ My Superpowers List</h3>
+            <ul>
+                <li><strong>Lossless Upscaling, Details Locked In</strong>: Whether it’s 2x or 4x zoom, I use bicubic interpolation to nail every single pixel. After scaling, edges stay sharp, colors don’t fade, and old photos/anime screenshots/selfies all look crisp and clear～</li>
+                <li><strong>3 Enhancement Modes, Tailored to Your Vibe</strong>:
+                    <ul>
+                        <li>🧠 <strong>Smart Sharpen</strong>: My signature move✨! The go-to for everything—unlocks hidden details in one click.</li>
+                        <li>🧘 <strong>Smooth Denoise</strong>: Custom-made for anime/old photos～Smooths out noise without losing texture.</li>
+                        <li>📸 <strong>Basic Upscale</strong>: Keeps it 100% original—just resizes without extra tweaks.</li>
+                    </ul>
+                </li>
+                <li><strong>Real-Time Comparison</strong>: Drag the slider to switch between original vs. upscaled—spot every sharpened detail at a glance!</li>
+            </ul>
+
+            <h3>🚀 Super Easy to Use, 3 Steps Only!</h3>
+            <ol>
+                <li><strong>Feed Me a Pic</strong>: Click or drag-and-drop your image (JPG/PNG/WebP, keep it ≤5MB for lightning-fast processing);</li>
+                <li><strong>Customize Your Vibe</strong>: Pick zoom level + enhancement mode;</li>
+                <li><strong>One-Click Glow-Up</strong>: Hit 「Start Processing」, and I fire up Pixel Retouch Mode🔧.</li>
+            </ol>
+
+            <p>Bottom line: Whether you’re fixing memes, restoring old photos, upscaling anime screenshots, or creating social media content, I’m your zero-cost image hack✨!</p>
+        </div>
+
+        <!-- Polish -->
+        <div id="desc-pl" class="lang-content">
+            <h2>Narzędzie do powiększania obrazów bez straty jakości Pro✨</h2>
+            <p>Cześć wszystkim😜! Czy zdarzyło Ci się, że ulubione zdjęcie stawało się rozmyte jak mozaika po powiększeniu? Nie martw się! To narzędzie przychodzi z lokalnym cheat code’em, aby uratować Twoje wrażenia wizualne👇</p>
+
+            <h3>🖼️ Jestem Twoim osobistym artystą od odnawiania obrazów</h3>
+            <p>Bez uploadów, bez oczekiwania na serwer, bez żadnych kosztów💰! Mieszczę się bezpośrednio w Twojej przeglądarce, oferuję 100% lokalne przetwarzanie i maksymalną prywatność — wszystkie edycje odbywają się przed Twoimi oczami.</p>
+
+            <h3>✨ Lista moich supermocy</h3>
+            <ul>
+                <li><strong>Powiększanie bez straty jakości</strong>: Niezależnie od powiększenia 2x lub 4x, używam interpolacji dwukubicznej, aby precyzyjnie oddać każdy piksel.</li>
+                <li><strong>3 tryby wzmocnienia</strong>:
+                    <ul>
+                        <li>🧠 <strong>Inteligentne wyostrzenie</strong>: Moja flagowa umiejętność✨! Uniwersalne rozwiązanie, które w jednym kliknięciu odsłania ukryte detale.</li>
+                        <li>🧘 <strong>Gładkie redukcja szumów</strong>: Stworzone specjalnie dla anime/starych zdjęć～Usuwa szumy bez utraty tekstury.</li>
+                        <li>📸 <strong>Podstawowe powiększenie</strong>: Trzyma się 100% oryginału — tylko zmienia rozmiar.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>🚀 Super proste w użyciu, tylko 3 kroki!</h3>
+            <ol>
+                <li><strong>Prześlij zdjęcie</strong>: Kliknij lub przeciągnij zdjęcie (JPG/PNG/WebP, ≤5MB);</li>
+                <li><strong>Dostosuj ustawienia</strong>: Wybierz poziom powiększenia + tryb wzmocnienia;</li>
+                <li><strong>Jednoklikowe odnowienie</strong>: Naciśnij 「Rozpocznij przetwarzanie」, a ja uruchomię Tryb Retuszu Pikseli🔧.</li>
+            </ol>
+        </div>
+
+        <!-- Japanese -->
+        <div id="desc-ja" class="lang-content">
+            <h2>画像高画質化ツールPro✨ 画像レタッチ専門のAIアシスタント</h2>
+            <p>やあ、みんな😜！気に入った画像を拡大したらモザイク状になった経験ある？焦らないで！このツールがローカル処理で、視覚体験を救ってくれるよ👇</p>
+
+            <h3>🖼️ 専属の画像「リニューアルアーティスト」です</h3>
+            <p>アップロード不要、サーバー待ち不要、費用ゼロ💰！ブラウザ内に潜んでいて、「ローカル処理、プライバシー最大限」をモットーに——すべての操作は目の前で行われ、画像データは絶対に外部に流出しない。</p>
+
+            <h3>✨ スーパーパワーリスト</h3>
+            <ul>
+                <li><strong>ロスレス拡大、ディテール完全ロック</strong>: 2倍や4倍拡大でも、バイキュービック補間法を使って1ピクセルごとに精密に再現。</li>
+                <li><strong>3種類の強化モード</strong>:
+                    <ul>
+                        <li>🧠 <strong>スマートシャープ</strong>: 私の得意技✨！万能モードで、一括クリックで隠れたディテールを引き出す。</li>
+                        <li>🧘 <strong>スムーズノイズ除去</strong>: アニメ/古い写真専用～ノイズを消しつつ質感を保つ。</li>
+                        <li>📸 <strong>ベーシック拡大</strong>: 100%オリジナル維持——拡大だけで余計な調整なし。</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>🚀 使い方超簡単、たった3ステップ！</h3>
+            <ol>
+                <li><strong>画像を投入</strong>: クリックまたはドラッグアンドドロップ (≤5MB推奨);</li>
+                <li><strong>設定をカスタマイズ</strong>: 拡大倍率+強化モードを選択;</li>
+                <li><strong>ワンクリックでリニューアル</strong>: 「処理開始」をクリックすると、「ピクセルリタッチモード」を起動🔧。</li>
+            </ol>
+        </div>
+
+        <!-- Russian -->
+        <div id="desc-ru" class="lang-content">
+            <h2>Инструмент для увеличения изображений Pro✨</h2>
+            <p>Привет, ребята😜! Никогда не случалось, чтобы любимое фото стало размытым при увеличении? Не паникуйте! Этот инструмент спасет ваше визуальное восприятие👇</p>
+
+            <h3>🖼️ Я ваш личный художник по обновлению изображений</h3>
+            <p>Без загрузок, без ожидания на сервере, совершенно бесплатно💰! Я живу прямо в вашем браузере, предлагаю 100% локальную обработку и максимальную конфиденциальность.</p>
+
+            <h3>✨ Список моих суперсил</h3>
+            <ul>
+                <li><strong>Увеличение без потери качества</strong>: Независимо от увеличения в 2 или 4 раза, я использую бикубическую интерполяцию.</li>
+                <li><strong>3 режима усиления</strong>:
+                    <ul>
+                        <li>🧠 <strong>Интеллектуальная резкость</strong>: Моя фирменная способность✨! Раскрывает скрытые детали.</li>
+                        <li>🧘 <strong>Плавное удаление шума</strong>: Создан специально для аниме/старых фото.</li>
+                        <li>📸 <strong>Базовое увеличение</strong>: Остается 100% оригиналом — только изменяет размер.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>🚀 Супер прост в использовании, всего 3 шага!</h3>
+            <ol>
+                <li><strong>Загрузите фото</strong>: Кликните или перетащите фото;</li>
+                <li><strong>Настройте параметры</strong>: Выберите уровень увеличения + режим усиления;</li>
+                <li><strong>Начать обработку</strong>: Нажмите кнопку, и я запущу режим ретуши.</li>
+            </ol>
+        </div>
+    </article>
+
     <script>
         const ImageTool = {
             originalImage: null,
-            processedDataUrl: null, // Store result
+            processedDataUrl: null,
             isProcessing: false,
+            // Dictionary for UI elements only (Descriptions are in HTML)
             i18n: {
                 'en': {
-                    title: 'Image Upscaler (Local)',
-                    subtitle: 'Browser-based · Free · Enhancement',
-                    drag_drop: 'Click or Drag & Drop Image Here',
-                    formats: 'Supports JPG, PNG, WebP (Recommend < 5MB)',
+                    title: 'Image Upscaler Pro',
+                    subtitle: 'Local Processing · Privacy First · Unlimited',
+                    drag_drop: 'Click or Drag & Drop Image',
+                    formats: 'Supports JPG, PNG, WebP (Best < 5MB)',
                     scale_factor: 'Scale Factor',
                     algorithm: 'Enhance Mode',
-                    anime4k_algorithm: 'Smart Sharpen (Recommended)',
-                    general_algorithm: 'Smooth Denoise (Anime)',
-                    restoration_algorithm: 'Basic Upscale (No filter)',
+                    anime4k_algorithm: '✨ Smart Sharpen (Recommended)',
+                    general_algorithm: '🧘 Smooth Denoise (Anime)',
+                    restoration_algorithm: '📸 Basic Upscale (No filter)',
                     btn_upscale: 'Start Processing (Local)',
-                    results: 'Results',
-                    drag_compare: '↔️ Drag slider to compare',
+                    results: 'Processing Results',
+                    drag_compare: '↔️ Drag slider to compare details',
                     original_size: 'Original Size',
                     new_size: 'Upscaled Size',
-                    btn_download: 'Download Result',
-                    intro_title: 'How it works',
-                    intro_text: 'This version uses local Canvas computing. It uses bicubic interpolation for resizing and applies convolution filters for sharpening. All processing is done in your browser, images are not uploaded.',
+                    btn_download: 'Download High-Res',
                     please_upload: 'Please upload an image first',
                     processing: 'Processing...',
                     success: 'Processing Complete!'
                 },
                 'zh-CN': {
-                    title: '图片无损放大工具 (本地版)',
-                    subtitle: '本地运算 · 免费无限制 · 画质增强',
+                    title: '图片无损放大工具 Pro',
+                    subtitle: '本地运算 · 隐私安全 · 免费无限制',
                     drag_drop: '点击或拖拽上传图片',
-                    formats: '支持 JPG, PNG, WebP (建议 < 5MB 以保证速度)',
+                    formats: '支持 JPG, PNG, WebP (建议 < 5MB)',
                     scale_factor: '放大倍数',
                     algorithm: '增强模式',
-                    anime4k_algorithm: '智能锐化 (推荐/通用)',
-                    general_algorithm: '平滑降噪 (适合动漫/老照片)',
-                    restoration_algorithm: '基础放大 (无额外处理)',
+                    anime4k_algorithm: '✨ 智能锐化 (推荐/通用)',
+                    general_algorithm: '🧘 平滑降噪 (适合动漫)',
+                    restoration_algorithm: '📸 基础放大 (原汁原味)',
                     btn_upscale: '开始处理 (本地运算)',
                     results: '处理结果',
-                    drag_compare: '↔️ 拖动滑块对比效果',
+                    drag_compare: '↔️ 拖动滑块对比细节',
                     original_size: '原始尺寸',
                     new_size: '放大后尺寸',
-                    btn_download: '下载结果',
-                    intro_title: '功能说明',
-                    intro_text: '此版本已升级为本地 Canvas 运算。使用双三次插值算法进行无损放大，并应用卷积滤镜进行锐化增强。所有处理均在浏览器内完成，您的图片不会上传到服务器，安全且免费。',
+                    btn_download: '下载高清原图',
                     please_upload: '请先上传图片',
                     processing: '正在运算中...',
                     success: '处理完成！'
                 },
                 'zh-TW': {
-                    title: '圖片無損放大工具 (本地版)',
-                    subtitle: '本地運算 · 免費無限制 · 畫質增強',
+                    title: '圖片無損放大工具 Pro',
+                    subtitle: '本地運算 · 私隱安全 · 免費無限制',
                     drag_drop: '點擊或拖曳上傳圖片',
-                    formats: '支援 JPG, PNG, WebP (建議 < 5MB 以保證速度)',
+                    formats: '支援 JPG, PNG, WebP (建議 < 5MB)',
                     scale_factor: '放大倍數',
                     algorithm: '增強模式',
-                    anime4k_algorithm: '智能銳化 (推薦/通用)',
-                    general_algorithm: '平滑降噪 (適合動漫/老照片)',
-                    restoration_algorithm: '基礎放大 (無額外處理)',
+                    anime4k_algorithm: '✨ 智能銳化 (推薦/通用)',
+                    general_algorithm: '🧘 平滑降噪 (適合動漫)',
+                    restoration_algorithm: '📸 基礎放大 (原汁原味)',
                     btn_upscale: '開始處理 (本地運算)',
                     results: '處理結果',
                     drag_compare: '↔️ 拖曳滑塊對比效果',
                     original_size: '原始尺寸',
                     new_size: '放大後尺寸',
-                    btn_download: '下載結果',
-                    intro_title: '功能說明',
-                    intro_text: '此版本已升級為本地 Canvas 運算。使用雙三次插值演算法進行無損放大，並應用卷積濾鏡進行銳化增強。所有處理均在瀏覽器內完成，您的圖片不會上傳到伺服器，安全且免費。',
+                    btn_download: '下載高清原圖',
                     please_upload: '請先上傳圖片',
                     processing: '正在運算中...',
                     success: '處理完成！'
                 },
                 'ja': {
-                    title: '画像高画質化ツール (Local)',
-                    subtitle: 'ブラウザ処理 · 無料 · 画質強化',
+                    title: '画像高画質化ツール Pro',
+                    subtitle: 'ブラウザ処理 · プライバシー保護 · 無料',
                     drag_drop: 'クリックまたはドラッグ＆ドロップ',
                     formats: 'JPG, PNG, WebP対応 (推奨 < 5MB)',
                     scale_factor: '拡大倍率',
                     algorithm: '強化モード',
-                    anime4k_algorithm: 'スマートシャープ (推奨)',
-                    general_algorithm: 'スムースノイズ除去 (アニメ)',
-                    restoration_algorithm: '基本拡大 (フィルタなし)',
+                    anime4k_algorithm: '✨ スマートシャープ (推奨)',
+                    general_algorithm: '🧘 スムースノイズ除去 (アニメ)',
+                    restoration_algorithm: '📸 基本拡大 (フィルタなし)',
                     btn_upscale: '処理開始 (ローカル)',
                     results: '処理結果',
                     drag_compare: '↔️ スライダーをドラッグして比較',
                     original_size: '元のサイズ',
                     new_size: '拡大後のサイズ',
-                    btn_download: '結果をダウンロード',
-                    intro_title: '機能説明',
-                    intro_text: 'このバージョンはローカルCanvas演算にアップグレードされました。バイキュービック補間を使用してロスレス拡大を行い、畳み込みフィルタを適用してシャープネスを強化します。すべての処理はブラウザ内で完了し、画像はサーバーにアップロードされません。',
+                    btn_download: '高画質画像をダウンロード',
                     please_upload: '先に画像をアップロードしてください',
                     processing: '処理中...',
                     success: '処理完了！'
                 },
                 'ru': {
-                    title: 'AI Масштабирование (Local)',
-                    subtitle: 'В браузере · Бесплатно · Улучшение',
+                    title: 'AI Масштабирование Pro',
+                    subtitle: 'Локально · Конфиденциально · Бесплатно',
                     drag_drop: 'Нажмите или перетащите изображение',
                     formats: 'JPG, PNG, WebP (Рек. < 5МБ)',
                     scale_factor: 'Масштаб',
                     algorithm: 'Режим',
-                    anime4k_algorithm: 'Умная резкость (Рек.)',
-                    general_algorithm: 'Сглаживание (Аниме)',
-                    restoration_algorithm: 'Базовое (Без фильтров)',
+                    anime4k_algorithm: '✨ Умная резкость (Рек.)',
+                    general_algorithm: '🧘 Сглаживание (Аниме)',
+                    restoration_algorithm: '📸 Базовое (Без фильтров)',
                     btn_upscale: 'Начать обработку',
                     results: 'Результат',
-                    drag_compare: '↔️ Сравните результат',
+                    drag_compare: '↔️ Сравните детали',
                     original_size: 'Исх. размер',
                     new_size: 'Новый размер',
                     btn_download: 'Скачать результат',
-                    intro_title: 'Как это работает',
-                    intro_text: 'Эта версия использует локальные вычисления Canvas. Используется бикубическая интерполяция и фильтры свертки для резкости. Все происходит в браузере, изображения не загружаются на сервер.',
                     please_upload: 'Пожалуйста, загрузите изображение',
                     processing: 'Обработка...',
                     success: 'Готово!'
+                },
+                'pl': {
+                    title: 'Powiększanie Obrazów Pro',
+                    subtitle: 'Przetwarzanie Lokalne · Prywatność',
+                    drag_drop: 'Kliknij lub przeciągnij zdjęcie',
+                    formats: 'Obsługa JPG, PNG, WebP (< 5MB)',
+                    scale_factor: 'Mnożnik skali',
+                    algorithm: 'Tryb ulepszania',
+                    anime4k_algorithm: '✨ Inteligentne wyostrzanie',
+                    general_algorithm: '🧘 Gładkie odszumianie',
+                    restoration_algorithm: '📸 Podstawowe powiększenie',
+                    btn_upscale: 'Rozpocznij przetwarzanie',
+                    results: 'Wyniki',
+                    drag_compare: '↔️ Przeciągnij, aby porównać',
+                    original_size: 'Oryginalny rozmiar',
+                    new_size: 'Nowy rozmiar',
+                    btn_download: 'Pobierz wynik',
+                    please_upload: 'Najpierw prześlij zdjęcie',
+                    processing: 'Przetwarzanie...',
+                    success: 'Gotowe!'
                 }
             },
 
             init: function() {
-                // Drag & Drop Init
+                // Drag & Drop
                 const dropZone = document.getElementById('drop_zone');
                 const fileInput = document.getElementById('file_input');
-
                 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, preventDefaults, false);
+                    dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
                 });
-
-                function preventDefaults(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-
                 ['dragenter', 'dragover'].forEach(eventName => {
                     dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
                 });
-
                 ['dragleave', 'drop'].forEach(eventName => {
                     dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
                 });
-
                 dropZone.addEventListener('drop', (e) => this.handleFileUpload(e.dataTransfer), false);
                 fileInput.addEventListener('change', (e) => this.handleFileUpload(e.target), false);
 
-                // Language Init
+                // Language
                 try {
                     const urlParams = new URLSearchParams(window.location.search);
                     const lang = urlParams.get('lang');
                     if (lang && this.i18n[lang]) {
                         document.getElementById('lang-selector').value = lang;
                     }
-                } catch(e) {
-                    console.warn("Cannot access URL params in this environment");
-                }
-                
-                this.updateLanguage();
-
-                // Slider Init
+                } catch(e) {}
+                this.changeLang();
                 this.initSlider();
             },
 
             changeLang: function() {
                 const selectedLang = document.getElementById('lang-selector').value;
-                // Basic fallback for languages not fully defined in this snippet
-                if(!this.i18n[selectedLang]) return; 
+                const dict = this.i18n[selectedLang] || this.i18n['en'];
                 
-                // Removed history.replaceState to prevent SecurityError in blob/iframe contexts
-                
-                this.updateLanguage();
-            },
-
-            updateLanguage: function() {
-                const lang = document.getElementById('lang-selector').value;
-                const dict = this.i18n[lang] || this.i18n['en']; // Fallback
-                const elements = document.querySelectorAll('[data-i18n]');
-                elements.forEach(el => {
+                // 1. Update UI Text
+                document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
-                    if (dict[key]) {
-                        el.textContent = dict[key];
-                    }
+                    if (dict[key]) el.textContent = dict[key];
                 });
+
+                // 2. Update Description Visibility (SSR Friendly)
+                document.querySelectorAll('.lang-content').forEach(el => el.classList.remove('active'));
+                const descId = `desc-${selectedLang}`;
+                const descEl = document.getElementById(descId);
+                if (descEl) {
+                    descEl.classList.add('active');
+                } else {
+                    // Fallback to EN if specific lang desc not found
+                    document.getElementById('desc-en')?.classList.add('active');
+                }
+                
+                // 3. Update HTML Lang attribute
+                document.documentElement.lang = selectedLang;
             },
 
             handleFileUpload: function(target) {
@@ -407,16 +727,17 @@
                     const img = new Image();
                     img.onload = () => {
                         this.originalImage = img;
-                        this.processedDataUrl = null; // Clear previous
+                        this.processedDataUrl = null;
                         
-                        // Show Preview
                         document.getElementById('upload_prompt').classList.add('hidden');
                         document.getElementById('file_preview_container').classList.remove('hidden');
                         document.getElementById('preview_thumb').src = event.target.result;
                         document.getElementById('original_info').textContent = `${img.width} x ${img.height} px`;
                         
-                        // Hide results if new file uploaded
                         document.getElementById('result_section').classList.add('hidden');
+                        
+                        // Scroll slightly
+                        document.querySelector('.section').scrollIntoView({ behavior: 'smooth', block: 'center' });
                     };
                     img.src = event.target.result;
                 };
@@ -426,168 +747,124 @@
             upscaleImage: function() {
                 if (!this.originalImage) {
                     const lang = document.getElementById('lang-selector').value;
-                    const dict = this.i18n[lang] || this.i18n['en'];
-                    alert(dict.please_upload);
+                    alert(this.i18n[lang].please_upload);
                     return;
                 }
 
                 this.isProcessing = true;
                 const lang = document.getElementById('lang-selector').value;
-                const dict = this.i18n[lang] || this.i18n['en'];
+                const dict = this.i18n[lang];
                 const btn = document.getElementById('process_btn');
-                const btnText = btn.querySelector('span');
-                const originalBtnText = btnText.textContent;
+                const btnSpan = btn.querySelector('span');
+                const originalText = btnSpan.textContent;
                 
-                // UI Loading State
                 btn.disabled = true;
-                btn.classList.add('opacity-75', 'cursor-not-allowed');
-                btnText.textContent = dict.processing;
+                btnSpan.textContent = dict.processing;
                 btn.querySelector('i').className = "fas fa-spinner fa-spin";
                 
                 document.getElementById('result_section').classList.remove('hidden');
                 document.getElementById('compare_container').classList.add('processing'); 
                 
+                // Scroll to result area
+                setTimeout(() => {
+                    document.getElementById('result_section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+
                 const scale = parseInt(document.querySelector('input[name="scale"]:checked').value);
                 const mode = document.getElementById('algorithm').value;
                 const startTime = performance.now();
 
-                // Use requestAnimationFrame to prevent UI freezing immediately
                 requestAnimationFrame(() => {
                     setTimeout(() => {
                         try {
-                            // --- REAL PROCESSING LOGIC START ---
-                            
-                            // 1. Create Offscreen Canvas
                             const canvas = document.createElement('canvas');
                             const ctx = canvas.getContext('2d');
-                            
                             const newWidth = this.originalImage.width * scale;
                             const newHeight = this.originalImage.height * scale;
-                            
                             canvas.width = newWidth;
                             canvas.height = newHeight;
                             
-                            // 2. High Quality Resize (Bicubic-like via browser API)
+                            // High Quality Resize
                             ctx.imageSmoothingEnabled = true;
                             ctx.imageSmoothingQuality = 'high';
                             ctx.drawImage(this.originalImage, 0, 0, newWidth, newHeight);
 
-                            // 3. Apply Filters (Convolution) based on mode
-                            // Only apply if not 'basic'
+                            // Apply Filters
                             if (mode !== 'basic') {
                                 const imageData = ctx.getImageData(0, 0, newWidth, newHeight);
                                 if (mode === 'sharp') {
-                                    // Sharpen Kernel
-                                    //  0 -1  0
-                                    // -1  5 -1
-                                    //  0 -1  0
                                     this.convolve(imageData, [0, -1, 0, -1, 5, -1, 0, -1, 0]);
                                 } else if (mode === 'smooth') {
-                                    // Slight Gaussian Blur to reduce noise then slight sharpen
-                                    // 1 2 1
-                                    // 2 4 2
-                                    // 1 2 1  (div 16)
-                                    // For simplicity in this demo, let's just do a subtle sharpen to make lines pop
-                                    // 0 -0.5 0
-                                    // -0.5 3 -0.5
-                                    // 0 -0.5 0
-                                    this.convolve(imageData, [0, -0.2, 0, -0.2, 1.8, -0.2, 0, -0.2, 0]); 
+                                    this.convolve(imageData, [0, -0.1, 0, -0.1, 1.4, -0.1, 0, -0.1, 0]); 
                                 }
                                 ctx.putImageData(imageData, 0, 0);
                             }
 
-                            // 4. Get Result
                             this.processedDataUrl = canvas.toDataURL('image/png', 0.9);
 
-                            // --- LOGIC END ---
-
                             const endTime = performance.now();
-                            const duration = ((endTime - startTime) / 1000).toFixed(2);
-                            
-                            document.getElementById('process_time_display').textContent = `${duration}s`;
+                            document.getElementById('process_time_display').textContent = `${((endTime - startTime) / 1000).toFixed(2)}s`;
                             document.getElementById('compare_container').classList.remove('processing');
                             
-                            // Update UI Images
                             const imgBefore = document.getElementById('img_before');
                             const imgAfter = document.getElementById('img_after');
                             
                             imgBefore.src = this.originalImage.src;
-                            imgBefore.style.filter = "none"; // Remove fake filter
-                            
                             imgAfter.src = this.processedDataUrl;
-                            imgAfter.style.filter = "none";
                             
-                            // Update Stats
-                            document.getElementById('res_original_size').textContent = `${this.originalImage.width} x ${this.originalImage.height}`;
-                            document.getElementById('res_new_size').textContent = `${newWidth} x ${newHeight}`;
-
-                            document.getElementById('result_section').scrollIntoView({ behavior: 'smooth' });
+                            document.getElementById('res_original_size').textContent = `${this.originalImage.width}x${this.originalImage.height}`;
+                            document.getElementById('res_new_size').textContent = `${newWidth}x${newHeight}`;
 
                         } catch (e) {
                             console.error(e);
-                            alert('Processing failed. Image might be too large for browser memory.');
+                            alert('Processing Error. Image might be too large.');
                         } finally {
                             this.isProcessing = false;
                             btn.disabled = false;
-                            btn.classList.remove('opacity-75', 'cursor-not-allowed');
-                            btnText.textContent = originalBtnText;
+                            btnSpan.textContent = originalText;
                             btn.querySelector('i').className = "fas fa-rocket";
                         }
-                    }, 100); // Small delay to let UI render loading state
+                    }, 100);
                 });
             },
 
-            // Basic Convolution Filter for Image Processing
             convolve: function(imageData, weights) {
                 const side = Math.round(Math.sqrt(weights.length));
                 const halfSide = Math.floor(side / 2);
                 const src = imageData.data;
                 const sw = imageData.width;
                 const sh = imageData.height;
-                
-                // Create output buffer
                 const output = new Uint8ClampedArray(src.length);
-                // Copy alpha channel first
-                for (let i=0; i<src.length; i+=4) output[i+3] = src[i+3];
+                
+                // Optimized Loop
+                for (let i=0; i<src.length; i+=4) output[i+3] = src[i+3]; // Copy Alpha
 
                 for (let y = 0; y < sh; y++) {
                     for (let x = 0; x < sw; x++) {
                         const dstOff = (y * sw + x) * 4;
-                        
                         let r = 0, g = 0, b = 0;
-                        
                         for (let cy = 0; cy < side; cy++) {
                             for (let cx = 0; cx < side; cx++) {
                                 const scy = y + cy - halfSide;
                                 const scx = x + cx - halfSide;
-                                
                                 if (scy >= 0 && scy < sh && scx >= 0 && scx < sw) {
                                     const srcOff = (scy * sw + scx) * 4;
                                     const wt = weights[cy * side + cx];
-                                    
                                     r += src[srcOff] * wt;
                                     g += src[srcOff + 1] * wt;
                                     b += src[srcOff + 2] * wt;
                                 }
                             }
                         }
-                        
-                        output[dstOff] = r;
-                        output[dstOff + 1] = g;
-                        output[dstOff + 2] = b;
-                        output[dstOff + 3] = src[dstOff + 3]; // Keep original alpha
+                        output[dstOff] = r; output[dstOff + 1] = g; output[dstOff + 2] = b;
                     }
                 }
-                
-                // Write back
                 for (let i=0; i<src.length; i++) imageData.data[i] = output[i];
             },
 
             clearAll: function() {
                 document.getElementById('file_input').value = '';
                 this.originalImage = null;
-                this.processedDataUrl = null;
-                
                 document.getElementById('upload_prompt').classList.remove('hidden');
                 document.getElementById('file_preview_container').classList.add('hidden');
                 document.getElementById('result_section').classList.add('hidden');
@@ -595,18 +872,14 @@
 
             downloadResult: function() {
                 if (!this.processedDataUrl) return;
-                
                 const link = document.createElement('a');
-                // Generate filename
                 const originalName = document.getElementById('file_input').files[0]?.name || 'image';
                 const namePart = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
-                
                 link.download = `${namePart}_upscaled.png`;
                 link.href = this.processedDataUrl; 
                 link.click();
             },
 
-            // Slider Logic (Unchanged but ensuring resilience)
             initSlider: function() {
                 const container = document.getElementById('compare_container');
                 const overlay = document.getElementById('img_overlay');
@@ -616,51 +889,31 @@
                 const updateSlider = (x) => {
                     const rect = container.getBoundingClientRect();
                     let percentage = ((x - rect.left) / rect.width) * 100;
-                    if (percentage < 0) percentage = 0;
-                    if (percentage > 100) percentage = 100;
+                    percentage = Math.max(0, Math.min(100, percentage));
                     overlay.style.width = `${percentage}%`;
                     handle.style.left = `${percentage}%`;
                     
                     const imgAfter = document.getElementById('img_after');
-                    imgAfter.style.width = `${rect.width}px`;
-                    imgAfter.style.maxWidth = 'none';
+                    if(imgAfter) imgAfter.style.width = `${rect.width}px`;
                 };
 
                 container.addEventListener('mousedown', () => isDragging = true);
                 window.addEventListener('mouseup', () => isDragging = false);
-                window.addEventListener('mousemove', (e) => {
-                    if (!isDragging) return;
-                    updateSlider(e.clientX);
-                });
-                
+                window.addEventListener('mousemove', (e) => { if (isDragging) updateSlider(e.clientX); });
                 container.addEventListener('touchstart', () => isDragging = true);
                 window.addEventListener('touchend', () => isDragging = false);
-                window.addEventListener('touchmove', (e) => {
-                    if (!isDragging) return;
-                    updateSlider(e.touches[0].clientX);
-                });
+                window.addEventListener('touchmove', (e) => { if (isDragging) updateSlider(e.touches[0].clientX); });
                 
                 new ResizeObserver(entries => {
                    for (let entry of entries) {
-                       const width = entry.contentRect.width;
                        const imgAfter = document.getElementById('img_after');
-                       if(imgAfter) imgAfter.style.width = `${width}px`;
+                       if(imgAfter) imgAfter.style.width = `${entry.contentRect.width}px`;
                    }
                 }).observe(container);
             }
         };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            ImageTool.init();
-        });
+        document.addEventListener('DOMContentLoaded', () => ImageTool.init());
     </script>
-
-    <div id="related-tools-container"></div>
-    <script src="/scripts/related.js"></script>
-    
-
-    <div id="toolbox-seo-wrapper-unique-id" class="max-w-4xl mx-auto px-4"></div>
-    <script src="/scripts/seo-loader.js"></script>
-
 </body>
 </html>
