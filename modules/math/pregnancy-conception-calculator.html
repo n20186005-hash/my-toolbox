@@ -28,166 +28,374 @@
     <meta name="lang-description-ru" content="Оцените срок родов, дату зачатия и другие важные этапы беременности.">
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            500: '#ec4899',
+                            600: '#db2777',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
-        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; position: relative; }
-        .result-section { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; }
-        .input-section { margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .radio-group { display: flex; gap: 15px; margin: 10px 0; flex-wrap: wrap; }
-        .radio-option { display: flex; align-items: center; gap: 5px; }
-        input[type="date"], select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        .milestone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin-top: 15px; }
-        .milestone-item { background: white; padding: 10px; border-radius: 4px; }
-        .milestone-date { font-weight: 500; }
-        .progress-container { margin: 20px 0; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
-        .progress-bar { height: 100%; background: #4ade80; width: 0%; transition: width 0.5s ease; }
+        body { 
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
+        .tool-module { 
+            background: white; 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); 
+            max-width: 800px; 
+            margin: 20px auto; 
+            position: relative; 
+            transition: all 0.3s ease;
+        }
+        .result-section { 
+            background: #f0fdf4; 
+            border: 1px solid #bbf7d0;
+        }
+        .input-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: border-color 0.2s;
+        }
+        .input-card:focus-within {
+            border-color: #ec4899;
+            background: #fff;
+        }
+        .milestone-item { 
+            background: white; 
+            border-left: 4px solid #ec4899;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .milestone-item:hover {
+            transform: translateY(-2px);
+        }
+        .progress-bar { 
+            background: linear-gradient(90deg, #f472b6 0%, #db2777 100%); 
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* SSR FOUC prevention */
+        [x-cloak] { display: none !important; }
     </style>
     <link rel="canonical" href="https://toolboxpro.top/modules/math/pregnancy-conception-calculator.html" />
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
-     crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634" crossorigin="anonymous"></script>
 
 </head>
-<body>
+<body class="antialiased text-gray-700 p-4 md:p-8">
 
-    <div class="tool-module active" 
+    <div class="tool-module active rounded-2xl p-6 md:p-8" 
          data-id="pregnancy_calculator" 
          data-category="health" 
          data-title="Pregnancy & Conception Calculator" 
          data-icon="👶">
         
         <!-- 语言选择器 -->
-        <div class="absolute top-4 right-4">
-            <select id="pregnancy-lang" onchange="PregnancyCalculator.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
-                <option value="en" selected>English</option>
-                <option value="zh-CN">简体中文</option>
-                <option value="zh-TW">繁體中文</option>
-                <option value="ja">日本語</option>
-                <option value="ru">Русский</option>
-            </select>
+        <div class="absolute top-6 right-6 z-10">
+            <div class="relative inline-block text-left">
+                <select id="pregnancy-lang" onchange="PregnancyCalculator.changeLang()" class="appearance-none bg-white border border-gray-200 text-gray-600 py-1 pl-3 pr-8 rounded-full text-xs font-medium shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent cursor-pointer">
+                    <option value="en" selected>English</option>
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="ja">日本語</option>
+                    <option value="ru">Русский</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
         </div>
 
-        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">👶 Pregnancy & Conception Calculator</h2>
+        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+            <div class="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center text-xl">👶</div>
+            <h1 class="text-2xl font-bold text-gray-800" data-i18n="title">Pregnancy & Conception Calculator</h1>
+        </div>
         
-        <div class="space-y-4 mb-6">
+        <div class="space-y-6 mb-8">
             <!-- 计算方式选择 -->
-            <div class="input-section">
-                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="calculate_method">Calculate Using:</label>
-                <div class="radio-group">
-                    <div class="radio-option">
-                        <input type="radio" id="method-lmp" name="calc-method" value="lmp" checked onclick="PregnancyCalculator.toggleInputs()">
-                        <label for="method-lmp" data-i18n="last_period">Last Menstrual Period</label>
-                    </div>
-                    <div class="radio-option">
-                        <input type="radio" id="method-due" name="calc-method" value="due" onclick="PregnancyCalculator.toggleInputs()">
-                        <label for="method-due" data-i18n="due_date">Due Date</label>
-                    </div>
-                    <div class="radio-option">
-                        <input type="radio" id="method-conception" name="calc-method" value="conception" onclick="PregnancyCalculator.toggleInputs()">
-                        <label for="method-conception" data-i18n="conception_date">Conception Date</label>
-                    </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-3" data-i18n="calculate_method">Calculate Using:</label>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="calc-method" value="lmp" checked onclick="PregnancyCalculator.toggleInputs()" class="peer sr-only">
+                        <div class="p-3 text-center rounded-lg border border-gray-200 bg-white hover:bg-gray-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-600 transition-all">
+                            <span class="text-sm font-medium" data-i18n="last_period">Last Menstrual Period</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="calc-method" value="due" onclick="PregnancyCalculator.toggleInputs()" class="peer sr-only">
+                        <div class="p-3 text-center rounded-lg border border-gray-200 bg-white hover:bg-gray-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-600 transition-all">
+                            <span class="text-sm font-medium" data-i18n="due_date">Due Date</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="calc-method" value="conception" onclick="PregnancyCalculator.toggleInputs()" class="peer sr-only">
+                        <div class="p-3 text-center rounded-lg border border-gray-200 bg-white hover:bg-gray-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-600 transition-all">
+                            <span class="text-sm font-medium" data-i18n="conception_date">Conception Date</span>
+                        </div>
+                    </label>
                 </div>
             </div>
             
-            <!-- 输入区域 -->
-            <div id="lmp-input" class="input-section">
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="first_day_lmp">First Day of Last Menstrual Period</label>
-                <input type="date" id="lmp-date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-            
-            <div id="due-input" class="input-section hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="estimated_due_date">Estimated Due Date</label>
-                <input type="date" id="due-date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-            
-            <div id="conception-input" class="input-section hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="conception_date">Conception Date</label>
-                <input type="date" id="conception-date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-            
-            <!-- 月经周期长度 -->
-            <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="cycle_length">Average Menstrual Cycle Length (days)</label>
-                <select id="cycle-length" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="28">28 days</option>
-                    <option value="21">21 days</option>
-                    <option value="22">22 days</option>
-                    <option value="23">23 days</option>
-                    <option value="24">24 days</option>
-                    <option value="25">25 days</option>
-                    <option value="26">26 days</option>
-                    <option value="27">27 days</option>
-                    <option value="29">29 days</option>
-                    <option value="30">30 days</option>
-                    <option value="31">31 days</option>
-                    <option value="32">32 days</option>
-                    <option value="33">33 days</option>
-                    <option value="34">34 days</option>
-                    <option value="35">35 days</option>
-                </select>
-            </div>
-            
-            <!-- 操作按钮 -->
-            <div class="flex gap-2">
-                <button onclick="PregnancyCalculator.clearValue()" class="flex-1 bg-gray-600 text-white py-2 rounded font-bold hover:bg-gray-700 transition" data-i18n="clear">Clear</button>
-                <button onclick="PregnancyCalculator.calculate()" class="flex-2 bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition" data-i18n="calculate">Calculate</button>
+            <div class="bg-gray-50 p-5 rounded-xl border border-gray-100">
+                <!-- 输入区域 -->
+                <div id="lmp-input" class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="first_day_lmp">First Day of Last Menstrual Period</label>
+                    <input type="date" id="lmp-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none shadow-sm">
+                </div>
+                
+                <div id="due-input" class="mb-4 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="estimated_due_date">Estimated Due Date</label>
+                    <input type="date" id="due-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none shadow-sm">
+                </div>
+                
+                <div id="conception-input" class="mb-4 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="conception_date">Conception Date</label>
+                    <input type="date" id="conception-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none shadow-sm">
+                </div>
+                
+                <!-- 月经周期长度 -->
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="cycle_length">Average Menstrual Cycle Length (days)</label>
+                    <div class="relative">
+                        <select id="cycle-length" class="appearance-none w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none shadow-sm bg-white">
+                            <option value="21">21 days</option>
+                            <option value="22">22 days</option>
+                            <option value="23">23 days</option>
+                            <option value="24">24 days</option>
+                            <option value="25">25 days</option>
+                            <option value="26">26 days</option>
+                            <option value="27">27 days</option>
+                            <option value="28" selected>28 days (Average)</option>
+                            <option value="29">29 days</option>
+                            <option value="30">30 days</option>
+                            <option value="31">31 days</option>
+                            <option value="32">32 days</option>
+                            <option value="33">33 days</option>
+                            <option value="34">34 days</option>
+                            <option value="35">35 days</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="flex gap-3 pt-2">
+                    <button onclick="PregnancyCalculator.clearValue()" class="px-6 py-3 bg-white border border-gray-300 text-gray-600 rounded-lg font-semibold hover:bg-gray-50 focus:ring-2 focus:ring-gray-200 transition-colors" data-i18n="clear">Clear</button>
+                    <button onclick="PregnancyCalculator.calculate()" class="flex-1 px-6 py-3 bg-brand-600 text-white rounded-lg font-bold hover:bg-brand-500 focus:ring-4 focus:ring-brand-100 shadow-md hover:shadow-lg transition-all transform active:scale-[0.98]" data-i18n="calculate">Calculate My Due Date</button>
+                </div>
             </div>
         </div>
 
         <!-- 错误提示 -->
-        <div id="pregnancy-error" class="text-sm text-red-600 mt-2 hidden mb-4"></div>
+        <div id="pregnancy-error" class="hidden p-4 mb-6 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span id="error-text"></span>
+        </div>
         
         <!-- 结果展示 -->
-        <div id="pregnancy-results" class="hidden">
-            <div class="text-sm text-gray-500 mb-2" data-i18n="results">Results</div>
-            <div class="result-section">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded">
-                        <div class="text-sm text-gray-500" data-i18n="estimated_due_date">Estimated Due Date</div>
-                        <div class="text-lg font-medium" id="due-date-result">-</div>
+        <div id="pregnancy-results" class="hidden animate-fade-in">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center" data-i18n="results">Your Results</h3>
+            
+            <div class="result-section rounded-xl p-6 mb-8 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1" data-i18n="estimated_due_date">Due Date</div>
+                        <div class="text-2xl font-bold text-brand-600" id="due-date-result">-</div>
                     </div>
-                    <div class="bg-white p-4 rounded">
-                        <div class="text-sm text-gray-500" data-i18n="conception_date">Conception Date</div>
-                        <div class="text-lg font-medium" id="conception-date-result">-</div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1" data-i18n="conception_date">Conception</div>
+                        <div class="text-xl font-semibold text-gray-800" id="conception-date-result">-</div>
                     </div>
-                    <div class="bg-white p-4 rounded">
-                        <div class="text-sm text-gray-500" data-i18n="current_week">Current Week of Pregnancy</div>
-                        <div class="text-lg font-medium" id="current-week-result">-</div>
-                    </div>
-                </div>
-                
-                <div>
-                    <div class="flex justify-between text-sm mb-1">
-                        <span data-i18n="pregnancy_progress">Pregnancy Progress</span>
-                        <span id="progress-percentage">0%</span>
-                    </div>
-                    <div class="progress-container">
-                        <div id="pregnancy-progress" class="progress-bar"></div>
-                    </div>
-                    <div class="text-right text-sm text-gray-500 mt-1">
-                        <span data-i18n="days_remaining">Days Remaining:</span> <span id="days-remaining">280</span>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1" data-i18n="current_week">Pregnancy Week</div>
+                        <div class="text-xl font-semibold text-gray-800" id="current-week-result">-</div>
                     </div>
                 </div>
                 
-                <div class="mt-6">
-                    <div class="text-sm text-gray-500 mb-2" data-i18n="key_milestones">Key Milestones</div>
-                    <div class="milestone-grid" id="milestones">
-                        <!-- 里程碑将在这里显示 -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="text-sm font-medium text-gray-700" data-i18n="pregnancy_progress">Progress</span>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold text-brand-500" id="progress-percentage">0%</span>
+                        </div>
                     </div>
+                    <div class="h-3 bg-gray-100 rounded-full overflow-hidden mb-2">
+                        <div id="pregnancy-progress" class="progress-bar h-full rounded-full w-0"></div>
+                    </div>
+                    <div class="text-right text-xs text-gray-500">
+                        <span data-i18n="days_remaining">Days Remaining:</span> <span id="days-remaining" class="font-medium text-gray-700">280</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-lg font-bold text-gray-800 mb-4" data-i18n="key_milestones">Key Milestones</h3>
+                <div class="milestone-grid grid grid-cols-1 sm:grid-cols-2 gap-4" id="milestones">
+                    <!-- 里程碑将在这里显示 -->
                 </div>
             </div>
         </div>
 
-        <!-- 说明信息 -->
-        <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
-            <p data-i18n="notes">Notes:</p>
-            <ul class="list-disc list-inside mt-2 space-y-1" id="notes-list">
-                <li data-i18n="note1">This calculator provides estimates only and should not replace professional medical advice</li>
-                <li data-i18n="note2">A typical pregnancy lasts about 40 weeks (280 days) from the first day of your last menstrual period</li>
-                <li data-i18n="note3">Conception usually occurs around 2 weeks after the first day of your last menstrual period</li>
+        <!-- Notes Section -->
+        <div class="mt-8 p-5 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800">
+            <h4 class="font-bold mb-2 flex items-center" data-i18n="notes">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Important Notes:
+            </h4>
+            <ul class="list-disc list-inside space-y-1 ml-1 opacity-90" id="notes-list">
+                <li data-i18n="note1">This calculator provides estimates only and should not replace professional medical advice.</li>
+                <li data-i18n="note2">A typical pregnancy lasts about 40 weeks (280 days) from the first day of your last menstrual period.</li>
+                <li data-i18n="note3">Conception usually occurs around 2 weeks after the first day of your last menstrual period.</li>
             </ul>
         </div>
+
+        <!-- Understanding Pregnancy Calculation (SSR Friendly Content) -->
+        <div class="mt-8 border-t border-gray-100 pt-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-4" data-i18n="about_title">Understanding Pregnancy Calculation</h3>
+            
+            <div class="space-y-4 text-gray-600 leading-relaxed">
+                <div class="bg-white">
+                    <h4 class="font-semibold text-gray-800 mb-2" data-i18n="about_h_lmp">How is the Due Date Calculated?</h4>
+                    <p class="text-sm" data-i18n="about_p_lmp">
+                        Most healthcare providers use the <strong>Last Menstrual Period (LMP)</strong> method. This calculation assumes a regular 28-day cycle. The estimated due date is calculated by adding 40 weeks (or 280 days) to the first day of your last period. This is based on Naegele's Rule, a standard medical formula used worldwide.
+                    </p>
+                </div>
+
+                <div class="bg-white">
+                    <h4 class="font-semibold text-gray-800 mb-2" data-i18n="about_h_conception">What is the Conception Date?</h4>
+                    <p class="text-sm" data-i18n="about_p_conception">
+                        The conception date is the day when fertilization likely occurred. In a standard 28-day cycle, ovulation and conception typically happen about 14 days after the start of your last period. Therefore, the "gestational age" of the baby (measured from LMP) is usually about 2 weeks older than the "fetal age" (measured from conception).
+                    </p>
+                </div>
+
+                <div class="bg-white">
+                    <h4 class="font-semibold text-gray-800 mb-2" data-i18n="about_h_accuracy">Is the Due Date Accurate?</h4>
+                    <p class="text-sm" data-i18n="about_p_accuracy">
+                        It's important to remember that the "Due Date" is just an estimate. Only about 4-5% of babies are born on their exact due date. Most babies arrive within two weeks before or after this date (between 38 and 42 weeks). Factors like irregular cycles or the date of ovulation can affect the actual date of delivery. Ultrasound scans in the first trimester can often provide a more precise dating.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Comprehensive Guide Section (Multilingual Supported) -->
+        <div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2" data-i18n="guide_title">
+                Pregnancy Must-Have🔥 Due Date & Conception Calculator | New Moms Master It in Seconds!
+            </h2>
+            
+            <p class="text-gray-600 mb-8 leading-relaxed" data-i18n="guide_intro">
+                Still counting your due date on a calendar with your fingers? 🤰 This Pregnancy & Conception Calculator is *chef’s kiss*! Super easy to use, 100% reliable data—whether you’re a TTC queen or a new mom who just got that positive test, you can get all the key info with one tap! You’ll be a pro after reading this!
+            </p>
+
+            <div class="space-y-8">
+                <!-- Section 1 -->
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-3" data-i18n="guide_s1_title">✨ Why Pick It? 3 Core Perks</h3>
+                    <ul class="space-y-2 text-gray-600">
+                        <li class="flex gap-2">
+                            <span class="font-bold text-brand-500">1.</span>
+                            <span data-i18n="guide_s1_v1">Doctor-Approved Accuracy ✅: Calculated based on medical standards—uses the classic 40-week (280-day) pregnancy timeline. Conception date estimates follow the clinical rule of thumb (about 2 weeks after your last period) — no random guesses here!</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="font-bold text-brand-500">2.</span>
+                            <span data-i18n="guide_s1_v2">Zero Learning Curve 🤩: No messy formulas to memorize! Just plug in 2 key details, load it up on your phone in seconds, and the navigation is *so* straightforward.</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="font-bold text-brand-500">3.</span>
+                            <span data-i18n="guide_s1_v3">All-In-One Info Hub 📊: It doesn’t stop at due date and conception date! You’ll also get current week of pregnancy, pregnancy progress, and even key milestones marked out—stay on track with your pregnancy journey!</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Section 2 -->
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-3" data-i18n="guide_s2_title">📝 3-Step Guide | Even Tech Newbies Can Do It</h3>
+                    <ul class="space-y-2 text-gray-600">
+                        <li class="flex gap-2">
+                            <span class="font-bold text-brand-500">1.</span>
+                            <span data-i18n="guide_s2_v1">Choose Calculation Method: Default to the “LMP (Last Menstrual Period)” mode—it’s the most accurate for most moms-to-be!</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="font-bold text-brand-500">2.</span>
+                            <div>
+                                <span data-i18n="guide_s2_v2_main">Enter Key Details:</span>
+                                <ul class="list-disc list-inside ml-2 mt-1 text-sm text-gray-500">
+                                    <li data-i18n="guide_s2_v2_sub1">Fill in the first day of your last period (just the date—no need to stress about the exact time!)</li>
+                                    <li data-i18n="guide_s2_v2_sub2">Menstrual cycle length: Default is 28 days. If your cycle is shorter (25 days) or longer (32 days), just tweak the number—still super precise!</li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="font-bold text-brand-500">3.</span>
+                            <span data-i18n="guide_s2_v3">One Tap for Results: Hit calculate and boom! All your key data pops up instantly—no waiting around for loading!</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Section 3 -->
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-3" data-i18n="guide_s3_title">📈 Result Breakdown | Every Number Matters</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-600">
+                        <div class="flex gap-2"><span class="text-green-500">✅</span><span data-i18n="guide_s3_v1">Estimated Due Date: Lock in when your little one is likely to arrive—perfect for prepping your hospital bag and booking prenatal appointments!</span></div>
+                        <div class="flex gap-2"><span class="text-green-500">✅</span><span data-i18n="guide_s3_v2">Conception Date: Guess when baby was conceived—great for tracking pregnancy milestones and recalling how you felt back then!</span></div>
+                        <div class="flex gap-2"><span class="text-green-500">✅</span><span data-i18n="guide_s3_v3">Current Week of Pregnancy: Stay updated on your trimester (first/second/third) and never miss out on important do’s and don’ts!</span></div>
+                        <div class="flex gap-2"><span class="text-green-500">✅</span><span data-i18n="guide_s3_v4">Pregnancy Progress: Watch the percentage climb—it’s so satisfying to see how far you’ve come, counting down to meeting your baby!</span></div>
+                        <div class="flex gap-2 col-span-1 md:col-span-2"><span class="text-green-500">✅</span><span data-i18n="guide_s3_v5">Key Milestones: Never skip a beat—marks important checkups like NT scan, anatomy scan, and full-term status to keep you on schedule!</span></div>
+                    </div>
+                </div>
+
+                <!-- Section 4 -->
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-3" data-i18n="guide_s4_title">❓ FAQs | All Your Worries Answered</h3>
+                    <div class="space-y-3">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="font-semibold text-gray-700 mb-1" data-i18n="guide_s4_q1">Q: Can this calculator replace my doctor’s judgment?</p>
+                            <p class="text-sm text-gray-600" data-i18n="guide_s4_a1">A: Nope, babe! It’s just an estimate based on general medical rules. Everyone’s body and ovulation timing are different—always go with your doctor’s final call for due dates and pregnancy plans!</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="font-semibold text-gray-700 mb-1" data-i18n="guide_s4_q2">Q: Will it work if my menstrual cycle is irregular?</p>
+                            <p class="text-sm text-gray-600" data-i18n="guide_s4_a2">A: Just enter your average cycle length! It might not be 100% spot-on like regular cycles, but it’s way better than guessing. Adjust it later with your ultrasound results!</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="font-semibold text-gray-700 mb-1" data-i18n="guide_s4_q3">Q: Can I use it if I’m TTC (trying to conceive)?</p>
+                            <p class="text-sm text-gray-600" data-i18n="guide_s4_a3">A: Absolutely! Use the estimated conception date to plan baby-making time, or calculate your potential pregnancy weeks after ovulation—get a head start on your journey!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5 -->
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-3" data-i18n="guide_s5_title">💡 Pro Tips</h3>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600">
+                        <li data-i18n="guide_s5_v1">Screenshot your first results! Compare them with your doctor’s dates at every prenatal visit to stay aligned.</li>
+                        <li data-i18n="guide_s5_v2">Forgot your last period date? Ask your doctor for your approximate week of pregnancy, then reverse-calculate with this tool—it still works!</li>
+                        <li data-i18n="guide_s5_v3">Use the pregnancy progress percentage as a daily check-in. It’s so heartwarming to see your baby growing inside you—total mood booster!</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-gray-100 text-sm text-gray-500">
+                <p class="mb-3 font-medium" data-i18n="guide_outro">Whether you’re over the moon with a positive test or grinding through TTC, this tool will keep your pregnancy journey on track! Easy to use, reliable data, and *totally free*! 📱 Save it now and share it with your mom-to-be besties—let’s crush pregnancy together!</p>
+                <div class="flex items-start gap-2 bg-orange-50 p-3 rounded text-orange-700">
+                    <span>⚠️</span>
+                    <span data-i18n="guide_warn">Friendly Reminder: This tool is for reference only and can’t replace professional medical advice. Always consult your obstetrician if you have any pregnancy questions! Wishing all mamas a smooth pregnancy and a healthy baby! 👶</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -197,7 +405,7 @@
             
             i18n: {
                 'en': {
-                    title: '👶 Pregnancy & Conception Calculator',
+                    title: 'Pregnancy & Conception Calculator',
                     calculate_method: 'Calculate Using:',
                     last_period: 'Last Menstrual Period',
                     due_date: 'Due Date',
@@ -206,27 +414,67 @@
                     estimated_due_date: 'Estimated Due Date',
                     cycle_length: 'Average Menstrual Cycle Length (days)',
                     clear: 'Clear',
-                    calculate: 'Calculate',
-                    results: 'Results',
-                    current_week: 'Current Week of Pregnancy',
-                    pregnancy_progress: 'Pregnancy Progress',
+                    calculate: 'Calculate My Due Date',
+                    results: 'Your Results',
+                    current_week: 'Pregnancy Week',
+                    pregnancy_progress: 'Progress',
                     days_remaining: 'Days Remaining:',
                     key_milestones: 'Key Milestones',
-                    notes: 'Notes:',
-                    note1: 'This calculator provides estimates only and should not replace professional medical advice',
-                    note2: 'A typical pregnancy lasts about 40 weeks (280 days) from the first day of your last menstrual period',
-                    note3: 'Conception usually occurs around 2 weeks after the first day of your last menstrual period',
-                    err_invalid_date: 'Please select a valid date',
+                    notes: 'Important Notes:',
+                    note1: 'This calculator provides estimates only and should not replace professional medical advice.',
+                    note2: 'A typical pregnancy lasts about 40 weeks (280 days) from the first day of your last menstrual period.',
+                    note3: 'Conception usually occurs around 2 weeks after the first day of your last menstrual period.',
+                    err_invalid_date: 'Please select a valid date.',
                     milestone_4w: '4 Weeks: Pregnancy Test Possible',
                     milestone_8w: '8 Weeks: Major Organs Forming',
                     milestone_12w: '12 Weeks: First Trimester Ends',
                     milestone_20w: '20 Weeks: Second Trimester Ends',
                     milestone_24w: '24 Weeks: Viability Age',
                     milestone_37w: '37 Weeks: Full Term',
-                    milestone_40w: '40 Weeks: Due Date'
+                    milestone_40w: '40 Weeks: Due Date',
+                    // About
+                    about_title: 'Understanding Pregnancy Calculation',
+                    about_h_lmp: 'How is the Due Date Calculated?',
+                    about_p_lmp: 'Most healthcare providers use the <strong>Last Menstrual Period (LMP)</strong> method. This calculation assumes a regular 28-day cycle. The estimated due date is calculated by adding 40 weeks (or 280 days) to the first day of your last period. This is based on Naegele\'s Rule, a standard medical formula used worldwide.',
+                    about_h_conception: 'What is the Conception Date?',
+                    about_p_conception: 'The conception date is the day when fertilization likely occurred. In a standard 28-day cycle, ovulation and conception typically happen about 14 days after the start of your last period. Therefore, the "gestational age" of the baby (measured from LMP) is usually about 2 weeks older than the "fetal age" (measured from conception).',
+                    about_h_accuracy: 'Is the Due Date Accurate?',
+                    about_p_accuracy: 'It\'s important to remember that the "Due Date" is just an estimate. Only about 4-5% of babies are born on their exact due date. Most babies arrive within two weeks before or after this date (between 38 and 42 weeks). Factors like irregular cycles or the date of ovulation can affect the actual date of delivery. Ultrasound scans in the first trimester can often provide a more precise dating.',
+                    // Guide
+                    guide_title: 'Pregnancy Must-Have🔥 Due Date & Conception Calculator | New Moms Master It in Seconds!',
+                    guide_intro: 'Still counting your due date on a calendar with your fingers? 🤰 This Pregnancy & Conception Calculator is *chef’s kiss*! Super easy to use, 100% reliable data—whether you’re a TTC queen or a new mom who just got that positive test, you can get all the key info with one tap! You’ll be a pro after reading this!',
+                    guide_s1_title: '✨ Why Pick It? 3 Core Perks',
+                    guide_s1_v1: 'Doctor-Approved Accuracy ✅: Calculated based on medical standards—uses the classic 40-week (280-day) pregnancy timeline. Conception date estimates follow the clinical rule of thumb (about 2 weeks after your last period) — no random guesses here!',
+                    guide_s1_v2: 'Zero Learning Curve 🤩: No messy formulas to memorize! Just plug in 2 key details, load it up on your phone in seconds, and the navigation is *so* straightforward.',
+                    guide_s1_v3: 'All-In-One Info Hub 📊: It doesn’t stop at due date and conception date! You’ll also get current week of pregnancy, pregnancy progress, and even key milestones marked out—stay on track with your pregnancy journey!',
+                    guide_s2_title: '📝 3-Step Guide | Even Tech Newbies Can Do It',
+                    guide_s2_v1: 'Choose Calculation Method: Default to the “LMP (Last Menstrual Period)” mode—it’s the most accurate for most moms-to-be!',
+                    guide_s2_v2_main: 'Enter Key Details:',
+                    guide_s2_v2_sub1: 'Fill in the first day of your last period (just the date—no need to stress about the exact time!)',
+                    guide_s2_v2_sub2: 'Menstrual cycle length: Default is 28 days. If your cycle is shorter (25 days) or longer (32 days), just tweak the number—still super precise!',
+                    guide_s2_v3: 'One Tap for Results: Hit calculate and boom! All your key data pops up instantly—no waiting around for loading!',
+                    guide_s3_title: '📈 Result Breakdown | Every Number Matters',
+                    guide_s3_v1: 'Estimated Due Date: Lock in when your little one is likely to arrive—perfect for prepping your hospital bag and booking prenatal appointments!',
+                    guide_s3_v2: 'Conception Date: Guess when baby was conceived—great for tracking pregnancy milestones and recalling how you felt back then!',
+                    guide_s3_v3: 'Current Week of Pregnancy: Stay updated on your trimester (first/second/third) and never miss out on important do’s and don’ts!',
+                    guide_s3_v4: 'Pregnancy Progress: Watch the percentage climb—it’s so satisfying to see how far you’ve come, counting down to meeting your baby!',
+                    guide_s3_v5: 'Key Milestones: Never skip a beat—marks important checkups like NT scan, anatomy scan, and full-term status to keep you on schedule!',
+                    guide_s4_title: '❓ FAQs | All Your Worries Answered',
+                    guide_s4_q1: 'Q: Can this calculator replace my doctor’s judgment?',
+                    guide_s4_a1: 'A: Nope, babe! It’s just an estimate based on general medical rules. Everyone’s body and ovulation timing are different—always go with your doctor’s final call for due dates and pregnancy plans!',
+                    guide_s4_q2: 'Q: Will it work if my menstrual cycle is irregular?',
+                    guide_s4_a2: 'A: Just enter your average cycle length! It might not be 100% spot-on like regular cycles, but it’s way better than guessing. Adjust it later with your ultrasound results!',
+                    guide_s4_q3: 'Q: Can I use it if I’m TTC (trying to conceive)?',
+                    guide_s4_a3: 'A: Absolutely! Use the estimated conception date to plan baby-making time, or calculate your potential pregnancy weeks after ovulation—get a head start on your journey!',
+                    guide_s5_title: '💡 Pro Tips',
+                    guide_s5_v1: 'Screenshot your first results! Compare them with your doctor’s dates at every prenatal visit to stay aligned.',
+                    guide_s5_v2: 'Forgot your last period date? Ask your doctor for your approximate week of pregnancy, then reverse-calculate with this tool—it still works!',
+                    guide_s5_v3: 'Use the pregnancy progress percentage as a daily check-in. It’s so heartwarming to see your baby growing inside you—total mood booster!',
+                    guide_outro: 'Whether you’re over the moon with a positive test or grinding through TTC, this tool will keep your pregnancy journey on track! Easy to use, reliable data, and *totally free*! 📱 Save it now and share it with your mom-to-be besties—let’s crush pregnancy together!',
+                    guide_warn: 'Friendly Reminder: This tool is for reference only and can’t replace professional medical advice. Always consult your obstetrician if you have any pregnancy questions! Wishing all mamas a smooth pregnancy and a healthy baby! 👶'
                 },
                 'zh-CN': {
-                    title: '👶 怀孕受孕计算器',
+                    title: '怀孕受孕计算器',
                     calculate_method: '计算方式：',
                     last_period: '末次月经',
                     due_date: '预产期',
@@ -235,27 +483,67 @@
                     estimated_due_date: '预计预产期',
                     cycle_length: '平均月经周期长度（天）',
                     clear: '清除',
-                    calculate: '计算',
-                    results: '结果',
-                    current_week: '当前怀孕周数',
+                    calculate: '计算我的预产期',
+                    results: '计算结果',
+                    current_week: '当前孕周',
                     pregnancy_progress: '怀孕进度',
                     days_remaining: '剩余天数：',
                     key_milestones: '重要里程碑',
-                    notes: '说明：',
-                    note1: '本计算器仅提供估算，不能替代专业医疗建议',
-                    note2: '典型的怀孕期从末次月经第一天开始约为40周（280天）',
-                    note3: '受孕通常发生在末次月经第一天后约2周',
-                    err_invalid_date: '请选择有效的日期',
+                    notes: '重要说明：',
+                    note1: '本计算器仅提供估算，不能替代专业医疗建议。',
+                    note2: '典型的怀孕期从末次月经第一天开始约为40周（280天）。',
+                    note3: '受孕通常发生在末次月经第一天后约2周。',
+                    err_invalid_date: '请选择有效的日期。',
                     milestone_4w: '4周：可进行怀孕测试',
                     milestone_8w: '8周：主要器官形成中',
                     milestone_12w: '12周：孕早期结束',
                     milestone_20w: '20周：孕中期结束',
                     milestone_24w: '24周：可存活年龄',
                     milestone_37w: '37周：足月',
-                    milestone_40w: '40周：预产期'
+                    milestone_40w: '40周：预产期',
+                    // About
+                    about_title: '了解怀孕计算原理',
+                    about_h_lmp: '预产期是如何计算的？',
+                    about_p_lmp: '大多数医疗服务提供者使用<strong>末次月经 (LMP)</strong> 法。此计算假设月经周期为规律的28天。预计预产期是通过在末次月经的第一天加上40周（或280天）计算得出的。这是基于内格莱氏法则 (Naegele\'s Rule)，这是一种全球通用的标准医学公式。',
+                    about_h_conception: '什么是受孕日期？',
+                    about_p_conception: '受孕日期是受精可能发生的日期。在标准的28天周期中，排卵和受孕通常发生在末次月经开始后约14天。因此，宝宝的"孕龄"（从LMP开始计算）通常比"胎龄"（从受孕开始计算）大约2周。',
+                    about_h_accuracy: '预产期准确吗？',
+                    about_p_accuracy: '请记住，"预产期"只是一个估算值。只有约4-5%的宝宝会在准确的预产期当天出生。大多数宝宝会在这个日期的前后两周内出生（38到42周之间）。月经周期不规律或排卵日期等因素都会影响实际的分娩日期。孕早期的超声波扫描通常能提供更精确的日期测算。',
+                    // Guide
+                    guide_title: '孕期神器🔥怀孕预产期&受孕日计算器｜新手孕妈秒上手！',
+                    guide_intro: '还在对着日历掰手指算预产期？🤰 这款 Pregnancy & Conception Calculator 直接封神！操作超简单，数据超靠谱，不管是备孕姐妹还是刚确认怀孕的新手孕妈，都能一键get关键信息～ 看完就会用！',
+                    guide_s1_title: '✨ 为什么选它？3大核心优势',
+                    guide_s1_v1: '专业度在线✅：基于医学标准测算，典型孕期按40周（280天）精准推导，受孕日估算参考临床常见的“末次月经后2周左右”规律，不是瞎猜的哦！',
+                    guide_s1_v2: '操作零门槛🤩：不用记复杂公式，输入2个关键信息就搞定，手机端秒加载，导航超清晰～',
+                    guide_s1_v3: '信息超全面📊：不仅给预产期、受孕日，还能看当前孕周、怀孕进度，连关键里程碑都标好，孕期节奏不迷路！',
+                    guide_s2_title: '📝 3步操作指南｜手残党也会用',
+                    guide_s2_v1: '选择计算方式：默认选「lmp（末次月经）」模式，最贴合大多数孕妈的实际情况～',
+                    guide_s2_v2_main: '输入关键信息：',
+                    guide_s2_v2_sub1: '填写「末次月经第一天」（精确到日期就好，不用纠结时间哦）',
+                    guide_s2_v2_sub2: '月经周期长度：默认28天，平时周期不一样的宝子直接改数字（比如25天、32天也能精准算）',
+                    guide_s2_v3: '一键出结果：输入完成直接看！系统自动生成所有关键数据，不用等加载～',
+                    guide_s3_title: '📈 输出结果解读｜每个数字都有用',
+                    guide_s3_v1: '预估预产期：帮你锁定宝宝大概率报到的日期，提前准备待产包、预约产检都靠它～',
+                    guide_s3_v2: '受孕日期：推算大概的受孕时间，方便核对孕期节点、回忆关键时期的身体状态～',
+                    guide_s3_v3: '当前孕周：实时更新怀孕周数，知道自己处于孕早期、中期还是晚期，对应阶段注意事项不踩坑～',
+                    guide_s3_v4: '怀孕进度：百分比直观显示孕期进度，看着数字涨超有成就感，倒数迎接宝宝超期待！',
+                    guide_s3_v5: '关键里程碑：标注孕期重要节点（比如NT检查、大排畸、足月等），提醒你按时做产检～',
+                    guide_s4_title: '❓ 常见疑问解答｜打消你的顾虑',
+                    guide_s4_q1: 'Q：这个计算器的结果能代替医生判断吗？',
+                    guide_s4_a1: 'A：No宝子！计算器是基于普遍医学规律的估算，每个人的身体状况、排卵时间都有差异，最终预产期和孕期安排一定要以医生诊断为准哦～',
+                    guide_s4_q2: 'Q：月经周期不规律能算准吗？',
+                    guide_s4_a2: 'A：尽量填写自己平时的平均周期长度，虽然不如规律周期精准，但比瞎猜靠谱多啦，后续结合B超结果调整就好～',
+                    guide_s4_q3: 'Q：备孕中能用吗？',
+                    guide_s4_a3: 'A：当然！可以根据预估受孕日安排同房时间，或者同房后测算可能的怀孕周期，提前做好准备～',
+                    guide_s5_title: '💡 实用小Tips',
+                    guide_s5_v1: '建议第一次测算后截图保存结果，后续每次产检可以对照医生给出的日期调整～',
+                    guide_s5_v2: '如果不记得末次月经时间，先问医生大概孕周，再反向推算，也能用到这个工具～',
+                    guide_s5_v3: '孕期进度百分比可以当作打卡记录，每次看都能感受到宝宝在肚子里的成长，超治愈！',
+                    guide_outro: '不管是刚测出两道杠的惊喜孕妈，还是在备孕路上努力的姐妹，这款工具都能帮你理清孕期节奏～ 操作简单、数据靠谱，关键是完全免费！📱 赶紧收藏起来，转发给身边需要的闺蜜，一起轻松度过孕期吧～',
+                    guide_warn: '温馨提示：本工具仅提供估算参考，不能替代专业医疗建议，孕期有任何疑问都要及时咨询产科医生哦～ 祝各位孕妈好孕连连，宝宝健康成长！👶'
                 },
                 'zh-TW': {
-                    title: '👶 懷孕受孕計算器',
+                    title: '懷孕受孕計算器',
                     calculate_method: '計算方式：',
                     last_period: '末次月經',
                     due_date: '預產期',
@@ -264,27 +552,67 @@
                     estimated_due_date: '預計預產期',
                     cycle_length: '平均月經週期長度（天）',
                     clear: '清除',
-                    calculate: '計算',
-                    results: '結果',
-                    current_week: '當前懷孕周數',
+                    calculate: '計算我的預產期',
+                    results: '計算結果',
+                    current_week: '當前孕週',
                     pregnancy_progress: '懷孕進度',
                     days_remaining: '剩餘天數：',
                     key_milestones: '重要里程碑',
-                    notes: '說明：',
-                    note1: '本計算器僅提供估算，不能替代專業醫療建議',
-                    note2: '典型的懷孕期從末次月經第一天開始約為40週（280天）',
-                    note3: '受孕通常發生在末次月經第一天後約2週',
-                    err_invalid_date: '請選擇有效的日期',
+                    notes: '重要說明：',
+                    note1: '本計算器僅提供估算，不能替代專業醫療建議。',
+                    note2: '典型的懷孕期從末次月經第一天開始約為40週（280天）。',
+                    note3: '受孕通常發生在末次月經第一天後約2週。',
+                    err_invalid_date: '請選擇有效的日期。',
                     milestone_4w: '4週：可進行懷孕測試',
                     milestone_8w: '8週：主要器官形成中',
                     milestone_12w: '12週：孕早期結束',
                     milestone_20w: '20週：孕中期結束',
                     milestone_24w: '24週：可存活年齡',
                     milestone_37w: '37週：足月',
-                    milestone_40w: '40週：預產期'
+                    milestone_40w: '40週：預產期',
+                    // About
+                    about_title: '了解懷孕計算原理',
+                    about_h_lmp: '預產期是如何計算的？',
+                    about_p_lmp: '大多數醫療服務提供者使用<strong>末次月經 (LMP)</strong> 法。此計算假設月經週期為規律的28天。預計預產期是通過在末次月經的第一天加上40週（或280天）計算得出的。這是基於內格萊氏法則 (Naegele\'s Rule)，這是一種全球通用的標準醫學公式。',
+                    about_h_conception: '什麼是受孕日期？',
+                    about_p_conception: '受孕日期是受精可能發生的日期。在標準的28天週期中，排卵和受孕通常發生在末次月經開始後約14天。因此，寶寶的"孕齡"（從LMP開始計算）通常比"胎齡"（從受孕開始計算）大約2週。',
+                    about_h_accuracy: '預產期準確嗎？',
+                    about_p_accuracy: '請記住，"預產期"只是一個估算值。只有約4-5%的寶寶會在準確的預產期當天出生。大多數寶寶會在這個日期的前後兩週內出生（38到42週之間）。月經週期不規律或排卵日期等因素都會影響實際的分娩日期。孕早期的超聲波掃描通常能提供更精確的日期測算。',
+                    // Guide
+                    guide_title: '孕期神器🔥懷孕預產期&受孕日計算機｜新手孕媽秒上手！',
+                    guide_intro: '仲係度對住月曆屈手指數預產期？🤰 呢款 Pregnancy & Conception Calculator 簡直係神！操作超簡單，數據超靠譜，無論係備孕姊妹定係剛驗到有咗嘅新手孕媽，一鍵就搞掂晒所有關鍵資訊～ 睇完即刻識用！',
+                    guide_s1_title: '✨ 點解揀佢？3大核心優勢',
+                    guide_s1_v1: '專業度滿分✅：基於醫學標準計算，標準孕期40周（280日）精準推算，受孕日估算參考臨床常見嘅「末次月經後2周左右」規律，唔係亂估架！',
+                    guide_s1_v2: '操作零難度🤩：唔使記複雜公式，輸入2個關鍵資料就搞掂，手機版秒載入，導航超清晰～',
+                    guide_s1_v3: '資訊超齊全📊：唔止出預產期、受孕日，仲睇到當前孕周、懷孕進度，連重要孕期節點都標明，孕期節奏唔會亂！',
+                    guide_s2_title: '📝 3步操作指南｜手殘黨都識用',
+                    guide_s2_v1: '選擇計算方式：預設揀「lmp（末次月經）」模式，最貼合大部分孕媽嘅實際情況～',
+                    guide_s2_v2_main: '輸入關鍵資訊：',
+                    guide_s2_v2_sub1: '填寫「末次月經第一日」（精確到日期就得，唔使煩時間㗎～）',
+                    guide_s2_v2_sub2: '月經周期長度：預設28日，平時周期唔同嘅姊妹直接改數字就得（比如25日、32日都一樣精準！）',
+                    guide_s2_v3: '一鍵出結果：輸入完即刻睇！系統自動生成所有關鍵數據，唔使等載入～',
+                    guide_s3_title: '📈 輸出結果解讀｜每個數字都有用',
+                    guide_s3_v1: '預估預產期：幫你鎖定BB大概率出世嘅日子，早啲準備待產包、約產檢就靠佢～',
+                    guide_s3_v2: '受孕日期：推算大概嘅受孕時間，方便核對孕期節點、諗返起關鍵時期嘅身體狀況～',
+                    guide_s3_v3: '當前孕周：實時更新懷孕周數，知道自己處於孕早期、中期定晚期，對應階段嘅注意事項唔會踩坑！',
+                    guide_s3_v4: '懷孕進度：百分比直觀顯示孕期進度，睇住數字上升超有成就感，倒數等BB出世超期待！',
+                    guide_s3_v5: '關鍵里程碑：標註孕期重要節點（比如NT檢查、大排畸、足月等），提醒你定時做產檢～',
+                    guide_s4_title: '❓ 常見疑問解答｜打消你嘅顧慮',
+                    guide_s4_q1: 'Q：呢個計算機嘅結果可以代替醫生判斷嗎？',
+                    guide_s4_a1: 'A：唔得呀姊妹！計算機係基於普遍醫學規律嘅估算，每個人嘅身體狀況、排卵時間都有差異，最終預產期同孕期安排一定要以醫生診斷為準！',
+                    guide_s4_q2: 'Q：月經周期唔規律可以算準嗎？',
+                    guide_s4_a2: 'A：盡量填寫平時嘅平均周期長度，雖然冇規律周期咁精準，但總好過亂估啦，後續結合B超結果調整就得～',
+                    guide_s4_q3: 'Q：備孕中可以用嗎？',
+                    guide_s4_a3: 'A：當然得！可以根據預估受孕日安排同房時間，或者同房後計算可能嘅懷孕周期，早啲做好準備～',
+                    guide_s5_title: '💡 實用小貼士',
+                    guide_s5_v1: '建議第一次計算後截圖保存結果，後續每次產檢都可以對照醫生畀嘅日期調整～',
+                    guide_s5_v2: '如果唔記得末次月經時間，先問醫生大概孕周，再反推計算，一樣用到呢個工具～',
+                    guide_s5_v3: '孕期進度百分比可以當成打卡記錄，每次睇都感受到BB喺肚入面成長，超治癒！',
+                    guide_outro: '無論係剛驗到兩條線嘅驚喜孕媽，定係喺備孕路上努力嘅姊妹，呢款工具都可以幫你理清孕期節奏～ 操作簡單、數據靠譜，仲要完全免費！📱 快啲收藏起身，分享俾身邊需要嘅閨蜜，一齊輕鬆度過孕期啦～',
+                    guide_warn: '溫馨提示：本工具僅供估算參考，唔可以替代專業醫療建議，孕期有任何疑問一定要及時諮詢婦產科醫生！祝各位孕媽好孕連連，BB健康成長！👶'
                 },
                 'ja': {
-                    title: '👶 妊娠と受胎計算ツール',
+                    title: '妊娠と受胎計算ツール',
                     calculate_method: '計算方法：',
                     last_period: '最終月経',
                     due_date: '分娩予定日',
@@ -293,53 +621,133 @@
                     estimated_due_date: '推定分娩予定日',
                     cycle_length: '平均月経周期（日）',
                     clear: 'クリア',
-                    calculate: '計算',
+                    calculate: '計算する',
                     results: '結果',
                     current_week: '現在の妊娠週数',
                     pregnancy_progress: '妊娠の進行状況',
                     days_remaining: '残り日数：',
                     key_milestones: '主な節目',
-                    notes: '注釈：',
-                    note1: 'この計算機は推定値を提供するものであり、専門的な医療アドバイスに取って代わるものではありません',
-                    note2: '通常の妊娠期間は、最終月経の初日から約40週間（280日）です',
-                    note3: '受胎は通常、最終月経の初日から約2週間後に起こります',
-                    err_invalid_date: '有効な日付を選択してください',
+                    notes: '重要な注釈：',
+                    note1: 'この計算機は推定値を提供するものであり、専門的な医療アドバイスに取って代わるものではありません。',
+                    note2: '通常の妊娠期間は、最終月経の初日から約40週間（280日）です。',
+                    note3: '受胎は通常、最終月経の初日から約2週間後に起こります。',
+                    err_invalid_date: '有効な日付を選択してください。',
                     milestone_4w: '4週：妊娠検査が可能',
                     milestone_8w: '8週：主要臓器の形成中',
                     milestone_12w: '12週：前期妊娠終了',
                     milestone_20w: '20週：中期妊娠終了',
                     milestone_24w: '24週：生存可能年齢',
                     milestone_37w: '37週：満期',
-                    milestone_40w: '40週：分娩予定日'
+                    milestone_40w: '40週：分娩予定日',
+                    // About
+                    about_title: '妊娠期間の計算について',
+                    about_h_lmp: '予定日はどのように計算されますか？',
+                    about_p_lmp: 'ほとんどの医療機関では、<strong>最終月経（LMP）</strong>法を使用しています。この計算は、月経周期が規則的な28日であることを前提としています。分娩予定日は、最終月経の初日に40週（または280日）を足して計算されます。これは、世界中で使用されている標準的な医学的計算式であるネーゲレの概算法に基づいています。',
+                    about_h_conception: '受胎日とは何ですか？',
+                    about_p_conception: '受胎日とは、受精が行われた可能性が高い日のことです。標準的な28日周期では、排卵と受胎は通常、最終月経の開始から約14日後に起こります。したがって、赤ちゃんの「在胎週数」（LMPから測定）は、通常、「胎児年齢」（受胎から測定）よりも約2週間長くなります。',
+                    about_h_accuracy: '予定日は正確ですか？',
+                    about_p_accuracy: '「予定日」はあくまで推定であることを忘れないでください。正確な予定日に生まれる赤ちゃんはわずか4〜5％です。ほとんどの赤ちゃんは、この日付の前後2週間以内（38週から42週の間）に生まれます。月経周期の不規則さや排卵日などの要因が、実際の分娩日に影響を与える可能性があります。妊娠初期の超音波検査により、より正確な日付を特定できることがよくあります。',
+                    // Guide
+                    guide_title: '妊娠必須アイテム🔥 分娩予定日&受精日計算機｜初めてのママも秒でマスター！',
+                    guide_intro: 'まだカレンダーを見ながら指で分娩予定日を数えてる？🤰 この「妊娠&受精日計算機」、本当に神アプリ！操作超簡単、データは完全に信頼できる——妊娠したばかりの新米ママも、赤ちゃんを計画中の女性も、ワンタップで必要な情報が全部手に入る！この記事を読めば、すぐに使いこなせるよ！',
+                    guide_s1_title: '✨ これを選ぶ3つの理由',
+                    guide_s1_v1: '医療基準に基づいた精度 ✅：医学的な基準で計算し、標準的な妊娠周期40週間（280日）をもとに正確に推算。受精日の推定は臨床で一般的な「最終月経の約2週間後」というルールに従っているから、適当な推測じゃないんだよ！',
+                    guide_s1_v2: '操作難易度ゼロ 🤩：複雑な公式を覚える必要なし！たった2つの情報を入力するだけでOK。スマホでも秒で読み込み、ナビゲーションは超わかりやすい！',
+                    guide_s1_v3: '情報が超充実 📊：分娩予定日と受精日だけじゃない！現在の妊娠週数、妊娠の進捗率、重要な節目まですべて表示してくれるから、妊娠生活のリズムを完全に把握できる！',
+                    guide_s2_title: '📝 3ステップ操作ガイド｜テクノロジーが苦手な人でも大丈夫',
+                    guide_s2_v1: '計算方法を選ぶ：デフォルトは「LMP（最終月経）」モードに設定されているから、ほとんどの妊婦さんに最適な選択肢！',
+                    guide_s2_v2_main: '必要な情報を入力する：',
+                    guide_s2_v2_sub1: '最終月経の初日を記入（日付だけでOK、時間まで気にする必要なし！）',
+                    guide_s2_v2_sub2: '月経周期の長さ：デフォルトは28日。周期が短い（25日）人や長い（32日）人は、数字を変更するだけで、同じように正確に計算してくれる！',
+                    guide_s2_v3: 'ワンタップで結果表示：計算ボタンを押せば、すぐにすべてのデータが表示される——読み込み待ちは完全に不要！',
+                    guide_s3_title: '📈 結果の解説｜一つ一つの数字が大事な意味を持つ',
+                    guide_s3_v1: '推定分娩予定日：赤ちゃんが誕生する可能性の高い日を特定！入院バッグの準備や産前検診の予約に、これ一つで安心！',
+                    guide_s3_v2: '受精日：受精があったと思われる日を推算。妊娠の節目を確認したり、当時の体調を思い出したりするのに便利！',
+                    guide_s3_v3: '現在の妊娠週数：トリメスター（第1/第2/第3）をリアルタイムで把握し、各段階の注意点をしっかりチェック！',
+                    guide_s3_v4: '妊娠進捗率：パーセントで進捗を可視化！数字が上がるのを見ると達成感があり、赤ちゃんとの会いたい気持ちが高まるよ！',
+                    guide_s3_v5: '重要な節目：NT検査、胎児構造検査、満期などの重要な検診日をマークしてくれるから、予定を忘れることがない！',
+                    guide_s4_title: '❓ よくある質問｜不安な点を全部解消',
+                    guide_s4_q1: 'Q：この計算機の結果は、医者の判断に代わることができる？',
+                    guide_s4_a1: 'A：ハイ、ダメよ！あくまで一般的な医学ルールに基づいた推定値です。人によって体質や排卵日が違うから、最終的な分娩予定日や妊娠計画は必ず医者の診断を優先してね！',
+                    guide_s4_q2: 'Q：月経周期が不規則だと、正確に計算できる？',
+                    guide_s4_a2: 'A：平均的な周期長さを入力すればOK！規則的な周期ほどの精度はないけど、適当に推測するよりずっと信頼できる。後で超音波検査の結果で調整すれば大丈夫！',
+                    guide_s4_q3: 'Q：妊娠計画中に使える？',
+                    guide_s4_a3: 'A：もちろん！推定受精日を参考にしてタイミングを計画したり、排卵後に妊娠週数を計算したり——妊娠準備の助けになるよ！',
+                    guide_s5_title: '💡 プチ裏技',
+                    guide_s5_v1: '最初の計算結果をスクリーンショットで保存しよう！毎回の産前検診で、医者が提示した日付と照らし合わせて調整できる！',
+                    guide_s5_v2: '最終月経の日にちを忘れたら、医者に妊娠週数を聞いて逆算する——このツールはそのまま使える！',
+                    guide_s5_v3: '妊娠進捗率を毎日チェックする習慣をつけよう！お腹の中で赤ちゃんが成長しているのを実感できて、すごくハッピーになれるよ！',
+                    guide_outro: '妊娠検査薬が陽性になって喜んでいるママも、妊娠計画中の女性も、このツールが妊娠生活のリズムを整えてくれる！操作簡単、データ信頼性高く、完全無料！📱 今すぐ保存して、妊活中の友達にもシェアしよう——一緒に楽しく妊娠生活を過ごそう！',
+                    guide_warn: '注意事項：このツールは参考情報として提供されており、専門的な医療アドバイスに代わるものではありません。妊娠に関する質問がある場合は、必ず産婦人科医に相談してください！すべてのママに順調な妊娠と健康な赤ちゃんをお祈りします！👶'
                 },
                 'ru': {
-                    title: '👶 Калькулятор беременности и зачатия',
+                    title: 'Калькулятор беременности и зачатия',
                     calculate_method: 'Вычислить по:',
                     last_period: 'Последней менструации',
-                    due_date: 'Предполагаемой дате родов',
+                    due_date: 'Дате родов',
                     conception_date: 'Дате зачатия',
                     first_day_lmp: 'Первый день последней менструации',
                     estimated_due_date: 'Предполагаемая дата родов',
-                    cycle_length: 'Средняя длительность менструального цикла (дней)',
+                    cycle_length: 'Длительность цикла (дней)',
                     clear: 'Очистить',
-                    calculate: 'Вычислить',
+                    calculate: 'Рассчитать дату',
                     results: 'Результаты',
-                    current_week: 'Текущая неделя беременности',
-                    pregnancy_progress: 'Прогресс беременности',
-                    days_remaining: 'Оставшиеся дни:',
+                    current_week: 'Текущая неделя',
+                    pregnancy_progress: 'Прогресс',
+                    days_remaining: 'Осталось дней:',
                     key_milestones: 'Ключевые этапы',
-                    notes: 'Примечания:',
-                    note1: 'Этот калькулятор предоставляет только оценки и не должен заменять профессиональные медицинские консультации',
-                    note2: 'Типичная беременность длится около 40 недель (280 дней) с первого дня последней менструации',
-                    note3: 'Зачатие обычно происходит примерно через 2 недели после первого дня последней менструации',
-                    err_invalid_date: 'Пожалуйста, выберите действительную дату',
-                    milestone_4w: '4 недели: Возможен тест на беременность',
-                    milestone_8w: '8 недель: Формирование основных органов',
-                    milestone_12w: '12 недель: Конец первого триместра',
-                    milestone_20w: '20 недель: Конец второго триместра',
-                    milestone_24w: '24 недели: Возраст жизнеспособности',
-                    milestone_37w: '37 недель: Достигнута полнота срока',
-                    milestone_40w: '40 недель: Предполагаемая дата родов'
+                    notes: 'Важные примечания:',
+                    note1: 'Этот калькулятор предоставляет только оценки и не заменяет консультации врача.',
+                    note2: 'Типичная беременность длится около 40 недель (280 дней) с первого дня последней менструации.',
+                    note3: 'Зачатие обычно происходит примерно через 2 недели после начала последней менструации.',
+                    err_invalid_date: 'Пожалуйста, выберите корректную дату.',
+                    milestone_4w: '4 недели: Можно делать тест',
+                    milestone_8w: '8 недель: Формирование органов',
+                    milestone_12w: '12 недель: Конец 1-го триместра',
+                    milestone_20w: '20 недель: Конец 2-го триместра',
+                    milestone_24w: '24 недели: Жизнеспособность',
+                    milestone_37w: '37 недель: Доношенность',
+                    milestone_40w: '40 недель: Дата родов',
+                    // About
+                    about_title: 'Понимание расчета беременности',
+                    about_h_lmp: 'Как рассчитывается дата родов?',
+                    about_p_lmp: 'Большинство врачей используют метод <strong>Последней менструации (LMP)</strong>. Этот расчет предполагает регулярный 28-дневный цикл. Предполагаемая дата родов рассчитывается путем добавления 40 недель (или 280 дней) к первому дню последней менструации. Это основано на правиле Негеле, стандартной медицинской формуле.',
+                    about_h_conception: 'Что такое дата зачатия?',
+                    about_p_conception: 'Дата зачатия — это день, когда, вероятно, произошло оплодотворение. При стандартном 28-дневном цикле овуляция и зачатие обычно происходят примерно через 14 дней после начала последней менструации. Поэтому «гестационный возраст» ребенка (от LMP) обычно на 2 недели больше, чем «фетальный возраст» (от зачатия).',
+                    about_h_accuracy: 'Точна ли дата родов?',
+                    about_p_accuracy: 'Важно помнить, что «Дата родов» — это всего лишь оценка. Только около 4-5% детей рождаются точно в срок. Большинство детей появляются на свет в течение двух недель до или после этой даты (между 38 и 42 неделями). Нерегулярные циклы или дата овуляции могут повлиять на фактическую дату родов. УЗИ в первом триместре часто дает более точные данные.',
+                    // Guide
+                    guide_title: 'Неотъемлемый помощник для беременных🔥 Калькулятор даты родов и зачатия | Новоиспеченные мамы освоят за секунды!',
+                    guide_intro: 'Все еще считаете дату родов на календаре пальцами? 🤰 Этот Калькулятор беременности и зачатия — просто находка! Очень прост в использовании, данные 100% надежные — будь ты будущая мама, которая только что узнала о беременности, или девушка, планирующая ребенка, все ключевые сведения ты получишь одним нажатием! После прочтения ты станешь профессионалом!',
+                    guide_s1_title: '✨ Почему стоит выбрать его? 3 главные преимущества',
+                    guide_s1_v1: 'Медицинская точность ✅: Расчет основан на медицинских стандартах — использует классический срок беременности в 40 недель (280 дней). Оценка даты зачатия основана на клиническом опыте (около 2 недель после последней менструации) — никаких случайных предположений!',
+                    guide_s1_v2: 'Ноль сложностей в освоении 🤩: Нет необходимости запоминать сложные формулы! Достаточно ввести 2 ключевых параметра, загрузить на телефон за секунды — навигация очень простая и понятная.',
+                    guide_s1_v3: 'Комплексная информация в одном месте 📊: Функции не ограничиваются только датой родов и зачатия! Ты также узнаешь текущую неделю беременности, прогресс беременности и даже важнейшие этапы, которые будут отмечены — следи за своим беременным периодом без пропусков!',
+                    guide_s2_title: '📝 Пошаговая инструкция за 3 шага | Даже для тех, кто не дружит с техникой',
+                    guide_s2_v1: 'Выберите метод расчета: По умолчанию выбран режим «ПМС (последняя менструация)» — он наиболее точен для большинства будущих мам!',
+                    guide_s2_v2_main: 'Введите ключевые данные:',
+                    guide_s2_v2_sub1: 'Укажите первый день последней менструации (достаточно только даты — не нужно указывать точное время!)',
+                    guide_s2_v2_sub2: 'Длина менструального цикла: по умолчанию 28 дней. Если ваш цикл короче (25 дней) или длиннее (32 дней), просто измените число — расчет останется точным!',
+                    guide_s2_v3: 'Получите результат одним нажатием: Нажмите кнопку расчета — готово! Все ключевые данные появятся мгновенно — нет необходимости ждать загрузки!',
+                    guide_s3_title: '📈 Разбор результатов | Каждая цифра имеет значение',
+                    guide_s3_v1: 'Предполагаемая дата родов: Узнайте, когда, скорее всего, появится ваш малыш — идеально для подготовки сумки в роддом и записи на пренатальные обследования!',
+                    guide_s3_v2: 'Дата зачатия: Определите примерное время зачатия — удобно для отслеживания этапов беременности и воспоминания о своих ощущениях в тот период!',
+                    guide_s3_v3: 'Текущая неделя беременности: Будьте в курсе триместра (первый/второй/третий) и никогда не пропустите важные рекомендации и запреты!',
+                    guide_s3_v4: 'Прогресс беременности: Следите за ростом процента — невероятно приятно видеть, как далеко вы продвинулись, ожидая встречи с ребенком!',
+                    guide_s3_v5: 'Ключевые этапы: Никогда не пропустите важные обследования, такие как скрининг на НТ, анатомическое сканирование и достижение полного срока беременности — инструмент поможет вам не отставать от графика!',
+                    guide_s4_title: '❓ Часто задаваемые вопросы | Все ваши опасения исчезнут',
+                    guide_s4_q1: 'В: Может ли этот калькулятор заменить мнение врача?',
+                    guide_s4_a1: 'О: Нет, дорогая! Это всего лишь оценка, основанная на общих медицинских правилах. Организм каждой женщины и время овуляции индивидуальны — окончательное решение о дате родов и плане беременности всегда принимает врач!',
+                    guide_s4_q2: 'В: Сработает ли он, если мой менструальный цикл нерегулярный?',
+                    guide_s4_a2: 'О: Просто введите среднюю длину вашего цикла! Результат может быть не таким точным, как при регулярном цикле, но это гораздо лучше, чем гадать. Позже вы можете скорректировать данные по результатам УЗИ!',
+                    guide_s4_q3: 'В: Можно ли использовать его, если я планирую беременность?',
+                    guide_s4_a3: 'О: Абсолютно! Используйте предполагаемую дату зачатия для планирования времени зачатия, или рассчитайте потенциальную неделю беременности после овуляции — подготовьтесь к своему пути заранее!',
+                    guide_s5_title: '💡 Советы от профессионалов',
+                    guide_s5_v1: 'Сделайте скриншот первых результатов! Сравнивайте их с данными врача на каждом пренатальном приеме, чтобы быть в курсе всех изменений.',
+                    guide_s5_v2: 'Забыли дату последней менструации? Спросите врача о приблизительной неделе беременности, затем выполните обратный расчет с помощью этого инструмента — он все равно сработает!',
+                    guide_s5_v3: 'Используйте процент прогресса беременности как ежедневный контроль. Очень трогательно наблюдать, как растет ваш ребенок внутри вас — это идеальный способ поднять себе настроение!',
+                    guide_outro: 'Будь ты в восторге от положительного теста или находишься в процессе планирования беременности, этот инструмент поможет вам следовать графику беременности! Прост в использовании, надежные данные и абсолютно бесплатный! 📱 Сохраните его сейчас и поделитесь с подругами, которые тоже готовятся стать мамами — давайте вместе преодолеем все этапы беременности!',
+                    guide_warn: 'Важное напоминание: Этот инструмент предназначен только для справки и не может заменить профессиональные медицинские консультации. При любых вопросах о беременности всегда обращайтесь к акушеру-гинекологу! Желаем всем мамам легкой беременности и здорового ребенка! 👶'
                 }
             },
             
@@ -348,16 +756,30 @@
                 const params = new URLSearchParams(window.location.search);
                 const lang = params.get('lang');
                 if (lang && this.i18n[lang]) {
-                    document.getElementById('lang-selector').value = lang;
+                    document.getElementById('pregnancy-lang').value = lang;
                     this.changeLang();
-                    return;
+                } else {
+                    // 确保默认内容显示正确（虽然HTML中已硬编码英文，但这确保JS状态一致）
+                    this.changeLang(); 
                 }
-                // 设置默认日期为今天
+                
+                // 设置默认日期
                 const today = new Date();
-                const defaultDate = new Date(today.setMonth(today.getMonth() - 1)).toISOString().split('T')[0];
-                document.getElementById('lmp-date').value = defaultDate;
-                document.getElementById('due-date').value = new Date(today.setMonth(today.getMonth() + 9)).toISOString().split('T')[0];
-                document.getElementById('conception-date').value = new Date(today.setMonth(today.getMonth() - 8)).toISOString().split('T')[0];
+                const defaultDate = new Date(today);
+                defaultDate.setMonth(today.getMonth() - 1);
+                
+                // 格式化为 YYYY-MM-DD
+                const formatDate = (date) => date.toISOString().split('T')[0];
+                
+                document.getElementById('lmp-date').value = formatDate(defaultDate);
+                
+                const dueDate = new Date(today);
+                dueDate.setMonth(today.getMonth() + 9);
+                document.getElementById('due-date').value = formatDate(dueDate);
+                
+                const conceptionDate = new Date(today);
+                conceptionDate.setMonth(today.getMonth() - 8);
+                document.getElementById('conception-date').value = formatDate(conceptionDate);
             },
             
             // 切换输入区域
@@ -365,138 +787,175 @@
                 const method = document.querySelector('input[name="calc-method"]:checked').value;
                 this.currentMethod = method;
                 
-                // 隐藏所有输入区域
                 document.getElementById('lmp-input').classList.add('hidden');
                 document.getElementById('due-input').classList.add('hidden');
                 document.getElementById('conception-input').classList.add('hidden');
                 
-                // 显示当前方法对应的输入区域
                 document.getElementById(`${method}-input`).classList.remove('hidden');
             },
             
-            // 日期计算辅助函数 - 添加天数
+            // 日期计算辅助函数
             addDays: function(date, days) {
                 const result = new Date(date);
                 result.setDate(result.getDate() + days);
                 return result;
             },
             
-            // 计算两个日期之间的天数差
             daysBetween: function(date1, date2) {
-                const oneDay = 24 * 60 * 60 * 1000; // 毫秒
+                const oneDay = 24 * 60 * 60 * 1000;
                 const firstDate = new Date(date1);
                 const secondDate = new Date(date2);
-                return Math.round(Math.abs((firstDate - secondDate) / oneDay));
+                return Math.round((firstDate - secondDate) / oneDay); // 修复了原来的Math.abs逻辑，以便计算负数（虽然这里不需要）
             },
             
-            // 格式化日期显示
             formatDate: function(date) {
                 const options = { year: 'numeric', month: 'long', day: 'numeric' };
                 return new Date(date).toLocaleDateString(this.getCurrentLang(), options);
             },
             
-            // 计算怀孕相关日期
             calculate: function() {
                 let lmpDate, dueDate, conceptionDate;
                 const cycleLength = parseInt(document.getElementById('cycle-length').value) || 28;
-                const ovulationOffset = Math.floor(cycleLength / 2); // 排卵日大约在周期中间
-                const today = new Date();
+                // 调整：周期如果不等于28，需要调整LMP计算逻辑
+                // Naegele's rule assumes 28 days.
+                // EDD = LMP + 280 + (CycleLength - 28)
+                const cycleAdjustment = cycleLength - 28;
+                const ovulationOffset = 14 + cycleAdjustment; // 排卵日通常是下次月经前14天
                 
+                const today = new Date();
                 const errorEl = document.getElementById('pregnancy-error');
+                const errorTextEl = document.getElementById('error-text');
                 const resultsEl = document.getElementById('pregnancy-results');
                 
-                // 根据选择的方法获取基础日期
-                if (this.currentMethod === 'lmp') {
-                    lmpDate = document.getElementById('lmp-date').value;
-                    if (!lmpDate) {
-                        errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_date;
-                        errorEl.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    // 从末次月经计算预产期（加280天）和受孕日期（加排卵偏移天）
-                    dueDate = this.addDays(lmpDate, 280);
-                    conceptionDate = this.addDays(lmpDate, ovulationOffset);
-                } else if (this.currentMethod === 'due') {
-                    dueDate = document.getElementById('due-date').value;
-                    if (!dueDate) {
-                        errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_date;
-                        errorEl.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    // 从预产期倒推末次月经（减280天）和受孕日期（减280-排卵偏移天）
-                    lmpDate = this.addDays(dueDate, -280);
-                    conceptionDate = this.addDays(dueDate, -(280 - ovulationOffset));
-                } else { // conception
-                    conceptionDate = document.getElementById('conception-date').value;
-                    if (!conceptionDate) {
-                        errorEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_date;
-                        errorEl.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    // 从受孕日期计算末次月经（减排卵偏移天）和预产期（加280-排卵偏移天）
-                    lmpDate = this.addDays(conceptionDate, -ovulationOffset);
-                    dueDate = this.addDays(conceptionDate, 280 - ovulationOffset);
-                }
-                
-                // 清除错误
                 errorEl.classList.add('hidden');
                 
-                // 计算当前孕周（从末次月经开始计算）
-                const daysPregnant = this.daysBetween(lmpDate, today);
-                const currentWeek = Math.min(Math.max(0, Math.floor(daysPregnant / 7)), 40);
-                
-                // 计算剩余天数
-                const daysRemaining = Math.max(0, this.daysBetween(today, dueDate));
-                
-                // 计算怀孕进度
-                const progress = Math.min(100, Math.round((daysPregnant / 280) * 100));
-                
-                // 显示主要结果
-                document.getElementById('due-date-result').textContent = this.formatDate(dueDate);
-                document.getElementById('conception-date-result').textContent = this.formatDate(conceptionDate);
-                document.getElementById('current-week-result').textContent = `${currentWeek} ${currentWeek === 1 ? 'week' : 'weeks'}`;
-                document.getElementById('progress-percentage').textContent = `${progress}%`;
-                document.getElementById('pregnancy-progress').style.width = `${progress}%`;
-                document.getElementById('days-remaining').textContent = daysRemaining;
-                
-                // 生成里程碑
-                const milestones = [
-                    { week: 4, date: this.addDays(lmpDate, 4 * 7), key: 'milestone_4w' },
-                    { week: 8, date: this.addDays(lmpDate, 8 * 7), key: 'milestone_8w' },
-                    { week: 12, date: this.addDays(lmpDate, 12 * 7), key: 'milestone_12w' },
-                    { week: 20, date: this.addDays(lmpDate, 20 * 7), key: 'milestone_20w' },
-                    { week: 24, date: this.addDays(lmpDate, 24 * 7), key: 'milestone_24w' },
-                    { week: 37, date: this.addDays(lmpDate, 37 * 7), key: 'milestone_37w' },
-                    { week: 40, date: dueDate, key: 'milestone_40w' }
-                ];
-                
-                // 显示里程碑
-                const milestonesEl = document.getElementById('milestones');
-                milestonesEl.innerHTML = '';
-                
-                milestones.forEach(milestone => {
-                    const milestoneEl = document.createElement('div');
-                    milestoneEl.className = 'milestone-item';
+                try {
+                    if (this.currentMethod === 'lmp') {
+                        const lmpVal = document.getElementById('lmp-date').value;
+                        if (!lmpVal) throw 'invalid_date';
+                        lmpDate = new Date(lmpVal);
+                        
+                        // 计算预产期：LMP + 280天 + 周期调整
+                        dueDate = this.addDays(lmpDate, 280 + cycleAdjustment);
+                        conceptionDate = this.addDays(lmpDate, ovulationOffset); // 排卵日即受孕日
+                    } else if (this.currentMethod === 'due') {
+                        const dueVal = document.getElementById('due-date').value;
+                        if (!dueVal) throw 'invalid_date';
+                        dueDate = new Date(dueVal);
+                        
+                        // 倒推 LMP
+                        lmpDate = this.addDays(dueDate, -(280 + cycleAdjustment));
+                        conceptionDate = this.addDays(lmpDate, ovulationOffset);
+                    } else { // conception
+                        const conVal = document.getElementById('conception-date').value;
+                        if (!conVal) throw 'invalid_date';
+                        conceptionDate = new Date(conVal);
+                        
+                        // 倒推 LMP
+                        lmpDate = this.addDays(conceptionDate, -ovulationOffset);
+                        dueDate = this.addDays(lmpDate, 280 + cycleAdjustment);
+                    }
+
+                    // 计算逻辑...
+                    const diffTime = Math.abs(today - lmpDate);
+                    const daysPregnant = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    // 修正：如果怀孕日期在未来，这里会有问题，但假设用户输入的是过去的LMP
+                    // 更严谨的计算：
+                    const daysFromLmpToToday = Math.round((today - lmpDate) / (1000 * 60 * 60 * 24));
                     
-                    const dateStr = this.formatDate(milestone.date);
-                    const isPast = new Date(milestone.date) < today;
+                    if (daysFromLmpToToday < 0 && this.currentMethod === 'lmp') {
+                         // LMP 在未来？不太可能
+                    }
+
+                    const currentWeek = Math.floor(daysFromLmpToToday / 7);
+                    const currentDay = daysFromLmpToToday % 7;
+                    const displayWeek = Math.max(0, Math.min(42, currentWeek)); // 限制显示范围
                     
-                    milestoneEl.innerHTML = `
-                        <div class="milestone-date ${isPast ? 'text-gray-600' : ''}">${dateStr}</div>
-                        <div class="text-sm ${isPast ? 'text-gray-500' : ''}" data-i18n="${milestone.key}">${this.i18n[this.getCurrentLang()][milestone.key]}</div>
-                    `;
+                    const daysRemaining = Math.max(0, Math.round((dueDate - today) / (1000 * 60 * 60 * 24)));
                     
-                    milestonesEl.appendChild(milestoneEl);
-                });
-                
-                // 显示结果区域
-                resultsEl.classList.remove('hidden');
+                    // 进度 0-280天
+                    let progress = Math.round((daysFromLmpToToday / 280) * 100);
+                    progress = Math.max(0, Math.min(100, progress));
+                    
+                    // 更新DOM
+                    document.getElementById('due-date-result').textContent = this.formatDate(dueDate);
+                    document.getElementById('conception-date-result').textContent = this.formatDate(conceptionDate);
+                    
+                    // 显示周+天
+                    const weekText = this.getCurrentLang() === 'en' ? 'weeks' : (this.getCurrentLang() === 'ru' ? 'недель' : '周');
+                    const dayText = this.getCurrentLang() === 'en' ? 'days' : (this.getCurrentLang() === 'ru' ? 'дней' : '天');
+                    
+                    // 简单的多语言处理
+                    let weekString = `${displayWeek}`;
+                    if(this.getCurrentLang().includes('zh') || this.getCurrentLang() === 'ja') {
+                         weekString = `${displayWeek}周 ${currentDay}天`;
+                    } else if (this.getCurrentLang() === 'ru') {
+                        weekString = `${displayWeek} нед. ${currentDay} дн.`;
+                    } else {
+                        weekString = `${displayWeek} wks ${currentDay} days`;
+                    }
+                    
+                    document.getElementById('current-week-result').textContent = weekString;
+                    
+                    document.getElementById('progress-percentage').textContent = `${progress}%`;
+                    document.getElementById('pregnancy-progress').style.width = `${progress}%`;
+                    document.getElementById('days-remaining').textContent = daysRemaining;
+                    
+                    // 生成里程碑
+                    this.renderMilestones(lmpDate, dueDate);
+                    
+                    resultsEl.classList.remove('hidden');
+                    
+                    // 滚动到结果
+                    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    
+                } catch (e) {
+                    errorTextEl.textContent = this.i18n[this.getCurrentLang()].err_invalid_date;
+                    errorEl.classList.remove('hidden');
+                }
             },
             
-            // 清除输入
+            renderMilestones: function(lmpDate, dueDate) {
+                const milestones = [
+                    { w: 4, k: 'milestone_4w' },
+                    { w: 8, k: 'milestone_8w' },
+                    { w: 12, k: 'milestone_12w' },
+                    { w: 20, k: 'milestone_20w' },
+                    { w: 24, k: 'milestone_24w' },
+                    { w: 37, k: 'milestone_37w' },
+                    { w: 40, k: 'milestone_40w', date: dueDate } // 特殊处理
+                ];
+                
+                const milestonesEl = document.getElementById('milestones');
+                milestonesEl.innerHTML = '';
+                const today = new Date();
+                
+                milestones.forEach(m => {
+                    let mDate;
+                    if (m.w === 40) mDate = dueDate;
+                    else mDate = this.addDays(lmpDate, m.w * 7);
+                    
+                    const isPast = mDate < today;
+                    const el = document.createElement('div');
+                    
+                    // 样式优化
+                    const baseClass = "milestone-item p-3 rounded-lg border-l-4 flex justify-between items-center";
+                    const statusClass = isPast ? "bg-gray-50 border-gray-300 text-gray-500" : "bg-white border-brand-400 shadow-sm";
+                    
+                    el.className = `${baseClass} ${statusClass}`;
+                    
+                    const checkMark = isPast ? '✓ ' : '';
+                    
+                    el.innerHTML = `
+                        <div>
+                            <div class="text-xs font-bold uppercase tracking-wide opacity-70">${this.formatDate(mDate)}</div>
+                            <div class="font-medium text-sm" data-i18n="${m.k}">${checkMark}${this.i18n[this.getCurrentLang()][m.k]}</div>
+                        </div>
+                    `;
+                    milestonesEl.appendChild(el);
+                });
+            },
+            
             clearValue: function() {
                 document.getElementById('lmp-date').value = '';
                 document.getElementById('due-date').value = '';
@@ -505,7 +964,6 @@
                 document.getElementById('pregnancy-error').classList.add('hidden');
             },
             
-            // 切换语言
             changeLang: function() {
                 const lang = this.getCurrentLang();
                 const elements = document.querySelectorAll('[data-i18n]');
@@ -513,23 +971,22 @@
                 elements.forEach(el => {
                     const key = el.getAttribute('data-i18n');
                     if (this.i18n[lang][key]) {
-                        el.textContent = this.i18n[lang][key];
+                        // 使用innerHTML允许粗体标签等
+                        el.innerHTML = this.i18n[lang][key];
                     }
                 });
                 
-                // 如果有结果，重新计算以更新日期格式和文本
+                // 重新计算以刷新日期格式
                 if (!document.getElementById('pregnancy-results').classList.contains('hidden')) {
                     this.calculate();
                 }
             },
             
-            // 获取当前语言
             getCurrentLang: function() {
                 return document.getElementById('pregnancy-lang').value;
             }
         };
         
-        // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             PregnancyCalculator.init();
         });
@@ -537,7 +994,6 @@
 
     <div id="related-tools-container"></div>
     <script src="/scripts/related.js"></script>
-    
 
     <div id="toolbox-seo-wrapper-unique-id" class="max-w-4xl mx-auto px-4"></div>
     <script src="/scripts/seo-loader.js"></script>
