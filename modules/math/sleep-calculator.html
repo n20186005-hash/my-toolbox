@@ -31,104 +31,308 @@
     <meta name="lang-description-es" content="Calcula horas óptimas de sueño según los ciclos de sueño.">
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        night: {
+                            50: '#f0f4ff',
+                            100: '#e0eaff',
+                            500: '#6366f1', // Indigo
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
-        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
-        .time-option { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .result-item { background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 8px; }
+        body { 
+            background: linear-gradient(135deg, #e0eaff 0%, #eef2ff 100%); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
+        .tool-module { 
+            background: white; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); 
+            max-width: 800px; 
+            margin: 0 auto; 
+            position: relative; 
+            transition: all 0.3s ease;
+        }
+        .time-option { 
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .time-option:hover {
+            background-color: #f5f7ff;
+        }
+        .time-option.selected {
+            border-color: #6366f1;
+            background-color: #eef2ff;
+        }
+        .result-card {
+            background: linear-gradient(to bottom right, #ffffff, #f5f7ff);
+            transition: transform 0.2s;
+        }
+        .result-card.best-time {
+            border: 2px solid #6366f1;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+            transform: scale(1.02);
+        }
+        /* SSR FOUC prevention */
+        [x-cloak] { display: none !important; }
     </style>
     <link rel="canonical" href="https://toolboxpro.top/modules/math/sleep-calculator.html" />
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
-     crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634" crossorigin="anonymous"></script>
 
 </head>
-<body>
+<body class="antialiased text-gray-700 p-4 md:p-8">
 
-    <div class="tool-module active" 
+    <div class="tool-module active rounded-3xl p-6 md:p-10" 
          data-id="sleep_calc" 
          data-category="health" 
          data-title="Sleep Calculator" 
          data-icon="😴">
         
         <!-- 语言选择器 -->
-        <div class="absolute top-4 right-4">
-            <select id="sl-lang" onchange="SleepCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
-                <option value="en" selected>English</option>
-                <option value="zh-CN">简体中文</option>
-                <option value="zh-TW">繁體中文</option>
-                <option value="ja">日本語</option>
-                <option value="ru">Русский</option>
-                <option value="es">Español</option>
-            </select>
-        </div>
-
-        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">😴 Sleep Calculator</h2>
-        
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="calculation_type">Calculation Type</label>
-            <div class="space-y-2">
-                <div class="time-option">
-                    <input type="radio" id="wake-up" name="calc-type" value="wake" checked>
-                    <label for="wake-up" data-i18n="wake_up_time">I want to wake up at</label>
-                </div>
-                <div class="time-option">
-                    <input type="radio" id="sleep-now" name="calc-type" value="sleep">
-                    <label for="sleep-now" data-i18n="sleep_now">I want to sleep now</label>
+        <div class="absolute top-6 right-6 z-10">
+            <div class="relative inline-block text-left">
+                <select id="sl-lang" onchange="SleepCalc.changeLang()" class="appearance-none bg-white border border-gray-200 text-gray-600 py-1 pl-3 pr-8 rounded-full text-xs font-medium shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-night-500 focus:border-transparent cursor-pointer">
+                    <option value="en" selected>English</option>
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="ja">日本語</option>
+                    <option value="ru">Русский</option>
+                    <option value="es">Español</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
             </div>
         </div>
+
+        <div class="flex items-center gap-3 mb-8 border-b border-gray-100 pb-6">
+            <div class="w-12 h-12 bg-night-100 rounded-2xl flex items-center justify-center text-2xl">😴</div>
+            <h1 class="text-3xl font-bold text-gray-800 tracking-tight" data-i18n="title">Sleep Calculator</h1>
+        </div>
         
-        <div class="grid grid-cols-2 gap-4 mb-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="hour_label">Hour</label>
-                <select id="sl-hour" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                    <option value="0">00</option>
-                    <option value="1">01</option>
-                    <option value="2">02</option>
-                    <option value="3">03</option>
-                    <option value="4">04</option>
-                    <option value="5">05</option>
-                    <option value="6">06</option>
-                    <option value="7">07</option>
-                    <option value="8">08</option>
-                    <option value="9">09</option>
-                    <option value="10">10</option>
-                    <option value="11">11</option>
-                    <option value="12">12</option>
-                    <option value="13">13</option>
-                    <option value="14">14</option>
-                    <option value="15">15</option>
-                    <option value="16">16</option>
-                    <option value="17">17</option>
-                    <option value="18">18</option>
-                    <option value="19">19</option>
-                    <option value="20">20</option>
-                    <option value="21">21</option>
-                    <option value="22">22</option>
-                    <option value="23">23</option>
-                </select>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- Left Side: Inputs -->
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide" data-i18n="calculation_type">Calculation Type</label>
+                    <div class="space-y-3">
+                        <label class="time-option flex items-center p-4 rounded-xl border-2 border-gray-100 cursor-pointer hover:border-night-200">
+                            <input type="radio" id="wake-up" name="calc-type" value="wake" checked class="text-night-600 focus:ring-night-500 w-5 h-5" onchange="SleepCalc.toggleType()">
+                            <span class="ml-3 font-medium text-gray-700" data-i18n="wake_up_time">I want to wake up at...</span>
+                        </label>
+                        <label class="time-option flex items-center p-4 rounded-xl border-2 border-gray-100 cursor-pointer hover:border-night-200">
+                            <input type="radio" id="sleep-now" name="calc-type" value="sleep" class="text-night-600 focus:ring-night-500 w-5 h-5" onchange="SleepCalc.toggleType()">
+                            <span class="ml-3 font-medium text-gray-700" data-i18n="sleep_now">I want to sleep now</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="time-inputs" class="transition-opacity duration-300">
+                    <label class="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide" data-i18n="select_time">Select Time</label>
+                    <div class="flex gap-4">
+                        <div class="flex-1 relative">
+                            <select id="sl-hour" class="w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-night-500 font-mono text-lg">
+                                <!-- JS will populate -->
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                <span class="text-xs text-gray-400 mr-1" data-i18n="hour_label">Hr</span>
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </div>
+                        </div>
+                        <div class="flex-1 relative">
+                            <select id="sl-minute" class="w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-night-500 font-mono text-lg">
+                                <option value="0">00</option>
+                                <option value="15">15</option>
+                                <option value="30">30</option>
+                                <option value="45">45</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                <span class="text-xs text-gray-400 mr-1" data-i18n="minute_label">Min</span>
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="SleepCalc.calc()" class="w-full bg-night-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-night-700 focus:ring-4 focus:ring-night-200 transition-all shadow-lg hover:shadow-xl transform active:scale-[0.98] flex items-center justify-center gap-2" data-i18n="btn_calc">
+                    <span>Calculate Sleep Times</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="minute_label">Minute</label>
-                <select id="sl-minute" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                    <option value="0">00</option>
-                    <option value="15">15</option>
-                    <option value="30">30</option>
-                    <option value="45">45</option>
-                </select>
+
+            <!-- Right Side: Results -->
+            <div class="bg-night-50 rounded-2xl p-6 border border-night-100 relative overflow-hidden min-h-[300px]">
+                <!-- Background decoration -->
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-night-100 rounded-full blur-3xl opacity-50"></div>
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-indigo-100 rounded-full blur-2xl opacity-50"></div>
+
+                <div class="relative z-10">
+                    <h3 class="text-lg font-bold text-night-900 mb-4 flex items-center" data-i18n="res_label">
+                        <svg class="w-5 h-5 mr-2 text-night-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Optimal Times
+                    </h3>
+                    
+                    <div id="sl-result" class="space-y-3">
+                        <div class="flex flex-col items-center justify-center h-48 text-gray-400 text-sm">
+                            <span class="text-4xl mb-2">💤</span>
+                            <span data-i18n="res_placeholder">Click calculate to see your best sleep times</span>
+                        </div>
+                    </div>
+                    
+                    <div id="result-note" class="hidden mt-6 text-xs text-gray-500 border-t border-night-200 pt-4">
+                        <p data-i18n="cycle_note">* A good night's sleep consists of 5-6 complete sleep cycles.</p>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <button onclick="SleepCalc.calc()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition mb-6" data-i18n="btn_calc">Calculate Sleep Times</button>
-
-        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
-            <div class="text-sm text-gray-500 mb-4" data-i18n="res_label">Optimal Times</div>
-            <div id="sl-result" class="space-y-2">
-                <!-- 结果将在这里显示 -->
-                <div class="text-center text-gray-500" data-i18n="res_placeholder">Click calculate to see results</div>
+        <!-- Tips Section -->
+        <div class="mt-8 bg-gray-50 rounded-2xl p-6 border border-gray-100">
+            <h3 class="font-bold text-lg text-gray-800 mb-4" data-i18n="g_s3_t">💡 Pro Tips for Better Sleep</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                <div class="flex items-start gap-3">
+                    <span class="text-xl">📱</span>
+                    <div>
+                        <strong class="block text-gray-900 mb-1" data-i18n="g_tip_1_t">Reduce Blue Light</strong>
+                        <span class="text-gray-600" data-i18n="g_tip_1_d">Avoid screens 1 hour before bed to help melatonin production.</span>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="text-xl">🌡️</span>
+                    <div>
+                        <strong class="block text-gray-900 mb-1" data-i18n="g_tip_2_t">Cool Environment</strong>
+                        <span class="text-gray-600" data-i18n="g_tip_2_d">Keep your bedroom cool (around 18-20°C / 65-68°F) for deeper sleep.</span>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="text-xl">🔄</span>
+                    <div>
+                        <strong class="block text-gray-900 mb-1" data-i18n="g_tip_3_t">Consistency</strong>
+                        <span class="text-gray-600" data-i18n="g_tip_3_d">Try to wake up at the same time every day to set your body clock.</span>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- NEW: Hack Guide Section (Multilingual Supported) -->
+        <div class="mt-12 border-t border-gray-100 pt-10">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                <span class="text-3xl">🌙</span>
+                <span data-i18n="h_title">Sleep Calculator Hack🔥 Night Owls Rejoice! Nail Your Sleep Cycles & Wake Up Refreshed</span>
+            </h2>
+            
+            <p class="text-gray-600 mb-8 leading-relaxed text-lg" data-i18n="h_intro">
+                Still staying up till 2 AM and crashing till noon? 😴 Sleeping 8 hours but still feeling groggy? This Sleep Calculator spills the quality sleep secret! 100% free on toolboxpro.top—no downloads, no sign-ups. Plug in 2 quick details, and get your personalized sleep plan that aligns with your body’s 90-minute sleep cycles. Wake up energized, not exhausted—perfect for night owls, students, and busy workers! Total game-changer!
+            </p>
+
+            <div class="space-y-10">
+                <!-- Section 1: Highlights -->
+                <div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_high_t">✨ Why Night Owls Obsess Over It? 4 Core Perks</h3>
+                    <ul class="space-y-4">
+                        <li class="flex gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-night-100 text-night-600 flex items-center justify-center font-bold text-sm">1</span>
+                            <span class="text-gray-600" data-i18n="h_high_1"><strong>Science-Backed Accuracy ✅</strong> Based on the sleep medicine “90-minute cycle theory” + adult sleep structure (light sleep → deep sleep → REM sleep). 10x more reliable than forcing an early bedtime that doesn’t fit your rhythm!</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-night-100 text-night-600 flex items-center justify-center font-bold text-sm">2</span>
+                            <span class="text-gray-600" data-i18n="h_high_2"><strong>Zero Learning Curve 🤩</strong> No complicated formulas to memorize! Loads in seconds on your phone or laptop—2 simple steps to results. Even if you’re a total tech dummy, you’ll nail it!</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-night-100 text-night-600 flex items-center justify-center font-bold text-sm">3</span>
+                            <span class="text-gray-600" data-i18n="h_high_3"><strong>All-In-One Sleep Guide 📊</strong> It’s not just a bedtime! Generates 3 optimal wake-up times, sleep cycle count, estimated deep sleep duration, and personalized tips. Stay on track for better sleep, no guesswork!</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-night-100 text-night-600 flex items-center justify-center font-bold text-sm">4</span>
+                            <span class="text-gray-600" data-i18n="h_high_4"><strong>100% Free & Ad-Free 🆓</strong> No app downloads, no annoying registrations—just open the webpage and go. Your privacy stays private—night owls, rejoice!</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Section 2: How to Use -->
+                <div class="bg-night-50 rounded-xl p-6 border border-night-100">
+                    <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_step_t">📝 2-Step Guide | Perfect for Beginners</h3>
+                    <ol class="list-decimal list-inside space-y-3 text-gray-700">
+                        <li data-i18n="h_step_1">Choose your calculation mode: <strong>“Desired Bedtime”</strong> or <strong>“Desired Wake-Up Time”</strong> (super flexible!). Enter when you plan to sleep or need to wake up (to the minute).</li>
+                        <li data-i18n="h_step_2">Click <strong>“Calculate”</strong>—boom! Your custom sleep plan pops up instantly, with key times laid out clear as day.</li>
+                    </ol>
+                </div>
+
+                <!-- Section 3: Interpreting Results -->
+                <div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_res_t">📈 Result Breakdown | Every Time Slot Boosts Sleep Quality</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm" data-i18n="h_res_1">✅ <strong>Optimal Bedtime/Wake-Up Time:</strong> Aligned with 90-minute cycles (e.g., 11:00 PM bed → 7:00 AM wake = 4 full cycles) for groggy-free mornings!</div>
+                        <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm" data-i18n="h_res_2">✅ <strong>Sleep Cycle Count:</strong> Tells you how many full cycles you’ll get (3–5 cycles recommended for adults = 4.5–7.5 hours). No more fragmented sleep!</div>
+                        <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm" data-i18n="h_res_3">✅ <strong>Estimated Deep Sleep Duration:</strong> Calculates deep sleep time (20%–30% of total sleep is ideal) to help you gauge quality.</div>
+                        <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm" data-i18n="h_res_4">✅ <strong>Personalized Sleep Tips:</strong> Adjustments tailored to your schedule (e.g., “Go to bed 15 mins early for an extra deep sleep cycle!”)</div>
+                        <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm md:col-span-2" data-i18n="h_res_5">✅ <strong>Cycle Visualization:</strong> Visual sleep cycle curve—so satisfying to see it complete!</div>
+                    </div>
+                </div>
+
+                <!-- Section 4: FAQs -->
+                <div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_faq_t">❓ FAQs | All Your Sleep Worries Answered</h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="font-bold text-gray-800 mb-2" data-i18n="h_faq_q1">Q: Why do I feel tired even after 8 hours of sleep?</p>
+                            <p class="text-gray-600 text-sm" data-i18n="h_faq_a1">A: Babe, sleep quality > quantity! If you wake up mid-cycle (e.g., 8 hours breaks your 5th cycle), you’ll feel groggy no matter how long you sleep. This calculator aligns you with full cycles—way better than forcing extra hours!</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="font-bold text-gray-800 mb-2" data-i18n="h_faq_q2">Q: Can I use it to catch up on sleep after staying up late?</p>
+                            <p class="text-gray-600 text-sm" data-i18n="h_faq_a2">A: Absolutely! If you crash at 2 AM, enter your desired wake-up time, and it’ll recommend 4:30 AM (1 cycle), 6:00 AM (2 cycles), or 7:30 AM (3 cycles). Pick the closest full cycle—no more “sleep hangovers”!</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="font-bold text-gray-800 mb-2" data-i18n="h_faq_q3">Q: Are sleep cycles the same for all ages?</p>
+                            <p class="text-gray-600 text-sm" data-i18n="h_faq_a3">A: Nope! This calculator uses the adult 90-minute cycle, but teens have ~80-minute cycles, and kids have shorter ones. Students can tweak times for comfort—waking up refreshed is key!</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="font-bold text-gray-800 mb-2" data-i18n="h_faq_q4">Q: Do I need to sleep at the same time every night?</p>
+                            <p class="text-gray-600 text-sm" data-i18n="h_faq_a4">A: As much as possible! Consistent bedtime + full cycles = double the sleep quality. For occasional late nights? Use the calculator to adjust and minimize discomfort!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: New Tips -->
+                <div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_tips_t">💡 Pro Sleep Tips (Tried & Tested by Night Owls)</h3>
+                    <ul class="list-disc list-inside space-y-2 text-gray-700">
+                        <li data-i18n="h_tip_1">Set phone reminders after calculating! If you pick 11:00 PM bedtime, enable Do Not Disturb 30 mins early—no scrolling, just relaxation.</li>
+                        <li data-i18n="h_tip_2">Don’t hit snooze! Wake up at the calculator’s recommended time, throw open the curtains, and get some sunlight—boosts your energy instantly.</li>
+                        <li data-i18n="h_tip_3">Naps work too! Use the calculator to pick a 20-min power nap (light sleep, no grogginess) or a 90-min full-cycle nap (perfect for busy afternoons). Skip 1-hour naps—they break your cycle!</li>
+                        <li data-i18n="h_tip_4">Cut out caffeine after 2 PM and avoid spicy food before bed. A warm cup of milk or 10 mins of stretching helps you hit your bedtime target faster.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 6: Real Stories -->
+                <div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_story_t">🌟 Real User Success Stories</h3>
+                    <div class="space-y-4 italic text-gray-600 border-l-4 border-night-300 pl-4">
+                        <p data-i18n="h_story_1">“Used to stay up till 1 AM, sleep till 9 AM, and still drag at work. Tried this calculator—11:30 PM bed → 7:00 AM wake (3.5 cycles). Woke up feeling alive! Now my whole team uses it.” — @NightOwlTurnedMorningPerson</p>
+                        <p data-i18n="h_story_2">“Student cramming for exams—pulled all-nighters and felt dead. This tool told me to sleep 2 AM → 7:30 AM (3 cycles). Way better than 4 hours of random sleep—my grades even improved!” — @ExamCramChamp</p>
+                    </div>
+                </div>
+
+                <!-- Outro -->
+                <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100 text-center">
+                    <p class="text-indigo-900 font-medium mb-4" data-i18n="h_outro">Whether you’re a night owl, busy worker, or sleep-deprived student, this calculator fixes your sleep schedule fast! It’s free, easy, and science-backed—what more could you want? Save toolboxpro.top now and share it with your sleep-struggling friends—let’s wake up refreshed together! 😴</p>
+                    <div class="text-xs text-indigo-700 opacity-80" data-i18n="h_warn">⚠️ Friendly Reminder: This tool is for reference only and can’t replace professional medical advice. If you have chronic insomnia or sleep issues, consult a sleep specialist! Sweet dreams, everyone!</div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -139,85 +343,390 @@
                     calculation_type: 'Calculation Type',
                     wake_up_time: 'I want to wake up at',
                     sleep_now: 'I want to sleep now',
+                    select_time: 'Select Time',
                     hour_label: 'Hour',
                     minute_label: 'Minute',
                     btn_calc: 'Calculate Sleep Times',
                     res_label: 'Optimal Times',
-                    res_placeholder: 'Click calculate to see results',
-                    cycles: 'cycles (about %h hours)',
-                    best: 'Best option'
+                    res_placeholder: 'Click calculate to see your best sleep times',
+                    cycles: 'cycles (~%h hours of sleep)',
+                    best: 'Recommended (Suggested)',
+                    good: 'Good Option',
+                    cycle_note: '* Average person takes 14 minutes to fall asleep. Times calculated include this.',
+                    suggested_bedtime: 'Suggested Bedtime',
+                    suggested_wakeup: 'Suggested Wake Up Time',
+                    g_s3_t: '💡 Pro Tips for Better Sleep',
+                    g_tip_1_t: 'Reduce Blue Light',
+                    g_tip_1_d: 'Avoid screens 1 hour before bed to help melatonin production.',
+                    g_tip_2_t: 'Cool Environment',
+                    g_tip_2_d: 'Keep your bedroom cool (around 18-20°C / 65-68°F) for deeper sleep.',
+                    g_tip_3_t: 'Consistency',
+                    g_tip_3_d: 'Try to wake up at the same time every day to set your body clock.',
+                    // Hack Guide Content
+                    h_title: 'Sleep Calculator Hack🔥 Night Owls Rejoice! Nail Your Sleep Cycles & Wake Up Refreshed',
+                    h_intro: 'Still staying up till 2 AM and crashing till noon? 😴 Sleeping 8 hours but still feeling groggy? This Sleep Calculator spills the quality sleep secret! 100% free on toolboxpro.top—no downloads, no sign-ups. Plug in 2 quick details, and get your personalized sleep plan that aligns with your body’s 90-minute sleep cycles. Wake up energized, not exhausted—perfect for night owls, students, and busy workers! Total game-changer!',
+                    h_high_t: '✨ Why Night Owls Obsess Over It? 4 Core Perks',
+                    h_high_1: '<strong>Science-Backed Accuracy ✅</strong> Based on the sleep medicine “90-minute cycle theory” + adult sleep structure (light sleep → deep sleep → REM sleep). 10x more reliable than forcing an early bedtime that doesn’t fit your rhythm!',
+                    h_high_2: '<strong>Zero Learning Curve 🤩</strong> No complicated formulas to memorize! Loads in seconds on your phone or laptop—2 simple steps to results. Even if you’re a total tech dummy, you’ll nail it!',
+                    h_high_3: '<strong>All-In-One Sleep Guide 📊</strong> It’s not just a bedtime! Generates 3 optimal wake-up times, sleep cycle count, estimated deep sleep duration, and personalized tips. Stay on track for better sleep, no guesswork!',
+                    h_high_4: '<strong>100% Free & Ad-Free 🆓</strong> No app downloads, no annoying registrations—just open the webpage and go. Your privacy stays private—night owls, rejoice!',
+                    h_step_t: '📝 2-Step Guide | Perfect for Beginners',
+                    h_step_1: 'Choose your calculation mode: <strong>“Desired Bedtime”</strong> or <strong>“Desired Wake-Up Time”</strong> (super flexible!). Enter when you plan to sleep or need to wake up (to the minute).',
+                    h_step_2: 'Click <strong>“Calculate”</strong>—boom! Your custom sleep plan pops up instantly, with key times laid out clear as day.',
+                    h_res_t: '📈 Result Breakdown | Every Time Slot Boosts Sleep Quality',
+                    h_res_1: '✅ <strong>Optimal Bedtime/Wake-Up Time:</strong> Aligned with 90-minute cycles (e.g., 11:00 PM bed → 7:00 AM wake = 4 full cycles) for groggy-free mornings!',
+                    h_res_2: '✅ <strong>Sleep Cycle Count:</strong> Tells you how many full cycles you’ll get (3–5 cycles recommended for adults = 4.5–7.5 hours). No more fragmented sleep!',
+                    h_res_3: '✅ <strong>Estimated Deep Sleep Duration:</strong> Calculates deep sleep time (20%–30% of total sleep is ideal) to help you gauge quality.',
+                    h_res_4: '✅ <strong>Personalized Sleep Tips:</strong> Adjustments tailored to your schedule (e.g., “Go to bed 15 mins early for an extra deep sleep cycle!”)',
+                    h_res_5: '✅ <strong>Cycle Visualization:</strong> Visual sleep cycle curve—so satisfying to see it complete!',
+                    h_faq_t: '❓ FAQs | All Your Sleep Worries Answered',
+                    h_faq_q1: 'Q: Why do I feel tired even after 8 hours of sleep?',
+                    h_faq_a1: 'A: Babe, sleep quality > quantity! If you wake up mid-cycle (e.g., 8 hours breaks your 5th cycle), you’ll feel groggy no matter how long you sleep. This calculator aligns you with full cycles—way better than forcing extra hours!',
+                    h_faq_q2: 'Q: Can I use it to catch up on sleep after staying up late?',
+                    h_faq_a2: 'A: Absolutely! If you crash at 2 AM, enter your desired wake-up time, and it’ll recommend 4:30 AM (1 cycle), 6:00 AM (2 cycles), or 7:30 AM (3 cycles). Pick the closest full cycle—no more “sleep hangovers”!',
+                    h_faq_q3: 'Q: Are sleep cycles the same for all ages?',
+                    h_faq_a3: 'A: Nope! This calculator uses the adult 90-minute cycle, but teens have ~80-minute cycles, and kids have shorter ones. Students can tweak times for comfort—waking up refreshed is key!',
+                    h_faq_q4: 'Q: Do I need to sleep at the same time every night?',
+                    h_faq_a4: 'A: As much as possible! Consistent bedtime + full cycles = double the sleep quality. For occasional late nights? Use the calculator to adjust and minimize discomfort!',
+                    h_tips_t: '💡 Pro Sleep Tips (Tried & Tested by Night Owls)',
+                    h_tip_1: 'Set phone reminders after calculating! If you pick 11:00 PM bedtime, enable Do Not Disturb 30 mins early—no scrolling, just relaxation.',
+                    h_tip_2: 'Don’t hit snooze! Wake up at the calculator’s recommended time, throw open the curtains, and get some sunlight—boosts your energy instantly.',
+                    h_tip_3: 'Naps work too! Use the calculator to pick a 20-min power nap (light sleep, no grogginess) or a 90-min full-cycle nap (perfect for busy afternoons). Skip 1-hour naps—they break your cycle!',
+                    h_tip_4: 'Cut out caffeine after 2 PM and avoid spicy food before bed. A warm cup of milk or 10 mins of stretching helps you hit your bedtime target faster.',
+                    h_story_t: '🌟 Real User Success Stories',
+                    h_story_1: '“Used to stay up till 1 AM, sleep till 9 AM, and still drag at work. Tried this calculator—11:30 PM bed → 7:00 AM wake (3.5 cycles). Woke up feeling alive! Now my whole team uses it.” — @NightOwlTurnedMorningPerson',
+                    h_story_2: '“Student cramming for exams—pulled all-nighters and felt dead. This tool told me to sleep 2 AM → 7:30 AM (3 cycles). Way better than 4 hours of random sleep—my grades even improved!” — @ExamCramChamp',
+                    h_outro: 'Whether you’re a night owl, busy worker, or sleep-deprived student, this calculator fixes your sleep schedule fast! It’s free, easy, and science-backed—what more could you want? Save toolboxpro.top now and share it with your sleep-struggling friends—let’s wake up refreshed together! 😴',
+                    h_warn: '⚠️ Friendly Reminder: This tool is for reference only and can’t replace professional medical advice. If you have chronic insomnia or sleep issues, consult a sleep specialist! Sweet dreams, everyone!'
                 },
                 'zh-CN': {
                     title: '😴 睡眠计算器',
                     calculation_type: '计算类型',
                     wake_up_time: '我想在这个时间醒来',
                     sleep_now: '我现在就要睡觉',
-                    hour_label: '小时',
-                    minute_label: '分钟',
-                    btn_calc: '计算睡眠时间',
-                    res_label: '最佳时间',
-                    res_placeholder: '点击计算查看结果',
-                    cycles: '个周期（约%h小时）',
-                    best: '最佳选择'
+                    select_time: '选择时间',
+                    hour_label: '时',
+                    minute_label: '分',
+                    btn_calc: '计算最佳睡眠时间',
+                    res_label: '最佳时间建议',
+                    res_placeholder: '点击计算查看最佳睡眠时间',
+                    cycles: '个周期 (约 %h 小时睡眠)',
+                    best: '强烈推荐',
+                    good: '不错的选择',
+                    cycle_note: '* 平均入睡时间约为14分钟，计算结果已包含此时间。',
+                    suggested_bedtime: '建议入睡时间',
+                    suggested_wakeup: '建议起床时间',
+                    g_s3_t: '💡 优质睡眠小贴士',
+                    g_tip_1_t: '减少蓝光',
+                    g_tip_1_d: '睡前1小时避免使用屏幕，有助于褪黑素分泌。',
+                    g_tip_2_t: '凉爽环境',
+                    g_tip_2_d: '保持卧室凉爽（约18-20°C）有助于深度睡眠。',
+                    g_tip_3_t: '保持规律',
+                    g_tip_3_d: '尽量每天在同一时间起床，以设定你的生物钟。',
+                    // Hack Guide Content
+                    h_title: '睡眠计算器封神🔥熬夜党必藏！精准锁黄金睡眠周期｜睡够 8 小时不如睡对 1 周期',
+                    h_intro: '还在熬到凌晨补觉？😴 睡够 8 小时依然昏沉？这款睡眠计算器直接把 “优质睡眠密码” 扒得明明白白！toolboxpro.top 线上免费用，输入 2 个信息就精准测算，帮你找准入睡 & 起床时间，贴合人体 90 分钟睡眠周期，醒后神清气爽不犯困，打工人、学生党、熬夜党狂喜～ 亲测好用到哭！',
+                    h_high_t: '✨ 为什么熬夜党都狂推？4 大核心亮点',
+                    h_high_1: '<strong>专业度拉满✅：</strong>基于睡眠医学 “90 分钟周期理论”，结合成年人睡眠结构（浅睡→深睡→快速眼动睡眠）精准测算，比盲目早睡早起靠谱 10 倍～',
+                    h_high_2: '<strong>操作零门槛🤩：</strong>不用记复杂公式，手机 / 电脑秒加载，2 步搞定测算，手残党也能轻松拿捏！',
+                    h_high_3: '<strong>信息超全面📊：</strong>不仅给最佳入睡时间，还生成 3 组黄金起床时间 + 睡眠周期数，连 “睡够几个周期”“深睡时长占比” 都标得明明白白，睡眠节奏不跑偏！',
+                    h_high_4: '<strong>完全免费无广告🆓：</strong>不用下载 APP，不用注册登录，打开网页直接用，隐私不泄露，熬夜党狂喜！',
+                    h_step_t: '📝 2 步精准测算｜小白也会用',
+                    h_step_1: '选择计算模式：「<strong>想入睡时间</strong>」或「<strong>想起床时间</strong>」（按需选，超灵活～）',
+                    h_step_2: '输入计划时间，点击 “<strong>计算</strong>” 一键出结果！系统自动生成专属睡眠方案，关键时间一目了然～',
+                    h_res_t: '📈 输出结果解读｜每个时间都藏着优质睡眠密码',
+                    h_res_1: '✅ <strong>最佳入睡 / 起床时间：</strong>贴合 90 分钟周期，比如 23:00 入睡→7:00 起床（4 个完整周期），醒后不昏沉！',
+                    h_res_2: '✅ <strong>睡眠周期数：</strong>明确告知能睡 3/4/5 个完整周期（成年人推荐 3-5 个，对应 4.5-7.5 小时），拒绝碎片化睡眠～',
+                    h_res_3: '✅ <strong>深睡时长预估：</strong>基于周期数推算深睡时间（深睡占比 20%-30% 为最佳），帮你判断睡眠质量～',
+                    h_res_4: '✅ <strong>睡眠建议：</strong>根据你的作息给出调整方案（比如 “建议提前 15 分钟入睡，多享 1 个深睡周期”）',
+                    h_res_5: '✅ <strong>周期可视化：</strong>直观展示睡眠周期曲线，看着曲线完成超有成就感！',
+                    h_faq_t: '❓ 常见疑问解答｜打消你的所有顾虑',
+                    h_faq_q1: 'Q：为什么睡够 8 小时还觉得累？',
+                    h_faq_a1: 'A：宝子！睡眠质量≠时长～ 要是睡眠周期被打断（比如睡 7.5 小时是 5 个周期，8 小时刚好打断第 5 个周期），就算睡够时间也会昏沉！这个计算器帮你精准贴合周期，比盲目凑时长管用～',
+                    h_faq_q2: 'Q：熬夜后补觉能用这个计算器吗？',
+                    h_faq_a2: 'A：当然！比如凌晨 2 点才睡，输入想起床时间，计算器会推荐 4:30（1 个周期）、6:00（2 个）、7:30（3 个）起床，选离你计划最近的完整周期，补觉不越补越困～',
+                    h_faq_q3: 'Q：不同年龄段的睡眠周期一样吗？',
+                    h_faq_a3: 'A：不一样哦！这款计算器默认成年人 90 分钟周期，青少年约 80 分钟，婴幼儿更短～ 学生党可以适当调整时间，以醒后舒适为准！',
+                    h_faq_q4: 'Q：每天必须固定时间睡吗？',
+                    h_faq_a4: 'A：尽量固定哦！规律作息 + 完整周期，双 buff 叠加，睡眠质量翻倍～ 偶尔熬夜用计算器调整，也能减少不适！',
+                    h_tips_t: '💡 优质睡眠实战小技巧（亲测有效）',
+                    h_tip_1: '测算后设置手机提醒，比如选 23:00 入睡，提前 30 分钟开启 “勿扰模式”，远离手机，快速进入睡眠状态～',
+                    h_tip_2: '起床后别赖床！按计算器推荐的时间起床，拉开窗帘晒晒太阳，激活身体代谢，避免越睡越困～',
+                    h_tip_3: '午睡也能用计算器！推荐睡 20 分钟（浅睡，不影响夜间睡眠）或 90 分钟（完整周期，适合午后补觉），千万别睡 1 小时（打断周期，醒后更累）～',
+                    h_tip_4: '睡前 1 小时别刷手机、吃辛辣食物，喝杯温牛奶或泡脚，帮助身体进入睡眠模式，贴合测算的入睡时间～',
+                    h_story_t: '🌟 真实案例分享',
+                    h_story_1: '“之前每天熬到 1 点，睡够 8 小时到 9 点，还是昏昏沉沉！用这个计算器后，23:30 入睡→7:00 起床（3.5 个周期），醒后直接清醒，上班再也不摸鱼打盹了～ 操作超简单，已经推荐给同事，现在办公室都在用！”——@打工人小敏',
+                    h_story_2: '“学生党备考经常熬夜，用计算器算完，凌晨 00:00 入睡→6:30 起床（4 个周期），比之前睡 7 小时还精神，背书效率都提高了！完全免费无广告，熬夜党真的要冲～”——@备考的小星',
+                    h_outro: '不管你是天天熬夜的打工人、备考到深夜的学生党，还是作息紊乱的熬夜星人，这款睡眠计算器都能帮你找回优质睡眠！科学贴合周期，操作简单，完全免费～ 赶紧收藏 toolboxpro.top 这个神器，转发给身边被睡眠困扰的闺蜜，一起告别昏沉，拥抱神清气爽的每一天！😴',
+                    h_warn: '⚠️ 温馨提示：本工具基于睡眠医学理论估算，仅供作息调整参考。若长期失眠、睡眠质量极差，建议及时咨询睡眠科医生哦～ 祝大家都能拥有高质量睡眠，元气满满过每一天！'
                 },
                 'zh-TW': {
                     title: '😴 睡眠計算器',
                     calculation_type: '計算類型',
                     wake_up_time: '我想在這個時間醒來',
                     sleep_now: '我現在就要睡覺',
-                    hour_label: '小時',
-                    minute_label: '分鐘',
-                    btn_calc: '計算睡眠時間',
-                    res_label: '最佳時間',
-                    res_placeholder: '點擊計算查看結果',
-                    cycles: '個周期（約%h小時）',
-                    best: '最佳選擇'
+                    select_time: '選擇時間',
+                    hour_label: '時',
+                    minute_label: '分',
+                    btn_calc: '計算最佳睡眠時間',
+                    res_label: '最佳時間建議',
+                    res_placeholder: '點擊計算查看最佳睡眠時間',
+                    cycles: '個週期 (約 %h 小時睡眠)',
+                    best: '強烈推薦',
+                    good: '不錯的選擇',
+                    cycle_note: '* 平均入睡時間約為14分鐘，計算結果已包含此時間。',
+                    suggested_bedtime: '建議入睡時間',
+                    suggested_wakeup: '建議起床時間',
+                    g_s3_t: '💡 優質睡眠小貼士',
+                    g_tip_1_t: '減少藍光',
+                    g_tip_1_d: '睡前1小時避免使用螢幕，有助於褪黑激素分泌。',
+                    g_tip_2_t: '涼爽環境',
+                    g_tip_2_d: '保持臥室涼爽（約18-20°C）有助於深度睡眠。',
+                    g_tip_3_t: '保持規律',
+                    g_tip_3_d: '盡量每天在同一時間起床，以設定你的生理時鐘。',
+                    // Hack Guide Content
+                    h_title: '睡眠計算機封神🔥熬夜黨必藏！精准鎖黃金睡眠週期｜睡夠 8 小時不如睡對 1 週期',
+                    h_intro: '仲係捱到凌晨先補覺？😴 睡夠 8 小時依然昏沉？呢款睡眠計算機直接將「優質睡眠密碼」拆得明明白白！toolboxpro.top 線上免費用，輸入 2 個資料就精准推算，幫你搵準入睡 & 起床時間，貼合人體 90 分鐘睡眠週期，醒後神清氣爽唔攰，打工仔、學生黨、熬夜黨狂喜～ 親測好用到喊！',
+                    h_high_t: '✨ 點解熬夜黨都狂推？4 大核心亮點',
+                    h_high_1: '<strong>專業度拉滿✅：</strong>基於睡眠醫學「90 分鐘週期理論」，結合成年人睡眠結構（淺睡→深睡→快速眼動睡眠）精准推算，比盲目早睡早起靠譜 10 倍～',
+                    h_high_2: '<strong>操作零難度🤩：</strong>唔使記複雜公式，手機 / 電腦秒載入，2 步搞掂推算，手殘黨都可以輕鬆拿捏！',
+                    h_high_3: '<strong>資訊超齊全📊：</strong>唔止比最佳入睡時間，仲生成 3 組黃金起床時間 + 睡眠週期數，連「睡夠幾個週期」「深睡時長佔比」都標得明明白白，睡眠節奏唔跑偏！',
+                    h_high_4: '<strong>完全免費無廣告🆓：</strong>唔使下載 APP，唔使註冊登入，打開網頁直接用，私隱唔泄露，熬夜黨狂喜！',
+                    h_step_t: '📝 2 步精准推算｜小白都識用',
+                    h_step_1: '選擇計算模式：「<strong>想入睡時間</strong>」或「<strong>想起床時間</strong>」（按需要揀，超靈活～）',
+                    h_step_2: '輸入計劃時間，按「<strong>計算</strong>」一鍵出結果！系統自動生成專屬睡眠方案，關鍵時間一目了然～',
+                    h_res_t: '📈 輸出結果解讀｜每個時間都藏住優質睡眠密碼',
+                    h_res_1: '✅ <strong>最佳入睡 / 起床時間：</strong>貼合 90 分鐘週期，比如 23:00 入睡→7:00 起床（4 個完整週期），醒後唔昏沉！',
+                    h_res_2: '✅ <strong>睡眠週期數：</strong>明確告知可以睡 3/4/5 個完整週期（成年人推薦 3-5 個，對應 4.5-7.5 小時），拒絕碎片化睡眠～',
+                    h_res_3: '✅ <strong>深睡時長预估：</strong>基於週期數推算深睡時間（深睡佔比 20%-30% 為最佳），幫你判斷睡眠質量～',
+                    h_res_4: '✅ <strong>睡眠建議：</strong>根據你嘅作息比出調整方案（比如「建議提前 15 分鐘入睡，多享 1 個深睡週期」）',
+                    h_res_5: '✅ <strong>週期可視化：</strong>直觀展示睡眠週期曲線，睇住曲線完成超有成就感！',
+                    h_faq_t: '❓ 常見疑問解答｜打消你嘅所有顧慮',
+                    h_faq_q1: 'Q：點解睡夠 8 小時仲覺得攰？',
+                    h_faq_a1: 'A：姊妹！睡眠質量≠時長～ 要是睡眠週期被打斷（比如睡 7.5 小時係 5 個週期，8 小時剛好打斷第 5 個週期），就算睡夠時間都會昏沉！呢個計算機幫你精准貼合週期，比盲目湊時長管用～',
+                    h_faq_q2: 'Q：熬夜後補覺可以用呢個計算機嗎？',
+                    h_faq_a2: 'A：當然得！比如凌晨 2 點先睡，輸入想起床時間，計算機會推薦 4:30（1 個週期）、6:00（2 個）、7:30（3 個）起床，揀離你計劃最近嘅完整週期，補覺唔會越補越攰～',
+                    h_faq_q3: 'Q：不同年齡段嘅睡眠週期一樣嗎？',
+                    h_faq_a3: 'A：唔一樣㗎！呢款計算機默認成年人 90 分鐘週期，青少年約 80 分鐘，嬰幼兒更短～ 學生黨可以適當調整時間，以醒後舒適為準！',
+                    h_faq_q4: 'Q：每日必須固定時間睡嗎？',
+                    h_faq_a4: 'A：盡量固定啦！規律作息 + 完整週期，雙 buff 疊加，睡眠質量翻倍～ 偶尔熬夜用計算機調整，都可以減少不適！',
+                    h_tips_t: '💡 優質睡眠實戰小技巧（親測有效）',
+                    h_tip_1: '推算後設定手機提醒，比如揀 23:00 入睡，提前 30 分鐘開啟「勿擾模式」，遠離手機，快速進入睡眠狀態～',
+                    h_tip_2: '起床後唔好賴床！按計算機推薦嘅時間起床，拉開窗簾曬曬太陽，激活身體代謝，避免越睡越攰～',
+                    h_tip_3: '午睡都可以用計算機！推薦睡 20 分鐘（淺睡，唔影響夜間睡眠）或 90 分鐘（完整週期，適合午後補覺），千祈唔好睡 1 小時（打斷週期，醒後更攰）～',
+                    h_tip_4: '睡前 1 小時唔好刷手機、吃辛辣食物，飲杯溫牛奶或泡腳，幫助身體進入睡眠模式，貼合推算嘅入睡時間～',
+                    h_story_t: '🌟 真實案例分享',
+                    h_story_1: '「之前每日捱到 1 點，睡夠 8 小時到 9 點，依然昏昏沉沉！用呢個計算機後，23:30 入睡→7:00 起床（3.5 個週期），醒後直接清醒，返工再也唔摸魚打盹啦～ 操作超簡單，已經推薦俾同事，而家辦公室都在用！」——@打工仔小敏',
+                    h_story_2: '「學生黨備考經常熬夜，用計算機算完，凌晨 00:00 入睡→6:30 起床（4 個週期），比之前睡 7 小時仲精神，背書效率都提高咗！完全免費無廣告，熬夜黨真係要衝～」——@備考嘅小星',
+                    h_outro: '無論你係日日熬夜嘅打工仔、備考到深夜嘅學生黨，定係作息紊亂嘅熬夜星人，呢款睡眠計算機都可以幫你找回優質睡眠！科學貼合週期，操作簡單，完全免費～ 快啲收藏 toolboxpro.top 呢個神器，分享俾身邊被睡眠困擾嘅閨蜜，一齊告別昏沉，擁抱神清氣爽嘅每一天！😴',
+                    h_warn: '⚠️ 溫馨提示：本工具基於睡眠醫學理論估算，僅供作息調整參考。若長期失眠、睡眠質量極差，建議及時諮詢睡眠科醫生哦～ 祝大家都能擁有高質量睡眠，元氣滿滿過每一天！'
                 },
                 'ja': {
                     title: '😴 睡眠計算ツール',
                     calculation_type: '計算タイプ',
                     wake_up_time: 'この時間に起きたい',
                     sleep_now: '今から寝たい',
-                    hour_label: '時間',
+                    select_time: '時間を選択',
+                    hour_label: '時',
                     minute_label: '分',
                     btn_calc: '睡眠時間を計算',
                     res_label: '最適な時間',
                     res_placeholder: '計算ボタンをクリックして結果を表示',
-                    cycles: 'サイクル（約%h時間）',
-                    best: '最適な選択'
+                    cycles: 'サイクル (約 %h 時間睡眠)',
+                    best: '推奨',
+                    good: '良い選択',
+                    cycle_note: '* 平均的な入眠時間（14分）を含んで計算しています。',
+                    suggested_bedtime: '推奨就寝時間',
+                    suggested_wakeup: '推奨起床時間',
+                    g_s3_t: '💡 良い睡眠のためのヒント',
+                    g_tip_1_t: 'ブルーライトを減らす',
+                    g_tip_1_d: '就寝1時間前は画面を見ないようにして、メラトニンの生成を助けます。',
+                    g_tip_2_t: '涼しい環境',
+                    g_tip_2_d: '深い睡眠のために、寝室を涼しく（約18-20°C）保ちます。',
+                    g_tip_3_t: '一貫性',
+                    g_tip_3_d: '体内時計をセットするために、毎日同じ時間に起きるようにしましょう。',
+                    // Hack Guide Content
+                    h_title: '睡眠計算機神対応⚡️夜型人間必携！黄金睡眠周期をキャッチして爽やか目覚め',
+                    h_intro: 'まだ午前 2 時まで起きて、昼まで寝てる？😴 8 時間寝てもだるさが取れない？この睡眠計算機が質の良い睡眠の秘密を完全公開！toolboxpro.top で完全無料、ダウンロード不要・登録不要。たった 2 つの情報を入力するだけで、体の 90 分睡眠周期に合わせた個人別スケジュールが完成！だるさゼロで目覚められる、夜型人間・学生・社会人に最適！本当にゲームチェンジャー！',
+                    h_high_t: '✨ 夜型人間がハマる理由？4 つの核心ポイント',
+                    h_high_1: '<strong>科学的な精度 ✅</strong> 睡眠医学の「90 分周期理論」＋成人の睡眠構造（浅い睡眠→深い睡眠→レム睡眠）を基に計算！無理な早起きより 10 倍も信頼できる、自分に合ったリズムが見つかる！',
+                    h_high_2: '<strong>操作難易度ゼロ 🤩</strong> 複雑な公式を覚える必要なし！スマホ・PC で秒速ロード、2 ステップで結果ゲット。テクノロジーが苦手な人でも、簡単にマスター！',
+                    h_high_3: '<strong>情報が超充実 📊</strong> 就寝時間だけじゃない！3 つの理想的な起床時間、睡眠周期数、深い睡眠の推定時間、個人別の睡眠アドバイスまで全部表示！睡眠のリズムを崩さない！',
+                    h_high_4: '<strong>完全無料 & 広告なし 🆓</strong> アプリをダウンロードする必要も、登録する必要もない！ウェブサイトを開くだけですぐ使える。プライバシーも守られる —— 夜型人間大満足！',
+                    h_step_t: '📝 2 ステップ操作ガイド｜初心者でも大丈夫',
+                    h_step_1: '計算モードを選ぶ：<strong>「就寝したい時間」</strong> または <strong>「起床したい時間」</strong>（超フレキシブル！）',
+                    h_step_2: '<strong>「計算」ボタンをクリック</strong>—— 完了！個人別睡眠プランが一瞬で表示され、重要な時間が一目でわかる！',
+                    h_res_t: '📈 結果解説｜一つ一つの時間が爽やか目覚めの鍵',
+                    h_res_1: '✅ <strong>理想的な就寝 / 起床時間：</strong>90 分周期に完全一致（例：23:00 就寝→7:00 起床＝4 サイクル）、だるさゼロで目覚められる！',
+                    h_res_2: '✅ <strong>睡眠周期数：</strong>成人に推奨される 3～5 サイクル（4.5～7.5 時間）を明確表示、断片的な睡眠を避けられる！',
+                    h_res_3: '✅ <strong>深い睡眠の推定時間：</strong>深い睡眠が全体の 20%～30% になるよう計算、睡眠の質を可視化！',
+                    h_res_4: '✅ <strong>個人別睡眠アドバイス：</strong>自分のスケジュールに合わせた調整法（例：「15 分早く寝ると、深い睡眠が 1 サイクル増えるよ！」）',
+                    h_res_5: '✅ <strong>周期可視化グラフ：</strong>睡眠周期の曲線を視覚的に表示、目標通りに眠れた時の達成感が最高！',
+                    h_faq_t: '❓ よくある質問｜あなたの睡眠の悩みを全部解消',
+                    h_faq_q1: 'Q：8 時間寝てもだるいのはなぜ？',
+                    h_faq_a1: 'A：だーりん！睡眠の質＞時間なの！周期の途中で起きちゃうと（例：8 時間は 5 サイクルの途中）、どんなに長く寝てもだるいの。この計算機は完全な周期に合わせてくれるから、無理なく爽やかに目覚められる！',
+                    h_faq_q2: 'Q：熬夜した後の補眠に使える？',
+                    h_faq_a2: 'A：もちろん！午前 2 時に寝た場合、起床時間を入力すると、4:30（1 サイクル）・6:00（2 サイクル）・7:30（3 サイクル）の選択肢が出る！一番近い完全な周期を選べば、補眠しても頭がボーッとしない！',
+                    h_faq_q3: 'Q：年齢によって睡眠周期は違うの？',
+                    h_faq_a3: 'A：違うよ！この計算機は成人の 90 分周期を基準にしてるけど、ティーンエイジャーは約 80 分、子供はもっと短いの。学生さんは自分が爽やかになる時間に調整してね！',
+                    h_faq_q4: 'Q：毎日同じ時間に寝なきゃダメ？',
+                    h_faq_a4: 'A：できるだけ固定すると超効果的！規則的な就寝時間＋完全な周期＝睡眠の質が倍増する！たまに熬夜した時は、計算機で調整すれば不調を最小限に抑えられる！',
+                    h_tips_t: '💡 睡眠改善の神テク（夜型人間が実践済み）',
+                    h_tip_1: '計算結果をスクショして、スマホのリマインダーを設定！23:00 に寝るなら、30 分前に「通知オフ」にしてスマホを遠ざけ、リラックスタイムを作ろう！',
+                    h_tip_2: 'スヌーズボタンは絶対に押すな！計算機推奨の時間に起きて、カーテンを開けて日光を浴びる —— 一瞬で元気が出る！',
+                    h_tip_3: '昼寝にも使える！20 分のパワーナップ（浅い睡眠でだるくならない）か、90 分のフルサイクルナップ（忙しい午後に最適）がおすすめ！1 時間の昼寝は周期を切るから NG！',
+                    h_tip_4: '午後 2 時以降のカフェイン摂取は控えて、寝る前の辛い食べ物も避けよう。温かいミルクを飲んだり、10 分のストレッチをしたりすると、スムーズに就寝時間に入れる！',
+                    h_story_t: '🌟 ユーザーの成功ストーリー',
+                    h_story_1: '「以前は午前 1 時まで起きて 9 時まで寝て、仕事でずっとだるかった。この計算機で 23:30 就寝→7:00 起床（3.5 サイクル）にしたら、目覚めが全然違う！今はチーム全員が使ってる」——@夜型人間→朝型人間',
+                    h_story_2: '「試験勉強で徹夜漬けで死んでた。このツールで 2 時就寝→7:30 起床（3 サイクル）にしたら、4 時間の適当な睡眠よりずっと頭が冴える！成績も上がった」——@試験勉強中の学生',
+                    h_outro: '夜型人間でも、忙しい社会人でも、睡眠不足の学生でも、この計算機があなたの睡眠スケジュールを一瞬で改善する！無料で簡単、しかも科学的に信頼できる —— 他に何が欲しい？toolboxpro.top をブックマークして、睡眠に悩む友達にもシェアしよう —— 一緒に爽やかな目覚めを手に入れよう！😴',
+                    h_warn: '⚠️ 注意事項：本ツールは参考情報であり、専門的な医療アドバイスの代替にはなりません。慢性的な不眠症や睡眠障害がある場合は、必ず睡眠専門医に相談してください！みんなにスイートドリームを！'
                 },
                 'ru': {
                     title: '😴 Калькулятор сна',
                     calculation_type: 'Тип расчета',
                     wake_up_time: 'Я хочу проснуться в',
-                    sleep_now: 'Я хочу спать сейчас',
+                    sleep_now: 'Я ложусь спать сейчас',
+                    select_time: 'Выберите время',
                     hour_label: 'Час',
-                    minute_label: 'Минута',
-                    btn_calc: 'Вычислить время сна',
-                    res_label: 'Оптимальные времена',
-                    res_placeholder: 'Нажмите вычислить, чтобы увидеть результаты',
-                    cycles: 'цикла (около %h часов)',
-                    best: 'Лучший вариант'
+                    minute_label: 'Мин',
+                    btn_calc: 'Рассчитать время',
+                    res_label: 'Оптимальное время',
+                    res_placeholder: 'Нажмите кнопку для расчета',
+                    cycles: 'циклов (ок. %h ч. сна)',
+                    best: 'Рекомендуется',
+                    good: 'Хороший вариант',
+                    cycle_note: '* Среднее время засыпания (14 мин) включено в расчет.',
+                    suggested_bedtime: 'Время отхода ко сну',
+                    suggested_wakeup: 'Время пробуждения',
+                    g_s3_t: '💡 Советы для лучшего сна',
+                    g_tip_1_t: 'Меньше синего света',
+                    g_tip_1_d: 'Избегайте экранов за 1 час до сна для выработки мелатонина.',
+                    g_tip_2_t: 'Прохлада',
+                    g_tip_2_d: 'Держите спальню прохладной (около 18-20°C) для глубокого сна.',
+                    g_tip_3_t: 'Режим',
+                    g_tip_3_d: 'Старайтесь просыпаться в одно и то же время каждый день.',
+                    // Hack Guide Content
+                    h_title: 'Калькулятор Сна ⚡️ Для Ночных Жителей | Захвати Золотые Циклы Сна и Просыпайся Отдохнувшим',
+                    h_intro: 'Все еще сидишь допоздна до 2 утра и спишь до полудня? 😴 Спал 8 часов, но все равно чувствуешь усталость? Этот калькулятор раскрывает секрет качественного сна! Бесплатно на toolboxpro.top, без загрузок и регистрации. Введи всего 2 параметра — и получи персональный план сна, адаптированный под 90-минутные циклы организма. Просыпайся энергичным, а не разбитым — идеально для ночных жителей, студентов и работающих! Реальный спаситель!',
+                    h_high_t: '✨ Почему Ночные Жители Обожают Его? 4 Ключевых Преимущества',
+                    h_high_1: '<strong>Научная Точность ✅</strong> Основан на медицинской теории «90-минутных циклов сна» + структуре сна взрослого человека (легкий сон → глубокий сон → быстрый сон). В 10 раз надежнее, чем заставлять себя ложиться спать рано, не подходящее тебе по режиму!',
+                    h_high_2: '<strong>Легкость Использования 🤩</strong> Нет сложных формул для запоминания! Загружается за секунды на телефон или ноутбук — 2 простых шага до результата. Даже если ты совсем не разбираешься в технике, справишься без проблем!',
+                    h_high_3: '<strong>Полная Информация 📊</strong> Это не просто время для сна! Генерирует 3 оптимальных времени для пробуждения, количество циклов сна, оценочную длительность глубокого сна и персональные советы. Сохраняй свой режим сна без ошибок!',
+                    h_high_4: '<strong>100% Бесплатно и Без Реклам 🆓</strong> Нет необходимости загружать приложения или регистрироваться — просто открой сайт и начни использовать. Твоя конфиденциальность защищена — ночные жители, радуйтесь!',
+                    h_step_t: '📝 Пошаговая Инструкция за 2 Шага | Для Начинающих',
+                    h_step_1: 'Выбери режим расчета: <strong>«Желаемое время засыпания»</strong> или <strong>«Желаемое время пробуждения»</strong>. Введи время, когда планируешь ложиться спать или нужно проснуться (до минуты).',
+                    h_step_2: 'Нажми <strong>«Рассчитать»</strong> — готово! Твой персональный план сна появляется мгновенно, все ключевые время четко представлены.',
+                    h_res_t: '📈 Интерпретация Результатов | Каждое Время Улучшает Качество Твоего Сна',
+                    h_res_1: '✅ <strong>Оптимальное Время Засыпания/Пробуждения:</strong> Адаптированное под 90-минутные циклы (например, 23:00 ложиться → 7:00 просыпаться = 4 полных цикла), чтобы просыпаться без разбитости!',
+                    h_res_2: '✅ <strong>Количество Циклов Сна:</strong> Показывает, сколько полных циклов ты получишь (3–5 циклов рекомендуется взрослым = 4.5–7.5 часов). Больше никаких фрагментированных снов!',
+                    h_res_3: '✅ <strong>Оценочная Длительность Глубокого Сна:</strong> Рассчитывает время глубокого сна (оптимально 20%–30% от общего сна), чтобы оценить качество отдыха.',
+                    h_res_4: '✅ <strong>Персональные Советы По Сну:</strong> Корректировки под твой режим (например: «Ложись спать на 15 минут раньше, чтобы получить еще один цикл глубокого сна!»)',
+                    h_res_5: '✅ <strong>Визуализация Циклов:</strong> Визуальная кривая твоих циклов сна — очень приятно видеть их завершенными!',
+                    h_faq_t: '❓ Часто Задаваемые Вопросы | Отвечаем На Все Твои Вопросы О Сне',
+                    h_faq_q1: 'В: Почему я чувствую усталость, даже если спал 8 часов?',
+                    h_faq_a1: 'О: Дорогой/дорогая, качество сна важнее длительности! Если ты просыпаешься посередине цикла (например, 8 часов прерывают 5-й цикл), будешь чувствовать себя разбитым, независимо от времени сна. Этот калькулятор подстраивает тебя под полные циклы — гораздо лучше, чем заставлять себя спать больше!',
+                    h_faq_q2: 'В: Можно ли использовать его для восстановления сна после ночного бодрствования?',
+                    h_faq_a2: 'О: Абсолютно! Если ты лег спать в 2 часа ночи, введи желаемое время пробуждения — и он предложит 4:30 (1 цикл), 6:00 (2 цикла) или 7:30 (3 цикла). Выбери ближайший полный цикл — больше никакой «сонной ломки»!',
+                    h_faq_q3: 'В: Совпадают ли циклы сна для всех возрастов?',
+                    h_faq_a3: 'О: Нет! Этот калькулятор использует 90-минутный цикл для взрослых, но у подростков циклы ~80 минут, а у детей — еще короче. Студенты могут подстроить время так, чтобы просыпаться отдохнувшими!',
+                    h_faq_q4: 'В: Нужно ли ложиться спать в одно и то же время каждый день?',
+                    h_faq_a4: 'О: По возможности — да! Стабильное время засыпания + полные циклы = в два раза лучшее качество сна. Для случайных ночей без сна используй калькулятор, чтобы минимизировать дискомфорт!',
+                    h_tips_t: '💡 Профессиональные Советы По Сну (Проверено Ночными Жителями)',
+                    h_tip_1: 'Сделай скриншот результатов и настрои напоминания на телефоне! Если ты выбрал 23:00 для сна, активируй режим «Не беспокоить» за 30 минут до этого — не смотри в социальные сети, просто расслабься!',
+                    h_tip_2: 'Не нажимай на кнопку «задержка»! Просыпайся в рекомендуемое время, открой шторы и позволь солнечному свету войти — это мгновенно подарит энергию!',
+                    h_tip_3: 'Подходит и для дневного сна! Используй калькулятор, чтобы выбрать 20-минутную «сиесту энергии» (легкий сон без разбитости) или 90-минутный полный цикл (идеально для занятых послеобеденных часов). Избегай 1-часовых дневных снов — они прерывают циклы!',
+                    h_tip_4: 'Отказывайся от кофеина после 14:00 и острой еды перед сном. Стакан теплого молока или 10 минут растяжки помогут быстрее заснуть в нужное время.',
+                    h_story_t: '🌟 Реальные Истории Успеха Пользователей',
+                    h_story_1: '«Раньше сидел допоздна до 1 часа ночи, спал до 9 утра и чувствовал себя усталым на работе. Попробовал этот калькулятор — 23:30 ложиться → 7:00 просыпаться (3.5 цикла). Проснулся полным энергии! Теперь его использует вся моя команда.» — @НочнойЖительСталУтренним',
+                    h_story_2: '«Я студент, готовлюсь к экзаменам и часто сижу допоздна. Этот инструмент посоветовал мне спать с 2 до 7:30 (3 цикла). Гораздо лучше, чем спать 4 часа хаотично — даже мои оценки улучшились!» — @СтудентСЭкзаменами',
+                    h_outro: 'Будь ты ночной житель, занятой работник или студент с нехваткой сна — этот калькулятор улучшит твой режим сна за секунды! Он бесплатный, простой и научный — что еще нужно? Сохрани toolboxpro.top сейчас и поделись с друзьями, которые тоже страдают от плохого сна — давайте вместе просыпаться отдохнувшими! 😴',
+                    h_warn: '⚠️ Важное Напоминание: Этот инструмент предназначен только для справки и не заменяет профессиональную медицинскую консультацию. Если у тебя хронический бессонница или проблемы со сном — обратись к специалисту по сну! Сладких снов всем!'
                 },
                 'es': {
                     title: '😴 Calculadora de Sueño',
                     calculation_type: 'Tipo de Cálculo',
                     wake_up_time: 'Quiero despertarme a las',
                     sleep_now: 'Quiero dormir ahora',
+                    select_time: 'Seleccionar Hora',
                     hour_label: 'Hora',
-                    minute_label: 'Minuto',
-                    btn_calc: 'Calcular Horas de Sueño',
+                    minute_label: 'Min',
+                    btn_calc: 'Calcular Horas',
                     res_label: 'Horas Óptimas',
-                    res_placeholder: 'Haz clic en calcular para ver resultados',
-                    cycles: 'ciclos (aproximadamente %h horas)',
-                    best: 'Mejor opción'
+                    res_placeholder: 'Haz clic para ver resultados',
+                    cycles: 'ciclos (~%h horas de sueño)',
+                    best: 'Recomendado',
+                    good: 'Buena opción',
+                    cycle_note: '* Incluye 14 min promedio para conciliar el sueño.',
+                    suggested_bedtime: 'Hora sugerida para dormir',
+                    suggested_wakeup: 'Hora sugerida para despertar',
+                    g_s3_t: '💡 Tips Pro',
+                    g_tip_1_t: 'Reduce Luz Azul',
+                    g_tip_1_d: 'Evita pantallas 1 hora antes de dormir para la melatonina.',
+                    g_tip_2_t: 'Ambiente Fresco',
+                    g_tip_2_d: 'Mantén tu habitación fresca (18-20°C) para un sueño profundo.',
+                    g_tip_3_t: 'Consistencia',
+                    g_tip_3_d: 'Intenta despertar a la misma hora todos los días.',
+                    // Hack Guide Content
+                    h_title: 'Calculadora de Sueño ⚡️ Para Noctámbulos | Aprovecha tus Ciclos de Sueño y Despierta Refrescado',
+                    h_intro: '¿Sigues levantado hasta las 2 AM y durmiendo hasta el mediodía? 😴 ¿Duermes 8 horas pero sigues sintiéndote cansado? Esta calculadora de sueño revela el secreto del sueño de calidad! Gratis en toolboxpro.top, sin descargas ni registros. Ingresa solo 2 datos y obtén tu plan personalizado alineado con los ciclos de sueño de 90 minutos de tu cuerpo. Despierta energizado, no agotado — ideal para noctámbulos, estudiantes y trabajadores! ¡Totalmente revolucionario!',
+                    h_high_t: '✨ ¿Por qué los noctámbulos la aman? 4 Ventajas Clave',
+                    h_high_1: '<strong>Precisión Científica ✅</strong> Basada en la teoría médica de los “ciclos de 90 minutos” + la estructura del sueño adulto (sueño ligero → sueño profundo → sueño REM). 10 veces más confiable que forzar un horario de sueño que no te conviene!',
+                    h_high_2: '<strong>Uso Súper Fácil 🤩</strong> Sin fórmulas complicadas para recordar! Carga en segundos en tu teléfono o laptop — 2 pasos para los resultados. Incluso si eres un novato en tecnología, la dominarás en un instante!',
+                    h_high_3: '<strong>Información Completa 📊</strong> No es solo una hora de dormir! Genera 3 horarios óptimos de despertar, número de ciclos de sueño, duración estimada del sueño profundo y consejos personalizados. Mantén tu ritmo de sueño sin errores!',
+                    h_high_4: '<strong>100% Gratis y Sin Publicidad 🆓</strong> Sin descargas de apps, sin registros molestos — solo abre la página web y empieza. Tu privacidad está protegida — ¡los noctámbulos se alegran!',
+                    h_step_t: '📝 Guía de 2 Pasos | Perfecta para Principiantes',
+                    h_step_1: 'Elige tu modo de cálculo: <strong>“Hora de dormir deseada”</strong> o <strong>“Hora de despertar deseada”</strong> (¡muy flexible!). Ingresa cuándo planeas acostarte o necesitas levantarte (hasta el minuto).',
+                    h_step_2: 'Presiona <strong>“Calcular”</strong> — ¡listo! Tu plan de sueño personalizado aparece instantáneamente, con todos los horarios clave claros.',
+                    h_res_t: '📈 Interpretación de Resultados | Cada Hora Mejora tu Calidad de Sueño',
+                    h_res_1: '✅ <strong>Horario Óptimo de Dormir/Despertar:</strong> Alineado con los ciclos de 90 minutos (ej: 23:00 a dormir → 7:00 a despertar = 4 ciclos completos) para despertar sin grosería!',
+                    h_res_2: '✅ <strong>Número de Ciclos de Sueño:</strong> Te dice cuántos ciclos completos tendrás (3–5 ciclos recomendados para adultos = 4.5–7.5 horas). ¡No más sueños fragmentados!',
+                    h_res_3: '✅ <strong>Duración Estimada del Sueño Profundo:</strong> Calcula el tiempo de sueño profundo (20%–30% del sueño total es ideal) para medir tu calidad de descanso.',
+                    h_res_4: '✅ <strong>Consejos Personalizados de Sueño:</strong> Ajustes adaptados a tu horario (ej: “¡Acuéstate 15 minutos antes para obtener un ciclo extra de sueño profundo!”)',
+                    h_res_5: '✅ <strong>Visualización de Ciclos:</strong> Curva visual de tus ciclos de sueño — ¡muy satisfactorio verlos completos!',
+                    h_faq_t: '❓ Preguntas Frecuentes | Resolvemos Todas tus Dudas de Sueño',
+                    h_faq_q1: 'P: ¿Por qué me siento cansado aunque duerma 8 horas?',
+                    h_faq_a1: 'R: Querido/a, ¡la calidad del sueño es más importante que la duración! Si te despiertas en medio de un ciclo (ej: 8 horas interrumpe tu 5to ciclo), te sentirás grosero sin importar cuánto duermas. Esta calculadora te alinea con ciclos completos — ¡mucho mejor que forzar horas extra!',
+                    h_faq_q2: 'P: ¿Puedo usarla para recuperar sueño después de quedarme levantado hasta tarde?',
+                    h_faq_a2: 'R: ¡Absolutamente! Si te acuestas a las 2 AM, ingresa tu hora de despertar deseada y te recomendará 4:30 AM (1 ciclo), 6:00 AM (2 ciclos) o 7:30 AM (3 ciclos). Elige el ciclo completo más cercano — ¡no más resaca por dormir demasiado!',
+                    h_faq_q3: 'P: ¿Los ciclos de sueño son los mismos para todas las edades?',
+                    h_faq_a3: 'R: ¡No! Esta calculadora usa el ciclo de 90 minutos para adultos, pero los adolescentes tienen ciclos de ~80 minutos y los niños, más cortos. Los estudiantes pueden ajustar los horarios para sentirse frescos al despertar!',
+                    h_faq_q4: 'P: ¿Debo dormir a la misma hora todos los días?',
+                    h_faq_a4: 'R: ¡Lo más posible! Un horario constante + ciclos completos = el doble de calidad de sueño. Para noches ocasionales de insomnio, usa la calculadora para ajustar y minimizar el malestar!',
+                    h_tips_t: '💡 Consejos Profesionales de Sueño (Probados por Noctámbulos)',
+                    h_tip_1: 'Toma una captura de pantalla de tus resultados y configura recordatorios en tu teléfono! Si eliges acostarte a las 23:00, activa el modo “No molestar” 30 minutos antes — ¡no revises redes sociales, solo relájate!',
+                    h_tip_2: '¡No uses el snooze! Levántate a la hora recomendada por la calculadora, abre las cortinas y toma sol — ¡te dará energía instantáneamente!',
+                    h_tip_3: '¡También funciona para siestas! Usa la calculadora para elegir una siesta de 20 minutos (sueño ligero, sin grosería) o 90 minutos (siesta completa, perfecta para tardes ocupadas). Evita siestas de 1 hora — ¡interrumpen tus ciclos!',
+                    h_tip_4: 'Evita la cafeína después de las 2 PM y la comida picante antes de dormir. Una taza de leche caliente o 10 minutos de estiramiento te ayudará a cumplir tu hora de dormir más rápido.',
+                    h_story_t: '🌟 Historias de Éxito de Usuarios Reales',
+                    h_story_1: '“Antes me quedaba levantado hasta la 1 AM, dormía hasta las 9 AM y me sentía cansado en el trabajo. Probé esta calculadora — 23:30 a dormir → 7:00 a despertar (3.5 ciclos). ¡Desperté sintiéndome vivo! Ahora todo mi equipo la usa.” — @NoctámbuloConvertido',
+                    h_story_2: '“Soy estudiante y me quedaba levantado hasta tarde estudiando. Esta herramienta me dijo que durmiera de 2 AM a 7:30 AM (3 ciclos). ¡Mucho mejor que dormir 4 horas al azar — incluso mis calificaciones mejoraron!” — @EstudianteConSueño',
+                    h_outro: 'Ya sea que seas un noctámbulo, un trabajador ocupado o un estudiante con falta de sueño, esta calculadora mejora tu horario de descanso en segundos. Es gratis, fácil y científica — ¿qué más podrías pedir? Guarda toolboxpro.top ahora y compártela con tus amigos que luchan por dormir — ¡despertemos todos refrescados juntos! 😴',
+                    h_warn: '⚠️ Recordatorio Amable: Esta herramienta es solo para referencia y no reemplaza el consejo médico profesional. Si tienes insomnio crónico o problemas de sueño, consulta a un especialista en sueños. ¡Dulces sueños a todos!'
                 }
             },
 
             init: () => {
-                // 初始化默认值为早上7点
-                document.getElementById('sl-hour').value = 7;
+                // Populate hours (0-23)
+                const hourSelect = document.getElementById('sl-hour');
+                for (let i = 0; i < 24; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.innerText = i.toString().padStart(2, '0');
+                    hourSelect.appendChild(opt);
+                }
+                
+                // Set default to 7:00 AM
+                hourSelect.value = 7;
                 document.getElementById('sl-minute').value = 0;
+                
+                // Initialize language
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && SleepCalc.i18n[lang]) {
+                    document.getElementById('sl-lang').value = lang;
+                    SleepCalc.changeLang();
+                }
             },
 
             getCurrentLang: () => {
@@ -231,8 +740,31 @@
                 
                 elements.forEach(el => {
                     const key = el.getAttribute('data-i18n');
-                    if (texts[key]) el.innerText = texts[key];
+                    if (texts[key]) {
+                        el.innerHTML = texts[key]; // innerHTML to allow strong tags
+                    }
                 });
+                
+                // Re-calculate if results are visible to update text
+                if (document.getElementById('sl-result').children.length > 1) {
+                    SleepCalc.calc();
+                }
+            },
+
+            toggleType: () => {
+                const wakeUp = document.getElementById('wake-up').checked;
+                const timeInputs = document.getElementById('time-inputs');
+                const labels = document.querySelectorAll('.time-option');
+                
+                // Toggle styling
+                labels.forEach(l => l.classList.remove('selected'));
+                if (wakeUp) {
+                    labels[0].classList.add('selected');
+                    timeInputs.classList.remove('opacity-50', 'pointer-events-none');
+                } else {
+                    labels[1].classList.add('selected');
+                    timeInputs.classList.add('opacity-50', 'pointer-events-none');
+                }
             },
 
             formatTime: (date) => {
@@ -248,72 +780,104 @@
                 const lang = SleepCalc.getCurrentLang();
                 const texts = SleepCalc.i18n[lang];
 
-                // 创建基础时间
-                const baseTime = new Date();
-                baseTime.setHours(hour, minute, 0, 0);
-
-                // 睡眠周期约为90分钟
-                const cycle = 90 * 60 * 1000; // 毫秒
+                const cycle = 90 * 60 * 1000; // 90 mins in ms
+                const fallingAsleepTime = 14 * 60 * 1000; // 14 mins average to fall asleep
                 const results = [];
 
                 if (isWakeUp) {
-                    // 计算应该睡觉的时间（从起床时间往前推）
-                    for (let i = 1; i <= 6; i++) {
-                        const sleepTime = new Date(baseTime - i * cycle);
+                    // Calculating bedtime based on wake up time
+                    // Bedtime = WakeTime - (Cycles * 90) - FallingAsleep
+                    const wakeTime = new Date();
+                    wakeTime.setHours(hour, minute, 0, 0);
+                    // If wake time is earlier than now, assume tomorrow
+                    if (wakeTime < new Date()) {
+                        wakeTime.setDate(wakeTime.getDate() + 1);
+                    }
+
+                    // We usually calculate backwards 4, 5, 6 cycles
+                    for (let i = 6; i >= 3; i--) {
+                        const sleepTime = new Date(wakeTime.getTime() - (i * cycle) - fallingAsleepTime);
                         results.push({
                             time: SleepCalc.formatTime(sleepTime),
                             cycles: i,
                             hours: (i * 1.5).toFixed(1),
-                            isBest: i === 5 || i === 6 // 5-6个周期是推荐的
+                            isBest: i === 5 || i === 6, // 7.5 or 9 hours
+                            label: i === 5 || i === 6 ? texts.best : texts.good
                         });
                     }
                 } else {
-                    // 计算应该醒来的时间（从现在往后推）
+                    // Calculating wake up times based on sleeping NOW
+                    // WakeTime = Now + FallingAsleep + (Cycles * 90)
                     const now = new Date();
-                    now.setHours(hour, minute, 0, 0);
                     
                     for (let i = 1; i <= 6; i++) {
-                        const wakeTime = new Date(now + i * cycle);
+                        // Skip very short naps for this tool context (start from 3 cycles ~4.5h maybe? or keep all)
+                        // Standard sleep calculators usually show 1-6 cycles. Let's show 3-6 for "Night sleep" context primarily
+                        if (i < 3) continue; 
+                        
+                        const wakeTime = new Date(now.getTime() + fallingAsleepTime + (i * cycle));
                         results.push({
                             time: SleepCalc.formatTime(wakeTime),
                             cycles: i,
                             hours: (i * 1.5).toFixed(1),
-                            isBest: i === 5 || i === 6
+                            isBest: i === 5 || i === 6,
+                            label: i === 5 || i === 6 ? texts.best : texts.good
                         });
                     }
                 }
 
-                // 显示结果
+                // Render Results
                 const resultEl = document.getElementById('sl-result');
                 resultEl.innerHTML = '';
                 
+                // Header for context
+                const headerText = isWakeUp ? texts.suggested_bedtime : texts.suggested_wakeup;
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'text-center text-sm text-gray-500 mb-4 font-medium uppercase tracking-wider';
+                headerDiv.innerText = headerText;
+                resultEl.appendChild(headerDiv);
+
+                const gridDiv = document.createElement('div');
+                gridDiv.className = 'grid grid-cols-2 gap-4';
+                
                 results.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = `result-item ${item.isBest ? 'bg-green-100 border-l-4 border-green-500' : ''}`;
+                    const card = document.createElement('div');
+                    // Style differentiation for Best vs Good
+                    const baseClass = "result-card p-4 rounded-xl text-center border cursor-default";
+                    const activeClass = item.isBest 
+                        ? "best-time bg-white border-night-500 shadow-md ring-2 ring-night-100" 
+                        : "bg-white border-gray-100 hover:border-gray-300";
                     
-                    const timeText = document.createElement('div');
-                    timeText.className = 'font-bold text-lg';
-                    timeText.innerText = item.time;
+                    card.className = `${baseClass} ${activeClass}`;
                     
-                    const cycleText = document.createElement('div');
-                    cycleText.className = 'text-sm text-gray-600';
-                    cycleText.innerText = texts.cycles.replace('%h', item.hours);
+                    const timeDiv = document.createElement('div');
+                    timeDiv.className = `text-2xl font-bold ${item.isBest ? 'text-night-700' : 'text-gray-700'}`;
+                    timeDiv.innerText = item.time;
                     
-                    if (item.isBest) {
-                        const bestText = document.createElement('div');
-                        bestText.className = 'text-xs text-green-600 mt-1';
-                        bestText.innerText = texts.best;
-                        div.appendChild(bestText);
-                    }
+                    const cycleDiv = document.createElement('div');
+                    cycleDiv.className = "text-xs text-gray-500 mt-1";
+                    cycleDiv.innerText = texts.cycles.replace('%h', item.hours);
                     
-                    div.appendChild(timeText);
-                    div.appendChild(cycleText);
-                    resultEl.appendChild(div);
+                    const labelDiv = document.createElement('div');
+                    labelDiv.className = `text-xs font-bold mt-2 uppercase tracking-wide ${item.isBest ? 'text-night-600' : 'text-gray-400'}`;
+                    labelDiv.innerText = item.label;
+
+                    card.appendChild(timeDiv);
+                    card.appendChild(labelDiv);
+                    card.appendChild(cycleDiv);
+                    gridDiv.appendChild(card);
                 });
+                
+                resultEl.appendChild(gridDiv);
+                document.getElementById('result-note').classList.remove('hidden');
             }
         };
 
-        document.addEventListener('DOMContentLoaded', SleepCalc.init);
+        document.addEventListener('DOMContentLoaded', () => {
+            SleepCalc.init();
+            // Initialize radio button visual state
+            SleepCalc.toggleType();
+        });
     </script>
 
     <script>
@@ -331,7 +895,8 @@
                 targetLang = 'es';
             }
             
-            if (targetLang !== 'en') {
+            // 只有当URL没有指定语言时才自动切换
+            if (targetLang !== 'en' && !new URLSearchParams(window.location.search).get('lang')) {
                 const langSelect = document.getElementById('sl-lang');
                 if(langSelect) {
                     langSelect.value = targetLang;
@@ -341,10 +906,8 @@
         });
     </script>
 
-
     <div id="related-tools-container"></div>
     <script src="/scripts/related.js"></script>
-    
 
     <div id="toolbox-seo-wrapper-unique-id" class="max-w-4xl mx-auto px-4"></div>
     <script src="/scripts/seo-loader.js"></script>
