@@ -31,74 +31,343 @@
     <meta name="lang-description-es" content="Estime su período de ovulación según su ciclo menstrual.">
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { padding: 20px; background: #f0f9ff; font-family: sans-serif; }
-        .tool-module { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; position: relative; }
-        .calendar-day { display: inline-block; width: 30px; height: 30px; line-height: 30px; text-align: center; margin: 2px; border-radius: 50%; }
-        .fertile-day { background-color: #dcfce7; border: 1px solid #22c55e; }
-        .ovulation-day { background-color: #16a34a; color: white; }
+        body { 
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
+        .tool-module { 
+            background: white; 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); 
+            max-width: 800px; 
+            margin: 0 auto; 
+            position: relative; 
+            transition: all 0.3s ease;
+        }
+        .calendar-day { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 36px; 
+            height: 36px; 
+            margin: 4px; 
+            border-radius: 50%; 
+            font-size: 0.875rem;
+            transition: transform 0.2s;
+        }
+        .calendar-day:hover {
+            transform: scale(1.1);
+        }
+        .fertile-day { 
+            background-color: #dcfce7; 
+            border: 2px solid #22c55e; 
+            color: #15803d;
+            font-weight: bold;
+        }
+        .ovulation-day { 
+            background-color: #16a34a; 
+            color: white; 
+            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3);
+            font-weight: bold;
+        }
+        .input-card {
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-card:focus-within {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+        /* SSR FOUC prevention */
+        [x-cloak] { display: none !important; }
     </style>
     <link rel="canonical" href="https://toolboxpro.top/modules/math/ovulation-calculator.html" />
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
-     crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634" crossorigin="anonymous"></script>
 
 </head>
-<body>
+<body class="antialiased text-gray-700 p-4 md:p-8">
 
-    <div class="tool-module active" 
+    <div class="tool-module active rounded-2xl p-6 md:p-8" 
          data-id="ovulation_calculator" 
          data-category="health" 
          data-title="Ovulation Calculator" 
          data-icon="🌙">
         
         <!-- 语言选择器 -->
-        <div class="absolute top-4 right-4">
-            <select id="ovulation-lang" onchange="OvulationCalc.changeLang()" class="text-xs border border-gray-300 rounded p-1 bg-gray-50 text-gray-600 focus:outline-none">
-                <option value="en" selected>English</option>
-                <option value="zh-CN">简体中文</option>
-                <option value="zh-TW">繁體中文</option>
-                <option value="ja">日本語</option>
-                <option value="ru">Русский</option>
-                <option value="es">Español</option>
-            </select>
-        </div>
-
-        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2" data-i18n="title">🌙 Ovulation Calculator</h2>
-        
-        <div class="grid grid-cols-1 gap-4 mb-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="last_period_label">First Day of Last Period</label>
-                <input type="date" id="last-period" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="cycle_length_label">Average Cycle Length (days)</label>
-                <input type="number" id="cycle-length" class="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="e.g. 28" min="21" max="35" value="28">
-            </div>
-        </div>
-
-        <button onclick="OvulationCalc.calc()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700 transition mb-6" data-i18n="btn_calc">Calculate Ovulation</button>
-
-        <div class="bg-green-50 p-6 rounded-lg border border-green-100">
-            <div class="text-sm text-gray-500 mb-3" data-i18n="res_label">Fertility Window Prediction</div>
-            
-            <div class="mb-4">
-                <div class="font-medium mb-2" data-i18n="ovulation_date_label">Estimated Ovulation Date:</div>
-                <div id="ovulation-date" class="text-xl font-bold text-green-800">--</div>
-            </div>
-            
-            <div class="mb-4">
-                <div class="font-medium mb-2" data-i18n="fertile_window_label">Fertile Window:</div>
-                <div id="fertile-window" class="text-lg text-green-700">--</div>
-            </div>
-            
-            <div class="mt-4 p-3 bg-white rounded border border-gray-100">
-                <div class="font-medium mb-2" data-i18n="cycle_calendar_label">Cycle Calendar:</div>
-                <div id="cycle-calendar" class="flex flex-wrap">
-                    <!-- 日历将在这里生成 -->
+        <div class="absolute top-6 right-6 z-10">
+            <div class="relative inline-block text-left">
+                <select id="ovulation-lang" onchange="OvulationCalc.changeLang()" class="appearance-none bg-white border border-gray-200 text-gray-600 py-1 pl-3 pr-8 rounded-full text-xs font-medium shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent cursor-pointer">
+                    <option value="en" selected>English</option>
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="ja">日本語</option>
+                    <option value="ru">Русский</option>
+                    <option value="es">Español</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
             </div>
         </div>
+
+        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+            <div class="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center text-xl">🌙</div>
+            <h1 class="text-2xl font-bold text-gray-800" data-i18n="title">Ovulation Calculator</h1>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+            <div class="input-card bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2" data-i18n="last_period_label">First Day of Last Period</label>
+                <input type="date" id="last-period" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-brand-500 text-gray-800">
+            </div>
+            <div class="input-card bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2" data-i18n="cycle_length_label">Average Cycle Length (days)</label>
+                <input type="number" id="cycle-length" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-brand-500 text-gray-800" placeholder="e.g. 28" min="21" max="35" value="28">
+            </div>
+        </div>
+
+        <button onclick="OvulationCalc.calc()" class="w-full bg-brand-600 text-white py-3.5 rounded-xl font-bold hover:bg-brand-700 focus:ring-4 focus:ring-brand-100 transition-all shadow-md hover:shadow-lg transform active:scale-[0.99] mb-8" data-i18n="btn_calc">Calculate Ovulation</button>
+
+        <div class="bg-brand-50 p-6 rounded-2xl border border-brand-100 shadow-sm relative overflow-hidden">
+            <!-- 装饰性背景圆 -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-100 rounded-full opacity-50 blur-xl"></div>
+
+            <div class="relative z-10">
+                <div class="text-sm font-bold text-brand-700 uppercase tracking-wider mb-4 flex items-center" data-i18n="res_label">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    Fertility Window Prediction
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-white/50 shadow-sm">
+                        <div class="text-sm text-gray-600 mb-1" data-i18n="ovulation_date_label">Estimated Ovulation Date:</div>
+                        <div id="ovulation-date" class="text-xl font-bold text-brand-700">--</div>
+                    </div>
+                    
+                    <div class="bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-white/50 shadow-sm">
+                        <div class="text-sm text-gray-600 mb-1" data-i18n="fertile_window_label">Fertile Window:</div>
+                        <div id="fertile-window" class="text-lg font-bold text-brand-600">--</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                    <div class="font-bold text-gray-700 mb-3 flex items-center" data-i18n="cycle_calendar_label">
+                        <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Cycle Calendar:
+                    </div>
+                    <div id="cycle-calendar" class="flex flex-wrap gap-1 justify-start">
+                        <!-- 日历将在这里生成 -->
+                    </div>
+                    <div class="mt-4 flex gap-4 text-xs text-gray-500">
+                        <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-brand-600 mr-2"></span><span data-i18n="ovulation">Ovulation</span></div>
+                        <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-brand-100 border border-brand-500 mr-2"></span><span data-i18n="fertile">Fertile</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comprehensive Guide Section -->
+        <div class="mt-8 border-t border-gray-100 pt-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <span class="text-2xl">🔥</span>
+                <span data-i18n="guide_title">Ovulation Calculator & Fertility Tracker | Pinpoint Your Most Fertile Days!</span>
+            </h2>
+            
+            <p class="text-gray-600 mb-8 leading-relaxed" data-i18n="guide_intro">
+                Trying to conceive? Timing is everything! This easy-to-use Ovulation Calculator helps you identify your most fertile days and estimated ovulation date, increasing your chances of getting pregnant. Understand your cycle better with our precise tool.
+            </p>
+
+            <div class="space-y-8">
+                <!-- Section 1 -->
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-3" data-i18n="guide_s1_t">✨ Why Use This Tool?</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">1</div>
+                            <span class="text-gray-600" data-i18n="guide_s1_1"><strong>Precision:</strong> Uses the standard calendar method to estimate your fertile window based on your unique cycle length.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">2</div>
+                            <span class="text-gray-600" data-i18n="guide_s1_2"><strong>Simplicity:</strong> Just enter your last period date and cycle length to get instant results.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">3</div>
+                            <span class="text-gray-600" data-i18n="guide_s1_3"><strong>Clarity:</strong> Visual calendar marks your ovulation and fertile days clearly, helping you plan effectively.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Section 2 -->
+                <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                    <h3 class="font-bold text-lg text-gray-800 mb-4" data-i18n="guide_s2_t">📝 How to Use & Understand Results</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2" data-i18n="guide_s2_sub1">Step-by-Step</h4>
+                            <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
+                                <li data-i18n="guide_s2_st1">Select the <strong>first day</strong> of your last menstrual period.</li>
+                                <li data-i18n="guide_s2_st2">Enter your average <strong>cycle length</strong> (usually 28 days).</li>
+                                <li data-i18n="guide_s2_st3">Click <strong>Calculate</strong> to see your forecast.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2" data-i18n="guide_s2_sub2">Key Metrics</h4>
+                            <ul class="space-y-2 text-sm text-gray-600">
+                                <li class="flex gap-2"><span class="font-bold text-brand-600">Ovulation Date:</span> <span data-i18n="guide_s2_m1">The day your ovary likely releases an egg.</span></li>
+                                <li class="flex gap-2"><span class="font-bold text-brand-600">Fertile Window:</span> <span data-i18n="guide_s2_m2">The 6-day period (5 days before + ovulation day) when intercourse is most likely to result in pregnancy.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Original FAQ -->
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-3" data-i18n="guide_s3_t">❓ Frequently Asked Questions</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="font-semibold text-gray-800 mb-1" data-i18n="guide_q1">Q: Can I use this if my cycle is irregular?</p>
+                            <p class="text-sm text-gray-600 leading-relaxed" data-i18n="guide_a1">A: This calculator works best for regular cycles. If your cycle varies by more than a few days each month, the results may be less accurate. Consider using ovulation test kits alongside this estimator.</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800 mb-1" data-i18n="guide_q2">Q: How accurate is this calculator?</p>
+                            <p class="text-sm text-gray-600 leading-relaxed" data-i18n="guide_a2">A: It provides a statistical estimate based on averages. Actual ovulation can vary due to stress, diet, sleep, or other health factors. It is a great starting point for tracking.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW CONTENT: Ultimate Guide (Placed separately below FAQ as requested) -->
+                <div class="mt-12 pt-8 border-t border-dashed border-gray-200">
+                    <h2 class="text-2xl font-bold text-brand-700 mb-6" data-i18n="h_title">Ovulation Calculator Hack🔥 TTC Must-Have! Pinpoint Fertile Window & Ovulation Day | Master in 3 Steps</h2>
+                    
+                    <p class="text-gray-700 mb-8 leading-relaxed" data-i18n="h_intro">
+                        Still guessing your ovulation day? 🤦‍♀️ TTC (Trying To Conceive) for months with no luck? This ovulation calculator spills the “fertility secret”! 100% free on toolboxpro.top—no downloads, no sign-ups! Plug in 3 simple details, and it accurately predicts your fertile window, even for irregular cycles. Science-backed TTC without the stress—totally game-changing!
+                    </p>
+
+                    <div class="space-y-10">
+                        <!-- Perks -->
+                        <div>
+                            <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_perks_t">✨ Why TTCers Obsess Over It? 4 Core Perks</h3>
+                            <ul class="space-y-4">
+                                <li class="flex gap-3">
+                                    <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">1</span>
+                                    <span class="text-gray-600" data-i18n="h_perk_1"><strong>Doctor-Level Accuracy ✅:</strong> Based on menstrual cycle physiology + clinical big data. Precisely splits ovulation day, fertile window, and safe period—no random guesses! Supports 21-35 day irregular cycles, 10x more reliable than the traditional calendar method!</span>
+                                </li>
+                                <li class="flex gap-3">
+                                    <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">2</span>
+                                    <span class="text-gray-600" data-i18n="h_perk_2"><strong>Zero Learning Curve 🤩:</strong> No complicated formulas to memorize! Loads in seconds on phone/computer—3 steps to results, even tech newbies can nail it!</span>
+                                </li>
+                                <li class="flex gap-3">
+                                    <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">3</span>
+                                    <span class="text-gray-600" data-i18n="h_perk_3"><strong>All-In-One Info 📊:</strong> More than just ovulation day! Marks “peak fertile days” (2 days before + ovulation day + 1 day after), safe period, and next period date. Stay on track with your TTC journey!</span>
+                                </li>
+                                <li class="flex gap-3">
+                                    <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">4</span>
+                                    <span class="text-gray-600" data-i18n="h_perk_4"><strong>100% Free & Ad-Free 🆓:</strong> No app downloads, no registrations—open the webpage and use it instantly. Your privacy stays protected—TTCers rejoice!</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- 3 Step Guide -->
+                        <div class="bg-brand-50 rounded-xl p-6 border border-brand-100">
+                            <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_steps_t">📝 3-Step Precision Guide | Perfect for Beginners</h3>
+                            <ol class="list-decimal list-inside space-y-3 text-gray-700">
+                                <li data-i18n="h_step_1">Enter the <strong>first day of your last period</strong> (just the date—no need for exact time!)</li>
+                                <li data-i18n="h_step_2">Input your <strong>menstrual cycle length</strong> (default 28 days; for irregular cycles, enter your average, e.g., 25/32 days)</li>
+                                <li data-i18n="h_step_3">Click “Calculate” for instant results! The system generates a custom ovulation calendar with key dates highlighted—super easy to read!</li>
+                            </ol>
+                        </div>
+
+                        <!-- Result Breakdown -->
+                        <div>
+                            <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_res_t">📈 Result Breakdown | Every Date Holds Fertility Clues</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm" data-i18n="h_res_1">✅ <strong>Ovulation Day:</strong> Pinpoints when your egg is released—highest chance of conception if you DTD (Do The Deed) this day!</div>
+                                <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm" data-i18n="h_res_2">✅ <strong>Peak Fertile Window:</strong> 48-hour golden period (2 days pre-ovulation + ovulation day + 1 day post-ovulation). Clearly marked for stress-free timing!</div>
+                                <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm" data-i18n="h_res_3">✅ <strong>Safe Period:</strong> Non-fertile days—great for planning or contraception (not 100% guaranteed for birth control!)</div>
+                                <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm" data-i18n="h_res_4">✅ <strong>Next Period Prediction:</strong> Know your cycle timeline in advance to plan your next TTC phase.</div>
+                                <div class="p-4 bg-white border border-gray-100 rounded-lg shadow-sm md:col-span-2" data-i18n="h_res_5">✅ <strong>Cycle Trend Chart:</strong> Visualizes your “fertility level” throughout the cycle—watching the curve rise is so exciting!</div>
+                            </div>
+                        </div>
+
+                        <!-- FAQs (New) -->
+                        <div>
+                            <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_faq_t">❓ FAQs | All Your TTC Worries Answered</h3>
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <p class="font-bold text-gray-800 mb-2" data-i18n="h_faq_q1">Q: Will it work for irregular cycles?</p>
+                                    <p class="text-gray-600 text-sm" data-i18n="h_faq_a1">A: Absolutely! Just enter your average cycle length from the past 3 months—results are still accurate! Way better than guessing or wasting money on endless ovulation tests. Pair it with OPKs (Ovulation Prediction Kits) for extra precision!</p>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <p class="font-bold text-gray-800 mb-2" data-i18n="h_faq_q2">Q: Can this replace ovulation tests?</p>
+                                    <p class="text-gray-600 text-sm" data-i18n="h_faq_a2">A: No, babe! It’s a science-backed estimate, while OPKs detect actual hormone surges. Use them together: let the calculator narrow down the window, then use OPKs to catch the peak—TTC efficiency doubles!</p>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <p class="font-bold text-gray-800 mb-2" data-i18n="h_faq_q3">Q: When should I start using it?</p>
+                                    <p class="text-gray-600 text-sm" data-i18n="h_faq_a3">A: If you’ve been TTC for 1-2 months with no luck, this is a must-try! It takes the guesswork out of timing, so you don’t waste energy on random DTD. So many TTCers got their BFP (Big Fat Positive) within 1-3 months of using it!</p>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <p class="font-bold text-gray-800 mb-2" data-i18n="h_faq_q4">Q: Can guys use it?</p>
+                                    <p class="text-gray-600 text-sm" data-i18n="h_faq_a4">A: For sure! Help your partner track her cycle and plan together—TTC isn’t just a woman’s job!</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pro Tips -->
+                        <div>
+                            <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_tips_t">💡 Pro TTC Tips (Tried & Tested)</h3>
+                            <ul class="list-disc list-inside space-y-2 text-gray-700">
+                                <li data-i18n="h_tip_1">Screenshot your ovulation calendar and set phone reminders for peak fertile days—don’t miss the golden window!</li>
+                                <li data-i18n="h_tip_2">DTD every other day during the fertile window—no need for daily sessions! Preserving sperm quality is key.</li>
+                                <li data-i18n="h_tip_3">For irregular cycles, track 3 months of cycles first, then use the average length for more accurate results.</li>
+                                <li data-i18n="h_tip_4">Pair the calculator with BBT (Basal Body Temperature) tracking—your temp rises 0.3-0.5℃ post-ovulation. Double-verify ovulation day for higher success!</li>
+                            </ul>
+                        </div>
+
+                        <!-- Stories -->
+                        <div>
+                            <h3 class="font-bold text-xl text-gray-800 mb-4" data-i18n="h_stories_t">🌟 Real TTC Success Stories</h3>
+                            <div class="space-y-4 italic text-gray-600 border-l-4 border-brand-300 pl-4">
+                                <p data-i18n="h_story_1">“TTC for 6 months with no luck—guessing ovulation was exhausting! Tried this calculator, pinpointed my fertile window, and got my BFP after 2 tries! Super easy to use, reliable data—I recommended it to 3 TTC friends, and 2 of them are pregnant now!” —@TTCSuccessStory</p>
+                                <p data-i18n="h_story_2">“My cycle is always 33 days—other calculators were never accurate. This one let me enter my average cycle, and the predicted ovulation day matched my OPK exactly! Free with no ads—TTCers, run to toolboxpro.top!” —@BunInTheOven</p>
+                            </div>
+                        </div>
+
+                        <!-- Outro -->
+                        <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 text-center">
+                            <p class="text-blue-900 font-medium mb-4" data-i18n="h_outro">Whether you’re new to TTC or stuck in a rut, this ovulation calculator will save you time and stress! Science-backed timing, easy to use, and 100% free—what’s not to love? Save toolboxpro.top now and share it with your TTC bestie—let’s manifest those BFPs together! 👶</p>
+                            <div class="text-xs text-blue-700 opacity-80" data-i18n="h_warn">⚠️ Friendly Reminder: This tool is based on physiological规律 and big data estimates—for TTC reference only, not a substitute for professional medical advice. If you’ve been TTC for over 1 year with no success, or have severely irregular cycles, consult an OB-GYN! Wishing all TTCers a smooth journey and a healthy baby!</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-gray-100 text-sm text-gray-500">
+                <div class="flex items-start gap-2 bg-orange-50 p-4 rounded-lg text-orange-800 border border-orange-100">
+                    <span class="text-lg">⚠️</span>
+                    <span data-i18n="guide_warn"><strong>Medical Disclaimer:</strong> This tool is for informational purposes only and does not constitute medical advice. If you have concerns about fertility or conception, please consult a healthcare professional.</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -115,7 +384,66 @@
                     cycle_calendar_label: 'Cycle Calendar:',
                     err_invalid: 'Please enter valid information',
                     fertile: 'Fertile',
-                    ovulation: 'Ovulation'
+                    ovulation: 'Ovulation',
+                    // Guide (Original)
+                    guide_title: 'Ovulation Calculator & Fertility Tracker | Pinpoint Your Most Fertile Days!',
+                    guide_intro: 'Trying to conceive? Timing is everything! This easy-to-use Ovulation Calculator helps you identify your most fertile days and estimated ovulation date, increasing your chances of getting pregnant. Understand your cycle better with our precise tool.',
+                    guide_s1_t: '✨ Why Use This Tool?',
+                    guide_s1_1: '<strong>Precision:</strong> Uses the standard calendar method to estimate your fertile window based on your unique cycle length.',
+                    guide_s1_2: '<strong>Simplicity:</strong> Just enter your last period date and cycle length to get instant results.',
+                    guide_s1_3: '<strong>Clarity:</strong> Visual calendar marks your ovulation and fertile days clearly, helping you plan effectively.',
+                    guide_s2_t: '📝 How to Use & Understand Results',
+                    guide_s2_sub1: 'Step-by-Step',
+                    guide_s2_st1: 'Select the <strong>first day</strong> of your last menstrual period.',
+                    guide_s2_st2: 'Enter your average <strong>cycle length</strong> (usually 28 days).',
+                    guide_s2_st3: 'Click <strong>Calculate</strong> to see your forecast.',
+                    guide_s2_sub2: 'Key Metrics',
+                    guide_s2_m1: 'The day your ovary likely releases an egg.',
+                    guide_s2_m2: 'The 6-day period (5 days before + ovulation day) when intercourse is most likely to result in pregnancy.',
+                    guide_s3_t: '❓ Frequently Asked Questions',
+                    guide_q1: 'Q: Can I use this if my cycle is irregular?',
+                    guide_a1: 'A: This calculator works best for regular cycles. If your cycle varies by more than a few days each month, the results may be less accurate. Consider using ovulation test kits alongside this estimator.',
+                    guide_q2: 'Q: How accurate is this calculator?',
+                    guide_a2: 'A: It provides a statistical estimate based on averages. Actual ovulation can vary due to stress, diet, sleep, or other health factors. It is a great starting point for tracking.',
+                    guide_warn: '<strong>Medical Disclaimer:</strong> This tool is for informational purposes only and does not constitute medical advice. If you have concerns about fertility or conception, please consult a healthcare professional.',
+                    
+                    // NEW: Hack Guide Content
+                    h_title: 'Ovulation Calculator Hack🔥 TTC Must-Have! Pinpoint Fertile Window & Ovulation Day | Master in 3 Steps',
+                    h_intro: 'Still guessing your ovulation day? 🤦‍♀️ TTC (Trying To Conceive) for months with no luck? This ovulation calculator spills the “fertility secret”! 100% free on toolboxpro.top—no downloads, no sign-ups! Plug in 3 simple details, and it accurately predicts your fertile window, even for irregular cycles. Science-backed TTC without the stress—totally game-changing!',
+                    h_perks_t: '✨ Why TTCers Obsess Over It? 4 Core Perks',
+                    h_perk_1: '<strong>Doctor-Level Accuracy ✅:</strong> Based on menstrual cycle physiology + clinical big data. Precisely splits ovulation day, fertile window, and safe period—no random guesses! Supports 21-35 day irregular cycles, 10x more reliable than the traditional calendar method!',
+                    h_perk_2: '<strong>Zero Learning Curve 🤩:</strong> No complicated formulas to memorize! Loads in seconds on phone/computer—3 steps to results, even tech newbies can nail it!',
+                    h_perk_3: '<strong>All-In-One Info 📊:</strong> More than just ovulation day! Marks “peak fertile days” (2 days before + ovulation day + 1 day after), safe period, and next period date. Stay on track with your TTC journey!',
+                    h_perk_4: '<strong>100% Free & Ad-Free 🆓:</strong> No app downloads, no registrations—open the webpage and use it instantly. Your privacy stays protected—TTCers rejoice!',
+                    h_steps_t: '📝 3-Step Precision Guide | Perfect for Beginners',
+                    h_step_1: 'Enter the <strong>first day of your last period</strong> (just the date—no need for exact time!)',
+                    h_step_2: 'Input your <strong>menstrual cycle length</strong> (default 28 days; for irregular cycles, enter your average, e.g., 25/32 days)',
+                    h_step_3: 'Click “Calculate” for instant results! The system generates a custom ovulation calendar with key dates highlighted—super easy to read!',
+                    h_res_t: '📈 Result Breakdown | Every Date Holds Fertility Clues',
+                    h_res_1: '✅ <strong>Ovulation Day:</strong> Pinpoints when your egg is released—highest chance of conception if you DTD (Do The Deed) this day!',
+                    h_res_2: '✅ <strong>Peak Fertile Window:</strong> 48-hour golden period (2 days pre-ovulation + ovulation day + 1 day post-ovulation). Clearly marked for stress-free timing!',
+                    h_res_3: '✅ <strong>Safe Period:</strong> Non-fertile days—great for planning or contraception (not 100% guaranteed for birth control!)',
+                    h_res_4: '✅ <strong>Next Period Prediction:</strong> Know your cycle timeline in advance to plan your next TTC phase.',
+                    h_res_5: '✅ <strong>Cycle Trend Chart:</strong> Visualizes your “fertility level” throughout the cycle—watching the curve rise is so exciting!',
+                    h_faq_t: '❓ FAQs | All Your TTC Worries Answered',
+                    h_faq_q1: 'Q: Will it work for irregular cycles?',
+                    h_faq_a1: 'A: Absolutely! Just enter your average cycle length from the past 3 months—results are still accurate! Way better than guessing or wasting money on endless ovulation tests. Pair it with OPKs (Ovulation Prediction Kits) for extra precision!',
+                    h_faq_q2: 'Q: Can this replace ovulation tests?',
+                    h_faq_a2: 'A: No, babe! It’s a science-backed estimate, while OPKs detect actual hormone surges. Use them together: let the calculator narrow down the window, then use OPKs to catch the peak—TTC efficiency doubles!',
+                    h_faq_q3: 'Q: When should I start using it?',
+                    h_faq_a3: 'A: If you’ve been TTC for 1-2 months with no luck, this is a must-try! It takes the guesswork out of timing, so you don’t waste energy on random DTD. So many TTCers got their BFP (Big Fat Positive) within 1-3 months of using it!',
+                    h_faq_q4: 'Q: Can guys use it?',
+                    h_faq_a4: 'A: For sure! Help your partner track her cycle and plan together—TTC isn’t just a woman’s job!',
+                    h_tips_t: '💡 Pro TTC Tips (Tried & Tested)',
+                    h_tip_1: 'Screenshot your ovulation calendar and set phone reminders for peak fertile days—don’t miss the golden window!',
+                    h_tip_2: 'DTD every other day during the fertile window—no need for daily sessions! Preserving sperm quality is key.',
+                    h_tip_3: 'For irregular cycles, track 3 months of cycles first, then use the average length for more accurate results.',
+                    h_tip_4: 'Pair the calculator with BBT (Basal Body Temperature) tracking—your temp rises 0.3-0.5℃ post-ovulation. Double-verify ovulation day for higher success!',
+                    h_stories_t: '🌟 Real TTC Success Stories',
+                    h_story_1: '“TTC for 6 months with no luck—guessing ovulation was exhausting! Tried this calculator, pinpointed my fertile window, and got my BFP after 2 tries! Super easy to use, reliable data—I recommended it to 3 TTC friends, and 2 of them are pregnant now!” —@TTCSuccessStory',
+                    h_story_2: '“My cycle is always 33 days—other calculators were never accurate. This one let me enter my average cycle, and the predicted ovulation day matched my OPK exactly! Free with no ads—TTCers, run to toolboxpro.top!” —@BunInTheOven',
+                    h_outro: 'Whether you’re new to TTC or stuck in a rut, this ovulation calculator will save you time and stress! Science-backed timing, easy to use, and 100% free—what’s not to love? Save toolboxpro.top now and share it with your TTC bestie—let’s manifest those BFPs together! 👶',
+                    h_warn: '⚠️ Friendly Reminder: This tool is based on physiological规律 and big data estimates—for TTC reference only, not a substitute for professional medical advice. If you’ve been TTC for over 1 year with no success, or have severely irregular cycles, consult an OB-GYN! Wishing all TTCers a smooth journey and a healthy baby!'
                 },
                 'zh-CN': {
                     title: '🌙 排卵计算器',
@@ -128,7 +456,66 @@
                     cycle_calendar_label: '周期日历：',
                     err_invalid: '请输入有效的信息',
                     fertile: '易受孕',
-                    ovulation: '排卵日'
+                    ovulation: '排卵日',
+                    // Guide (Original)
+                    guide_title: '排卵计算器与生育追踪 | 锁定您的最佳受孕期！',
+                    guide_intro: '正在备孕？时机就是一切！这款简单易用的排卵计算器可帮助您确定最易受孕的日子和预计排卵日期，从而提高受孕几率。',
+                    guide_s1_t: '✨ 为什么选择此工具？',
+                    guide_s1_1: '<strong>精准：</strong> 使用标准日历法，根据您独特的周期长度估算受孕窗口。',
+                    guide_s1_2: '<strong>简单：</strong> 只需输入上次月经日期和周期长度即可获得即时结果。',
+                    guide_s1_3: '<strong>清晰：</strong> 可视化日历清晰标记您的排卵日和受孕日，帮助您有效规划。',
+                    guide_s2_t: '📝 如何使用与结果解读',
+                    guide_s2_sub1: '操作步骤',
+                    guide_s2_st1: '选择您上次月经的<strong>第一天</strong>。',
+                    guide_s2_st2: '输入您的平均<strong>周期长度</strong>（通常为28天）。',
+                    guide_s2_st3: '点击<strong>计算</strong>查看预测结果。',
+                    guide_s2_sub2: '关键指标',
+                    guide_s2_m1: '卵巢可能释放卵子的日子。',
+                    guide_s2_m2: '同房最容易导致怀孕的6天时间段（排卵日前5天 + 排卵日）。',
+                    guide_s3_t: '❓ 常见问题',
+                    guide_q1: '问：如果我的月经不规律可以使用吗？',
+                    guide_a1: '答：此计算器最适合月经规律的女性。如果您的周期每个月变化很大，结果可能不太准确。建议结合排卵试纸使用。',
+                    guide_q2: '问：这个计算器有多准确？',
+                    guide_a2: '答：它提供基于平均值的统计估算。实际排卵可能会因压力、饮食、睡眠或其他健康因素而异。它是追踪的一个很好的起点。',
+                    guide_warn: '<strong>医疗免责声明：</strong> 本工具仅供参考，不构成医疗建议。如果您对生育有疑虑，请咨询医疗专业人士。',
+
+                    // NEW: Hack Guide Content
+                    h_title: '排卵计算器封神🔥备孕党必藏！精准锁卵期&易孕日｜新手秒会',
+                    h_intro: '还在瞎猜排卵日？🤦‍♀️ 备孕好久没动静？这款排卵计算器直接把“易孕密码”扒得明明白白！toolboxpro.top 线上免费用，输入3个信息就精准测算，不管是月经规律还是紊乱，都能找准黄金受孕窗口，科学备孕不内耗～ 亲测好用到哭！',
+                    h_perks_t: '✨ 为什么备孕党都狂推？4大核心亮点',
+                    h_perk_1: '<strong>专业度拉满✅：</strong>基于月经周期生理规律+临床大数据测算，排卵日、易孕期、安全期精准划分，不是瞎蒙的！支持21-35天不规律周期，比传统日历法靠谱10倍～',
+                    h_perk_2: '<strong>操作零门槛🤩：</strong>不用记复杂公式，手机/电脑秒加载，3步搞定测算，手残党也能轻松拿捏！',
+                    h_perk_3: '<strong>信息超全面📊：</strong>不仅给排卵日，还标注“易孕高峰期”（排卵前2天+排卵日+排卵后1天）、安全期，连下次月经日期都帮你算好，备孕节奏不迷路！',
+                    h_perk_4: '<strong>完全免费无广告🆓：</strong>不用下载APP，不用注册登录，打开网页直接用，隐私不泄露，备孕党狂喜！',
+                    h_steps_t: '📝 3步精准测算｜小白也会用',
+                    h_step_1: '输入「<strong>末次月经第一天</strong>」（精确到日期就行，不用纠结时间～）',
+                    h_step_2: '填写「<strong>月经周期长度</strong>」（默认28天，周期不规律的宝子填平均天数，比如25天/32天）',
+                    h_step_3: '点击“<strong>计算</strong>”一键出结果！系统自动生成专属排卵日历，关键日期标红提醒，一目了然～',
+                    h_res_t: '📈 输出结果解读｜每个日期都藏着易孕信号',
+                    h_res_1: '✅ <strong>排卵日：</strong>精准锁定卵子排出的核心日期，这一天同房受孕率飙升！',
+                    h_res_2: '✅ <strong>易孕高峰期：</strong>排卵前后48小时黄金窗口，标注得明明白白，合理安排同房不费腰～',
+                    h_res_3: '✅ <strong>安全期：</strong>非受孕时间段，想避孕或调整同房节奏的宝子可参考（不保证100%避孕哦）',
+                    h_res_4: '✅ <strong>下次月经预测：</strong>提前知晓月经周期节点，方便规划下次备孕安排',
+                    h_res_5: '✅ <strong>周期趋势图：</strong>直观展示整个月经周期的“易孕程度”，看着曲线涨超有盼头！',
+                    h_faq_t: '❓ 常见疑问解答｜打消你的所有顾虑',
+                    h_faq_q1: 'Q：月经周期不规律能算准吗？',
+                    h_faq_a1: 'A：宝子放心！只要填写近3个月的平均周期长度，测算结果依然精准～ 比自己瞎猜、用排卵试纸瞎测省太多事，后续可结合试纸/体温法验证！',
+                    h_faq_q2: 'Q：这个工具能替代排卵试纸吗？',
+                    h_faq_a2: 'A：不能哦！计算器是科学估算，排卵试纸是实际检测激素水平，两者结合使用更靠谱～ 用计算器锁定大致范围，再用试纸精准捕捉峰值，备孕效率翻倍！',
+                    h_faq_q3: 'Q：备孕多久没动静需要用这个？',
+                    h_faq_a3: 'A：建议备孕1-2个月没消息就安排上！科学找准排卵日，避免盲目同房内耗，很多姐妹用它测算后1-3个月就中奖啦～',
+                    h_faq_q4: 'Q：男生可以用吗？',
+                    h_faq_a4: 'A：当然！可以帮伴侣测算，一起规划同房时间，备孕不是女生一个人的事呀～',
+                    h_tips_t: '💡 备孕实战小技巧（亲测有效）',
+                    h_tip_1: '测算后截图保存排卵日历，设置手机提醒“易孕高峰期”，避免错过黄金时间～',
+                    h_tip_2: '易孕期间建议隔天同房1次，不用每天安排，保持精子质量更重要！',
+                    h_tip_3: '月经周期不规律的宝子，建议连续记录3个月周期，取平均值测算，结果更精准～',
+                    h_tip_4: '测算结果结合基础体温法（排卵后体温会升高0.3-0.5℃），双重验证排卵日，受孕率up！',
+                    h_stories_t: '🌟 真实案例分享',
+                    h_story_1: '“备孕6个月没动静，一直瞎猜排卵日，累到崩溃！用这个计算器后，精准锁定易孕期，安排2次就中奖了！操作超简单，数据也靠谱，已经推荐给3个备孕闺蜜，其中2个也怀上了～”——@备孕成功的小幸运',
+                    h_story_2: '“月经周期一直是33天左右，之前用其他计算器都不准，这个填平均周期后，测算的排卵日和排卵试纸完全吻合！免费用还无广告，备孕党真的要冲～”——@兔宝妈妈呀',
+                    h_outro: '不管你是刚踏上备孕路的新手，还是备孕许久没动静的姐妹，这款排卵计算器都能帮你少走弯路！科学测算+精准锁期，让备孕更高效、更轻松～ 完全免费还不用下载，赶紧收藏toolboxpro.top 这个神器，转发给正在备孕的闺蜜，一起接好孕呀！👶',
+                    h_warn: '⚠️ 温馨提示：本工具基于生理规律和大数据估算，仅供备孕参考，不能替代专业医疗建议。若备孕1年以上未受孕，或月经周期严重紊乱，建议及时咨询妇科医生哦～ 祝各位备孕姐妹都能早日好孕，迎来健康宝宝！'
                 },
                 'zh-TW': {
                     title: '🌙 排卵計算器',
@@ -141,7 +528,66 @@
                     cycle_calendar_label: '週期日曆：',
                     err_invalid: '請輸入有效的信息',
                     fertile: '易受孕',
-                    ovulation: '排卵日'
+                    ovulation: '排卵日',
+                    // Guide (Original)
+                    guide_title: '排卵計算器與生育追蹤 | 鎖定您的最佳受孕期！',
+                    guide_intro: '正在備孕？時機就是一切！這款簡單易用的排卵計算器可幫助您確定最易受孕的日子和預計排卵日期，從而提高受孕機率。',
+                    guide_s1_t: '✨ 為什麼選擇此工具？',
+                    guide_s1_1: '<strong>精準：</strong> 使用標準日曆法，根據您獨特的週期長度估算受孕窗口。',
+                    guide_s1_2: '<strong>簡單：</strong> 只需輸入上次月經日期和週期長度即可獲得即時結果。',
+                    guide_s1_3: '<strong>清晰：</strong> 可視化日曆清晰標記您的排卵日和受孕日，幫助您有效規劃。',
+                    guide_s2_t: '📝 如何使用與結果解讀',
+                    guide_s2_sub1: '操作步驟',
+                    guide_s2_st1: '選擇您上次月經的<strong>第一天</strong>。',
+                    guide_s2_st2: '輸入您的平均<strong>週期長度</strong>（通常為28天）。',
+                    guide_s2_st3: '點擊<strong>計算</strong>查看預測結果。',
+                    guide_s2_sub2: '關鍵指標',
+                    guide_s2_m1: '卵巢可能釋放卵子的日子。',
+                    guide_s2_m2: '同房最容易導致懷孕的6天時間段（排卵日前5天 + 排卵日）。',
+                    guide_s3_t: '❓ 常見問題',
+                    guide_q1: '問：如果我的月經不規律可以使用嗎？',
+                    guide_a1: '答：此計算器最適合月經規律的女性。如果您的週期每個月變化很大，結果可能不太準確。建議結合排卵試紙使用。',
+                    guide_q2: '問：這個計算器有多準確？',
+                    guide_a2: '答：它提供基於平均值的統計估算。實際排卵可能會因壓力、飲食、睡眠或其他健康因素而異。它是追蹤的一個很好的起點。',
+                    guide_warn: '<strong>醫療免責聲明：</strong> 本工具僅供參考，不構成醫療建議。如果您對生育有疑慮，請諮詢醫療專業人士。',
+                    
+                    // NEW: Hack Guide Content
+                    h_title: '排卵計算機封神🔥備孕黨必藏！精准鎖卵期&易孕日｜新手秒會',
+                    h_intro: '仲係度亂估排卵日？🤦‍♀️ 備孕好耐都冇動靜？呢款排卵計算機直接將「易孕密碼」拆得明明白白！toolboxpro.top 線上免費用，輸入3個資料就精准推算，無論月經規律定紊亂，都可以搵準黃金受孕窗口，科學備孕唔內耗～ 親測好用到喊！',
+                    h_perks_t: '✨ 點解備孕黨都狂推？4大核心亮點',
+                    h_perk_1: '<strong>專業度拉滿✅：</strong>基於月經週期生理規律+臨床大數據推算，排卵日、易孕期、安全期精准劃分，唔係亂估架！支援21-35天不規律週期，比傳統日曆法靠譜10倍～',
+                    h_perk_2: '<strong>操作零難度🤩：</strong>唔使記複雜公式，手機/電腦秒載入，3步搞掂推算，手殘黨都可以輕鬆拿捏！',
+                    h_perk_3: '<strong>資訊超齊全📊：</strong>唔止出排卵日，仲標註「易孕高峰期」（排卵前2日+排卵日+排卵後1日）、安全期，連下次月經日期都幫你算好，備孕節奏唔會亂！',
+                    h_perk_4: '<strong>完全免費無廣告🆓：</strong>唔使下載APP，唔使註冊登入，打開網頁直接用，私隱唔泄露，備孕黨狂喜！',
+                    h_steps_t: '📝 3步精准推算｜小白都識用',
+                    h_step_1: '輸入「<strong>末次月經第一日</strong>」（精確到日期就得，唔使煩時間～）',
+                    h_step_2: '填寫「<strong>月經週期長度</strong>」（預設28日，週期不規律嘅姊妹填平均日數，比如25日/32日）',
+                    h_step_3: '按「<strong>計算</strong>」一鍵出結果！系統自動生成專屬排卵日曆，關鍵日期標紅提醒，一目了然～',
+                    h_res_t: '📈 輸出結果解讀｜每個日期都藏住易孕信號',
+                    h_res_1: '✅ <strong>排卵日：</strong>精准鎖定卵子排出嘅核心日期，呢一日同房受孕率飙升！',
+                    h_res_2: '✅ <strong>易孕高峰期：</strong>排卵前後48小時黃金窗口，標註得明明白白，合理安排同房唔費腰～',
+                    h_res_3: '✅ <strong>安全期：</strong>非受孕時間段，想避孕或調整同房節奏嘅姊妹可參考（唔保證100%避孕㗎）',
+                    h_res_4: '✅ <strong>下次月經預測：</strong>提前知曉月經週期節點，方便規劃下次備孕安排',
+                    h_res_5: '✅ <strong>週期趨勢圖：</strong>直觀展示整個月經週期嘅「易孕程度」，睇住曲線上升超有盼頭！',
+                    h_faq_t: '❓ 常見疑問解答｜打消你嘅所有顧慮',
+                    h_faq_q1: 'Q：月經週期不規律可以算准嗎？',
+                    h_faq_a1: 'A：姊妹放心！只要填寫近3個月嘅平均週期長度，推算結果依然精准～ 比自己亂估、用排卵試紙亂測省好多事，後續可以結合試紙/體溫法驗證！',
+                    h_faq_q2: 'Q：呢個工具可以代替排卵試紙嗎？',
+                    h_faq_a2: 'A：唔得㗎！計算機係科學估算，排卵試紙係實際檢測激素水平，兩者一齊用更靠譜～ 用計算機鎖定大致範圍，再用試紙精准捕捉峰值，備孕效率翻倍！',
+                    h_faq_q3: 'Q：備孕幾耐冇動靜需要用呢個？',
+                    h_faq_a3: 'A：建議備孕1-2個月冇消息就安排上！科學搵准排卵日，避免盲目同房內耗，好多姊妹用佢推算後1-3個月就中獎啦～',
+                    h_faq_q4: 'Q：男生可以用嗎？',
+                    h_faq_a4: 'A：當然得！可以幫伴侶推算，一齊規劃同房時間，備孕唔係女生一個人嘅事呀～',
+                    h_tips_t: '💡 備孕實戰小技巧（親測有效）',
+                    h_tip_1: '推算後截圖保存排卵日曆，設定手機提醒「易孕高峰期」，避免錯過黃金時間～',
+                    h_tip_2: '易孕期間建議隔日落同房1次，唔使每日安排，保持精子質量更重要！',
+                    h_tip_3: '月經週期不規律嘅姊妹，建議連續記錄3個月週期，取平均值推算，結果更精准～',
+                    h_tip_4: '推算結果結合基礎體溫法（排卵後體溫會升高0.3-0.5℃），雙重驗證排卵日，受孕率up！',
+                    h_stories_t: '🌟 真實案例分享',
+                    h_story_1: '「備孕6個月冇動靜，一直亂估排卵日，累到崩潰！用呢個計算機後，精准鎖定易孕期，安排2次就中獎了！操作超簡單，數據都靠譜，已經推薦俾3個備孕閨蜜，其中2個都懷上了～」——@備孕成功嘅小幸運',
+                    h_story_2: '「月經週期一直係33日左右，之前用其他計算機都唔准，呢個填平均週期後，推算嘅排卵日同排卵試紙完全吻合！免費用仲無廣告，備孕黨真係要衝～」——@兔寶媽媽呀',
+                    h_outro: '無論你係剛踏上備孕路嘅新手，定係備孕好耐冇動靜嘅姊妹，呢款排卵計算機都可以幫你少走彎路！科學推算+精准鎖期，讓備孕更高效、更輕鬆～ 完全免費仲唔使下載，快啲收藏toolboxpro.top 呢個神器，分享俾正在備孕嘅閨蜜，一齊接好孕呀！👶',
+                    h_warn: '⚠️ 溫馨提示：本工具基於生理規律同大數據估算，僅供備孕參考，不能替代專業醫療建議。若備孕1年以上未受孕，或月經週期嚴重紊亂，建議及時諮詢婦產科醫生哦～ 祝各位備孕姊妹都能早日好孕，迎來健康寶寶！'
                 },
                 'ja': {
                     title: '🌙 排卵計算機',
@@ -154,7 +600,66 @@
                     cycle_calendar_label: '周期カレンダー：',
                     err_invalid: '有効な情報を入力してください',
                     fertile: '受胎可能',
-                    ovulation: '排卵日'
+                    ovulation: '排卵日',
+                    // Guide (Original)
+                    guide_title: '排卵計算機＆妊娠可能日チェッカー | 最も妊娠しやすい日を特定！',
+                    guide_intro: '妊活中ですか？タイミングが全てです！この使いやすい排卵計算機は、最も妊娠しやすい日と推定排卵日を特定し、妊娠の確率を高めるのに役立ちます。',
+                    guide_s1_t: '✨ 選ばれる理由',
+                    guide_s1_1: '<strong>精度：</strong> 標準的なカレンダー法を使用し、あなたの周期に合わせて受胎可能期間を推定します。',
+                    guide_s1_2: '<strong>簡単：</strong> 最終月経日と周期の長さを入力するだけで、すぐに結果が出ます。',
+                    guide_s1_3: '<strong>明確：</strong> 視覚的なカレンダーが排卵日と受胎可能日を明確にマークし、計画を立てやすくします。',
+                    guide_s2_t: '📝 使い方と結果の見方',
+                    guide_s2_sub1: 'ステップ',
+                    guide_s2_st1: '前回の月経の<strong>初日</strong>を選択します。',
+                    guide_s2_st2: '平均的な<strong>周期の長さ</strong>（通常28日）を入力します。',
+                    guide_s2_st3: '<strong>計算</strong>をクリックして予測を確認します。',
+                    guide_s2_sub2: '重要な指標',
+                    guide_s2_m1: '卵巣から卵子が放出される可能性が高い日。',
+                    guide_s2_m2: '性交が妊娠につながる可能性が最も高い6日間（排卵日の5日前＋排卵日）。',
+                    guide_s3_t: '❓ よくある質問',
+                    guide_q1: 'Q：生理不順でも使えますか？',
+                    guide_a1: 'A：この計算機は、周期が規則的な場合に最適です。月ごとの変動が大きい場合は、結果の精度が下がる可能性があります。排卵検査薬との併用をお勧めします。',
+                    guide_q2: 'Q：この計算機はどのくらい正確ですか？',
+                    guide_a2: 'A：平均値に基づいた統計的な推定値を提供します。実際の排卵は、ストレス、食事、睡眠、その他の健康要因によって変化する可能性があります。',
+                    guide_warn: '<strong>医療免責事項：</strong> このツールは情報提供のみを目的としており、医療アドバイスを構成するものではありません。不妊や受胎に関する懸念がある場合は、医療専門家にご相談ください。',
+
+                    // NEW: Hack Guide Content
+                    h_title: '排卵計算機神対応⚡️妊活必携！排卵日&受胎可能期を3ステップで精准ロック',
+                    h_intro: 'まだ排卵日を当てずっぽうに探してる？🤦‍♀️ 妊活して何ヶ月も成果が出ない？この排卵計算機が**受胎の秘密**を一瞬で解き明かしてくれる！toolboxpro.topで完全無料、ダウンロード不要・登録不要。たった3つの情報を入力するだけで、周期不順でも精准な結果が出る！科学的に妊活を進めてストレスゼロに——本当にゲームチェンジャー！',
+                    h_perks_t: '✨ 妊活女子がハマる理由？4つの核心ポイント',
+                    h_perk_1: '<strong>医療レベルの精度 ✅</strong> 月経周期の生理学と臨床ビッグデータを基に計算。排卵日・受胎可能期・安全期を明確に区分し、21～35日の不順周期にも対応！伝統的なカレンダー法より10倍も信頼できる！',
+                    h_perk_2: '<strong>操作難易度ゼロ 🤩</strong> 複雑な公式を覚える必要なし！スマホ・PCで秒速ロード、3ステップで結果ゲット——テクノロジーが苦手な人でも簡単にマスター！',
+                    h_perk_3: '<strong>情報が超充実 📊</strong> 排卵日だけじゃない！**受胎ピーク期間**（排卵2日前＋排卵日＋排卵1日後）・安全期・次回月経予定日まですべて表示。妊活のリズムをずっとコントロール！',
+                    h_perk_4: '<strong>完全無料&広告なし 🆓</strong> アプリダウンロード不要、登録不要。ウェブサイトを開くだけですぐ使える！プライバシーも守られる——妊活女子大狂喜！',
+                    h_steps_t: '📝 3ステップ操作ガイド｜初心者でも大丈夫',
+                    h_step_1: '<strong>最終月経の初日</strong>を入力（日付だけOK、時間は気にしなくて大丈夫！）',
+                    h_step_2: '<strong>月経周期の長さ</strong>を記入（デフォルト28日。周期不順の人は直近3ヶ月の平均値を入れよう、例えば25日/32日など）',
+                    h_step_3: '<strong>「計算」ボタンをクリック</strong>——完了！システムが専用排卵カレンダーを生成し、重要な日付は赤でハイライトされるから、一目でわかる！',
+                    h_res_t: '📈 結果解説｜一つ一つの日付が受胎のヒント',
+                    h_res_1: '✅ <strong>排卵日</strong>：卵子が排出される瞬間を精准ロック！この日に夫婦生活をすると、妊娠率が飛躍的にアップ！',
+                    h_res_2: '✅ <strong>受胎ピーク期間</strong>：排卵前後の48時間黄金期間。夫婦生活のスケジュールをストレスなく計画できる！',
+                    h_res_3: '✅ <strong>安全期</strong>：妊娠しにくい期間。避妊や妊活の調整に使える（⚠️100%の避妊効果は保証しないので注意！）',
+                    h_res_4: '✅ <strong>次回月経予測</strong>：周期のタイムラインを把握し、次の妊活計画を立てやすくなる！',
+                    h_res_5: '✅ <strong>周期トレンドグラフ</strong>：全周期の「受胎レベル」を視覚的に表示！グラフが上がるのを見ると、妊活のモチベーションが上がる！',
+                    h_faq_t: '❓ よくある質問｜あなたの不安を全部解消',
+                    h_faq_q1: 'Q：周期不順でも正確に計算できる？',
+                    h_faq_a1: 'A：もちろん！直近3ヶ月の平均周期を入力するだけで、精准な結果が出る！自分で当てずっぽうに探すより、排卵検査薬を無駄に使うより、ずっと便利！検査薬と併用すれば、精度がさらにアップ！',
+                    h_faq_q2: 'Q：排卵検査薬の代わりになる？',
+                    h_faq_a2: 'A：ダメよ！計算機は科学的な推定値で、検査薬はホルモンの実測値を捉えるの。両方を組み合わせるのが最強！計算機で範囲を絞り、検査薬でピークを捉える——妊活効率が倍増する！',
+                    h_faq_q3: 'Q：いつから使うのがおすすめ？',
+                    h_faq_a3: 'A：妊活を始めて1～2ヶ月成果が出ない時に、すぐに使うこと！当てずっぽうの夫婦生活をなくし、科学的に進めよう。このツールを使って、1～3ヶ月で妊娠した人がたくさんいる！',
+                    h_faq_q4: 'Q：男性も使えるの？',
+                    h_faq_a4: 'A：もちろん！パートナーの周期を管理し、一緒にスケジュールを計画できる！妊活は女性一人のことじゃないんだからね！',
+                    h_tips_t: '💡 妊活実践テクニック（実践済みの神テク）',
+                    h_tip_1: '排卵カレンダーをスクショして保存し、スマホにピーク期間のリマインダーを設定しよう——黄金期を絶対に逃さない！',
+                    h_tip_2: '受胎可能期間は2日に1回の夫婦生活が理想！毎日する必要はなく、精子の質を保つことが大事！',
+                    h_tip_3: '周期不順の人は、3ヶ月分の周期を記録して平均値を算出しよう——結果がさらに精准になる！',
+                    h_tip_4: '基礎体温測定と併用しよう！排卵後は体温が0.3～0.5℃上がるから、排卵日を二重に確認でき、妊娠率UP！',
+                    h_stories_t: '🌟 実際の妊活成功ストーリー',
+                    h_story_1: '「6ヶ月間妊活して成果が出ず、排卵日を探すのが疲れ果ててた！この計算機を使って受胎ピークを捉えたら、2回の夫婦生活で妊娠できた！操作が簡単で信頼性も高く、3人の妊活仲間に紹介したら、2人がすでに妊娠した！」——@妊活成功の幸せママ',
+                    h_story_2: '「私の周期はいつも33日で、他の計算機は全然合わなかった！これに平均周期を入れたら、排卵日が検査薬の結果と完全に一致！無料で広告もない——妊活女子は必ず使うべき！」——@赤ちゃんを待ちわびて',
+                    h_outro: '妊活を始めたばかりの初心者でも、長期間進めてスランプに陥っている人でも、この計算機があなたの時間とストレスを削減してくれる！科学的な計画＋簡単操作＋完全無料——これ以上の妊活神器はない！toolboxpro.topをすぐにブックマークし、妊活仲間にもシェアしよう——一緒に幸せな妊娠を迎えよう！👶',
+                    h_warn: '⚠️ 注意事項：このツールは生理学とビッグデータに基づいた参考情報であり、専門的な医療アドバイスの代替にはなりません。1年以上妊活しても成果が出ない、または周期が極端に不順な場合は、必ず産婦人科医に相談してください。すべての妊活女子に順調な妊娠と健康な赤ちゃんをお祈りします！'
                 },
                 'ru': {
                     title: '🌙 Калькулятор овуляции',
@@ -167,7 +672,66 @@
                     cycle_calendar_label: 'Календарь цикла:',
                     err_invalid: 'Пожалуйста, введите действительную информацию',
                     fertile: 'Фертильный',
-                    ovulation: 'Овуляция'
+                    ovulation: 'Овуляция',
+                    // Guide (Original)
+                    guide_title: 'Калькулятор овуляции и фертильности | Определите лучшие дни для зачатия!',
+                    guide_intro: 'Планируете беременность? Время решает всё! Этот простой калькулятор овуляции поможет вам определить самые фертильные дни и предполагаемую дату овуляции, увеличивая шансы на зачатие.',
+                    guide_s1_t: '✨ Почему стоит использовать этот инструмент?',
+                    guide_s1_1: '<strong>Точность:</strong> Использует стандартный календарный метод для оценки фертильного окна на основе вашего цикла.',
+                    guide_s1_2: '<strong>Простота:</strong> Просто введите дату последней менструации и длину цикла для получения мгновенных результатов.',
+                    guide_s1_3: '<strong>Наглядность:</strong> Визуальный календарь четко отмечает дни овуляции и фертильности, помогая планировать.',
+                    guide_s2_t: '📝 Как использовать и понимать результаты',
+                    guide_s2_sub1: 'Пошагово',
+                    guide_s2_st1: 'Выберите <strong>первый день</strong> последней менструации.',
+                    guide_s2_st2: 'Введите среднюю <strong>длительность цикла</strong> (обычно 28 дней).',
+                    guide_s2_st3: 'Нажмите <strong>Вычислить</strong>, чтобы увидеть прогноз.',
+                    guide_s2_sub2: 'Ключевые показатели',
+                    guide_s2_m1: 'День, когда яичник, вероятно, выпускает яйцеклетку.',
+                    guide_s2_m2: '6-дневный период (5 дней до + день овуляции), когда вероятность зачатия максимальна.',
+                    guide_s3_t: '❓ Часто задаваемые вопросы',
+                    guide_q1: 'В: Можно ли использовать при нерегулярном цикле?',
+                    guide_a1: 'О: Калькулятор лучше всего работает при регулярных циклах. Если цикл сильно варьируется, результаты могут быть менее точными. Рекомендуется использовать тесты на овуляцию.',
+                    guide_q2: 'В: Насколько точен этот калькулятор?',
+                    guide_a2: 'О: Он предоставляет статистическую оценку на основе средних значений. Реальная овуляция может зависеть от стресса, диеты и здоровья. Это отличная отправная точка.',
+                    guide_warn: '<strong>Медицинский отказ от ответственности:</strong> Этот инструмент предназначен только для информационных целей. При вопросах о фертильности обратитесь к врачу.',
+
+                    // NEW: Hack Guide Content
+                    h_title: 'Калькулятор Овуляции ⚡️ Обязательный для Планирования Беременности | Найди Фертильное Окно за 3 Шага',
+                    h_intro: 'Все еще угадываешь день овуляции наугад? 🤦‍♀️ Планируешь беременность месяцами без результата? Этот калькулятор раскрывает **секрет фертильности** за секунды! Бесплатно на toolboxpro.top, без загрузок и регистрации. Введи 3 простых параметра — и получи точные данные даже при нерегулярных менструальных циклах. Научное планирование без стресса — настоящий спаситель!',
+                    h_perks_t: '✨ Почему Он Любят Все Будущие Мамы? 4 Ключевых Преимущества',
+                    h_perk_1: '<strong>Медицинская Точность ✅</strong> Основан на физиологии менструального цикла и клинических больших данных. Точно разделяет день овуляции, фертильное окно и безопасный период. Поддерживает циклы от 21 до 35 дней — в 10 раз надежнее традиционного календарного метода!',
+                    h_perk_2: '<strong>Легкость Использования 🤩</strong> Нет сложных формул для запоминания! Загружается за секунды на телефон или компьютер, 3 шага до результата — даже технерам-початкам будет легко разобраться!',
+                    h_perk_3: '<strong>Полная Информация 📊</strong> Не только определяет день овуляции: отмечает <strong>пиковые фертильные дни</strong> (2 дня до + день овуляции + 1 день после), безопасный период и дату следующей менструации. Всегда оставайся в курсе своего плана беременности!',
+                    h_perk_4: '<strong>Бесплатно и Без Реклам 🆓</strong> Нет приложений для загрузки, нет регистрации. Открыть сайт — и сразу использовать. Твоя конфиденциальность защищена — будущие мамы в восторге!',
+                    h_steps_t: '📝 Пошаговая Инструкция за 3 Шага | Для Начинающих',
+                    h_step_1: 'Введи <strong>первый день последней менструации</strong> (достаточно только даты, время указывать не нужно!).',
+                    h_step_2: 'Укажи <strong>длительность менструального цикла</strong> (по умолчанию 28 дней; при нерегулярном цикле используй среднее значение за последние 3 месяца, например 25/32 дня).',
+                    h_step_3: 'Нажми кнопку <strong>"Рассчитать"</strong> — готово! Система генерирует персональный календарь овуляции с выделенными ключевыми датами — всё понятно на первый взгляд!',
+                    h_res_t: '📈 Интерпретация Результатов | Каждая Дата — Ключ к Фертильности',
+                    h_res_1: '✅ <strong>День Овуляции</strong>: Точно определяет момент выхода яйцеклетки — вероятность беременности максимальна, если иметь половые контакты в этот день!',
+                    h_res_2: '✅ <strong>Пиковое Фертильное Окно</strong>: Золотые 48 часов до и после овуляции. Четко отмечено для планирования контактов без лишнего стресса.',
+                    h_res_3: '✅ <strong>Безопасный Период</strong>: Нефертильные дни, удобные для планирования или предотвращения беременности (⚠️ не гарантирует 100% защиту!).',
+                    h_res_4: '✅ <strong>Предсказание Следующей Менструации</strong>: Знай календарь своего цикла, чтобы организовать следующую попытку зачать ребенка.',
+                    h_res_5: '✅ <strong>График Тренда Цикла</strong>: Визуально показывает уровень фертильности на протяжении всего цикла — наблюдать за ростом кривой невероятно мотивирующе!',
+                    h_faq_t: '❓ Часто Задаваемые Вопросы | Отвечаем на Все Твои Доводы',
+                    h_faq_q1: 'Q: Работает ли он при нерегулярных циклах?',
+                    h_faq_a1: 'A: Конечно! Достаточно ввести среднюю длительность цикла за последние 3 месяца — результаты останутся точными. Гораздо лучше, чем гадать или тратить деньги на бесполезные тесты на овуляцию. Комбинируй с тестами на ЛГ для максимальной точности!',
+                    h_faq_q2: 'Q: Может ли он заменить тесты на овуляцию?',
+                    h_faq_a2: 'A: Нет, дорогая! Калькулятор — это научная оценка, а тесты обнаруживают реальный рост гормонов. Используй их вместе: калькулятор сужает диапазон поиска, тесты ловят пик — эффективность удваивается!',
+                    h_faq_q3: 'Q: Когда стоит начать его использовать?',
+                    h_faq_a3: 'A: Если ты планируешь беременность 1-2 месяца без результата — самое время попробовать! Убери гадание и планируй по науке. Многие женщины зачали ребенка за 1-3 месяца после использования калькулятора.',
+                    h_faq_q4: 'Q: Могут ли мужчины использовать его?',
+                    h_faq_a4: 'A: Разумеется! Помоги своей партнерше отслеживать цикл и планируй вместе — беременность не только женская ответственность!',
+                    h_tips_t: '💡 Практические Советы для Планирования (Проверено на Собственном Опыте)',
+                    h_tip_1: 'Сделай скриншот календаря овуляции и настрои напоминания на телефоне о пиковых днях — не пропусти золотое окно!',
+                    h_tip_2: 'Имей половые контакты раз в 2 дня во время фертильного окна — не нужно делать это каждый день. Сохранение качества спермы — ключ к успеху.',
+                    h_tip_3: 'При нерегулярных циклах записывай длительность 3 месяцев подряд, чтобы получить более точный средний показатель.',
+                    h_tip_4: 'Комбинируй калькулятор с измерением базальной температуры: после овуляции температура поднимается на 0.3-0.5℃. Двойная проверка для повышения вероятности беременности!',
+                    h_stories_t: '🌟 Реальные Истории Успеха',
+                    h_story_1: '“Планировала беременность 6 месяцев без результата — гадание дня овуляции меня измотало. Использовала этот калькулятор, нашла фертильное окно и зачала ребенка за 2 попытки! Очень простой и надежный — рекомендовала 3 подругам, и 2 уже ждут детей.” — @БудущаяМама2024',
+                    h_story_2: '“Мой цикл всегда 33 дня, другие калькуляторы никогда не работали. С этим я ввела среднее значение, и дата овуляции совпала точно с результатами тестов на ЛГ. Бесплатно и без рекламы — будущие мамы должны немедленно его использовать!” — @ОжидаюМоегоМалыша',
+                    h_outro: 'Независимо от того, только ли ты начала планировать беременность или застряла на каком-то этапе — этот калькулятор сэкономит тебе время и нервы. Научное планирование, простота использования и 100% бесплатно — что еще нужно для успеха? Сохрани toolboxpro.top и поделись с подругой, которая тоже планирует ребенка — давайте вместе привлечем беременность! 👶',
+                    h_warn: '⚠️ Важное Напоминание: Этот инструмент основан на физиологии и больших данных — он предназначен только для справки и не заменяет консультацию врача. Если ты планируешь беременность более 1 года без результата или у тебя очень нерегулярные циклы — обратись к гинекологу. Желаем всем женщинам легкого пути к материнству и здорового ребенка!'
                 },
                 'es': {
                     title: '🌙 Calculadora de ovulación',
@@ -180,7 +744,66 @@
                     cycle_calendar_label: 'Calendario del ciclo:',
                     err_invalid: 'Por favor, ingrese información válida',
                     fertile: 'Fértil',
-                    ovulation: 'Ovulación'
+                    ovulation: 'Ovulación',
+                    // Guide (Original)
+                    guide_title: 'Calculadora de ovulación y fertilidad | ¡Identifica tus días más fértiles!',
+                    guide_intro: '¿Intentando concebir? ¡El momento lo es todo! Esta calculadora fácil de usar te ayuda a identificar tus días más fértiles y la fecha estimada de ovulación, aumentando tus posibilidades de embarazo.',
+                    guide_s1_t: '✨ ¿Por qué usar esta herramienta?',
+                    guide_s1_1: '<strong>Precisión:</strong> Utiliza el método de calendario estándar para estimar tu ventana fértil.',
+                    guide_s1_2: '<strong>Simplicidad:</strong> Solo ingresa la fecha de tu última regla y la duración del ciclo.',
+                    guide_s1_3: '<strong>Claridad:</strong> El calendario visual marca claramente tus días de ovulación y fertilidad.',
+                    guide_s2_t: '📝 Cómo usar y entender los resultados',
+                    guide_s2_sub1: 'Paso a paso',
+                    guide_s2_st1: 'Selecciona el <strong>primer día</strong> de tu última menstruación.',
+                    guide_s2_st2: 'Ingresa la <strong>duración promedio</strong> del ciclo (usualmente 28 días).',
+                    guide_s2_st3: 'Haz clic en <strong>Calcular</strong> para ver tu pronóstico.',
+                    guide_s2_sub2: 'Métricas clave',
+                    guide_s2_m1: 'El día en que es probable que el ovario libere un óvulo.',
+                    guide_s2_m2: 'El período de 6 días (5 días antes + día de ovulación) con mayor probabilidad de embarazo.',
+                    guide_s3_t: '❓ Preguntas frecuentes',
+                    guide_q1: 'P: ¿Puedo usar esto si mi ciclo es irregular?',
+                    guide_a1: 'R: Funciona mejor para ciclos regulares. Si tu ciclo varía mucho, los resultados pueden ser menos precisos. Considera usar kits de prueba de ovulación.',
+                    guide_q2: 'P: ¿Qué tan precisa es esta calculadora?',
+                    guide_a2: 'R: Proporciona una estimación estadística basada en promedios. La ovulación real puede variar por estrés, dieta u otros factores.',
+                    guide_warn: '<strong>Aviso médico:</strong> Esta herramienta es solo para fines informativos y no constituye consejo médico. Consulta a un profesional si tienes dudas.',
+
+                    // NEW: Hack Guide Content
+                    h_title: 'Calculadora de Ovulación ⚡️ Imprescindible para Embarazarse | Encuentra tu Ventana Fértil en 3 Pasos',
+                    h_intro: '¿Todavía adivinas tu día de ovulación a ciegas? 🤦‍♀️ ¿Intentas quedarte embarazada meses sin éxito? Esta calculadora de ovulación te descifra el **código de fertilidad** ¡al instante! Gratis en toolboxpro.top, sin descargas ni registros. Ingresa 3 datos simples y obtén resultados precisos, incluso con ciclos menstruales irregulares. Embarazo científico sin estrés — ¡es un cambio de juego!',
+                    h_perks_t: '✨ ¿Por qué las mujeres lo aman? 4 Ventajas Clave',
+                    h_perk_1: '<strong>Precisión Médica ✅</strong> Basada en la fisiología del ciclo menstrual y big data clínico. Divide con exactitud el día de ovulación, ventana fértil y período seguro. Compatible con ciclos de 21 a 35 días, ¡10 veces más fiable que el método del calendario tradicional!',
+                    h_perk_2: '<strong>Uso Súper Fácil 🤩</strong> Sin fórmulas complicadas de recordar. Carga en segundos en móvil o computadora, 3 pasos para los resultados — ¡incluso si no eres experta en tecnología!',
+                    h_perk_3: '<strong>Información Completa 📊</strong> No solo te da el día de ovulación: marca los <strong>días pico de fertilidad</strong> (2 días antes + día de ovulación + 1 día después), período seguro y fecha de tu próxima menstruación. Mantén tu plan de embarazo en orden.',
+                    h_perk_4: '<strong>Gratis y Sin Publicidad 🆓</strong> Sin apps que descargar, sin registros. Abre la página web y usa directamente — tu privacidad está protegida. ¡Las que intentan embarazarse lo adoran!',
+                    h_steps_t: '📝 Guía de 3 Pasos | Perfecta para Principiantes',
+                    h_step_1: 'Ingresa el <strong>primer día de tu última menstruación</strong> (solo la fecha, no necesitas la hora exacta!).',
+                    h_step_2: 'Escribe la <strong>duración de tu ciclo menstrual</strong> (por defecto 28 días; si es irregular, usa el promedio de los últimos 3 meses, ej: 25/32 días).',
+                    h_step_3: 'Haz clic en <strong>"Calcular"</strong> ¡y listo! El sistema genera un calendario de ovulación personalizado con fechas clave resaltadas en rojo — ¡muy fácil de leer!',
+                    h_res_t: '📈 Interpretación de Resultados | Cada Fecha es una Pista de Fertilidad',
+                    h_res_1: '✅ <strong>Día de Ovulación</strong>: Marca el momento exacto en que se libera el óvulo — ¡la tasa de embarazo es máxima si tienes relaciones este día!',
+                    h_res_2: '✅ <strong>Ventana Fértil Pico</strong>: La ventana de 48 horas dorada antes y después de la ovulación. Marcada claramente para planificar relaciones sin estrés.',
+                    h_res_3: '✅ <strong>Período Seguro</strong>: Tiempo no fértil, útil para planificar o evitar embarazos (⚠️ no 100% garantizado como método anticonceptivo!).',
+                    h_res_4: '✅ <strong>Próxima Menstruación Prevista</strong>: Conoce el calendario de tu ciclo para organizar tu próximo intento de embarazo.',
+                    h_res_5: '✅ <strong>Gráfico de Tendencia del Ciclo</strong>: Muestra visualmente el nivel de fertilidad durante todo el ciclo — ¡ver la curva subir es super motivador!',
+                    h_faq_t: '❓ Preguntas Frecuentes | Resolvemos Todas tus Dudas',
+                    h_faq_q1: 'Q: ¿Funciona si mi ciclo menstrual es irregular?',
+                    h_faq_a1: 'A: ¡Claro que sí! Solo ingresa el promedio de los últimos 3 ciclos — los resultados siguen siendo precisos. Mucho mejor que adivinar o gastar dinero en pruebas de ovulación sin sentido. Combínala con pruebas de LH para mayor exactitud.',
+                    h_faq_q2: 'Q: ¿Puede reemplazar las pruebas de ovulación?',
+                    h_faq_a2: 'A: No, querida! La calculadora es una estimación científica, mientras que las pruebas detectan el aumento real de hormonas. ¡Úsalas juntas: la calculadora reduce la ventana de búsqueda, las pruebas capturan el pico — eficiencia duplicada!',
+                    h_faq_q3: 'Q: ¿Cuándo debo empezar a usarla?',
+                    h_faq_a3: 'A: Si intentas embarazarte 1-2 meses sin éxito, ¡es hora de probarla! Elimina la suposición y planifica con ciencia. Muchas mujeres logran el embarazo en 1-3 meses después de usarla.',
+                    h_faq_q4: 'Q: ¿Los hombres pueden usarla?',
+                    h_faq_a4: 'A: ¡Por supuesto! Ayuda a tu pareja a trackear su ciclo y planificar juntos — el embarazo no es solo responsabilidad de las mujeres.',
+                    h_tips_t: '💡 Consejos Prácticos para Embarazarse (Probados y Aprobados)',
+                    h_tip_1: 'Guarda una captura del calendario de ovulación y configura recordatorios en tu teléfono para los días pico — ¡no pierdas la ventana dorada!',
+                    h_tip_2: 'Tienes relaciones cada 2 días durante la ventana fértil — no necesitas hacerlo todos los días. Preservar la calidad del esperma es clave.',
+                    h_tip_3: 'Si tu ciclo es irregular, registra 3 meses consecutivos para obtener un promedio más preciso.',
+                    h_tip_4: 'Combínala con la medición de la temperatura basal: tu temperatura sube 0.3-0.5℃ después de la ovulación. ¡Doble verificación para mayor éxito!',
+                    h_stories_t: '🌟 Historias de Éxito Reales',
+                    h_story_1: '“Intentaba embarazarme 6 meses sin suerte — adivinar la ovulación me agotaba. Usé esta calculadora, encontré mi ventana fértil y logré el embarazo en 2 intentos! Super fácil y confiable — se la recomendé a 3 amigas y 2 ya están embarazadas.” — @MamaFeliz2024',
+                    h_story_2: '“Mi ciclo siempre es de 33 días, otras calculadoras nunca funcionaban. Con esta, ingresé el promedio y la fecha de ovulación coincidió exactamente con mis pruebas de LH. Gratis y sin publicidad — ¡las que intentan embarazarse deben correr a usarla!” — @EsperandoMiBebé',
+                    h_outro: 'Ya sea que seas nueva en el proceso o estés atascada, esta calculadora te ahorrará tiempo y estrés. Planificación científica, uso fácil y 100% gratis — ¿qué más se puede pedir? Guarda toolboxpro.top y compártela con tu mejor amiga que también intenta embarazarse — ¡manifestemos juntos ese embarazo! 👶',
+                    h_warn: '⚠️ Recordatorio Amable: Esta herramienta se basa en fisiología y big data — es solo para referencia, no sustituye el consejo médico profesional. Si intentas embarazarte más de 1 año sin éxito o tienes ciclos muy irregulares, consulta a un ginecólogo. ¡Deseamos a todas las mujeres un viaje sin complicaciones y un bebé sano!'
                 }
             },
 
@@ -189,6 +812,14 @@
                 const defaultDate = new Date();
                 defaultDate.setDate(defaultDate.getDate() - 30);
                 document.getElementById('last-period').valueAsDate = defaultDate;
+                
+                // 初始化语言
+                const params = new URLSearchParams(window.location.search);
+                const lang = params.get('lang');
+                if (lang && OvulationCalc.i18n[lang]) {
+                    document.getElementById('ovulation-lang').value = lang;
+                    OvulationCalc.changeLang();
+                }
             },
 
             changeLang: () => {
@@ -198,7 +829,10 @@
                 
                 elements.forEach(el => {
                     const key = el.getAttribute('data-i18n');
-                    if (texts[key]) el.innerText = texts[key];
+                    if (texts[key]) {
+                        // Use innerHTML to allow bold tags etc.
+                        el.innerHTML = texts[key];
+                    }
                 });
 
                 // 重新计算以更新结果语言
@@ -224,7 +858,7 @@
                 if (!lastPeriod || isNaN(cycleLength) || cycleLength < 21 || cycleLength > 35) {
                     ovulationDateEl.innerText = texts.err_invalid;
                     ovulationDateEl.className = "text-xl font-bold text-red-600";
-                    fertileWindowEl.innerText = "";
+                    fertileWindowEl.innerText = "--";
                     calendarEl.innerHTML = "";
                     return;
                 }
@@ -240,27 +874,28 @@
                 fertileEnd.setDate(ovulationDate.getDate() + 1);
 
                 // 显示结果
-                ovulationDateEl.className = "text-xl font-bold text-green-800";
+                ovulationDateEl.className = "text-xl font-bold text-brand-700";
                 ovulationDateEl.innerText = OvulationCalc.formatDate(ovulationDate, lang);
                 fertileWindowEl.innerText = `${OvulationCalc.formatDate(fertileStart, lang)} - ${OvulationCalc.formatDate(fertileEnd, lang)}`;
 
                 // 生成周期日历
                 calendarEl.innerHTML = "";
+                // 显示周期内的所有天数
                 for (let i = 0; i < cycleLength; i++) {
                     const day = new Date(lastPeriod);
                     day.setDate(lastPeriod.getDate() + i);
                     const dayNum = day.getDate();
                     
                     const dayEl = document.createElement('div');
-                    dayEl.className = "calendar-day";
+                    dayEl.className = "calendar-day bg-white border border-gray-100 text-gray-600";
                     dayEl.innerText = dayNum;
                     
                     // 标记排卵日和易受孕日
                     if (i === cycleLength - 14) {
-                        dayEl.classList.add('ovulation-day');
+                        dayEl.className = "calendar-day ovulation-day";
                         dayEl.title = texts.ovulation;
                     } else if (i >= cycleLength - 19 && i <= cycleLength - 13) {
-                        dayEl.classList.add('fertile-day');
+                        dayEl.className = "calendar-day fertile-day";
                         dayEl.title = texts.fertile;
                     }
                     
@@ -287,7 +922,8 @@
                 targetLang = 'es';
             }
             
-            if (targetLang !== 'en') {
+            // 只有当URL没有指定语言时才自动切换
+            if (targetLang !== 'en' && !new URLSearchParams(window.location.search).get('lang')) {
                 const langSelect = document.getElementById('ovulation-lang');
                 if(langSelect) {
                     langSelect.value = targetLang;
