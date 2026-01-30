@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Category Meta Tag -->
+    <meta name="category" content="fun">
+    <meta name="icon" content="🎮">
+    <meta name="description" content="Online Binary Logarithm (Log2) Calculator - Calculate base-2 logarithms instantly for computer science and math. Includes powers of 2 chart and formulas.">
+    <title>四年级下册科学大闯关</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#1e293b', 900: '#0f172a' }
+                    },
+                    animation: {
+                        'bounce-slight': 'bounce-slight 2s infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                    },
+                    keyframes: {
+                        'bounce-slight': {
+                            '0%, 100%': { transform: 'translateY(-5%)' },
+                            '50%': { transform: 'translateY(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            height: 100vh;
+            height: 100dvh; 
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .game-card {
+            border-radius: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn {
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:active { transform: scale(0.96); }
+        
+        /* 选中态特效 */
+        .option-btn { border-width: 2px; transition: all 0.2s; }
+        .option-btn:active { transform: translateY(0); }
+
+        /* Matching Game Styles */
+        .match-card {
+            transition: all 0.3s;
+            backface-visibility: hidden;
+        }
+        .match-selected {
+            background-color: #3b82f6;
+            color: white;
+            transform: scale(1.05);
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .match-correct {
+            animation: pop-out 0.5s forwards;
+        }
+        @keyframes pop-out {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px) rotate(-5deg); }
+            40% { transform: translateX(8px) rotate(5deg); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-in { animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        .theme-transition {
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+    </style>
+</head>
+<body class="bg-blue-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center overflow-hidden relative selection:bg-blue-200 theme-transition">
+
+    <!-- Top Controls -->
+    <div class="absolute top-4 right-4 z-50 flex gap-2">
+        <button onclick="toggleMute()" class="p-2 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-md text-xl btn border border-slate-200 dark:border-slate-700" title="静音开关">
+            <span id="mute-icon">🔊</span>
+        </button>
+        <button onclick="toggleTheme()" class="p-2 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-md text-xl btn border border-slate-200 dark:border-slate-700" title="切换模式">
+            <span id="theme-icon">☀️</span>
+        </button>
+        <button onclick="resetGame()" class="p-2 rounded-full bg-red-100 dark:bg-red-900/50 backdrop-blur shadow-md text-xl btn border border-red-200 dark:border-red-800 text-red-600" title="重置游戏">
+            <span>🔄</span>
+        </button>
+    </div>
+
+    <!-- Background Decoration -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-10 left-10 text-6xl opacity-20 dark:opacity-10 animate-bounce-slight" style="animation-delay: 0s">🌡️</div>
+        <div class="absolute bottom-20 right-10 text-6xl opacity-20 dark:opacity-10 animate-bounce-slight" style="animation-delay: 1s">🌍</div>
+        <div class="absolute top-1/2 left-1/4 text-4xl opacity-20 dark:opacity-10 animate-bounce-slight" style="animation-delay: 2s">🐛</div>
+        <div class="absolute top-20 right-20 text-5xl opacity-20 dark:opacity-10 animate-bounce-slight" style="animation-delay: 1.5s">🌱</div>
+    </div>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="text-center max-w-md w-full p-6 flex flex-col items-center z-10 overflow-y-auto max-h-screen no-scrollbar">
+        <div class="mb-6 relative py-4">
+            <h1 class="text-5xl font-black text-blue-600 dark:text-blue-400 mb-2 tracking-tight drop-shadow-sm">科学大闯关</h1>
+            <span class="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded absolute -right-4 top-2 transform rotate-12 shadow-sm">威力加强版</span>
+        </div>
+        
+        <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-6 rounded-3xl shadow-xl mb-6 w-full border border-blue-100 dark:border-slate-700">
+            <h3 class="text-slate-500 dark:text-slate-400 font-bold mb-4 text-sm uppercase tracking-wider">选择游戏模式</h3>
+            
+            <!-- 挑战模式 -->
+            <button onclick="showDifficultySelect('normal')" class="btn w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white text-lg font-bold py-4 px-6 rounded-2xl shadow-lg mb-3 flex items-center justify-between group">
+                <span class="flex items-center gap-3">
+                    <span class="bg-white/20 p-2 rounded-lg">❤️</span>
+                    <span class="text-left">
+                        <div class="leading-none">挑战模式</div>
+                        <div class="text-xs font-normal opacity-80 mt-1">有限生命 · 积分闯关</div>
+                    </span>
+                </span>
+                <span class="text-2xl">→</span>
+            </button>
+
+            <!-- 练习模式 -->
+            <button onclick="startGame('infinite', 'scholar')" class="btn w-full bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-lg font-bold py-4 px-6 rounded-2xl shadow-lg border-2 border-slate-100 dark:border-slate-600 mb-3 flex items-center justify-between group">
+                <span class="flex items-center gap-3">
+                    <span class="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 p-2 rounded-lg">♾️</span>
+                    <span class="text-left">
+                        <div class="leading-none">练习模式</div>
+                        <div class="text-xs font-normal opacity-60 dark:opacity-50 mt-1">无限复活 · 刷完为止</div>
+                    </span>
+                </span>
+                <span class="text-2xl">→</span>
+            </button>
+
+            <!-- 配对挑战 -->
+            <button onclick="startMatchingGame()" class="btn w-full bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-lg font-bold py-4 px-6 rounded-2xl shadow-lg border-2 border-purple-100 dark:border-purple-800 flex items-center justify-between group">
+                <span class="flex items-center gap-3">
+                    <span class="bg-purple-200 dark:bg-purple-800 text-purple-600 dark:text-purple-200 p-2 rounded-lg">🧩</span>
+                    <span class="text-left">
+                        <div class="leading-none">配对挑战</div>
+                        <div class="text-xs font-normal opacity-60 dark:opacity-50 mt-1">连线消除 · 概念强化</div>
+                    </span>
+                </span>
+                <span class="text-2xl">→</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- DIFFICULTY SELECT MODAL -->
+    <div id="difficulty-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl w-full max-w-sm border border-slate-100 dark:border-slate-700 pop-in">
+            <h3 class="text-xl font-bold text-center mb-6 dark:text-white">选择挑战难度</h3>
+            
+            <button onclick="startGame('normal', 'newbie')" class="btn w-full mb-3 bg-green-100 text-green-700 p-4 rounded-xl font-bold border border-green-200 flex justify-between items-center">
+                <span>🐣 新手入门</span>
+                <span class="text-xs bg-white/50 px-2 py-1 rounded">10题</span>
+            </button>
+            <button onclick="startGame('normal', 'master')" class="btn w-full mb-3 bg-blue-100 text-blue-700 p-4 rounded-xl font-bold border border-blue-200 flex justify-between items-center">
+                <span>🐯 高手进阶</span>
+                <span class="text-xs bg-white/50 px-2 py-1 rounded">20题</span>
+            </button>
+            <button onclick="startGame('normal', 'scholar')" class="btn w-full mb-4 bg-orange-100 text-orange-700 p-4 rounded-xl font-bold border border-orange-200 flex justify-between items-center">
+                <span>🎓 顶级学霸</span>
+                <span class="text-xs bg-white/50 px-2 py-1 rounded">全部题目</span>
+            </button>
+
+            <button onclick="hideDifficultySelect()" class="w-full py-2 text-slate-400 text-sm font-bold">返回</button>
+        </div>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="game-screen" class="hidden w-full max-w-lg flex flex-col h-full justify-between relative">
+        <!-- Header -->
+        <div class="relative z-20 px-4 pt-4 pb-2 bg-blue-50/95 dark:bg-slate-900/95 backdrop-blur-sm flex-shrink-0">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2">
+                    <span id="lives-display" class="flex items-center gap-1 text-red-500 text-xl"></span>
+                    <div id="skip-btn-container" class="ml-2">
+                        <button onclick="skipQuestion()" class="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-lg text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-300">
+                            ⏩ 跳过 (<span id="skips-left">3</span>)
+                        </button>
+                    </div>
+                </div>
+                <div class="font-mono text-blue-600 dark:text-blue-400 font-black text-2xl">
+                    <span id="score-display">0</span>
+                </div>
+            </div>
+            <div class="w-full bg-white dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                <div id="progress-bar" class="bg-blue-500 h-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Question Area -->
+        <div class="flex-grow overflow-y-auto px-4 py-4 no-scrollbar z-10 w-full max-w-lg mx-auto flex flex-col">
+            <div id="question-card" class="game-card bg-white dark:bg-slate-800 p-6 shadow-xl border border-slate-100 dark:border-slate-700 relative mt-4">
+                <span id="unit-tag" class="absolute -top-3 left-4 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wide shadow-sm">
+                    UNIT
+                </span>
+                
+                <h2 id="question-text" class="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100 mb-6 mt-2 leading-relaxed">
+                    Loading...
+                </h2>
+
+                <div id="options-container" class="space-y-3"></div>
+                
+                <!-- Feedback Area -->
+                <div id="feedback-area" class="hidden mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 rounded-xl border-l-4 border-amber-400 dark:border-amber-600 animate-fade-in">
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl">💡</span>
+                        <div>
+                            <p class="font-bold text-xs text-amber-600 dark:text-amber-400 mb-1">解析</p>
+                            <p id="explanation-text" class="text-sm dark:text-slate-200 font-medium leading-relaxed"></p>
+                        </div>
+                    </div>
+                    <button onclick="nextQuestion()" class="mt-3 w-full bg-amber-500 text-white py-2 rounded-lg font-bold shadow-md">下一题</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MATCHING GAME SCREEN -->
+    <div id="matching-screen" class="hidden w-full max-w-2xl h-full flex flex-col p-4 relative">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-black text-purple-600 dark:text-purple-400">配对挑战</h2>
+            <div class="text-sm font-bold text-slate-500 dark:text-slate-400">剩余: <span id="match-pairs-left">0</span> 组</div>
+        </div>
+        
+        <div id="matching-grid" class="grid grid-cols-2 gap-4 flex-grow content-start overflow-y-auto no-scrollbar pb-8">
+            <!-- Items injected here -->
+        </div>
+
+        <!-- Matching Feedback Overlay -->
+        <div id="match-feedback" class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 px-6 py-4 rounded-2xl shadow-2xl z-50 text-center border-2 border-green-500 pop-in">
+            <div class="text-4xl mb-2">✨</div>
+            <div class="font-bold text-green-600">配对成功!</div>
+        </div>
+    </div>
+
+    <!-- END SCREEN & WRONG ANSWERS -->
+    <div id="end-screen" class="hidden text-center max-w-md w-full p-6 z-20 overflow-y-auto max-h-screen no-scrollbar">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 border border-slate-100 dark:border-slate-700">
+            <div class="text-7xl mb-4 animate-bounce" id="end-emoji">🏆</div>
+            <h2 class="text-3xl font-black text-slate-800 dark:text-white mb-2">挑战结束</h2>
+            <p class="text-slate-500 dark:text-slate-400 mb-6 text-sm">本次挑战综合评分</p>
+            
+            <div class="flex justify-center items-center mb-8 relative">
+                <div class="relative z-10">
+                    <span class="text-7xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400" id="final-score">0</span>
+                    <span class="text-2xl font-bold text-slate-400 ml-1">分</span>
+                </div>
+                <!-- Background decoration for score -->
+                <div class="absolute w-24 h-24 bg-blue-100 dark:bg-blue-900/30 rounded-full blur-xl -z-10"></div>
+            </div>
+
+            <div class="flex gap-3 mb-6">
+                <button onclick="showWrongAnswers()" id="review-btn" class="flex-1 btn bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 py-4 rounded-xl font-bold border border-red-100 dark:border-red-800 hidden flex items-center justify-center gap-2 group">
+                    <span>📝</span> 查看错题本
+                    <span class="bg-red-200 dark:bg-red-800 text-xs px-2 py-0.5 rounded-full" id="wrong-count-badge">0</span>
+                </button>
+            </div>
+            
+            <button onclick="showStartScreen()" class="w-full btn bg-slate-800 dark:bg-slate-600 text-white py-4 rounded-xl font-bold shadow-lg">
+                🏠 返回主页
+            </button>
+        </div>
+    </div>
+
+    <!-- WRONG ANSWERS MODAL (Optimized UI) -->
+    <div id="wrong-answers-modal" class="hidden fixed inset-0 z-50 flex flex-col bg-white dark:bg-slate-900">
+        <div class="p-4 border-b dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-900 shadow-sm z-10">
+            <div class="flex items-center gap-2">
+                <h3 class="text-lg font-black text-slate-800 dark:text-white">错题回顾</h3>
+                <span class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full">强化复习</span>
+            </div>
+            <button onclick="closeWrongAnswers()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center font-bold">×</button>
+        </div>
+        <div id="wrong-list" class="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950 pb-20">
+            <!-- Wrong items injected -->
+        </div>
+        <div class="p-4 bg-white dark:bg-slate-900 border-t dark:border-slate-700">
+             <button onclick="closeWrongAnswers()" class="w-full btn bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg">
+                我记住了
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 核心题库 (基于PDF深度扩展) ---
+        const fullQuestionBank = [
+            // 第一单元：冷和热
+            { unit: "冷和热", unitId: 1, q: "温度计读数时，视线应？", options: ["俯视", "平视液面", "仰视", "随意"], a: 1, info: "读数时视线与液柱上表面保持水平。" },
+            { unit: "冷和热", unitId: 1, q: "物体受热体积增大，遇冷缩小，叫？", options: ["热胀冷缩", "化学反应", "蒸发", "凝结"], a: 0, info: "这是热胀冷缩现象。" },
+            { unit: "冷和热", unitId: 1, q: "水沸腾时的温度通常是？", options: ["0℃", "50℃", "100℃", "37℃"], a: 2, info: "标准大气压下，水的沸点是100℃。" },
+            { unit: "冷和热", unitId: 1, q: "水结冰后体积会？", options: ["变大", "变小", "不变", "消失"], a: 0, info: "水是特例，结冰时体积会增大。" },
+            { unit: "冷和热", unitId: 1, q: "酒精灯加热物体应该用火焰的哪部分？", options: ["焰心", "内焰", "外焰", "灯芯"], a: 2, info: "外焰温度最高，应使用外焰加热。" },
+            { unit: "冷和热", unitId: 1, q: "冰融化成水时，温度会？", options: ["一直上升", "保持0℃直到融化完成", "迅速下降", "忽高忽低"], a: 1, info: "冰融化过程中，温度保持在0℃不变，直到全部变成水。" },
+            { unit: "冷和热", unitId: 1, q: "水蒸气遇冷变成液态水，叫？", options: ["凝结", "蒸发", "升华", "沸腾"], a: 0, info: "气态变液态叫凝结，如白气、露水。" },
+            { unit: "冷和热", unitId: 1, q: "熄灭酒精灯的正确方法是？", options: ["用嘴吹", "用书扇", "用灯帽盖灭", "用水浇"], a: 2, info: "必须用灯帽盖灭，且要盖两次（防压强差）。" },
+            
+            // 第二单元：地球月球太阳
+            { unit: "地球宇宙", unitId: 2, q: "首位完成环球航行证明地球是球体的是？", options: ["哥伦布", "麦哲伦", "郑和", "加加林"], a: 1, info: "1519年麦哲伦船队完成了第一次环球航行。" },
+            { unit: "地球宇宙", unitId: 2, q: "月球是地球的？", options: ["恒星", "行星", "卫星", "彗星"], a: 2, info: "月球围绕地球运行，是地球的天然卫星。" },
+            { unit: "地球宇宙", unitId: 2, q: "阳光下影子方向与太阳方向？", options: ["相同", "相反", "垂直", "无关"], a: 1, info: "光沿直线传播，影子总在背光一侧。" },
+            { unit: "地球宇宙", unitId: 2, q: "一天中影子最短的时候是？", options: ["早晨", "正午", "傍晚", "深夜"], a: 1, info: "正午太阳高度角最大，影子最短。" },
+            { unit: "地球宇宙", unitId: 2, q: "太阳是一颗？", options: ["行星", "卫星", "恒星", "流星"], a: 2, info: "太阳自身发光发热，是恒星。" },
+            { unit: "地球宇宙", unitId: 2, q: "月相变化的周期大约是？", options: ["一天", "一年", "农历一个月", "一周"], a: 2, info: "两次满月间隔约30天，即农历的一个月。" },
+            { unit: "地球宇宙", unitId: 2, q: "地球上看月球表面蓝色的部分是？", options: ["海洋", "森林", "冰川", "其实月球没有蓝色"], a: 3, info: "题目陷阱：从太空看地球蓝色是海洋。月球没有液态水，只有阴暗的月海（平原）。" },
+            { unit: "地球宇宙", unitId: 2, q: "古代利用太阳投影计时的工具叫？", options: ["指南针", "日晷", "水钟", "沙漏"], a: 1, info: "日晷是利用日影测得时刻的计时仪器。" },
+            { unit: "地球宇宙", unitId: 2, q: "农历下半月的月相亮面在？", options: ["左边", "右边", "上面", "下面"], a: 0, info: "上半月亮面在右（由缺变圆），下半月亮面在左（由圆变缺）。" },
+
+            // 第三单元：昆虫
+            { unit: "昆虫", unitId: 3, q: "昆虫身体分为哪三部分？", options: ["头、颈、身", "头、胸、腹", "头、躯干、尾", "头、手、脚"], a: 1, info: "昆虫特征：头胸腹，一对触角三对足。" },
+            { unit: "昆虫", unitId: 3, q: "昆虫有几条腿？", options: ["4条", "6条", "8条", "10条"], a: 1, info: "胸部有3对足，共6条腿。" },
+            { unit: "昆虫", unitId: 3, q: "蚕的一生经历？", options: ["卵-幼虫-成虫", "卵-幼虫-蛹-成虫", "幼虫-蛹-成虫", "卵-蛹-成虫"], a: 1, info: "蚕是完全变态发育：卵、幼虫、蛹、成虫。" },
+            { unit: "昆虫", unitId: 3, q: "蚕宝宝“眠”是指？", options: ["睡觉", "死亡", "蜕皮前的静止", "生病"], a: 2, info: "不吃不动，准备蜕皮，称为“眠”。" },
+            { unit: "昆虫", unitId: 3, q: "种类最多的昆虫类群是？", options: ["甲虫", "蝴蝶", "蜂类", "蝇类"], a: 0, info: "甲虫占昆虫总数的40%左右。" },
+            { unit: "昆虫", unitId: 3, q: "下列哪个是昆虫？", options: ["蜘蛛", "蜈蚣", "蚂蚁", "蜗牛"], a: 2, info: "蚂蚁有头胸腹和6条腿。蜘蛛8条腿，蜈蚣多条腿，蜗牛是软体动物。" },
+            
+            // 第四单元：繁殖
+            { unit: "繁殖", unitId: 4, q: "种子发育成根的部分是？", options: ["胚芽", "胚根", "子叶", "种皮"], a: 1, info: "胚根发根，胚芽发茎叶。" },
+            { unit: "繁殖", unitId: 4, q: "根的生长方向总是？", options: ["向光", "向下", "向上", "向水"], a: 1, info: "根具有向地性，向下生长。" },
+            { unit: "繁殖", unitId: 4, q: "猫的繁殖方式是？", options: ["卵生", "胎生", "分裂", "出芽"], a: 1, info: "猫是哺乳动物，直接生小猫，为胎生。" },
+            { unit: "繁殖", unitId: 4, q: "下列植物用茎繁殖的是？", options: ["红薯", "生姜", "落地生根", "西瓜"], a: 1, info: "生姜、土豆、莲藕都是用茎（块茎/根状茎）繁殖。" },
+            { unit: "繁殖", unitId: 4, q: "雄蛙鸣叫是为了？", options: ["吓唬敌人", "求偶", "练习唱歌", "呼唤孩子"], a: 1, info: "雄蛙鸣叫是求偶行为，展示强健体魄。" },
+            { unit: "繁殖", unitId: 4, q: "孔雀开屏属于什么行为？", options: ["求偶", "捕食", "攻击", "防御"], a: 0, info: "雄孔雀开屏吸引雌孔雀。" },
+            { unit: "繁殖", unitId: 4, q: "蚕蛾繁殖后代的方式是？", options: ["产卵", "胎生", "分裂", "种子"], a: 0, info: "昆虫多为卵生。" },
+            { unit: "繁殖", unitId: 4, q: "子叶的主要作用是？", options: ["发育成叶子", "提供营养", "保护胚", "发育成根"], a: 1, info: "子叶储存营养，供种子萌发使用，之后会枯萎。" },
+
+            // 第五单元：生物与环境
+            { unit: "生物环境", unitId: 5, q: "下列不属于生物的是？", options: ["青苔", "石笋", "细菌", "蘑菇"], a: 1, info: "石笋不能自主新陈代谢，不是生物。" },
+            { unit: "生物环境", unitId: 5, q: "青蛙过冬的方式是？", options: ["迁徙", "冬眠", "换毛", "储存食物"], a: 1, info: "变温动物如蛇、青蛙多选择冬眠。" },
+            { unit: "生物环境", unitId: 5, q: "燕子巢主要由什么制成？", options: ["树枝", "泥和唾液", "羽毛", "蜘蛛网"], a: 1, info: "燕子衔泥筑巢。" },
+            { unit: "生物环境", unitId: 5, q: "谁提出了“大陆漂移说”？", options: ["魏格纳", "李四光", "达尔文", "竺可桢"], a: 0, info: "德国科学家魏格纳提出了大陆漂移说。" },
+            { unit: "生物环境", unitId: 5, q: "李四光是我国著名的？", options: ["天文学家", "地质学家", "生物学家", "数学家"], a: 1, info: "李四光是中国地质力学的创立者。" },
+            { unit: "生物环境", unitId: 5, q: "摆的快慢与什么有关？", options: ["摆锤轻重", "摆幅大小", "摆线长短", "都无关"], a: 2, info: "摆线越长摆得越慢，摆线越短摆得越快（单摆等时性）。" },
+            { unit: "生物环境", unitId: 5, q: "雷鸟冬天换羽毛是为了？", options: ["求偶", "适应环境/保护色", "飞行更快", "吓跑敌人"], a: 1, info: "换成白色羽毛与雪地融为一体，躲避天敌。" },
+        ];
+
+        // --- 配对游戏数据 ---
+        const matchingData = [
+            { id: 1, left: "胎生", right: "猫/狗" },
+            { id: 2, left: "卵生", right: "鸡/鱼" },
+            { id: 3, left: "用茎繁殖", right: "生姜/土豆" },
+            { id: 4, left: "用根繁殖", right: "红薯" },
+            { id: 5, left: "完全变态", right: "蚕/蝴蝶" },
+            { id: 6, left: "凝结", right: "水蒸气→水" },
+            { id: 7, left: "融化", right: "冰→水" },
+            { id: 8, left: "恒星", right: "太阳" },
+            { id: 9, left: "卫星", right: "月球" },
+            { id: 10, left: "冬眠", right: "青蛙/蛇" }
+        ];
+
+        // --- 游戏状态 ---
+        let state = {
+            mode: 'normal',
+            difficulty: 'newbie',
+            questions: [],
+            currIdx: 0,
+            score: 0,
+            lives: 3,
+            skips: 3,
+            wrongAnswers: [],
+            isMuted: false,
+            
+            // 新增状态：百分比计算相关
+            correctCount: 0,
+            totalQuestionsInSession: 0,
+            
+            // 配对游戏状态
+            matchItems: [],
+            selectedItem: null,
+            matchesLeft: 0,
+            matchingMistakes: new Set() // 记录配对错误的ID
+        };
+
+        // --- 音效系统 ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (state.isMuted || audioCtx.state === 'suspended') {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                if(state.isMuted) return;
+            }
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.linearRampToValueAtTime(0, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+        }
+
+        function toggleMute() {
+            state.isMuted = !state.isMuted;
+            document.getElementById('mute-icon').innerText = state.isMuted ? '🔇' : '🔊';
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            icon.innerText = document.documentElement.classList.contains('dark') ? '🌙' : '☀️';
+        }
+
+        // --- 核心逻辑 ---
+
+        function shuffle(arr) {
+            return arr.sort(() => Math.random() - 0.5);
+        }
+
+        function resetGame() {
+            hideAllScreens();
+            document.getElementById('start-screen').classList.remove('hidden');
+            document.getElementById('difficulty-modal').classList.add('hidden');
+        }
+
+        function hideAllScreens() {
+            ['start-screen', 'game-screen', 'end-screen', 'matching-screen', 'difficulty-modal'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+        }
+
+        function showDifficultySelect(mode) {
+            if (mode === 'normal') {
+                document.getElementById('difficulty-modal').classList.remove('hidden');
+            } else {
+                startGame(mode);
+            }
+        }
+        function hideDifficultySelect() {
+            document.getElementById('difficulty-modal').classList.add('hidden');
+        }
+
+        function startGame(mode, diff = 'newbie') {
+            state.mode = mode;
+            state.difficulty = diff;
+            state.score = 0;
+            state.currIdx = 0;
+            state.lives = (mode === 'normal') ? 3 : 999;
+            state.skips = 3;
+            state.wrongAnswers = [];
+            
+            // Reset Percentage Stats
+            state.correctCount = 0;
+            state.totalQuestionsInSession = 0;
+            state.matchingMistakes.clear();
+
+            hideAllScreens();
+            document.getElementById('game-screen').classList.remove('hidden');
+
+            let qCount = 10;
+            if (mode === 'infinite') qCount = fullQuestionBank.length;
+            else if (diff === 'master') qCount = 20;
+            else if (diff === 'scholar') qCount = fullQuestionBank.length;
+
+            state.questions = shuffle([...fullQuestionBank]).slice(0, qCount);
+            state.totalQuestionsInSession = qCount; // Set total for percentage calc
+
+            updateStatus();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (state.currIdx >= state.questions.length) {
+                endGame();
+                return;
+            }
+
+            const q = state.questions[state.currIdx];
+            const ui = {
+                text: document.getElementById('question-text'),
+                options: document.getElementById('options-container'),
+                tag: document.getElementById('unit-tag'),
+                fb: document.getElementById('feedback-area')
+            };
+
+            ui.fb.classList.add('hidden');
+            ui.text.innerText = q.q;
+            
+            const colors = ['bg-red-100 text-red-700', 'bg-blue-100 text-blue-700', 'bg-green-100 text-green-700', 'bg-purple-100 text-purple-700', 'bg-orange-100 text-orange-700'];
+            ui.tag.className = `absolute -top-3 left-4 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wide shadow-sm ${colors[(q.unitId-1)%5]}`;
+            ui.tag.innerText = q.unit;
+
+            ui.options.innerHTML = '';
+            q.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full text-left p-4 rounded-xl font-bold bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 flex items-center mb-2 hover:bg-blue-50 dark:hover:bg-slate-600";
+                btn.innerHTML = `<span class="w-8 h-8 rounded-full bg-white dark:bg-slate-600 border dark:border-slate-500 text-center leading-8 mr-3 text-sm text-slate-400 font-black shadow-sm">${String.fromCharCode(65+i)}</span> ${opt}`;
+                btn.onclick = () => checkAnswer(i, btn);
+                ui.options.appendChild(btn);
+            });
+
+            const pct = (state.currIdx / state.questions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+        }
+
+        function checkAnswer(choiceIdx, btn) {
+            if (!document.getElementById('feedback-area').classList.contains('hidden')) return;
+
+            const q = state.questions[state.currIdx];
+            const isCorrect = choiceIdx === q.a;
+
+            if (isCorrect) {
+                playSound('correct');
+                state.score += 100; // Points stay for fun
+                state.correctCount++; // For percentage
+                btn.classList.add('bg-green-100', 'border-green-500', 'dark:bg-green-900', 'dark:border-green-600');
+                setTimeout(() => {
+                    state.currIdx++;
+                    loadQuestion();
+                    updateStatus();
+                }, 800);
+            } else {
+                playSound('wrong');
+                btn.classList.add('bg-red-100', 'border-red-500', 'shake', 'dark:bg-red-900', 'dark:border-red-600');
+                state.lives--;
+                state.wrongAnswers.push({ ...q, myChoice: q.options[choiceIdx] });
+                
+                const correctBtn = document.getElementById('options-container').children[q.a];
+                correctBtn.classList.add('bg-green-100', 'border-green-500', 'dark:bg-green-900');
+                
+                document.getElementById('explanation-text').innerText = q.info;
+                document.getElementById('feedback-area').classList.remove('hidden');
+                
+                if (state.mode === 'normal' && state.lives <= 0) {
+                    document.getElementById('feedback-area').querySelector('button').innerText = "查看结果";
+                    document.getElementById('feedback-area').querySelector('button').onclick = endGame;
+                }
+                updateStatus();
+            }
+        }
+
+        function skipQuestion() {
+            if (state.skips > 0) {
+                state.skips--;
+                state.currIdx++;
+                updateStatus();
+                loadQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            if (state.lives <= 0 && state.mode === 'normal') {
+                endGame();
+            } else {
+                state.currIdx++;
+                loadQuestion();
+            }
+        }
+
+        function updateStatus() {
+            let hearts = state.mode === 'infinite' ? '♾️' : '❤️'.repeat(state.lives);
+            document.getElementById('lives-display').innerText = hearts;
+            document.getElementById('score-display').innerText = state.score;
+            document.getElementById('skips-left').innerText = state.skips;
+            if(state.skips === 0) document.getElementById('skip-btn-container').classList.add('opacity-50', 'pointer-events-none');
+        }
+
+        function endGame() {
+            hideAllScreens();
+            document.getElementById('end-screen').classList.remove('hidden');
+            
+            // --- Percentage Logic ---
+            let finalPercentage = 0;
+            
+            if (state.totalQuestionsInSession > 0) {
+                // Quiz mode
+                 finalPercentage = Math.round((state.correctCount / state.totalQuestionsInSession) * 100);
+            } else {
+                // Matching mode (fall back or fixed)
+                // If it's purely matching mode, totalQuestionsInSession is 0.
+                // We can calculate percentage based on matching mistakes if we want, or just set it to 100 minus penalty.
+                // Let's assume Matching Mode starts with 100% and subtracts 10% per mistake (min 0).
+                if (state.matchingMistakes.size > 0) {
+                     finalPercentage = Math.max(0, 100 - (state.matchingMistakes.size * 10));
+                } else {
+                     finalPercentage = 100;
+                }
+            }
+
+            document.getElementById('final-score').innerText = finalPercentage;
+            
+            // --- Matching Mistake Merge ---
+            // If we have matching mistakes, convert them to "Wrong Answer" format and append.
+            if (state.matchingMistakes.size > 0) {
+                state.matchingMistakes.forEach(id => {
+                    // Find the pair data
+                    const pair = matchingData.find(p => p.id == id);
+                    if (pair) {
+                        state.wrongAnswers.push({
+                            q: "配对概念： " + pair.left,
+                            myChoice: "配对错误",
+                            options: ["正确配对： " + pair.right],
+                            a: 0,
+                            info: "需重新记忆 [" + pair.left + "] 与 [" + pair.right + "] 的关系"
+                        });
+                    }
+                });
+            }
+
+            const reviewBtn = document.getElementById('review-btn');
+            const wrongCountBadge = document.getElementById('wrong-count-badge');
+            
+            if (state.wrongAnswers.length > 0) {
+                reviewBtn.classList.remove('hidden');
+                reviewBtn.classList.add('flex');
+                wrongCountBadge.innerText = state.wrongAnswers.length;
+            } else {
+                reviewBtn.classList.add('hidden');
+                reviewBtn.classList.remove('flex');
+            }
+            playSound('win');
+        }
+
+        // --- 错题本 ---
+        function showWrongAnswers() {
+            const modal = document.getElementById('wrong-answers-modal');
+            const list = document.getElementById('wrong-list');
+            list.innerHTML = '';
+            
+            state.wrongAnswers.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = "bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden";
+                
+                // Card content
+                div.innerHTML = `
+                    <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-red-400"></div>
+                    <div class="pl-4">
+                        <div class="font-bold text-slate-800 dark:text-slate-200 mb-3 text-lg leading-snug">${i+1}. ${item.q}</div>
+                        
+                        <div class="flex flex-col gap-2 mb-3">
+                            <div class="flex items-center gap-2 text-sm bg-red-50 dark:bg-red-900/20 p-2 rounded-lg text-red-600 dark:text-red-300">
+                                <span class="font-bold shrink-0">❌ 你的选择:</span>
+                                <span>${item.myChoice}</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm bg-green-50 dark:bg-green-900/20 p-2 rounded-lg text-green-700 dark:text-green-300 border border-green-100 dark:border-green-800">
+                                <span class="font-bold shrink-0">✅ 正确答案:</span>
+                                <span>${item.options ? item.options[item.a] : '见解析'}</span>
+                            </div>
+                        </div>
+
+                        <div class="text-xs bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 p-3 rounded-xl border border-amber-100 dark:border-amber-800/50 flex items-start gap-2">
+                            <span class="text-base mt-0.5">💡</span>
+                            <span class="leading-relaxed">${item.info}</span>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            modal.classList.remove('hidden');
+        }
+
+        function closeWrongAnswers() {
+            document.getElementById('wrong-answers-modal').classList.add('hidden');
+        }
+
+        function showStartScreen() {
+            resetGame();
+        }
+
+        // --- 配对游戏逻辑 ---
+        function startMatchingGame() {
+            // Reset state
+            state.matchingMistakes.clear();
+            state.totalQuestionsInSession = 0; // Means we are in matching mode
+
+            hideAllScreens();
+            document.getElementById('matching-screen').classList.remove('hidden');
+            
+            const subset = shuffle([...matchingData]).slice(0, 6);
+            state.matchesLeft = 6;
+            document.getElementById('match-pairs-left').innerText = 6;
+            
+            let cards = [];
+            subset.forEach(item => {
+                cards.push({ type: 'left', text: item.left, id: item.id });
+                cards.push({ type: 'right', text: item.right, id: item.id });
+            });
+            cards = shuffle(cards);
+            state.selectedItem = null;
+
+            const grid = document.getElementById('matching-grid');
+            grid.innerHTML = '';
+            cards.forEach(card => {
+                const el = document.createElement('button');
+                el.className = "match-card bg-white dark:bg-slate-800 p-4 rounded-xl shadow border-2 border-slate-100 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 h-24 flex items-center justify-center text-center text-sm break-words";
+                el.innerText = card.text;
+                el.dataset.id = card.id;
+                el.onclick = () => handleMatchClick(el, card);
+                grid.appendChild(el);
+            });
+        }
+
+        function handleMatchClick(el, card) {
+            if (el.classList.contains('opacity-0')) return; 
+            if (state.selectedItem && state.selectedItem.el === el) {
+                el.classList.remove('match-selected');
+                state.selectedItem = null;
+                return;
+            }
+
+            el.classList.add('match-selected');
+
+            if (!state.selectedItem) {
+                state.selectedItem = { el, card };
+            } else {
+                const prev = state.selectedItem;
+                if (prev.card.id === card.id) {
+                    // Correct
+                    playSound('correct');
+                    showMatchFeedback();
+                    setTimeout(() => {
+                        prev.el.classList.add('match-correct', 'opacity-0', 'pointer-events-none');
+                        el.classList.add('match-correct', 'opacity-0', 'pointer-events-none');
+                    }, 300);
+                    state.matchesLeft--;
+                    document.getElementById('match-pairs-left').innerText = state.matchesLeft;
+                    
+                    if (state.matchesLeft === 0) {
+                        setTimeout(() => {
+                            endGame();
+                        }, 1000);
+                    }
+                } else {
+                    // Wrong
+                    playSound('wrong');
+                    // Record Mistake (record the ID of the selected card)
+                    // We record the ID of the card the user was trying to match (prev.card.id)
+                    state.matchingMistakes.add(prev.card.id);
+                    state.matchingMistakes.add(card.id); // Maybe user thought these two matched
+
+                    prev.el.classList.add('shake', 'bg-red-50', 'dark:bg-red-900');
+                    el.classList.add('shake', 'bg-red-50', 'dark:bg-red-900');
+                    setTimeout(() => {
+                        prev.el.classList.remove('match-selected', 'shake', 'bg-red-50', 'dark:bg-red-900');
+                        el.classList.remove('match-selected', 'shake', 'bg-red-50', 'dark:bg-red-900');
+                    }, 500);
+                }
+                state.selectedItem = null;
+            }
+        }
+
+        function showMatchFeedback() {
+            const fb = document.getElementById('match-feedback');
+            fb.classList.remove('hidden');
+            setTimeout(() => fb.classList.add('hidden'), 800);
+        }
+
+    </script>
+</body>
+</html>
