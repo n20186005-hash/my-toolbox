@@ -309,15 +309,46 @@
         // 夸夸语料库 
         const praises = ['太棒了！ 🌟', '真聪明！ 🧠', '完美配对！ ✨', '继续保持！ 🚀', '你太厉害啦！ 🏆', 'Awesome! 👍', 'Great job! 👏', '100分！ 💯', '牛牛牛！ 🐮', '超级棒！ 🌈'];
 
+        // ==========================================
+        // 【核心修复：手机端原生语音模块引擎安全激活】
+        // ==========================================
         const synth = window.speechSynthesis;
+        let currentUtterance = null; // 【修复重点】保存全局引用，防止iOS Safari垃圾回收机制直接截断语音
+        let isSpeechInitialized = false; // 【修复重点】标记是否已经进行了初次物理唤醒
+
+        // 【修复重点】手机端浏览器严格限制自动播放音频，必须在用户第一次物理点击屏幕时"唤醒"语音引擎
+        function unlockSpeechEngine() {
+            if (isSpeechInitialized || !synth) return;
+            const unlockMsg = new SpeechSynthesisUtterance('');
+            unlockMsg.volume = 0; 
+            synth.speak(unlockMsg);
+            isSpeechInitialized = true;
+            // 唤醒成功后移除监听
+            document.removeEventListener('click', unlockSpeechEngine);
+            document.removeEventListener('touchstart', unlockSpeechEngine);
+        }
+        document.addEventListener('click', unlockSpeechEngine);
+        document.addEventListener('touchstart', unlockSpeechEngine);
 
         function speakText(text, isEnglish) {
             if (!synth) return;
+            
+            // 【修复重点】先强行停止上一次正在播放/卡住的语音
             synth.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = isEnglish ? 'en-GB' : 'zh-CN';
-            utterance.rate = 0.9; 
-            synth.speak(utterance);
+
+            // 【修复重点】在安卓WebView或某些手机浏览器上，紧接着执行 cancel() 和 speak() 会造成竞争冲突并导致发声接口卡死
+            // 加入一个50毫秒的微小延迟完美解决卡死不发声问题
+            setTimeout(() => {
+                currentUtterance = new SpeechSynthesisUtterance(text);
+                
+                // 为了兼容更多手机底层引擎（如部分安卓底层没有en-GB的情况），设定基础参数
+                currentUtterance.lang = isEnglish ? 'en-GB' : 'zh-CN';
+                currentUtterance.rate = 0.9; 
+                currentUtterance.pitch = 1.0;
+                currentUtterance.volume = 1.0;
+                
+                synth.speak(currentUtterance);
+            }, 50);
         }
 
         // ==========================================
