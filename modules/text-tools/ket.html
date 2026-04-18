@@ -310,20 +310,32 @@
         const praises = ['太棒了！ 🌟', '真聪明！ 🧠', '完美配对！ ✨', '继续保持！ 🚀', '你太厉害啦！ 🏆', 'Awesome! 👍', 'Great job! 👏', '100分！ 💯', '牛牛牛！ 🐮', '超级棒！ 🌈'];
 
         // ==========================================
-        // 【核心修复：手机端原生语音模块引擎安全激活】
+        // 【核心修复：跨设备原生语音引擎安全激活与兼容】
         // ==========================================
         const synth = window.speechSynthesis;
         window.currentUtterance = null; // 【修复重点】挂载到 window 彻底防止 iOS Safari 垃圾回收机制直接截断语音
         let isSpeechInitialized = false; // 标记是否已经进行了初次物理唤醒
+        let availableVoices = []; // 【平板修复新增】缓存当前设备可用的底层发音包列表
 
-        // 【修复重点】手机端浏览器严格限制自动播放音频，必须在用户第一次物理点击屏幕时"唤醒"语音引擎
+        // 提前加载并缓存语音包（专门解决部分安卓平板由于系统精简无法自动根据 lang 映射发音人的问题）
+        function loadVoices() {
+            availableVoices = synth.getVoices();
+        }
+        // 监听语音包加载完成事件
+        if (synth && synth.onvoiceschanged !== undefined) {
+            synth.onvoiceschanged = loadVoices;
+        }
+
+        // 手机端/平板端浏览器严格限制自动播放音频，必须在用户第一次物理点击屏幕时"唤醒"语音引擎
         function unlockSpeechEngine() {
             if (isSpeechInitialized || !synth) return;
-            const unlockMsg = new SpeechSynthesisUtterance(' '); // 防止部分引擎因空字符串报错
+            loadVoices(); // 尝试手动加载一次语音列表
+            // 防止部分安卓平板 TTS 对空字符串或单纯的空格解析报错卡死，改用发音极短的单字母并设为静音0
+            const unlockMsg = new SpeechSynthesisUtterance('a'); 
             unlockMsg.volume = 0; 
             synth.speak(unlockMsg);
             isSpeechInitialized = true;
-            // 唤醒成功后移除监听
+            // 唤醒成功后安全移除监听，减少资源消耗
             document.removeEventListener('click', unlockSpeechEngine);
             document.removeEventListener('touchstart', unlockSpeechEngine);
         }
@@ -333,22 +345,35 @@
         function speakText(text, isEnglish) {
             if (!synth) return;
             
-            // 【修复重点】仅在正在说话或排队时取消，避免 Android TTS 队列直接崩溃
+            // 【修复重点1】打断上一次发音必须同步执行，避免队列拥堵
             if (synth.speaking || synth.pending) {
                 synth.cancel();
             }
 
-            // 【修复重点】移除 setTimeout 延迟。
-            // 手机浏览器要求发声方法必须紧跟在用户手势（如 Click 事件）的同一执行栈内调用，使用 setTimeout 会被静默拦截。
-            window.currentUtterance = new SpeechSynthesisUtterance(text);
-            
-            // 【修复重点】部分低端安卓机的基础 TTS 引擎缺少 'en-GB' 包会导致静默失败，改用兼容性更高的 'en-US'
-            window.currentUtterance.lang = isEnglish ? 'en-US' : 'zh-CN';
-            window.currentUtterance.rate = 0.9; 
-            window.currentUtterance.pitch = 1.0;
-            window.currentUtterance.volume = 1.0;
-            
-            synth.speak(window.currentUtterance);
+            // 【修复重点2】加入 50 毫秒延时执行 speak。
+            // 完美避开安卓平板在 cancel() 后底层释放音频流的异步耗时，防止新的发音被直接“吞掉”卡死。
+            setTimeout(() => {
+                window.currentUtterance = new SpeechSynthesisUtterance(text);
+                
+                // 【修复重点3】优先从缓存的语音包中显式绑定 voice 对象（平板发声核心方案）
+                let voices = availableVoices.length > 0 ? availableVoices : synth.getVoices();
+                if (voices && voices.length > 0) {
+                    const targetLang = isEnglish ? 'en' : 'zh';
+                    // 寻找系统底层真实存在的对应语言发音人
+                    const voice = voices.find(v => v.lang.toLowerCase().includes(targetLang));
+                    if (voice) {
+                        window.currentUtterance.voice = voice;
+                    }
+                }
+                
+                // 兜底基础属性设置（当平板找不到语音包时依靠浏览器原生自动匹配）
+                window.currentUtterance.lang = isEnglish ? 'en-US' : 'zh-CN';
+                window.currentUtterance.rate = 0.9; 
+                window.currentUtterance.pitch = 1.0;
+                window.currentUtterance.volume = 1.0;
+                
+                synth.speak(window.currentUtterance);
+            }, 50); 
         }
 
         // ==========================================
