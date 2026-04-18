@@ -316,6 +316,10 @@
         window.currentUtterance = null; // 【修复重点】挂载到 window 彻底防止 iOS Safari 垃圾回收机制直接截断语音
         let isSpeechInitialized = false; // 标记是否已经进行了初次物理唤醒
         let availableVoices = []; // 【平板修复新增】缓存当前设备可用的底层发音包列表
+        let lastUserGestureTime = 0; // 记录最近一次真实手势，避免部分安卓平板丢失发音权限
+        let lastSpeechRequestId = 0; // 用于忽略过时的重试请求
+        let lastActivatedCardKey = '';
+        let lastActivationTime = 0;
 
         // 提前加载并缓存语音包（专门解决部分安卓平板由于系统精简无法自动根据 lang 映射发音人的问题）
         function loadVoices() {
@@ -326,54 +330,98 @@
             synth.onvoiceschanged = loadVoices;
         }
 
+        function recordUserGesture() {
+            lastUserGestureTime = Date.now();
+            if (synth && synth.paused) {
+                synth.resume();
+            }
+        }
+
         // 手机端/平板端浏览器严格限制自动播放音频，必须在用户第一次物理点击屏幕时"唤醒"语音引擎
         function unlockSpeechEngine() {
+            recordUserGesture();
             if (isSpeechInitialized || !synth) return;
             loadVoices(); // 尝试手动加载一次语音列表
             // 防止部分安卓平板 TTS 对空字符串或单纯的空格解析报错卡死，改用发音极短的单字母并设为静音0
             const unlockMsg = new SpeechSynthesisUtterance('a'); 
             unlockMsg.volume = 0; 
             synth.speak(unlockMsg);
+            if (synth.paused) synth.resume();
             isSpeechInitialized = true;
             // 唤醒成功后安全移除监听，减少资源消耗
             document.removeEventListener('click', unlockSpeechEngine);
             document.removeEventListener('touchstart', unlockSpeechEngine);
+            document.removeEventListener('pointerdown', unlockSpeechEngine);
         }
         document.addEventListener('click', unlockSpeechEngine);
-        document.addEventListener('touchstart', unlockSpeechEngine);
+        document.addEventListener('touchstart', unlockSpeechEngine, { passive: true });
+        document.addEventListener('pointerdown', unlockSpeechEngine, { passive: true });
+
+        function pickBestVoice(isEnglish) {
+            const voices = availableVoices.length > 0 ? availableVoices : synth.getVoices();
+            if (!voices || voices.length === 0) return null;
+
+            const preferredLangs = isEnglish
+                ? ['en-us', 'en-gb', 'en-au', 'en']
+                : ['zh-cn', 'cmn-hans-cn', 'zh-tw', 'cmn-hant-tw', 'cmn', 'zh'];
+
+            for (const lang of preferredLangs) {
+                const matchedVoice = voices.find(voice => {
+                    const voiceLang = (voice.lang || '').toLowerCase();
+                    return voiceLang.includes(lang);
+                });
+                if (matchedVoice) return matchedVoice;
+            }
+
+            return null;
+        }
+
+        function createUtterance(text, isEnglish) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            const matchedVoice = pickBestVoice(isEnglish);
+            if (matchedVoice) {
+                utterance.voice = matchedVoice;
+                utterance.lang = matchedVoice.lang;
+            } else {
+                utterance.lang = isEnglish ? 'en-US' : 'zh-CN';
+            }
+
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            return utterance;
+        }
 
         function speakText(text, isEnglish) {
-            if (!synth) return;
-            
-            // 【修复重点1】打断上一次发音必须同步执行，避免队列拥堵
+            if (!synth || !text) return;
+
+            recordUserGesture();
+            loadVoices();
+            const requestId = ++lastSpeechRequestId;
+
+            const speakNow = () => {
+                if (requestId !== lastSpeechRequestId) return;
+                window.currentUtterance = createUtterance(text, isEnglish);
+                synth.speak(window.currentUtterance);
+                if (synth.paused) synth.resume();
+            };
+
             if (synth.speaking || synth.pending) {
                 synth.cancel();
             }
 
-            // 【修复重点2】加入 50 毫秒延时执行 speak。
-            // 完美避开安卓平板在 cancel() 后底层释放音频流的异步耗时，防止新的发音被直接“吞掉”卡死。
+            // 安卓部分平板要求 speak 尽量留在用户手势链路内，所以先同步 speak，
+            // 如果底层音频流释放较慢，再做一次短延迟兜底重试。
+            speakNow();
+
             setTimeout(() => {
-                window.currentUtterance = new SpeechSynthesisUtterance(text);
-                
-                // 【修复重点3】优先从缓存的语音包中显式绑定 voice 对象（平板发声核心方案）
-                let voices = availableVoices.length > 0 ? availableVoices : synth.getVoices();
-                if (voices && voices.length > 0) {
-                    const targetLang = isEnglish ? 'en' : 'zh';
-                    // 寻找系统底层真实存在的对应语言发音人
-                    const voice = voices.find(v => v.lang.toLowerCase().includes(targetLang));
-                    if (voice) {
-                        window.currentUtterance.voice = voice;
-                    }
+                if (requestId !== lastSpeechRequestId) return;
+                if (!synth.speaking && !synth.pending && Date.now() - lastUserGestureTime < 1200) {
+                    window.currentUtterance = createUtterance(text, isEnglish);
+                    synth.speak(window.currentUtterance);
+                    if (synth.paused) synth.resume();
                 }
-                
-                // 兜底基础属性设置（当平板找不到语音包时依靠浏览器原生自动匹配）
-                window.currentUtterance.lang = isEnglish ? 'en-US' : 'zh-CN';
-                window.currentUtterance.rate = 0.9; 
-                window.currentUtterance.pitch = 1.0;
-                window.currentUtterance.volume = 1.0;
-                
-                synth.speak(window.currentUtterance);
-            }, 50); 
+            }, 120);
         }
 
         // ==========================================
@@ -661,15 +709,40 @@
             });
         }
 
-        function createWordCard(text, id, type) {
-            const div = document.createElement('div');
-            div.className = 'word-card bg-white border-2 border-gray-200 text-gray-700 text-lg md:text-xl font-medium rounded-xl py-3 px-4 text-center cursor-pointer shadow-sm hover:shadow-md hover:border-blue-400 flex items-center justify-center min-h-[60px] select-none break-words';
-            div.innerText = text;
-            div.dataset.id = id;
-            div.dataset.type = type;
+        function bindCardActivation(card) {
+            const activateCard = (event) => {
+                const cardKey = `${card.dataset.type}-${card.dataset.id}-${card.innerText}`;
+                const now = Date.now();
+                if (cardKey === lastActivatedCardKey && now - lastActivationTime < 400) {
+                    return;
+                }
 
-            div.addEventListener('click', () => handleCardClick(div));
-            return div;
+                lastActivatedCardKey = cardKey;
+                lastActivationTime = now;
+
+                if (event) {
+                    event.preventDefault();
+                }
+                recordUserGesture();
+                handleCardClick(card);
+            };
+
+            card.addEventListener('click', activateCard);
+            card.addEventListener('touchend', activateCard);
+            card.addEventListener('pointerup', activateCard);
+        }
+
+        function createWordCard(text, id, type) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'word-card bg-white border-2 border-gray-200 text-gray-700 text-lg md:text-xl font-medium rounded-xl py-3 px-4 text-center cursor-pointer shadow-sm hover:shadow-md hover:border-blue-400 flex items-center justify-center min-h-[60px] select-none break-words';
+            button.style.touchAction = 'manipulation';
+            button.innerText = text;
+            button.dataset.id = id;
+            button.dataset.type = type;
+
+            bindCardActivation(button);
+            return button;
         }
 
         // ==========================================
