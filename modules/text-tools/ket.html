@@ -486,13 +486,19 @@
             }
         }
 
-        function shouldUseFallbackFirst() {
+        function shouldUseFallbackFirst(isEnglish) {
             if (!synth) return true;
 
             loadVoices();
             const hasUsableVoices = availableVoices.length > 0;
 
-            // 安卓非 Chrome 系浏览器和无语音包设备，优先走音频兜底更稳。
+            // 中文在很多安卓浏览器里虽然 voices 列表不稳定，但系统原生中文 TTS 仍可能正常发声。
+            // 如果这里过早切到在线音频，反而会因为第三方音源可达性问题导致“中文没声音”。
+            if (!isEnglish) {
+                return false;
+            }
+
+            // 英文在安卓非 Chrome 系浏览器里更容易缺少可用 voice，优先走音频兜底更稳。
             if (isAndroidDevice && (!isChromeFamily || !hasUsableVoices)) {
                 return true;
             }
@@ -507,7 +513,7 @@
             const requestId = ++lastSpeechRequestId;
             stopFallbackAudio();
 
-            if (shouldUseFallbackFirst()) {
+            if (shouldUseFallbackFirst(isEnglish)) {
                 playFallbackAudio(text, isEnglish, requestId);
                 return;
             }
